@@ -335,7 +335,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     .filter(p => p.isActive !== false)
     .sort((a, b) => (a.order || 99) - (b.order || 99));
 
-  if (isAdminMode) {
+  if (isAdminMode && currentUser.role === 'admin') {
     return <AdminDashboard onExitAdmin={() => setIsAdminMode(false)} />;
   }
 

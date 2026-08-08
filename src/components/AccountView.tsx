@@ -343,28 +343,30 @@ export const AccountView: React.FC<AccountViewProps> = ({
               <ChevronRight className="w-4 h-4 text-slate-400" />
             </div>
 
-            {/* Panneau Administratif */}
-            <div 
-              onClick={() => {
-                if (onToggleAdmin) {
-                  onToggleAdmin();
-                } else {
-                  onShowToast('info', "Accès au panneau d'administration");
-                }
-              }}
-              className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-amber-500/10 transition-colors rounded-xl"
-            >
-              <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold shrink-0">
-                  <LockKeyhole className="w-4.5 h-4.5 stroke-[2.5]" />
+            {/* Panneau Administratif (RÉSERVÉ UNIQUEMENT AUX ADMINISTRATEURS) */}
+            {currentUser.role === 'admin' && (
+              <div 
+                onClick={() => {
+                  if (onToggleAdmin) {
+                    onToggleAdmin();
+                  } else {
+                    onShowToast('info', "Accès au panneau d'administration");
+                  }
+                }}
+                className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-amber-500/10 transition-colors rounded-xl border border-amber-200/60 bg-amber-50/40"
+              >
+                <div className="flex items-center space-x-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold shrink-0 shadow-xs">
+                    <LockKeyhole className="w-4.5 h-4.5 stroke-[2.5]" />
+                  </div>
+                  <div>
+                    <span className="text-xs sm:text-sm font-bold text-slate-900 block">Panneau Administratif</span>
+                    <span className="text-[10px] font-semibold text-amber-800">Gestion globale du site & utilisateurs</span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-xs sm:text-sm font-bold text-slate-900 block">Panneau Administratif</span>
-                  <span className="text-[10px] font-semibold text-amber-800">Gestion globale du site & utilisateurs</span>
-                </div>
+                <ChevronRight className="w-4 h-4 text-amber-700" />
               </div>
-              <ChevronRight className="w-4 h-4 text-amber-700" />
-            </div>
+            )}
 
 
 
