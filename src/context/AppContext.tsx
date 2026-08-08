@@ -4,6 +4,8 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { fetchTableData, syncTableData, deleteRecord } from '../lib/supabaseService';
 import { 
   User, 
   InvestmentProduct, 
@@ -524,9 +526,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     revenueDistributed: 4210400
   });
 
-  // Simulated live stats counter
+  // Hydrate & Background live sync with Supabase
   useEffect(() => {
-    const interval = setInterval(() => {
+    async function hydrateFromSupabase() {
+      const dbUsers = await fetchTableData<User>('users');
+      if (dbUsers && dbUsers.length > 0) setUsers(dbUsers);
+
+      const dbProducts = await fetchTableData<InvestmentProduct>('products');
+      if (dbProducts && dbProducts.length > 0) setProducts(dbProducts);
+
+      const dbDeposits = await fetchTableData<DepositRequest>('deposits');
+      if (dbDeposits && dbDeposits.length > 0) setDeposits(dbDeposits);
+
+      const dbWithdrawals = await fetchTableData<WithdrawalRequest>('withdrawals');
+      if (dbWithdrawals && dbWithdrawals.length > 0) setWithdrawals(dbWithdrawals);
+
+      const dbProofs = await fetchTableData<WithdrawalProof>('withdrawal_proofs');
+      if (dbProofs && dbProofs.length > 0) setWithdrawalProofs(dbProofs);
+
+      const dbInvestments = await fetchTableData<UserInvestment>('investments');
+      if (dbInvestments && dbInvestments.length > 0) setUserInvestments(dbInvestments);
+
+      const dbTickets = await fetchTableData<SupportTicket>('tickets');
+      if (dbTickets && dbTickets.length > 0) setTickets(dbTickets);
+
+      const dbCommissions = await fetchTableData<CommissionHistory>('commissions');
+      if (dbCommissions && dbCommissions.length > 0) setCommissions(dbCommissions);
+
+      const dbBonusCodes = await fetchTableData<BonusCode>('bonus_codes');
+      if (dbBonusCodes && dbBonusCodes.length > 0) setBonusCodes(dbBonusCodes);
+    }
+
+    hydrateFromSupabase();
+
+    // Poll every 5 seconds for multi-device cross-syncing
+    const syncInterval = setInterval(hydrateFromSupabase, 5000);
+
+    const statsInterval = setInterval(() => {
       setLiveStats(prev => {
         const addedRevenue = Math.floor(Math.random() * 95) + 5;
         const addedDeposits = Math.random() > 0.8 ? Math.floor(Math.random() * 5000) + 1000 : 0;
@@ -539,12 +575,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       });
     }, 4500);
-    return () => clearInterval(interval);
+
+    return () => {
+      clearInterval(syncInterval);
+      clearInterval(statsInterval);
+    };
   }, []);
 
   // Save state helpers
   useEffect(() => {
     localStorage.setItem('fintech_users', JSON.stringify(users));
+    syncTableData('users', users);
   }, [users]);
 
   useEffect(() => {
@@ -566,34 +607,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     localStorage.setItem('fintech_products', JSON.stringify(products));
+    syncTableData('products', products);
   }, [products]);
 
   useEffect(() => {
     localStorage.setItem('fintech_investments', JSON.stringify(userInvestments));
+    syncTableData('investments', userInvestments);
   }, [userInvestments]);
 
   useEffect(() => {
     localStorage.setItem('fintech_deposits', JSON.stringify(deposits));
+    syncTableData('deposits', deposits);
   }, [deposits]);
 
   useEffect(() => {
     localStorage.setItem('fintech_withdrawals', JSON.stringify(withdrawals));
+    syncTableData('withdrawals', withdrawals);
   }, [withdrawals]);
 
   useEffect(() => {
     localStorage.setItem('aurainvest_withdrawal_proofs', JSON.stringify(withdrawalProofs));
+    syncTableData('withdrawal_proofs', withdrawalProofs);
   }, [withdrawalProofs]);
 
   useEffect(() => {
     localStorage.setItem('fintech_bonus_codes', JSON.stringify(bonusCodes));
+    syncTableData('bonus_codes', bonusCodes);
   }, [bonusCodes]);
 
   useEffect(() => {
     localStorage.setItem('fintech_commissions', JSON.stringify(commissions));
+    syncTableData('commissions', commissions);
   }, [commissions]);
 
   useEffect(() => {
     localStorage.setItem('fintech_tickets', JSON.stringify(tickets));
+    syncTableData('tickets', tickets);
   }, [tickets]);
 
   // AUTOMATIC 24H REVENUE DISTRIBUTION WORKER (Revenus tombent automatiquement chaque 24h)
@@ -1224,6 +1273,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteProduct = (productId: string) => {
     setProducts(prev => prev.filter(p => p.id !== productId));
+    deleteRecord('products', productId);
   };
 
   const deleteUserInvestment = (investmentId: string) => {
@@ -1232,6 +1282,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('fintech_investments', JSON.stringify(updated));
       return updated;
     });
+    deleteRecord('investments', investmentId);
   };
 
   const generateBonusCode = (code: string, amount: number, maxUses: number) => {
@@ -1344,6 +1395,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('aurainvest_withdrawal_proofs', JSON.stringify(updated));
       return updated;
     });
+    deleteRecord('withdrawal_proofs', proofId);
   };
 
   const updateWithdrawalProof = (proofId: string, data: Partial<WithdrawalProof>) => {

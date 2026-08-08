@@ -47,7 +47,7 @@ function AppContent() {
     replyToTicket
   } = useApp();
 
-  const [navigationMode, setNavigationMode] = useState<'login' | 'register'>('login');
+  const [navigationMode, setNavigationMode] = useState<'login' | 'register'>('register');
 
   // Automatically detect partner referral codes from URL parameters
   useEffect(() => {
@@ -55,7 +55,6 @@ function AppContent() {
     const refCode = params.get('ref');
     if (refCode) {
       localStorage.setItem('aurainvest_ref_code', refCode);
-      setNavigationMode('register');
     }
   }, []);
 

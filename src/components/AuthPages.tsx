@@ -56,6 +56,10 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
   authActions 
 }) => {
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
   
   // Login Form State
   const [loginPhone, setLoginPhone] = useState('');
@@ -198,7 +202,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-center items-center px-4 py-8 sm:py-12 relative font-sans">
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col justify-center items-center px-4 py-8 sm:py-12 relative font-sans">
       
 
       {/* Main Content Area - Form directly on background without outer card or heavy shadow */}
