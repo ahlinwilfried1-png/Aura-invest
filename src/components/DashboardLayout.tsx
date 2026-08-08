@@ -1,0 +1,1029 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect } from 'react';
+import { useApp } from '../context/AppContext';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  TrendingUp, 
+  Wallet, 
+  ShoppingBag, 
+  Award, 
+  ArrowUpRight, 
+  ArrowDownLeft, 
+  Users, 
+  User, 
+  Lock, 
+  Plus, 
+  Minus, 
+  RefreshCw, 
+  Gift, 
+  Hourglass, 
+  CheckCircle, 
+  XCircle, 
+  MessageSquare, 
+  PlusCircle, 
+  Trash2, 
+  Megaphone, 
+  Globe, 
+  FileText, 
+  ChevronRight, 
+  Sparkles, 
+  BadgeCheck, 
+  LockKeyhole, 
+  Share2, 
+  LogOut, 
+  Check,
+  ShieldAlert,
+  HelpCircle,
+  Inbox,
+  Send,
+  MessageCircle,
+  Zap,
+  CreditCard,
+  X
+} from 'lucide-react';
+import { 
+  User as UserType, 
+  InvestmentProduct, 
+  UserInvestment, 
+  DepositRequest, 
+  WithdrawalRequest, 
+  BonusCode, 
+  CommissionHistory,
+  SupportTicket 
+} from '../types';
+import { RecentRechargesTicker } from './RecentRechargesTicker';
+import { MainWalletCard } from './MainWalletCard';
+import { QuickOperationsGrid } from './QuickOperationsGrid';
+import { CertificateModal } from './CertificateModal';
+import { ChatMessenger } from './ChatMessenger';
+import { AnnouncementsModal } from './AnnouncementsModal';
+import { AdminDashboard } from './AdminDashboard';
+import { TeamView } from './TeamView';
+import { OrdersView } from './OrdersView';
+import { AccountView } from './AccountView';
+import { DepositView } from './DepositView';
+import { WithdrawView } from './WithdrawView';
+import { CertificateView } from './CertificateView';
+import { AnnouncementsView } from './AnnouncementsView';
+import { ProductDetailView } from './ProductDetailView';
+import { ProofOfWithdrawalView } from './ProofOfWithdrawalView';
+
+interface DashboardLayoutProps {
+  currentUser: UserType;
+  users: UserType[];
+  products: InvestmentProduct[];
+  userInvestments: UserInvestment[];
+  deposits: DepositRequest[];
+  withdrawals: WithdrawalRequest[];
+  bonusCodes: BonusCode[];
+  commissions: CommissionHistory[];
+  tickets: SupportTicket[];
+  globalNotification: string | null;
+  liveStats: {
+    membersCount: number;
+    depositsSum: number;
+    withdrawalsSum: number;
+    revenueDistributed: number;
+  };
+  
+  // Handlers
+  logout: () => void;
+  updateProfile: (data: { name: string; whatsapp: string; country: string }) => void;
+  changePassword: (oldWord: string, newWord: string) => { success: boolean; error?: string };
+  buyInvestment: (productId: string) => { success: boolean; error?: string };
+  claimDailyEarning: (investmentId: string) => { success: boolean; error?: string };
+  requestDeposit: (amount: number, method: any, transactionId: string, screenshotUrl: string | null) => { success: boolean; error?: string };
+  requestWithdrawal: (amount: number, network: any, accountNumber: string) => { success: boolean; error?: string };
+  redeemBonusCode: (code: string) => { success: boolean; error?: string; amount?: number };
+  claimDailyBonus: () => { success: boolean; error?: string; amount?: number };
+  createSupportTicket: (subject: string, message: string) => void;
+  
+  // Admin handlers
+  toggleBlockUser: (userId: string) => void;
+  updateUserBalance: (userId: string, amount: number) => void;
+  processDeposit: (depositId: string, status: 'approved' | 'rejected') => void;
+  processWithdrawal: (withdrawalId: string, status: 'approved' | 'rejected') => void;
+  addOrUpdateProduct: (product: any) => void;
+  deleteProduct: (productId: string) => void;
+  generateBonusCode: (code: string, amount: number, maxUses: number) => { success: boolean; error?: string };
+  sendGlobalNotification: (text: string | null) => void;
+  replyToTicket: (ticketId: string, reply: string) => void;
+}
+
+export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
+  currentUser,
+  users,
+  products,
+  userInvestments,
+  deposits,
+  withdrawals,
+  bonusCodes,
+  commissions,
+  tickets,
+  globalNotification,
+  liveStats,
+  
+  logout,
+  updateProfile,
+  changePassword,
+  buyInvestment,
+  claimDailyEarning,
+  requestDeposit,
+  requestWithdrawal,
+  redeemBonusCode,
+  claimDailyBonus,
+  createSupportTicket,
+  
+  toggleBlockUser,
+  updateUserBalance,
+  processDeposit,
+  processWithdrawal,
+  addOrUpdateProduct,
+  deleteProduct,
+  generateBonusCode,
+  sendGlobalNotification,
+  replyToTicket
+}) => {
+  const { markTicketsAsRead } = useApp();
+
+  // Calculate unread chat messages/replies for current user
+  const unreadChatCount = tickets.filter(
+    t => t.userId === currentUser.id && !!t.reply && t.isReadByUser === false
+  ).length;
+
+  // Navigation State (Req: Accueil, Commande, Équipe, Chat, Mon compte + full-page operations)
+  const [activeTab, setActiveTab] = useState<'home' | 'orders' | 'team' | 'chat' | 'profile' | 'deposit' | 'withdraw' | 'certificate' | 'announcements'>('home');
+
+  useEffect(() => {
+    if (activeTab === 'chat' && unreadChatCount > 0) {
+      markTicketsAsRead(currentUser.id);
+    }
+  }, [activeTab, unreadChatCount, currentUser.id, markTicketsAsRead]);
+  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [selectedProductDetail, setSelectedProductDetail] = useState<InvestmentProduct | null>(null);
+
+  // Modals & Notifications
+  const [feedbackToast, setFeedbackToast] = useState<{ status: 'success' | 'err'; text: string } | null>(null);
+  const [depositModalOpen, setDepositModalOpen] = useState(false);
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [certificatModalOpen, setCertificatModalOpen] = useState(false);
+  const [annoncesModalOpen, setAnnoncesModalOpen] = useState(false);
+
+  // Profile feature modals
+  const [showPromoModal, setShowPromoModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState<'all' | 'deposits' | 'withdrawals' | null>(null);
+
+  // Deposit workflow state
+  const [depAmount, setDepAmount] = useState<number>(3000);
+  const [depMethod, setDepMethod] = useState<'Mixx By Yas' | 'Moov Money' | 'MTN Money' | 'Orange Money'>('Orange Money');
+  const [depTxId, setDepTxId] = useState('');
+  const [depScreenshot, setDepScreenshot] = useState<string | null>(null);
+
+  // Withdrawal workflow state
+  const [wthAmount, setWthAmount] = useState<number>(3000);
+  const [wthNetwork, setWthNetwork] = useState<'Mixx By Yas' | 'Moov Money' | 'MTN Money' | 'Orange Money'>('Orange Money');
+  const [wthAccount, setWthAccount] = useState(currentUser.phone);
+
+  // Promo code & Referral state
+  const [bonusCodeInput, setBonusCodeInput] = useState('');
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  // Support Chat State
+  const [chatSubject, setChatSubject] = useState('');
+  const [chatMessage, setChatMessage] = useState('');
+
+  // Change password states
+  const [oldPw, setOldPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+
+  // Admin Workspace state variables
+  const [adminSelectedUser, setAdminSelectedUser] = useState<string>('');
+  const [adminBalanceAdjust, setAdminBalanceAdjust] = useState<number>(0);
+  const [adminNewBonusCode, setAdminNewBonusCode] = useState('');
+  const [adminNewBonusAmount, setAdminNewBonusAmount] = useState<number>(500);
+  const [adminNewBonusUses, setAdminNewBonusUses] = useState<number>(20);
+  const [adminNewNotify, setAdminNewNotify] = useState('');
+  const [ticketReplyText, setTicketReplyText] = useState<{ [id: string]: string }>({});
+
+  const showToast = (status: 'success' | 'err', text: string) => {
+    setFeedbackToast({ status, text });
+    setTimeout(() => setFeedbackToast(null), 3500);
+  };
+
+  const handleBuyProduct = (product: InvestmentProduct) => {
+    const res = buyInvestment(product.id);
+    if (res.success) {
+      showToast('success', `Souscription réussie au produit "${product.name}" ! Vos revenus quotidiens sont activés.`);
+    } else {
+      showToast('err', res.error || "Erreur lors de la souscription.");
+      if (res.error?.includes('Solde insuffisant')) {
+        setDepositModalOpen(true);
+      }
+    }
+  };
+
+  const handleClaimEarningRow = (investmentId: string, amount: number) => {
+    const res = claimDailyEarning(investmentId);
+    if (res.success) {
+      showToast('success', `Félicitations ! Gain quotidien de +${amount.toLocaleString()} FCFA crédité avec succès.`);
+    } else {
+      showToast('err', res.error || "Échec du retrait quotidien.");
+    }
+  };
+
+  const handleDepositSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!depAmount || depAmount < 1000) {
+      showToast('err', "Le montant minimum de recharge est de 1 000 FCFA.");
+      return;
+    }
+    if (!depTxId.trim()) {
+      showToast('err', "Veuillez saisir l'ID de transaction Mobile Money.");
+      return;
+    }
+    const res = requestDeposit(depAmount, depMethod, depTxId, depScreenshot);
+    if (res.success) {
+      showToast('success', "Demande de recharge soumise ! Validation en cours par notre équipe.");
+      setDepositModalOpen(false);
+      setDepTxId('');
+      setDepScreenshot(null);
+    } else {
+      showToast('err', res.error || "Une erreur est survenue.");
+    }
+  };
+
+  const handleWithdrawalSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!wthAmount || wthAmount < 1000) {
+      showToast('err', "Le montant minimum de retrait est de 1 000 FCFA.");
+      return;
+    }
+    if (wthAmount > currentUser.balance) {
+      showToast('err', "Solde insuffisant pour effectuer ce retrait.");
+      return;
+    }
+    if (!wthAccount.trim()) {
+      showToast('err', "Saisissez le numéro de réception du paiement.");
+      return;
+    }
+    const res = requestWithdrawal(wthAmount, wthNetwork, wthAccount);
+    if (res.success) {
+      showToast('success', "Demande de retrait enregistrée ! Les fonds arriveront sous peu.");
+      setWithdrawModalOpen(false);
+    } else {
+      showToast('err', res.error || "Erreur lors du retrait.");
+    }
+  };
+
+  const handleRedeemBonus = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bonusCodeInput.trim()) return;
+    const res = redeemBonusCode(bonusCodeInput.trim());
+    if (res.success) {
+      showToast('success', `Code activé ! +${res.amount?.toLocaleString()} FCFA ajoutés à votre solde.`);
+      setBonusCodeInput('');
+    } else {
+      showToast('err', res.error || "Code promo invalide ou déjà utilisé.");
+    }
+  };
+
+  const handleCopyReferral = () => {
+    const url = `${window.location.origin}?ref=${currentUser.referralCode}`;
+    navigator.clipboard.writeText(url);
+    setCopiedLink(true);
+    showToast('success', "Lien de parrainage copié dans le presse-papier !");
+    setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  const handleChangePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!oldPw || !newPw) {
+      showToast('err', "Remplissez tous les champs.");
+      return;
+    }
+    const res = changePassword(oldPw, newPw);
+    if (res.success) {
+      showToast('success', "Mot de passe modifié avec succès.");
+      setOldPw('');
+      setNewPw('');
+    } else {
+      showToast('err', res.error || "L'ancien mot de passe est incorrect.");
+    }
+  };
+
+  const handleSendChatMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatMessage.trim()) return;
+    createSupportTicket(chatSubject || "Message Support", chatMessage.trim());
+    showToast('success', "Message envoyé au support ! Vous recevrez une réponse rapidement.");
+    setChatMessage('');
+    setChatSubject('');
+  };
+
+  const userActiveInvestments = userInvestments.filter(inv => inv.userId === currentUser.id);
+  const userDeposits = deposits.filter(d => d.userId === currentUser.id);
+  const userWithdrawals = withdrawals.filter(w => w.userId === currentUser.id);
+  const userTickets = tickets.filter(t => t.userId === currentUser.id);
+
+  // Active products list sorted by order
+  const activeProducts = products
+    .filter(p => p.isActive !== false)
+    .sort((a, b) => (a.order || 99) - (b.order || 99));
+
+  if (isAdminMode) {
+    return <AdminDashboard onExitAdmin={() => setIsAdminMode(false)} />;
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col pb-16 relative overflow-x-hidden font-sans">
+      
+      {/* Toast Notification */}
+      {feedbackToast && (
+        <div className={`fixed top-4 right-4 left-4 sm:left-auto z-50 max-w-md p-4 rounded-2xl shadow-xl border flex items-center space-x-3 animate-fadeIn ${
+          feedbackToast.status === 'success' 
+            ? 'bg-emerald-50 border-emerald-300 text-emerald-900' 
+            : 'bg-red-50 border-red-300 text-red-900'
+        }`}>
+          {feedbackToast.status === 'success' ? (
+            <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+          ) : (
+            <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+          )}
+          <span className="text-xs font-bold leading-normal">{feedbackToast.text}</span>
+        </div>
+      )}
+
+      {/* Global Announcement Marquee bar */}
+      {globalNotification && (
+        <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 font-black px-4 py-2 z-40 text-xs flex items-center shadow-xs">
+          <Megaphone className="w-4 h-4 mr-2 flex-shrink-0" />
+          <div className="overflow-hidden relative w-full h-4">
+            <div className="absolute whitespace-nowrap animate-marquee flex items-center text-slate-950 text-[11px] sm:text-xs font-extrabold leading-normal">
+              🏆 ANNONCE OFFICIELLE : {globalNotification} ---- Investissez dès aujourd'hui pour sécuriser vos rendements premium.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Container Workspace (Stuck to top of site) */}
+      <main className="max-w-7xl mx-auto px-2 sm:px-6 pt-1 sm:pt-3 pb-2 flex-grow w-full">
+        {/* USER WORKSPACE (DYNAMIC SUB-SCREENS VIA TABS) */}
+        <div>
+            {/* TAB 1: ACCUEIL (DASHBOARD HOME) */}
+            {activeTab === 'home' && (
+              selectedProductDetail ? (
+                <ProductDetailView
+                  product={selectedProductDetail}
+                  currentUser={currentUser}
+                  onBack={() => setSelectedProductDetail(null)}
+                  onConfirmPurchase={(product, qty) => {
+                    return buyInvestment(product.id, qty);
+                  }}
+                  onOpenDeposit={() => {
+                    setSelectedProductDetail(null);
+                    setActiveTab('deposit');
+                  }}
+                  onShowToast={showToast}
+                />
+              ) : (
+                <div className="space-y-4 animate-fadeIn">
+                  
+                  {/* 1. Carte Portefeuille Principal Encadrée */}
+                  <MainWalletCard 
+                    user={currentUser}
+                    onOpenDeposit={() => setActiveTab('deposit')}
+                    onOpenWithdraw={() => setActiveTab('withdraw')}
+                    onOpenHistory={() => {
+                      setActiveTab('orders');
+                    }}
+                  />
+
+                  {/* 3. Section Opérations Rapides */}
+                  <QuickOperationsGrid
+                    onRecharger={() => setActiveTab('deposit')}
+                    onRetirer={() => setActiveTab('withdraw')}
+                    onCertificat={() => setActiveTab('certificate')}
+                    onPointage={() => {
+                      const res = claimDailyBonus();
+                      if (res.success) {
+                        showToast('success', `Pointage quotidien récompensé ! +${res.amount || 100} FCFA crédités.`);
+                      } else {
+                        showToast('err', res.error || "Pointage déjà effectué aujourd'hui.");
+                      }
+                    }}
+                    onAnnonces={() => setActiveTab('announcements')}
+                  />
+
+                  {/* 4. TOUS LES PRODUITS EN DISPOSITION VERTICALE */}
+                  <div className="space-y-4 pt-2">
+                    <div className="flex items-center justify-between pb-2">
+                      <div>
+                        <span className="text-[10px] font-mono font-bold text-amber-800 uppercase tracking-widest block">
+                          CATALOGUE D'INVESTISSEMENT
+                        </span>
+                        <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                          Nos Produits Nutrien Agriculture ({activeProducts.length})
+                        </h3>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-900 px-2.5 py-1 rounded-full uppercase">
+                        Offres VIP
+                      </span>
+                    </div>
+
+                    {/* Vertical stack of product cards matching reference image */}
+                    <div className="space-y-3">
+                      {activeProducts.map((product) => (
+                        <div 
+                          key={product.id}
+                          onClick={() => setSelectedProductDetail(product)}
+                          className="bg-white rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-2.5 border border-slate-200/80 hover:border-slate-300 transition-all cursor-pointer group"
+                        >
+                          {/* Top row: Title + Duration on left, Image Thumbnail on right */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="space-y-0.5">
+                              <h4 className="text-base sm:text-lg font-bold text-slate-900 leading-snug group-hover:text-red-600 transition-colors">
+                                {product.name}
+                              </h4>
+                              <div className="text-xs text-slate-600 font-medium flex items-center space-x-1">
+                                <span>Durée (Jours) :</span>
+                                <strong className="text-slate-900 font-bold ml-1">{product.duration}</strong>
+                              </div>
+                            </div>
+
+                            <img 
+                              src={product.image || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80'} 
+                              alt={product.name}
+                              onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80'; }}
+                              className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 border border-slate-100"
+                            />
+                          </div>
+
+                          {/* Middle row: Light Gray Box with 2 Columns */}
+                          <div className="bg-slate-100/90 rounded-2xl p-3 sm:p-4 grid grid-cols-2 gap-2 text-center">
+                            <div>
+                              <div className="text-red-500 font-bold text-lg sm:text-xl tracking-tight">
+                                {product.dailyGain.toLocaleString()}
+                              </div>
+                              <div className="text-xs sm:text-sm font-medium text-slate-900 mt-0.5">
+                                Revenu quotidien
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-red-500 font-bold text-lg sm:text-xl tracking-tight">
+                                {product.totalGain.toLocaleString()}
+                              </div>
+                              <div className="text-xs sm:text-sm font-medium text-slate-900 mt-0.5">
+                                Revenu total
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Bottom row: Price + Red INVESTIR Button */}
+                          <div className="flex items-center justify-between pt-1">
+                            <div className="text-sm sm:text-base font-normal text-slate-900">
+                              Prix(XAF):<span className="text-red-500 font-bold ml-1 text-base sm:text-lg">{product.price.toLocaleString()}</span>
+                            </div>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedProductDetail(product);
+                              }}
+                              className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-lg tracking-wider transition-all cursor-pointer shadow-xs uppercase"
+                            >
+                              INVESTIR
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              )
+            )}
+
+            {/* TAB 2: COMMANDE (REQ: ORDER MANAGEMENT & INVESTMENT PLANS) */}
+            {activeTab === 'orders' && (
+              <OrdersView
+                currentUser={currentUser}
+                userInvestments={userInvestments}
+                onClaimDailyEarning={claimDailyEarning}
+                onShowToast={showToast}
+              />
+            )}
+
+            {/* TAB 3: ÉQUIPE (REQ: REFERRAL & NETWORK - MATCHING EXACT REFERENCE UI) */}
+            {activeTab === 'team' && (
+              <TeamView 
+                currentUser={currentUser}
+                users={users}
+                commissions={commissions}
+                onShowToast={showToast}
+              />
+            )}
+
+            {/* TAB 4: CHAT (REQ: LIVE CHAT & MODERN MESSENGER) */}
+            {activeTab === 'chat' && (
+              <div className="animate-fadeIn pb-16">
+                <ChatMessenger 
+                  currentUser={currentUser}
+                  tickets={tickets}
+                  createSupportTicket={createSupportTicket}
+                  replyToTicket={replyToTicket}
+                  onShowToast={showToast}
+                />
+              </div>
+            )}
+
+            {/* TAB 5: MON COMPTE (REORGANIZED ACCORDING TO USER SPECIFICATIONS) */}
+            {activeTab === 'profile' && (
+              <AccountView
+                currentUser={currentUser}
+                deposits={deposits}
+                withdrawals={withdrawals}
+                userInvestments={userInvestments}
+                products={products}
+                tickets={tickets}
+                globalNotification={globalNotification}
+                onRequestDeposit={requestDeposit}
+                onRequestWithdrawal={requestWithdrawal}
+                onUpdateProfile={updateProfile}
+                onChangePassword={changePassword}
+                onRedeemBonusCode={redeemBonusCode}
+                onClaimDailyBonus={claimDailyBonus}
+                onCreateSupportTicket={createSupportTicket}
+                onLogout={logout}
+                onShowToast={showToast}
+                onBuyProduct={handleBuyProduct}
+                onOpenTab={(tab) => setActiveTab(tab)}
+                onToggleAdmin={() => setIsAdminMode(true)}
+              />
+            )}
+
+            {/* FULL-PAGE VIEW 1: RECHARGE (PAGE TOUT ENTIÈRE SANS CADRE) */}
+            {activeTab === 'deposit' && (
+              <DepositView
+                currentUser={currentUser}
+                deposits={deposits}
+                onRequestDeposit={requestDeposit}
+                onBack={() => setActiveTab('home')}
+                onShowToast={showToast}
+              />
+            )}
+
+            {/* FULL-PAGE VIEW 2: RETRAIT (PAGE TOUT ENTIÈRE SANS CADRE) */}
+            {activeTab === 'withdraw' && (
+              <WithdrawView
+                currentUser={currentUser}
+                withdrawals={withdrawals}
+                onRequestWithdrawal={requestWithdrawal}
+                onBack={() => setActiveTab('home')}
+                onShowToast={showToast}
+              />
+            )}
+
+            {/* FULL-PAGE VIEW 3: CERTIFICAT & PREUVES DE RETRAIT (PAGE TOUT ENTIÈRE) */}
+            {activeTab === 'certificate' && (
+              <CertificateView
+                currentUser={currentUser}
+                onBack={() => setActiveTab('home')}
+                onShowToast={showToast}
+              />
+            )}
+
+            {/* FULL-PAGE VIEW 4: ANNONCES (PAGE TOUT ENTIÈRE SANS CADRE) */}
+            {activeTab === 'announcements' && (
+              <AnnouncementsView
+                notificationText={globalNotification}
+                onBack={() => setActiveTab('home')}
+              />
+            )}
+
+            {/* FULL-PAGE VIEW 5: PREUVES DE RETRAIT (PAGE TOUT ENTIÈRE) */}
+            {activeTab === 'proofs' && (
+              <ProofOfWithdrawalView
+                onBack={() => setActiveTab('home')}
+              />
+            )}
+          </div>
+
+      </main>
+
+      {/* DYNAMIC FIXED FOOTER NAVIGATION TABS MENU BAR */}
+      {/* REQ ORDER: Accueil – Commande – Équipe – Chat – Mon compte */}
+      {!isAdminMode && (
+        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md py-2 px-2">
+          <div className="max-w-md mx-auto flex justify-between items-center text-center">
+            
+            {/* 1. Accueil */}
+            <button 
+              onClick={() => {
+                setSelectedProductDetail(null);
+                setActiveTab('home');
+              }}
+              className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer ${
+                activeTab === 'home' ? 'text-amber-700 font-black scale-105' : 'text-slate-400 hover:text-slate-600 font-medium'
+              }`}
+            >
+              <Wallet className="w-5 h-5" />
+              <span className="text-[10px]">Accueil</span>
+            </button>
+
+            {/* 2. Commande */}
+            <button 
+              onClick={() => setActiveTab('orders')}
+              className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer ${
+                activeTab === 'orders' ? 'text-amber-700 font-black scale-105' : 'text-slate-400 hover:text-slate-600 font-medium'
+              }`}
+            >
+              <ShoppingBag className="w-5 h-5" />
+              <span className="text-[10px]">Commande</span>
+            </button>
+
+            {/* 3. Équipe */}
+            <button 
+              onClick={() => setActiveTab('team')}
+              className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer ${
+                activeTab === 'team' ? 'text-amber-700 font-black scale-105' : 'text-slate-400 hover:text-slate-600 font-medium'
+              }`}
+            >
+              <Users className="w-5 h-5" />
+              <span className="text-[10px]">Équipe</span>
+            </button>
+
+            {/* 4. Chat */}
+            <button 
+              onClick={() => {
+                setActiveTab('chat');
+                if (currentUser) markTicketsAsRead(currentUser.id);
+              }}
+              className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer relative ${
+                activeTab === 'chat' ? 'text-amber-700 font-black scale-105' : 'text-slate-400 hover:text-slate-600 font-medium'
+              }`}
+            >
+              <div className="relative flex items-center justify-center">
+                <MessageSquare className="w-5 h-5" />
+                {unreadChatCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2.5 bg-red-600 text-white font-black text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-white animate-bounce shadow-xs">
+                    {unreadChatCount}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px]">Chat</span>
+            </button>
+
+            {/* 5. Mon compte */}
+            <button 
+              onClick={() => setActiveTab('profile')}
+              className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer ${
+                activeTab === 'profile' ? 'text-amber-700 font-black scale-105' : 'text-slate-400 hover:text-slate-600 font-medium'
+              }`}
+            >
+              <User className="w-5 h-5" />
+              <span className="text-[10px]">Mon compte</span>
+            </button>
+
+          </div>
+        </nav>
+      )}
+
+      {/* MODAL ZONE */}
+      
+      {/* 1. DEPOSIT MODAL WORKSPACE */}
+      {depositModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full relative space-y-4">
+            <button 
+              onClick={() => setDepositModalOpen(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div>
+              <span className="text-[10px] font-mono font-bold uppercase text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">Recharge Mobile Money</span>
+              <h3 className="text-xl font-black text-slate-900 mt-2">Recharger votre Portefeuille</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Saisissez le montant et votre ID de transaction Mobile Money.</p>
+            </div>
+
+            <form onSubmit={handleDepositSubmit} className="space-y-4 text-xs font-medium">
+              <div>
+                <label className="block text-[10px] uppercase font-mono text-slate-500 mb-1 font-bold">Sélectionner l'Opérateur</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['Orange Money', 'MTN Money', 'Moov Money', 'Mixx By Yas'] as const).map(net => (
+                    <button
+                      type="button"
+                      key={net}
+                      onClick={() => setDepMethod(net)}
+                      className={`p-2.5 rounded-xl text-center transition-all font-bold cursor-pointer ${
+                        depMethod === net 
+                          ? 'bg-amber-500 text-slate-950 font-black' 
+                          : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      {net}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Account Number Box to transfer money to */}
+              <div className="p-3 bg-amber-500/10 rounded-xl space-y-1 font-mono text-[11px]">
+                <span className="text-slate-500 font-sans block text-[10px]">Numéro marchand pour le transfert ({depMethod}) :</span>
+                <div className="text-slate-900 font-extrabold text-sm flex items-center justify-between">
+                  <span>+225 07 00 00 00 00</span>
+                  <span className="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded uppercase font-bold">Infoline</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-mono text-slate-500 mb-1 font-bold">Montant à Recharger (FCFA)</label>
+                <input 
+                  type="number" 
+                  min={1000}
+                  step={500}
+                  value={depAmount}
+                  onChange={(e) => setDepAmount(Number(e.target.value))}
+                  className="w-full bg-slate-50 outline-none rounded-xl py-2.5 px-3 text-slate-900 font-mono font-bold text-sm"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-mono text-slate-500 mb-1 font-bold">ID / Référence de Transaction</label>
+                <input 
+                  type="text" 
+                  placeholder="Ex: MP260806.1023.A001"
+                  value={depTxId}
+                  onChange={(e) => setDepTxId(e.target.value)}
+                  className="w-full bg-slate-50 outline-none rounded-xl py-2.5 px-3 text-slate-900 font-mono font-bold text-sm"
+                  required
+                />
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+              >
+                Soumettre la Recharge ({depAmount.toLocaleString()} FCFA)
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2. WITHDRAWAL MODAL WORKSPACE */}
+      {withdrawModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full relative space-y-4">
+            <button 
+              onClick={() => setWithdrawModalOpen(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div>
+              <span className="text-[10px] font-mono font-bold uppercase text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">Demande de Retrait</span>
+              <h3 className="text-xl font-black text-slate-900 mt-2">Retirer vers Mobile Money</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Solde actuel disponible : <strong className="text-slate-900 font-mono">{currentUser.balance.toLocaleString()} FCFA</strong></p>
+            </div>
+
+            <form onSubmit={handleWithdrawalSubmit} className="space-y-4 text-xs font-medium">
+              <div>
+                <label className="block text-[10px] uppercase font-mono text-slate-500 mb-1 font-bold">Réseau de Réception</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['Orange Money', 'MTN Money', 'Moov Money', 'Mixx By Yas'] as const).map(net => (
+                    <button
+                      type="button"
+                      key={net}
+                      onClick={() => setWthNetwork(net)}
+                      className={`p-2.5 rounded-xl text-center transition-all font-bold cursor-pointer ${
+                        wthNetwork === net 
+                          ? 'bg-emerald-600 text-white font-black' 
+                          : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      {net}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-mono text-slate-500 mb-1 font-bold">Numéro de Téléphone de Réception</label>
+                <input 
+                  type="tel" 
+                  value={wthAccount}
+                  onChange={(e) => setWthAccount(e.target.value)}
+                  className="w-full bg-slate-50 outline-none rounded-xl py-2.5 px-3 text-slate-900 font-mono font-bold text-sm"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-mono text-slate-500 mb-1 font-bold">Montant à Retirer (FCFA)</label>
+                <input 
+                  type="number" 
+                  min={1000}
+                  max={currentUser.balance}
+                  step={500}
+                  value={wthAmount}
+                  onChange={(e) => setWthAmount(Number(e.target.value))}
+                  className="w-full bg-slate-50 outline-none rounded-xl py-2.5 px-3 text-slate-900 font-mono font-bold text-sm"
+                  required
+                />
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+              >
+                Confirmer le Retrait ({wthAmount.toLocaleString()} FCFA)
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 3. CERTIFICATE MODAL */}
+      <CertificateModal 
+        isOpen={certificatModalOpen} 
+        onClose={() => setCertificatModalOpen(false)} 
+      />
+
+      {/* 4. ANNOUNCEMENTS MODAL */}
+      <AnnouncementsModal 
+        isOpen={annoncesModalOpen} 
+        onClose={() => setAnnoncesModalOpen(false)} 
+        notificationText={globalNotification}
+      />
+
+      {/* 5. PROMO & DRAW MODAL */}
+      {showPromoModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full relative space-y-4">
+            <button 
+              onClick={() => setShowPromoModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div>
+              <span className="text-[10px] font-mono font-bold uppercase text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">Tirage au sort & Cadeaux</span>
+              <h3 className="text-xl font-black text-slate-900 mt-2">Zone Promo & Tirage</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Entrez votre code promo pour recevoir votre bonus instantané.</p>
+            </div>
+
+            <form onSubmit={(e) => {
+              handleRedeemBonus(e);
+              setShowPromoModal(false);
+            }} className="space-y-4 text-xs font-medium">
+              <div>
+                <label className="block text-[10px] uppercase font-mono text-slate-500 mb-1 font-bold">Code Promotionnel</label>
+                <input 
+                  type="text" 
+                  placeholder="EX: BIENVENU"
+                  value={bonusCodeInput}
+                  onChange={(e) => setBonusCodeInput(e.target.value)}
+                  className="w-full bg-slate-50 outline-none rounded-xl py-3 px-3.5 text-slate-900 font-mono font-bold text-sm uppercase"
+                  required
+                />
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+              >
+                Activer le Code
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 6. PASSWORD CHANGE MODAL */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full relative space-y-4">
+            <button 
+              onClick={() => setShowPasswordModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div>
+              <span className="text-[10px] font-mono font-bold uppercase text-blue-800 bg-blue-100 px-2.5 py-0.5 rounded-full">Sécurité du compte</span>
+              <h3 className="text-xl font-black text-slate-900 mt-2">Modifier le mot de passe</h3>
+            </div>
+
+            <form onSubmit={(e) => {
+              handleChangePasswordSubmit(e);
+              setShowPasswordModal(false);
+            }} className="space-y-4 text-xs font-medium">
+              <div>
+                <label className="block text-[10px] text-slate-500 uppercase mb-1 font-bold">Ancien mot de passe</label>
+                <input 
+                  type="password" 
+                  placeholder="Saisissez l'ancien mot de passe"
+                  value={oldPw}
+                  onChange={(e) => setOldPw(e.target.value)}
+                  className="w-full bg-slate-50 outline-none rounded-xl py-2.5 px-3 text-sm text-slate-900 font-bold"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-500 uppercase mb-1 font-bold">Nouveau mot de passe</label>
+                <input 
+                  type="password" 
+                  placeholder="Nouveau mot de passe (min. 4)"
+                  value={newPw}
+                  onChange={(e) => setNewPw(e.target.value)}
+                  className="w-full bg-slate-50 outline-none rounded-xl py-2.5 px-3 text-sm text-slate-900 font-bold"
+                  required
+                />
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+              >
+                Enregistrer les modifications
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 7. HISTORY / INVOICE MODAL */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full relative space-y-4 max-h-[85vh] flex flex-col">
+            <button 
+              onClick={() => setShowHistoryModal(null)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div>
+              <span className="text-[10px] font-mono font-bold uppercase text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-full">
+                {showHistoryModal === 'deposits' ? "Historique des Recharges" : showHistoryModal === 'withdrawals' ? "Historique des Retraits" : "Facture de Solde"}
+              </span>
+              <h3 className="text-xl font-black text-slate-900 mt-2">
+                {showHistoryModal === 'deposits' ? "Recharger l'enregistrement" : showHistoryModal === 'withdrawals' ? "Enregistrement des retraits" : "Facture de Solde"}
+              </h3>
+            </div>
+
+            <div className="overflow-y-auto space-y-3 pr-1 flex-1 text-xs">
+              {(showHistoryModal === 'all' || showHistoryModal === 'deposits') && userDeposits.map(dep => (
+                <div key={dep.id} className="p-3 bg-slate-50 rounded-xl flex items-center justify-between border border-slate-100">
+                  <div>
+                    <div className="font-bold text-slate-900 text-sm">Recharge Mobile Money</div>
+                    <div className="text-[10px] text-slate-500">{new Date(dep.createdAt).toLocaleString()}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-emerald-600 text-sm">+{dep.amount.toLocaleString()} FCFA</div>
+                    <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${dep.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : dep.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
+                      {dep.status === 'approved' ? 'Validé' : dep.status === 'rejected' ? 'Refusé' : 'En attente'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {(showHistoryModal === 'all' || showHistoryModal === 'withdrawals') && userWithdrawals.map(wth => (
+                <div key={wth.id} className="p-3 bg-slate-50 rounded-xl flex items-center justify-between border border-slate-100">
+                  <div>
+                    <div className="font-bold text-slate-900 text-sm">Retrait Mobile Money</div>
+                    <div className="text-[10px] text-slate-500">{new Date(wth.createdAt).toLocaleString()}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-red-600 text-sm">-{wth.amount.toLocaleString()} FCFA</div>
+                    <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${wth.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : wth.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
+                      {wth.status === 'approved' ? 'Payé' : wth.status === 'rejected' ? 'Refusé' : 'En traitement'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {userDeposits.length === 0 && userWithdrawals.length === 0 && (
+                <div className="py-8 text-center text-slate-400 font-medium">
+                  Aucun enregistrement trouvé.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
