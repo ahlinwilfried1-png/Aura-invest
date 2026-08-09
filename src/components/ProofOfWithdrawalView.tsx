@@ -88,7 +88,7 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
           Preuves de Retrait
         </h1>
         <p className="text-xs sm:text-sm text-slate-300 font-medium max-w-xl leading-relaxed">
-          Découvrez en temps réel les témoignages et preuves de paiement réelles soumises par les membres de la communauté AURA INVEST.
+          Découvrez en temps réel les témoignages et preuves de paiement réelles soumises par les membres de la communauté Nutrien.
         </p>
       </div>
 
@@ -130,7 +130,7 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
                   <div className="flex items-center space-x-3 text-xs text-slate-500 font-mono">
                     <span className="flex items-center space-x-1">
                       <PhoneCall className="w-3 h-3 text-slate-400" />
-                      <span>{proof.userPhone}</span>
+                      <span>{proof.userPhone.includes('****') ? proof.userPhone : `${proof.userPhone.slice(0, 3)}****${proof.userPhone.slice(-2)}`}</span>
                     </span>
                     <span>•</span>
                     <span className="flex items-center space-x-1">
@@ -229,7 +229,7 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
                   rows={3}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Partagez votre expérience avec AURA INVEST..."
+                  placeholder="Partagez votre expérience avec Nutrien..."
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 outline-none focus:border-amber-500"
                 />
               </div>

@@ -16,7 +16,7 @@ export async function fetchTableData<T>(tableName: string): Promise<T[] | null> 
 
 export async function upsertItem<T>(tableName: string, item: T) {
   try {
-    const { error } = await supabase.from(tableName).upsert(item);
+    const { error } = await supabase.from(tableName).upsert(item as any);
     if (error) {
       console.warn(`[Supabase] Table '${tableName}' upsert error:`, error.message);
     }
@@ -28,7 +28,7 @@ export async function upsertItem<T>(tableName: string, item: T) {
 export async function syncTableData<T>(tableName: string, items: T[]) {
   try {
     if (!items || items.length === 0) return;
-    const { error } = await supabase.from(tableName).upsert(items);
+    const { error } = await supabase.from(tableName).upsert(items as any);
     if (error) {
       console.warn(`[Supabase] Table '${tableName}' sync error:`, error.message);
     }

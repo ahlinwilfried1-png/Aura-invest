@@ -20,7 +20,34 @@ export interface User {
   referredByCode: string | null;
   withdrawalAccountName?: string;
   withdrawalAccountNumber?: string;
+  withdrawalNetwork?: string;
+  withdrawalCountry?: string;
   withdrawalPinHash?: string;
+  drawTickets?: number;
+}
+
+export interface WheelPrize {
+  id: number;
+  label: string;
+  value: number;
+  color: string;
+}
+
+export interface WheelConfig {
+  ticketsPerReferral: number;
+  dailyFreeTickets: number;
+  prizes: WheelPrize[];
+}
+
+export interface DrawRecord {
+  id: string;
+  userId: string;
+  userName: string;
+  userPhone: string;
+  action: string;
+  prizeLabel: string;
+  prizeValue: number;
+  createdAt: string;
 }
 
 export interface InvestmentProduct {
@@ -131,3 +158,33 @@ export interface WithdrawalProof {
   isVerified: boolean;
   status: 'pending' | 'approved' | 'rejected';
 }
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  imageUrl?: string | null;
+  createdAt: string;
+  isNew?: boolean;
+}
+
+export interface FaqItem {
+  id: string;
+  question: string;
+  answer: string;
+  category?: string;
+  order?: number;
+  createdAt: string;
+}
+
+export interface WellnessProduct {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  quantity: number;
+  status: 'disponible' | 'indisponible';
+  imageUrl?: string | null;
+  createdAt: string;
+}
+

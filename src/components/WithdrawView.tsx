@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { ArrowLeft, CreditCard, History, X, PlusCircle, Edit3, ShieldCheck, LockKeyhole } from 'lucide-react';
+import { ArrowLeft, CreditCard, History, X, PlusCircle, Edit3, ShieldCheck, LockKeyhole, Globe, Smartphone } from 'lucide-react';
 import { User, WithdrawalRequest } from '../types';
 import { useApp } from '../context/AppContext';
 import { WithdrawalHistoryView } from './WithdrawalHistoryView';
+import { ALLOWED_COUNTRIES } from '../constants/countries';
 
 interface WithdrawViewProps {
   currentUser: User;
@@ -10,6 +11,7 @@ interface WithdrawViewProps {
   onRequestWithdrawal: (amount: number, network: any, accountNumber: string) => { success: boolean; error?: string };
   onBack: () => void;
   onShowToast: (status: 'success' | 'err', text: string) => void;
+  onOpenLinkCard?: () => void;
 }
 
 export const WithdrawView: React.FC<WithdrawViewProps> = ({
@@ -17,21 +19,39 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
   withdrawals,
   onRequestWithdrawal,
   onBack,
-  onShowToast
+  onShowToast,
+  onOpenLinkCard
 }) => {
   const { saveWithdrawalAccount } = useApp();
 
   const [wthAmount, setWthAmount] = useState<string>('');
+  const [wthPin, setWthPin] = useState<string>('');
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [showBindModal, setShowBindModal] = useState<boolean>(false);
 
   // Form states for account binding
+  const defaultCountryCode = currentUser.withdrawalCountry || 'CI';
+  const [bindCountryCode, setBindCountryCode] = useState<string>(defaultCountryCode);
+  
+  const currentBindCountry = ALLOWED_COUNTRIES.find(c => c.code === bindCountryCode) || ALLOWED_COUNTRIES[0];
+  const [bindNetwork, setBindNetwork] = useState<string>(
+    currentUser.withdrawalNetwork || currentBindCountry.networks[0]
+  );
+  
   const [bindName, setBindName] = useState<string>(currentUser.withdrawalAccountName || currentUser.name || '');
   const [bindPhone, setBindPhone] = useState<string>(currentUser.withdrawalAccountNumber || currentUser.phone || '');
   const [bindPin, setBindPin] = useState<string>('');
 
   // User withdrawals history
   const myWithdrawals = withdrawals.filter(w => w.userId === currentUser.id);
+
+  const handleCountrySelect = (code: string) => {
+    setBindCountryCode(code);
+    const country = ALLOWED_COUNTRIES.find(c => c.code === code);
+    if (country && country.networks.length > 0) {
+      setBindNetwork(country.networks[0]);
+    }
+  };
 
   const handleSaveAccount = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +68,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
       return;
     }
 
-    const res = saveWithdrawalAccount(bindName, bindPhone, bindPin);
+    const res = saveWithdrawalAccount(bindName, bindPhone, bindPin, bindNetwork, bindCountryCode);
     if (res.success) {
       onShowToast('success', "Compte de retrait enregistré avec succès !");
       setShowBindModal(false);
@@ -65,7 +85,11 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
     const targetAccountNum = currentUser.withdrawalAccountNumber || currentUser.phone;
     if (!currentUser.withdrawalAccountNumber && !currentUser.withdrawalAccountName) {
       onShowToast('err', "Veuillez d'abord enregistrer un compte de retrait.");
-      setShowBindModal(true);
+      if (onOpenLinkCard) {
+        onOpenLinkCard();
+      } else {
+        setShowBindModal(true);
+      }
       return;
     }
 
@@ -86,6 +110,33 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
       return;
     }
 
+    // 2. VERIFICATION DU CODE PIN OBLIGATOIRE
+    if (!wthPin || !wthPin.trim()) {
+      onShowToast('err', "Le code PIN est obligatoire pour valider votre demande de retrait.");
+      return;
+    }
+
+    const enteredPinHash = btoa(wthPin.trim() + '_aura_sec_salt');
+    if (currentUser.withdrawalPinHash) {
+      if (enteredPinHash !== currentUser.withdrawalPinHash) {
+        onShowToast('err', "Code PIN incorrect. Veuillez vérifier votre code PIN secret de retrait.");
+        return;
+      }
+    } else {
+      // Si aucun code PIN n'a été pré-enregistré, vérifier qu'il fait au moins 4 chiffres et le sauvegarder
+      if (wthPin.trim().length < 4) {
+        onShowToast('err', "Le code PIN doit comporter au moins 4 chiffres.");
+        return;
+      }
+      saveWithdrawalAccount(
+        currentUser.withdrawalAccountName || currentUser.name,
+        currentUser.withdrawalAccountNumber || currentUser.phone,
+        wthPin.trim(),
+        currentUser.withdrawalNetwork,
+        currentUser.withdrawalCountry
+      );
+    }
+
     // Check 1 withdrawal per day limit
     const todayIso = new Date().toISOString().split('T')[0];
     const hasWithdrawnToday = myWithdrawals.some(w => w.createdAt.startsWith(todayIso));
@@ -94,11 +145,13 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
       return;
     }
 
-    const res = onRequestWithdrawal(amountNum, 'Mobile Money', targetAccountNum);
+    const targetNetwork = currentUser.withdrawalNetwork || bindNetwork || 'Mobile Money';
+    const res = onRequestWithdrawal(amountNum, targetNetwork, targetAccountNum);
 
     if (res.success) {
       onShowToast('success', "Demande de retrait transmise avec succès !");
       setWthAmount('');
+      setWthPin('');
     } else {
       onShowToast('err', res.error || "Une erreur est survenue lors de la demande de retrait.");
     }
@@ -122,12 +175,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
           Retirer
         </h1>
 
-        <button
-          onClick={() => setShowHistoryModal(true)}
-          className="text-xs sm:text-sm font-semibold text-slate-800 hover:text-amber-600 transition-colors cursor-pointer"
-        >
-          Enregistrer
-        </button>
+        <div className="w-9" />
       </div>
 
       {/* 2. Solde disponible & Section Compte de retrait */}
@@ -137,7 +185,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
             Solde disponible
           </span>
           <span className="text-base sm:text-lg font-black text-red-600 font-sans">
-            XAF {currentUser.balance.toLocaleString()}
+            XAF {currentUser.balance.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
           </span>
         </div>
 
@@ -150,20 +198,36 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
                   <CreditCard className="w-5 h-5 text-slate-950 stroke-[2.2]" />
                 </div>
                 <div>
-                  <div className="text-sm sm:text-base font-extrabold tracking-tight">
-                    {currentUser.withdrawalAccountName || currentUser.name}
+                  <div className="text-sm sm:text-base font-extrabold tracking-tight flex items-center gap-1.5">
+                    <span>{currentUser.withdrawalAccountName || currentUser.name}</span>
+                    {currentUser.withdrawalCountry && (
+                      <span className="text-xs bg-amber-950/15 px-1.5 py-0.5 rounded font-mono font-bold">
+                        {ALLOWED_COUNTRIES.find(c => c.code === currentUser.withdrawalCountry)?.flag || '🇨🇮'}
+                      </span>
+                    )}
                   </div>
-                  <div className="text-xs sm:text-sm font-mono font-bold text-slate-900">
-                    {currentUser.withdrawalAccountNumber || currentUser.phone}
+                  <div className="text-xs sm:text-sm font-mono font-bold text-slate-900 flex items-center gap-2">
+                    <span>{currentUser.withdrawalAccountNumber || currentUser.phone}</span>
+                    {currentUser.withdrawalNetwork && (
+                      <span className="bg-amber-950 text-amber-300 font-sans text-[10px] px-2 py-0.5 rounded-full font-extrabold">
+                        {currentUser.withdrawalNetwork}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
 
               <button
                 onClick={() => {
-                  setBindName(currentUser.withdrawalAccountName || currentUser.name || '');
-                  setBindPhone(currentUser.withdrawalAccountNumber || currentUser.phone || '');
-                  setShowBindModal(true);
+                  if (onOpenLinkCard) {
+                    onOpenLinkCard();
+                  } else {
+                    setBindName(currentUser.withdrawalAccountName || currentUser.name || '');
+                    setBindPhone(currentUser.withdrawalAccountNumber || currentUser.phone || '');
+                    if (currentUser.withdrawalCountry) setBindCountryCode(currentUser.withdrawalCountry);
+                    if (currentUser.withdrawalNetwork) setBindNetwork(currentUser.withdrawalNetwork);
+                    setShowBindModal(true);
+                  }
                 }}
                 className="text-[10px] font-bold bg-amber-950/10 hover:bg-amber-950/20 text-slate-950 px-2.5 py-1 rounded-lg flex items-center space-x-1 cursor-pointer transition-colors"
               >
@@ -172,8 +236,11 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
               </button>
             </div>
 
-            <div className="text-[11px] font-semibold text-amber-950/80 tracking-wide pt-1">
-              Compte de retrait
+            <div className="text-[11px] font-semibold text-amber-950/80 tracking-wide pt-1 flex items-center justify-between">
+              <span>Compte de retrait actif</span>
+              {currentUser.withdrawalNetwork && (
+                <span className="font-extrabold">{currentUser.withdrawalNetwork}</span>
+              )}
             </div>
           </div>
         ) : (
@@ -185,7 +252,13 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
               Enregistrez vos coordonnées pour recevoir vos gains directement.
             </p>
             <button
-              onClick={() => setShowBindModal(true)}
+              onClick={() => {
+                if (onOpenLinkCard) {
+                  onOpenLinkCard();
+                } else {
+                  setShowBindModal(true);
+                }
+              }}
               className="mt-1 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-extrabold px-4 py-2 rounded-xl shadow-xs transition-all inline-flex items-center space-x-1.5 cursor-pointer"
             >
               <PlusCircle className="w-4 h-4" />
@@ -203,9 +276,33 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
 
       {/* 3. Demande de retrait */}
       <div className="space-y-2.5 pt-1">
-        <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-          Demande de retrait
+        <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight flex items-center justify-between">
+          <span>Demande de retrait</span>
+          {isAccountLinked && (
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full font-mono">
+              Compte récepteur lié
+            </span>
+          )}
         </h2>
+
+        {/* Informative destination badge if account is linked */}
+        {isAccountLinked && (
+          <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-3 flex items-center justify-between text-xs text-slate-800 shadow-2xs">
+            <div className="flex items-center space-x-2.5 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-900 flex items-center justify-center shrink-0">
+                <CreditCard className="w-4 h-4 stroke-[2.2]" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] text-amber-900 font-bold uppercase font-mono block">
+                  Compte de destination
+                </span>
+                <span className="font-extrabold text-slate-900 text-xs truncate block">
+                  {currentUser.withdrawalNetwork || 'Mobile Money / Carte'} • {currentUser.withdrawalAccountNumber} ({currentUser.withdrawalAccountName})
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleWithdrawSubmit} className="space-y-3.5">
           {/* Champ de saisie avec XAF à gauche */}
@@ -224,12 +321,30 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
             />
           </div>
 
+          {/* Champ Code PIN Obligatoire (masqué / jamais en clair) */}
+          <div className="bg-white rounded-2xl p-3 sm:p-3.5 flex items-center space-x-3 shadow-xs border border-slate-200/90 focus-within:border-amber-500 transition-colors">
+            <div className="flex items-center space-x-1.5 text-slate-900 font-black text-xs sm:text-sm pr-3 border-r border-slate-200 select-none shrink-0">
+              <LockKeyhole className="w-4 h-4 text-emerald-600 stroke-[2.2]" />
+              <span>PIN</span>
+            </div>
+            <input
+              type="password"
+              required
+              maxLength={6}
+              value={wthPin}
+              onChange={(e) => setWthPin(e.target.value)}
+              placeholder="Code PIN de retrait obligatoire (ex: 1234)"
+              className="w-full text-slate-900 font-mono font-bold text-xs sm:text-sm outline-none bg-transparent placeholder:text-slate-400 placeholder:font-sans placeholder:font-normal"
+            />
+          </div>
+
           {/* Grand bouton orange/jaune Retrait */}
           <button
             type="submit"
-            className="w-full py-3.5 bg-gradient-to-r from-[#FFC233] via-[#FFAF1A] to-[#FF9914] text-slate-950 font-extrabold text-sm sm:text-base rounded-full shadow-xs hover:brightness-105 active:scale-[0.99] transition-all cursor-pointer"
+            className="w-full py-3.5 bg-gradient-to-r from-[#FFC233] via-[#FFAF1A] to-[#FF9914] text-slate-950 font-extrabold text-sm sm:text-base rounded-full shadow-xs hover:brightness-105 active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center space-x-2"
           >
-            Retrait
+            <LockKeyhole className="w-4 h-4 stroke-[2.5]" />
+            <span>Valider le Retrait</span>
           </button>
         </form>
       </div>
@@ -273,9 +388,62 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
             </div>
 
             <form onSubmit={handleSaveAccount} className="space-y-3.5 text-xs sm:text-sm">
+              {/* Choix du pays */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Nom complet
+                  Pays de votre compte Mobile Money
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                  {ALLOWED_COUNTRIES.map((c) => {
+                    const isSel = bindCountryCode === c.code;
+                    return (
+                      <button
+                        key={c.code}
+                        type="button"
+                        onClick={() => handleCountrySelect(c.code)}
+                        className={`flex items-center space-x-1.5 px-2.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                          isSel
+                            ? 'bg-amber-100 border-amber-500 text-slate-950 font-black'
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span className="text-sm">{c.flag}</span>
+                        <span className="truncate">{c.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Choix du réseau Mobile Money pour ce pays */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Moyen de réseau ({currentBindCountry.name})
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {currentBindCountry.networks.map((net) => {
+                    const isSel = bindNetwork === net;
+                    return (
+                      <button
+                        key={net}
+                        type="button"
+                        onClick={() => setBindNetwork(net)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer border ${
+                          isSel
+                            ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-xs'
+                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        {net}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Nom complet (Titulaire du compte)
                 </label>
                 <input
                   type="text"
@@ -289,16 +457,19 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Numéro de retrait / Mobile Money
+                  Numéro de retrait Mobile Money ({bindNetwork})
                 </label>
-                <input
-                  type="tel"
-                  value={bindPhone}
-                  onChange={(e) => setBindPhone(e.target.value)}
-                  placeholder="Ex: 641248278"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-mono font-bold outline-none focus:border-amber-500"
-                  required
-                />
+                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 focus-within:border-amber-500">
+                  <span className="text-xs font-bold font-mono text-amber-600 mr-2 shrink-0">{currentBindCountry.prefix}</span>
+                  <input
+                    type="tel"
+                    value={bindPhone}
+                    onChange={(e) => setBindPhone(e.target.value)}
+                    placeholder="Ex: 0701020304"
+                    className="w-full bg-transparent text-slate-900 font-mono font-bold outline-none text-xs sm:text-sm"
+                    required
+                  />
+                </div>
               </div>
 
               <div>

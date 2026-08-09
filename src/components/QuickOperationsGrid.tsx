@@ -1,5 +1,5 @@
 import React from 'react';
-import { CreditCard, ArrowUpRight, Award, Calendar, Bell } from 'lucide-react';
+import { CreditCard, ArrowUpRight, Award, Calendar, Bell, Headphones } from 'lucide-react';
 
 interface QuickOperationsGridProps {
   onRecharger: () => void;
@@ -7,6 +7,9 @@ interface QuickOperationsGridProps {
   onCertificat: () => void;
   onPointage: () => void;
   onAnnonces: () => void;
+  onChat?: () => void;
+  hasUnreadAnnouncements?: boolean;
+  unreadChatCount?: number;
 }
 
 export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
@@ -14,7 +17,10 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
   onRetirer,
   onCertificat,
   onPointage,
-  onAnnonces
+  onAnnonces,
+  onChat,
+  hasUnreadAnnouncements,
+  unreadChatCount
 }) => {
   const operations = [
     {
@@ -50,7 +56,8 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
       label: 'Annonces',
       icon: Bell,
       color: 'bg-blue-600 text-white shadow-blue-600/20',
-      action: onAnnonces
+      action: onAnnonces,
+      hasBadge: hasUnreadAnnouncements
     }
   ];
 
@@ -62,11 +69,11 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
           OPÉRATIONS RAPIDES
         </h3>
         <span className="text-[10px] font-bold uppercase font-mono px-2.5 py-0.5 rounded-full text-amber-800 bg-amber-100">
-          AURA INVEST
+          NUTRIEN
         </span>
       </div>
 
-      {/* Grid of 5 operations */}
+      {/* Grid of operations */}
       <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
         {operations.map((op) => {
           const Icon = op.icon;
@@ -74,12 +81,15 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
             <button
               key={op.id}
               onClick={op.action}
-              className="flex flex-col items-center justify-center space-y-2 p-2 sm:p-3.5 bg-white border border-slate-200/90 rounded-2xl shadow-2xs hover:shadow-md hover:border-amber-400 transition-all cursor-pointer group min-w-0"
+              className="flex flex-col items-center justify-center space-y-1.5 p-1 sm:p-2 bg-transparent border-0 shadow-none active:scale-95 transition-all cursor-pointer group min-w-0"
             >
               <div
-                className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl ${op.color} flex items-center justify-center group-hover:scale-110 transition-all shadow-xs shrink-0`}
+                className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl ${op.color} flex items-center justify-center group-hover:scale-110 transition-all shadow-xs shrink-0 relative`}
               >
-                <Icon className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.25]" />
+                <Icon className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.25]" />
+                {op.hasBadge && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 w-3.5 h-3.5 rounded-full border-2 border-white animate-pulse" />
+                )}
               </div>
               <span className="text-[11px] sm:text-xs md:text-sm font-black text-slate-900 group-hover:text-amber-700 transition-colors text-center leading-tight whitespace-nowrap overflow-visible">
                 {op.label}

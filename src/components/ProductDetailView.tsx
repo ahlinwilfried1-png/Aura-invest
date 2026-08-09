@@ -59,9 +59,12 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
       {/* 1. TOP HERO IMAGE HEADER MATCHING REFERENCE IMAGE */}
       <div className="relative w-full h-64 sm:h-72 rounded-3xl overflow-hidden shadow-sm bg-slate-900">
         <img
-          src={product.image || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80'}
+          src={product.image && product.image.trim() !== '' ? product.image : 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80'}
           alt={product.name}
           className="w-full h-full object-cover object-center brightness-95"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80';
+          }}
         />
         
         {/* Top Gradient Overlay */}
@@ -92,44 +95,44 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
         </div>
       </div>
 
-      {/* 2. FIRST DARK CONTAINER: PRICE & TOTAL REVENUE (EXACT REF MATCH) */}
-      <div className="bg-[#1f2329] rounded-2xl p-4 sm:p-5 text-white shadow-sm flex items-center justify-around border border-slate-800">
+      {/* 2. FIRST CONTAINER: PRICE & TOTAL REVENUE */}
+      <div className="py-2 px-4 text-slate-900 flex items-center justify-around">
         <div className="text-center space-y-0.5">
-          <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-white">
+          <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900">
             {product.price.toLocaleString()}
           </div>
-          <div className="text-xs font-semibold text-slate-400">
+          <div className="text-xs font-semibold text-slate-500">
             Prix(XAF)
           </div>
         </div>
 
-        <div className="h-10 w-px bg-slate-700/80" />
+        <div className="h-10 w-px bg-slate-300/80" />
 
         <div className="text-center space-y-0.5">
-          <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-red-500">
+          <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-red-600">
             {product.totalGain.toLocaleString()}
           </div>
-          <div className="text-xs font-semibold text-slate-400">
+          <div className="text-xs font-semibold text-slate-500">
             Revenu total(XAF)
           </div>
         </div>
       </div>
 
-      {/* 3. SECOND CARD: CYCLE, QUANTITY, DAILY REVENUE (EXACT REF MATCH) */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-2xs border border-slate-200/80 space-y-3.5">
-        <div className="flex items-center justify-between text-xs sm:text-sm font-medium border-b border-slate-100 pb-2.5">
+      {/* 3. SECOND SECTION: CYCLE, QUANTITY, DAILY REVENUE (NO BOXES/BORDERS) */}
+      <div className="py-2 px-2 space-y-3">
+        <div className="flex items-center justify-between text-xs sm:text-sm font-medium py-1">
           <span className="text-slate-800 font-semibold">Cycle d'investissement(Jours):</span>
           <span className="font-extrabold text-slate-900 font-mono text-sm sm:text-base">
             {product.duration}
           </span>
         </div>
 
-        <div className="flex items-center justify-between text-xs sm:text-sm font-medium border-b border-slate-100 pb-2.5">
+        <div className="flex items-center justify-between text-xs sm:text-sm font-medium py-1">
           <span className="text-slate-800 font-semibold">Quantité d'achat</span>
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs flex items-center justify-center transition-all cursor-pointer"
+              className="w-7 h-7 rounded-lg bg-slate-200/80 hover:bg-slate-300 text-slate-800 font-extrabold text-xs flex items-center justify-center transition-all cursor-pointer"
             >
               -
             </button>
@@ -138,14 +141,14 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
             </span>
             <button
               onClick={() => setQuantity(quantity + 1)}
-              className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs flex items-center justify-center transition-all cursor-pointer"
+              className="w-7 h-7 rounded-lg bg-slate-200/80 hover:bg-slate-300 text-slate-800 font-extrabold text-xs flex items-center justify-center transition-all cursor-pointer"
             >
               +
             </button>
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs sm:text-sm font-medium pt-0.5">
+        <div className="flex items-center justify-between text-xs sm:text-sm font-medium py-1">
           <span className="text-slate-800 font-semibold">Revenu quotidien</span>
           <span className="font-extrabold text-slate-900 font-mono text-sm sm:text-base">
             {totalDailyGain.toLocaleString()}XAF
@@ -153,12 +156,16 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
         </div>
       </div>
 
-      {/* 4. THIRD CARD: PRODUCT EMOJI SUMMARY & DETAILS (EXACT REF MATCH) */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-2xs border border-slate-200/80 space-y-3">
-        <div className="space-y-2 text-xs sm:text-sm font-bold text-slate-900 leading-relaxed font-mono">
+      {/* 4. THIRD SECTION: PRODUCT EMOJI SUMMARY & DETAILS (TEXT LAID DIRECTLY ON BACKGROUND) */}
+      <div className="py-2 px-2 space-y-4">
+        <div className="space-y-2.5 text-sm sm:text-base font-bold text-slate-900 leading-relaxed font-sans">
+          <div className="flex items-center space-x-2">
+            <span>🌾✨</span>
+            <span>{product.name} — Avancez vers la réalisation de vos rêves !</span>
+          </div>
           <div className="flex items-center space-x-2">
             <span>💰</span>
-            <span>Prix :{totalPrice.toLocaleString()}XAF</span>
+            <span>Prix : {totalPrice.toLocaleString()} XAF</span>
           </div>
           <div className="flex items-center space-x-2">
             <span>📅</span>
@@ -166,21 +173,33 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
           </div>
           <div className="flex items-center space-x-2">
             <span>📈</span>
-            <span>Revenu journalier : {totalDailyGain.toLocaleString()}XAF</span>
+            <span>Revenu journalier : {totalDailyGain.toLocaleString()} XAF</span>
           </div>
           <div className="flex items-center space-x-2">
             <span>🏆</span>
-            <span>Revenu total :{totalGain.toLocaleString()}XAF</span>
+            <span>Revenu total : {totalGain.toLocaleString()} XAF</span>
           </div>
         </div>
 
-        <div className="border-t border-slate-100 pt-3 space-y-1.5">
-          <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wide font-mono flex items-center space-x-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>Résumé & Garanties du Produit</span>
-          </h4>
-          <p className="text-xs text-slate-600 leading-relaxed font-medium">
-            {product.description || `Produit d'investissement officiel de Nutrien Agriculture. Rendement quotidien versé automatiquement toutes les 24 heures. Annulation sans frais à l'échéance du cycle.`}
+        <div className="pt-2 space-y-3 text-slate-800 font-medium text-xs sm:text-sm leading-relaxed">
+          <p>
+            Chaque effort est un pas vers le succès : chaque acte de persévérance renforce votre potentiel pour l'avenir.
+          </p>
+
+          <p>
+            {product.description || `Chez Nutrien, nous croyons que les opportunités appartiennent à ceux qui osent agir. Grâce à une participation active, à l'apprentissage continu et au partage d'expériences, vous pouvez non seulement vous épanouir personnellement, mais aussi grandir aux côtés de votre équipe pour bâtir ensemble un avenir meilleur.`}
+          </p>
+
+          <p className="font-bold text-slate-900 pt-1">
+            🌟 Le succès n'attend pas les hésitants ; il appartient à ceux qui ont le courage de faire le premier pas.
+          </p>
+
+          <p>
+            Avançons main dans la main : restons confiants, déterminés à atteindre nos objectifs et créateurs de valeur.
+          </p>
+
+          <p className="font-bold text-slate-900 pt-1">
+            💪 Rejoignez Nutrien et ouvrez la voie à un avenir brillant !
           </p>
         </div>
       </div>

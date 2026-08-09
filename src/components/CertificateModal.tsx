@@ -29,7 +29,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ isOpen, onCl
             CERTIFICAT D'AUTHENTICITÉ & DE CONFORMITÉ
           </span>
           <h3 className="text-xl font-black text-slate-900 tracking-tight">
-            AURA INVEST & NUTRIEN AG SOLUTIONS
+            NUTRIEN AG SOLUTIONS
           </h3>
         </div>
 
@@ -37,11 +37,11 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ isOpen, onCl
         <div className="space-y-4 text-xs sm:text-sm text-slate-700 font-sans relative py-1">
           <div className="flex items-center space-x-2 text-emerald-700 font-bold">
             <ShieldCheck className="w-5 h-5 text-emerald-600" />
-            <span>Licence Numérique Fintech Certifiée #AURA-2026-8890</span>
+            <span>Licence Numérique Fintech Certifiée #NUTRIEN-2026-8890</span>
           </div>
 
           <p className="leading-relaxed text-slate-800">
-            Ce document officiel atteste que la plateforme d'investissement <strong className="text-amber-800">AURA INVEST / Nutrien Ag Solutions</strong> est dûment agréée et enregistrée pour la distribution de produits de bien-être et de gestion d'actifs numériques.
+            Ce document officiel atteste que la plateforme d'investissement <strong className="text-amber-800">Nutrien Ag Solutions</strong> est dûment agréée et enregistrée pour la distribution de produits de bien-être et de gestion d'actifs numériques.
           </p>
 
           <div className="space-y-2.5 font-mono text-[11px] pt-2">

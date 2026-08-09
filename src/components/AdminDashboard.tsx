@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { InvestmentProduct, User, DepositRequest, WithdrawalRequest, SupportTicket } from '../types';
+import { InvestmentProduct, User, DepositRequest, WithdrawalRequest, SupportTicket, FaqItem } from '../types';
 import { 
   LayoutDashboard, 
   ArrowUpRight, 
@@ -29,7 +29,15 @@ import {
   ShieldCheck,
   Wallet,
   AlertCircle,
-  Lock
+  Lock,
+  RotateCw,
+  Ticket,
+  MessageCircle,
+  ArrowUp,
+  ArrowDown,
+  Power,
+  EyeOff,
+  HelpCircle
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -61,13 +69,185 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     deleteUserInvestment,
     sendGlobalNotification,
     replyToTicket,
-    generateBonusCode
+    sendAdminDirectMessage,
+    generateBonusCode,
+    drawRecords,
+    wheelConfig,
+    updateWheelConfig,
+    deleteDrawRecord,
+    addTicketsToUser,
+    announcements,
+    addAnnouncement,
+    deleteAnnouncement,
+    faqs,
+    addFaq,
+    updateFaq,
+    deleteFaq,
+    wellnessProducts,
+    addOrUpdateWellnessProduct,
+    deleteWellnessProduct
   } = useApp();
+
+  // New Announcement form state
+  const [newAnnTitle, setNewAnnTitle] = useState('');
+  const [newAnnContent, setNewAnnContent] = useState('');
+  const [newAnnImageUrl, setNewAnnImageUrl] = useState('');
+
+  const handleAnnImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('error', "La taille de la photo ne doit pas dépasser 5 Mo.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewAnnImageUrl(reader.result as string);
+        showToast('success', "Photo sélectionnée avec succès !");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePublishAnnouncement = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAnnTitle.trim() || !newAnnContent.trim()) {
+      showToast('error', "Veuillez saisir au moins un titre et le contenu de l'annonce.");
+      return;
+    }
+    addAnnouncement({
+      title: newAnnTitle,
+      content: newAnnContent,
+      imageUrl: newAnnImageUrl
+    });
+    setNewAnnTitle('');
+    setNewAnnContent('');
+    setNewAnnImageUrl('');
+    showToast('success', "Annonce publiée avec succès !");
+  };
+
+  // Wellness Products Admin State
+  const [editingWellnessId, setEditingWellnessId] = useState<string | null>(null);
+  const [wellnessName, setWellnessName] = useState('');
+  const [wellnessDescription, setWellnessDescription] = useState('');
+  const [wellnessPrice, setWellnessPrice] = useState<number>(30000);
+  const [wellnessQuantity, setWellnessQuantity] = useState<number>(10);
+  const [wellnessStatus, setWellnessStatus] = useState<'disponible' | 'indisponible'>('disponible');
+  const [wellnessImageUrl, setWellnessImageUrl] = useState('');
+
+  const handleWellnessImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('error', "La photo ne doit pas dépasser 5 Mo.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setWellnessImageUrl(reader.result as string);
+        showToast('success', "Photo du produit de bien-être chargée !");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveWellnessProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!wellnessName.trim() || !wellnessDescription.trim()) {
+      showToast('error', "Veuillez renseigner le nom et la description du produit.");
+      return;
+    }
+    if (!wellnessImageUrl) {
+      showToast('error', "Veuillez ajouter une photo du produit.");
+      return;
+    }
+    addOrUpdateWellnessProduct({
+      id: editingWellnessId || undefined,
+      name: wellnessName.trim(),
+      description: wellnessDescription.trim(),
+      price: Number(wellnessPrice) || 0,
+      quantity: Number(wellnessQuantity) || 0,
+      status: wellnessStatus,
+      imageUrl: wellnessImageUrl,
+      createdAt: new Date().toISOString()
+    });
+
+    showToast('success', editingWellnessId ? "Produit de bien-être mis à jour !" : "Nouveau produit de bien-être ajouté !");
+    handleCancelWellnessEdit();
+  };
+
+  const handleEditWellnessProduct = (product: any) => {
+    setEditingWellnessId(product.id);
+    setWellnessName(product.name);
+    setWellnessDescription(product.description);
+    setWellnessPrice(product.price);
+    setWellnessQuantity(product.quantity);
+    setWellnessStatus(product.status);
+    setWellnessImageUrl(product.imageUrl || '');
+  };
+
+  const handleCancelWellnessEdit = () => {
+    setEditingWellnessId(null);
+    setWellnessName('');
+    setWellnessDescription('');
+    setWellnessPrice(30000);
+    setWellnessQuantity(10);
+    setWellnessStatus('disponible');
+    setWellnessImageUrl('');
+  };
 
   // Navigation tab state
   const [activeAdminTab, setActiveAdminTab] = useState<
-    'dashboard' | 'deposits' | 'withdrawals' | 'proofs' | 'users' | 'products' | 'paid_products' | 'support' | 'announcements'
+    'dashboard' | 'deposits' | 'withdrawals' | 'proofs' | 'users' | 'products' | 'paid_products' | 'support' | 'announcements' | 'wellness' | 'wheel' | 'faq'
   >('dashboard');
+
+  // FAQ Admin States
+  const [newFaqQuestion, setNewFaqQuestion] = useState('');
+  const [newFaqAnswer, setNewFaqAnswer] = useState('');
+  const [newFaqCategory, setNewFaqCategory] = useState('Général');
+  const [editingFaqId, setEditingFaqId] = useState<string | null>(null);
+  const [faqSearch, setFaqSearch] = useState('');
+
+  const handleSaveFaq = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFaqQuestion.trim() || !newFaqAnswer.trim()) {
+      showToast('error', "Veuillez remplir la question et la réponse.");
+      return;
+    }
+    if (editingFaqId) {
+      updateFaq(editingFaqId, newFaqQuestion, newFaqAnswer, newFaqCategory);
+      showToast('success', "Question mise à jour avec succès !");
+      setEditingFaqId(null);
+    } else {
+      addFaq(newFaqQuestion, newFaqAnswer, newFaqCategory);
+      showToast('success', "Nouvelle question FAQ ajoutée !");
+    }
+    setNewFaqQuestion('');
+    setNewFaqAnswer('');
+    setNewFaqCategory('Général');
+  };
+
+  const handleEditFaq = (faq: FaqItem) => {
+    setEditingFaqId(faq.id);
+    setNewFaqQuestion(faq.question);
+    setNewFaqAnswer(faq.answer);
+    setNewFaqCategory(faq.category || 'Général');
+  };
+
+  const handleCancelEditFaq = () => {
+    setEditingFaqId(null);
+    setNewFaqQuestion('');
+    setNewFaqAnswer('');
+    setNewFaqCategory('Général');
+  };
+
+  // Wheel Admin States
+  const [ticketsPerRefInput, setTicketsPerRefInput] = useState<number>(wheelConfig.ticketsPerReferral || 1);
+  const [newPrizeLabel, setNewPrizeLabel] = useState('');
+  const [newPrizeValue, setNewPrizeValue] = useState<number>(500);
+  const [manualTicketUserId, setManualTicketUserId] = useState('');
+  const [manualTicketCount, setManualTicketCount] = useState<number>(1);
+  const [drawSearch, setDrawSearch] = useState('');
 
   // Proof filter states
   const [proofFilter, setProofFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
@@ -90,6 +270,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   const [investmentToDelete, setInvestmentToDelete] = useState<any | null>(null);
 
   const [ticketFilter, setTicketFilter] = useState<'all' | 'open' | 'closed'>('all');
+  const [selectedChatUserId, setSelectedChatUserId] = useState<string | null>(null);
+  const [chatMessageText, setChatMessageText] = useState<string>('');
+  const [chatSearch, setChatSearch] = useState<string>('');
 
   // Toast Feedback State
   const [toast, setToast] = useState<{ status: 'success' | 'error'; text: string } | null>(null);
@@ -223,12 +406,55 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     showToast('success', editingProduct ? 'Produit mis à jour avec succès !' : 'Nouveau produit créé avec succès !');
   };
 
+  // Toggle Product Active / Inactive Status
+  const handleToggleProductStatus = (prod: InvestmentProduct) => {
+    const nextStatus = !(prod.isActive !== false);
+    addOrUpdateProduct({
+      ...prod,
+      isActive: nextStatus
+    });
+    showToast('success', nextStatus ? `Produit "${prod.name}" activé` : `Produit "${prod.name}" désactivé`);
+  };
+
+  // Move Product Order Up / Down
+  const handleMoveProductOrder = (prod: InvestmentProduct, direction: 'up' | 'down') => {
+    const sorted = [...products].sort((a, b) => (a.order || 99) - (b.order || 99));
+    const index = sorted.findIndex(p => p.id === prod.id);
+    if (index === -1) return;
+
+    if (direction === 'up' && index > 0) {
+      const prevProd = sorted[index - 1];
+      const currentOrder = prod.order || (index + 1);
+      const prevOrder = prevProd.order || index;
+      
+      addOrUpdateProduct({ ...prod, order: prevOrder });
+      addOrUpdateProduct({ ...prevProd, order: currentOrder });
+      showToast('success', `Ordre de "${prod.name}" déplacé vers le haut`);
+    } else if (direction === 'down' && index < sorted.length - 1) {
+      const nextProd = sorted[index + 1];
+      const currentOrder = prod.order || (index + 1);
+      const nextOrder = nextProd.order || (index + 2);
+      
+      addOrUpdateProduct({ ...prod, order: nextOrder });
+      addOrUpdateProduct({ ...nextProd, order: currentOrder });
+      showToast('success', `Ordre de "${prod.name}" déplacé vers le bas`);
+    }
+  };
+
   // Balance adjustment handler
   const handleApplyBalanceAdjust = () => {
-    if (!selectedUserForBalance || balanceAdjustAmount <= 0) return;
-    const finalChange = balanceAdjustType === 'add' ? balanceAdjustAmount : -balanceAdjustAmount;
+    if (!selectedUserForBalance) return;
+    const absAmount = Math.abs(Number(balanceAdjustAmount));
+    if (isNaN(absAmount) || absAmount <= 0) {
+      showToast('error', 'Veuillez saisir un montant valide supérieur à 0.');
+      return;
+    }
+    const finalChange = balanceAdjustType === 'add' ? absAmount : -absAmount;
     updateUserBalance(selectedUserForBalance.id, finalChange);
-    showToast('success', `Solde de ${selectedUserForBalance.name} ajusté (${finalChange > 0 ? '+' : ''}${finalChange.toLocaleString()} FCFA).`);
+    showToast(
+      'success', 
+      `Solde de ${selectedUserForBalance.name} ${finalChange > 0 ? 'crédité (+)' : 'déduit (-)'} de ${absAmount.toLocaleString()} FCFA avec succès !`
+    );
     setSelectedUserForBalance(null);
   };
 
@@ -311,6 +537,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     if (ticketFilter === 'closed') return t.status === 'closed';
     return true;
   });
+
+  // Per-user chat thread helpers
+  const allUserIdsInTickets: string[] = Array.from(new Set(tickets.map(t => t.userId)));
+  const existingUserMap = new Map(users.map(u => [u.id, u]));
+
+  const combinedChatUsers = [...users.filter(u => u.role !== 'admin')];
+  allUserIdsInTickets.forEach(uId => {
+    if (uId && !existingUserMap.has(uId)) {
+      const sampleTicket = tickets.find(t => t.userId === uId);
+      combinedChatUsers.push({
+        id: uId,
+        name: sampleTicket?.userName || 'Client ' + uId.slice(0, 5),
+        phone: 'Non renseigné',
+        balance: 0,
+        dailyEarnings: 0,
+        totalEarnings: 0,
+        vipLevel: 0,
+        isBlocked: false,
+        createdAt: sampleTicket?.createdAt || new Date().toISOString(),
+        role: 'user',
+        referralCode: 'REF' + uId.slice(0, 4)
+      });
+    }
+  });
+
+  const chatUserList = combinedChatUsers.filter(u => {
+    if (!chatSearch.trim()) return true;
+    const q = chatSearch.toLowerCase();
+    return u.name.toLowerCase().includes(q) || u.phone.includes(q);
+  }).sort((a, b) => {
+    const aTickets = tickets.filter(t => t.userId === a.id);
+    const bTickets = tickets.filter(t => t.userId === b.id);
+    const aUnread = aTickets.some(t => t.status === 'open');
+    const bUnread = bTickets.some(t => t.status === 'open');
+    if (aUnread && !bUnread) return -1;
+    if (!aUnread && bUnread) return 1;
+
+    const aLatest = aTickets.reduce((max, t) => Math.max(max, new Date(t.createdAt).getTime()), 0);
+    const bLatest = bTickets.reduce((max, t) => Math.max(max, new Date(t.createdAt).getTime()), 0);
+    return bLatest - aLatest;
+  });
+
+  const selectedChatUser = combinedChatUsers.find(u => u.id === selectedChatUserId) || chatUserList[0] || null;
+
+  const selectedUserTickets = selectedChatUser
+    ? [...tickets].filter(t => t.userId === selectedChatUser.id).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    : [];
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col font-sans pb-16">
@@ -491,6 +764,45 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
             >
               <Megaphone className="w-4 h-4" />
               <span>Gestion des annonces</span>
+            </button>
+
+            <button
+              onClick={() => setActiveAdminTab('wellness')}
+              className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+                activeAdminTab === 'wellness'
+                  ? 'bg-red-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>Gestion des produits de bien-être</span>
+              <span className="text-[10px] opacity-80 bg-slate-200 text-slate-800 px-1.5 py-0.2 rounded ml-1 font-mono">{wellnessProducts.length}</span>
+            </button>
+
+            <button
+              onClick={() => setActiveAdminTab('wheel')}
+              className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+                activeAdminTab === 'wheel'
+                  ? 'bg-red-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
+            >
+              <RotateCw className="w-4 h-4" />
+              <span>Tirage & Roue</span>
+              <span className="text-[10px] opacity-80 bg-slate-200 text-slate-800 px-1.5 py-0.2 rounded ml-1 font-mono">{drawRecords.length}</span>
+            </button>
+
+            <button
+              onClick={() => setActiveAdminTab('faq')}
+              className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+                activeAdminTab === 'faq'
+                  ? 'bg-red-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
+            >
+              <HelpCircle className="w-4 h-4" />
+              <span>Gestion FAQ</span>
+              <span className="text-[10px] opacity-80 bg-slate-200 text-slate-800 px-1.5 py-0.2 rounded ml-1 font-mono">{faqs.length}</span>
             </button>
 
           </div>
@@ -1286,99 +1598,180 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
         {activeAdminTab === 'products' && (
           <div className="space-y-6 animate-fadeIn">
             
-            <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h2 className="text-lg font-bold text-white flex items-center space-x-2">
-                  <Package className="w-5 h-5 text-amber-400" />
-                  <span>Catalogue des Produits d'Investissement</span>
-                </h2>
-                <p className="text-xs text-slate-400 mt-0.5">Gérez, créez ou modifiez les formules d'investissement visibles par les utilisateurs.</p>
+            {/* Header & Stats Banner */}
+            <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-white flex items-center space-x-2">
+                    <Package className="w-5 h-5 text-amber-400" />
+                    <span>Gestion des Produits de Bien-être</span>
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Ajoutez, modifiez, supprimez et réorganisez les offres de bien-être. Les mises à jour sont immédiatement appliquées sur le site.
+                  </p>
+                </div>
+
+                <button 
+                  onClick={() => handleOpenProductModal()}
+                  className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center space-x-2 shadow-md shadow-red-600/20 shrink-0"
+                >
+                  <Plus className="w-4 h-4 stroke-[3px]" />
+                  <span>Nouveau Produit de Bien-être</span>
+                </button>
               </div>
 
-              <button 
-                onClick={() => handleOpenProductModal()}
-                className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center space-x-2 shadow-md shadow-red-600/20"
-              >
-                <Plus className="w-4 h-4 stroke-[3px]" />
-                <span>Ajouter un Produit</span>
-              </button>
+              {/* Quick Stats bar */}
+              <div className="grid grid-cols-3 gap-3 pt-3 border-t border-slate-700/60 font-mono text-center">
+                <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/50">
+                  <span className="text-[10px] text-slate-400 block uppercase font-sans font-semibold">Total Produits</span>
+                  <span className="text-base sm:text-lg font-black text-white">{products.length}</span>
+                </div>
+                <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/50">
+                  <span className="text-[10px] text-slate-400 block uppercase font-sans font-semibold">Produits Actifs</span>
+                  <span className="text-base sm:text-lg font-black text-emerald-400">
+                    {products.filter(p => p.isActive !== false).length}
+                  </span>
+                </div>
+                <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/50">
+                  <span className="text-[10px] text-slate-400 block uppercase font-sans font-semibold">Inactifs / Masqués</span>
+                  <span className="text-base sm:text-lg font-black text-red-400">
+                    {products.filter(p => p.isActive === false).length}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {/* Product Cards Grid */}
+            {/* Product Cards Grid (Sorted by Order) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {products.map(prod => (
-                <div key={prod.id} className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 flex flex-col justify-between space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded uppercase">
-                          {prod.badge || 'VIP'}
-                        </span>
-                        <h4 className="text-base font-bold text-white leading-snug">{prod.name}</h4>
+              {[...products]
+                .sort((a, b) => (a.order || 99) - (b.order || 99))
+                .map((prod, idx, sortedArr) => (
+                  <div 
+                    key={prod.id} 
+                    className={`bg-slate-800/90 border rounded-2xl p-4 flex flex-col justify-between space-y-4 transition-all ${
+                      prod.isActive !== false ? 'border-slate-700/80' : 'border-red-900/50 opacity-75'
+                    }`}
+                  >
+                    <div className="space-y-3">
+                      {/* Top Row: Badge, Order & Status Pill */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center space-x-1.5">
+                          <span className="text-[10px] font-bold font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded uppercase">
+                            {prod.badge || 'VIP'}
+                          </span>
+                          <span className="text-[10px] font-bold font-mono bg-slate-900 text-slate-300 border border-slate-700 px-2 py-0.5 rounded">
+                            Ordre #{prod.order || idx + 1}
+                          </span>
+                        </div>
+
+                        {/* Clickable Quick Status Toggle */}
+                        <button
+                          onClick={() => handleToggleProductStatus(prod)}
+                          className={`text-[10px] font-bold font-mono uppercase px-2 py-0.5 rounded flex items-center space-x-1 cursor-pointer transition-all ${
+                            prod.isActive !== false 
+                              ? 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30' 
+                              : 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
+                          }`}
+                          title={prod.isActive !== false ? "Cliquer pour désactiver" : "Cliquer pour activer"}
+                        >
+                          <Power className="w-3 h-3" />
+                          <span>{prod.isActive !== false ? 'Actif' : 'Masqué'}</span>
+                        </button>
                       </div>
-                      <img 
-                        src={prod.image || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80'} 
-                        alt={prod.name}
-                        className="w-16 h-14 rounded-xl object-cover border border-slate-700 flex-shrink-0"
-                      />
+
+                      {/* Header Info + Image */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <h4 className="text-base font-bold text-white leading-snug truncate">{prod.name}</h4>
+                          {prod.description && (
+                            <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                              {prod.description}
+                            </p>
+                          )}
+                        </div>
+                        <img 
+                          src={prod.image || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80'} 
+                          alt={prod.name}
+                          onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80'; }}
+                          className="w-16 h-16 rounded-xl object-cover border border-slate-700 flex-shrink-0"
+                        />
+                      </div>
+
+                      {/* Specs Box */}
+                      <div className="bg-slate-900/90 p-3 rounded-xl grid grid-cols-2 gap-2 text-center text-xs">
+                        <div>
+                          <div className="text-slate-400 text-[10px]">Prix (FCFA)</div>
+                          <div className="font-bold text-white text-sm font-mono">{prod.price.toLocaleString()}</div>
+                        </div>
+                        <div>
+                          <div className="text-slate-400 text-[10px]">Durée Cycle</div>
+                          <div className="font-bold text-white text-sm font-mono">{prod.duration} Jours</div>
+                        </div>
+                        <div>
+                          <div className="text-slate-400 text-[10px]">Revenu / Jour</div>
+                          <div className="font-bold text-emerald-400 text-sm font-mono">+{prod.dailyGain.toLocaleString()} FCFA</div>
+                        </div>
+                        <div>
+                          <div className="text-slate-400 text-[10px]">Revenu Total</div>
+                          <div className="font-bold text-amber-400 text-sm font-mono">{prod.totalGain.toLocaleString()} FCFA</div>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="bg-slate-900/90 p-3 rounded-xl grid grid-cols-2 gap-2 text-center text-xs">
-                      <div>
-                        <div className="text-slate-400 text-[10px]">Prix(FCFA)</div>
-                        <div className="font-bold text-white text-sm font-mono">{prod.price.toLocaleString()}</div>
+                    {/* Footer Controls: Reorder + Edit + Delete */}
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-700/60">
+                      {/* Reorder Buttons */}
+                      <div className="flex items-center space-x-1">
+                        <button
+                          onClick={() => handleMoveProductOrder(prod, 'up')}
+                          disabled={idx === 0}
+                          className="bg-slate-900 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-900 text-slate-300 p-1.5 rounded-lg transition-all cursor-pointer"
+                          title="Déplacer vers le haut"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleMoveProductOrder(prod, 'down')}
+                          disabled={idx === sortedArr.length - 1}
+                          className="bg-slate-900 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-900 text-slate-300 p-1.5 rounded-lg transition-all cursor-pointer"
+                          title="Déplacer vers le bas"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                      <div>
-                        <div className="text-slate-400 text-[10px]">Durée</div>
-                        <div className="font-bold text-white text-sm font-mono">{prod.duration} Jours</div>
-                      </div>
-                      <div>
-                        <div className="text-slate-400 text-[10px]">Revenu / Jour</div>
-                        <div className="font-bold text-emerald-400 text-sm font-mono">+{prod.dailyGain.toLocaleString()}</div>
-                      </div>
-                      <div>
-                        <div className="text-slate-400 text-[10px]">Revenu Total</div>
-                        <div className="font-bold text-amber-400 text-sm font-mono">{prod.totalGain.toLocaleString()}</div>
+
+                      {/* Actions */}
+                      <div className="flex items-center space-x-2">
+                        <button 
+                          onClick={() => handleOpenProductModal(prod)}
+                          className="bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs px-3 py-1.5 rounded-lg cursor-pointer flex items-center space-x-1 transition-all"
+                          title="Modifier le produit"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>Modifier</span>
+                        </button>
+
+                        <button 
+                          onClick={() => {
+                            setDeleteConfirmation({
+                              isOpen: true,
+                              title: "Suppression du produit",
+                              message: `Êtes-vous sûr de vouloir supprimer définitivement le produit "${prod.name}" ?`,
+                              onConfirm: () => {
+                                deleteProduct(prod.id);
+                                showToast('success', "Produit supprimé avec succès.");
+                              }
+                            });
+                          }}
+                          className="bg-red-500/20 hover:bg-red-500/30 text-red-300 p-1.5 rounded-lg cursor-pointer transition-all"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-700/60">
-                    <span className={`text-[10px] font-bold font-mono uppercase px-2 py-0.5 rounded ${
-                      prod.isActive !== false ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'
-                    }`}>
-                      {prod.isActive !== false ? 'Actif' : 'Masqué'}
-                    </span>
-
-                    <div className="flex items-center space-x-2">
-                      <button 
-                        onClick={() => handleOpenProductModal(prod)}
-                        className="bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs p-2 rounded-lg cursor-pointer"
-                        title="Modifier"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setDeleteConfirmation({
-                            isOpen: true,
-                            title: "Suppression du produit",
-                            message: `Êtes-vous sûr de vouloir supprimer définitivement le produit "${prod.name}" ?`,
-                            onConfirm: () => {
-                              deleteProduct(prod.id);
-                              showToast('success', "Produit supprimé avec succès.");
-                            }
-                          });
-                        }}
-                        className="bg-red-500/20 hover:bg-red-500/30 text-red-300 p-2 rounded-lg cursor-pointer transition-all"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
 
           </div>
@@ -1577,114 +1970,276 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
           </div>
         )}
 
-        {/* 7. SUPPORT CLIENT */}
+        {/* 7. SUPPORT CLIENT - PANNEAU DE DISCUSSION SEPARE PAR UTILISATEUR */}
         {activeAdminTab === 'support' && (
-          <div className="space-y-6 animate-fadeIn">
-            
-            <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div>
-                  <h2 className="text-lg font-bold text-white flex items-center space-x-2">
-                    <Headphones className="w-5 h-5 text-blue-400" />
-                    <span>Support Client ({tickets.length} tickets)</span>
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">Répondez aux demandes d'assistance des utilisateurs en temps réel.</p>
-                </div>
+          <div className="space-y-4 animate-fadeIn">
+            {/* Header banner */}
+            <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center space-x-2">
+                  <Headphones className="w-5 h-5 text-blue-400" />
+                  <span>Messagerie & Support Client Dédié</span>
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Chaque utilisateur dispose de son propre panneau de discussion indépendant avec l'administrateur.
+                </p>
               </div>
-
-              <div className="flex space-x-2 bg-slate-900 p-1 rounded-xl w-fit">
-                <button 
-                  onClick={() => setTicketFilter('all')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-                    ticketFilter === 'all' ? 'bg-slate-800 text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  Tous ({tickets.length})
-                </button>
-                <button 
-                  onClick={() => setTicketFilter('open')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-                    ticketFilter === 'open' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  Ouverts ({openTicketsCount})
-                </button>
-                <button 
-                  onClick={() => setTicketFilter('closed')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-                    ticketFilter === 'closed' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  Résolus ({tickets.filter(t => t.status === 'closed').length})
-                </button>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs bg-blue-500/20 text-blue-300 font-bold px-3 py-1 rounded-full border border-blue-500/30">
+                  {tickets.filter(t => t.status === 'open').length} messages en attente
+                </span>
               </div>
             </div>
 
-            {/* Tickets List */}
-            <div className="space-y-3">
-              {filteredTickets.length === 0 ? (
-                <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl py-12 text-center text-slate-400 text-xs font-medium">
-                  Aucun ticket support correspondant.
+            {/* SPLIT PANELS: LIST OF USER DISCUSSIONS ON LEFT, CHAT ROOM ON RIGHT */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+              {/* LIST OF USERS (4 cols) */}
+              <div className="lg:col-span-4 bg-slate-800/90 border border-slate-700/80 rounded-2xl p-3 space-y-3">
+                {/* Search Input */}
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={chatSearch}
+                    onChange={(e) => setChatSearch(e.target.value)}
+                    placeholder="Rechercher un client par nom ou tél..."
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500"
+                  />
                 </div>
-              ) : (
-                filteredTickets.map(tkt => (
-                  <div key={tkt.id} className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-bold text-white text-base">{tkt.subject}</span>
-                          <span className={`text-[10px] font-bold font-mono uppercase px-2 py-0.5 rounded ${
-                            tkt.status === 'open' ? 'bg-blue-500/20 text-blue-300' : 'bg-emerald-500/20 text-emerald-300'
-                          }`}>
-                            {tkt.status === 'open' ? 'En attente' : 'Résolu'}
-                          </span>
+
+                {/* User Conversation List */}
+                <div className="space-y-1.5 max-h-[520px] overflow-y-auto pr-1">
+                  {chatUserList.length === 0 ? (
+                    <div className="text-center py-8 text-xs text-slate-400">
+                      Aucun client correspondant.
+                    </div>
+                  ) : (
+                    chatUserList.map(usr => {
+                      const userTickets = tickets.filter(t => t.userId === usr.id);
+                      const openCount = userTickets.filter(t => t.status === 'open').length;
+                      const isSelected = selectedChatUser?.id === usr.id;
+
+                      return (
+                        <button
+                          key={usr.id}
+                          type="button"
+                          onClick={() => setSelectedChatUserId(usr.id)}
+                          className={`w-full text-left p-2.5 rounded-xl transition-all cursor-pointer border flex items-center justify-between gap-2 ${
+                            isSelected
+                              ? 'bg-blue-600 text-white border-blue-500 shadow-md'
+                              : 'bg-slate-900/60 border-slate-700/60 text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-2.5 min-w-0">
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-xs shrink-0 ${
+                              isSelected ? 'bg-white text-blue-700' : 'bg-slate-700 text-amber-400'
+                            }`}>
+                              {usr.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-bold text-xs truncate">{usr.name}</div>
+                              <div className={`text-[11px] font-mono truncate ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
+                                {usr.phone}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            {openCount > 0 ? (
+                              <span className="bg-amber-400 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full inline-block animate-pulse">
+                                {openCount} non lu{openCount > 1 ? 's' : ''}
+                              </span>
+                            ) : (
+                              <span className={`text-[10px] font-mono ${isSelected ? 'text-blue-200' : 'text-slate-500'}`}>
+                                {userTickets.length} msg
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* INDIVIDUAL CHAT ROOM FOR SELECTED USER (8 cols) */}
+              <div className="lg:col-span-8 bg-slate-800/90 border border-slate-700/80 rounded-2xl flex flex-col h-[580px] overflow-hidden shadow-lg">
+                {selectedChatUser ? (
+                  <>
+                    {/* Chat Header */}
+                    <div className="bg-slate-900 px-4 py-3 border-b border-slate-700 flex items-center justify-between shrink-0">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-extrabold text-xs">
+                          {selectedChatUser.name.charAt(0).toUpperCase()}
                         </div>
-                        <div className="text-xs text-slate-400 mt-1">
-                          Client: <strong className="text-slate-200">{tkt.userName}</strong> • {new Date(tkt.createdAt).toLocaleString()}
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h3 className="font-bold text-white text-xs sm:text-sm">{selectedChatUser.name}</h3>
+                            <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-mono px-2 py-0.5 rounded-full">
+                              Discussion Active
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-400 font-mono flex items-center space-x-2">
+                            <span>Tél: {selectedChatUser.phone}</span>
+                            <span>• Solde: <strong className="text-emerald-400">{selectedChatUser.balance.toLocaleString()} FCFA</strong></span>
+                          </div>
                         </div>
                       </div>
 
-                      <button 
-                        onClick={() => setSelectedTicket(tkt)}
-                        className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center space-x-1"
+                      <div className="flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedUserForBalance(selectedChatUser)}
+                          className="text-xs px-2.5 py-1 rounded-lg font-bold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 flex items-center space-x-1 cursor-pointer transition-colors"
+                          title="Ajuster le solde"
+                        >
+                          <Wallet className="w-3.5 h-3.5" />
+                          <span>Solde</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleBlockUser(selectedChatUser.id)}
+                          className={`text-xs px-2.5 py-1 rounded-lg font-bold cursor-pointer transition-colors ${
+                            selectedChatUser.isBlocked
+                              ? 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30'
+                              : 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
+                          }`}
+                        >
+                          {selectedChatUser.isBlocked ? 'Débloquer' : 'Bloquer'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Chat Messages */}
+                    <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-slate-950/40">
+                      {selectedUserTickets.length === 0 ? (
+                        <div className="text-center py-12 space-y-2">
+                          <MessageCircle className="w-8 h-8 text-slate-600 mx-auto" />
+                          <p className="text-xs text-slate-400 font-medium">
+                            Aucun message enregistré pour {selectedChatUser.name}. Envoyez un message ci-dessous pour ouvrir la discussion.
+                          </p>
+                        </div>
+                      ) : (
+                        selectedUserTickets.map((tkt) => {
+                          const isAdminDirect = tkt.id.startsWith('tkt-adm-') || tkt.message === "Message direct du Support Client Nutrien.";
+
+                          return (
+                            <div key={tkt.id} className="space-y-2">
+                              {/* User Question */}
+                              {!isAdminDirect && (
+                                <div className="flex items-start space-x-2 max-w-xl">
+                                  <div className="w-7 h-7 rounded-full bg-slate-700 text-slate-200 text-[10px] font-extrabold flex items-center justify-center shrink-0 mt-1">
+                                    {selectedChatUser.name.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div className="bg-slate-800 border border-slate-700 rounded-2xl rounded-tl-none p-3 space-y-1.5 shadow-xs">
+                                    <div className="flex items-center justify-between gap-4 text-[10px]">
+                                      <span className="font-bold text-amber-400 uppercase tracking-wider">{tkt.subject}</span>
+                                      <span className="text-slate-400">{new Date(tkt.createdAt).toLocaleString('fr-FR')}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-100 leading-relaxed font-sans">{tkt.message}</p>
+
+                                    {tkt.imageUrl && (
+                                      <div className="pt-1">
+                                        <a href={tkt.imageUrl} target="_blank" rel="noreferrer" className="block rounded-xl overflow-hidden border border-slate-700 max-w-xs hover:opacity-90">
+                                          <img src={tkt.imageUrl} alt="Pièce jointe" className="w-full max-h-48 object-cover" />
+                                        </a>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                            {/* Admin Reply */}
+                            {tkt.reply && (
+                              <div className="flex items-start justify-end space-x-2 max-w-xl ml-auto">
+                                <div className="bg-blue-900/80 border border-blue-500/40 rounded-2xl rounded-tr-none p-3 space-y-1 shadow-xs text-right">
+                                  <div className="flex items-center justify-between gap-4 text-[10px]">
+                                    <span className="text-slate-300 font-mono">
+                                      {tkt.replyCreatedAt ? new Date(tkt.replyCreatedAt).toLocaleString('fr-FR') : 'Réponse Admin'}
+                                    </span>
+                                    <span className="font-bold text-blue-300 uppercase font-mono">Admin Support</span>
+                                  </div>
+                                  <p className="text-xs text-white leading-relaxed font-sans">{tkt.reply}</p>
+                                </div>
+                                <div className="w-7 h-7 rounded-full bg-red-600 text-white text-[10px] font-extrabold flex items-center justify-center shrink-0 mt-1">
+                                  A
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                    </div>
+
+                    {/* Chat Input */}
+                    <div className="p-3 bg-slate-900 border-t border-slate-700 space-y-2 shrink-0">
+                      {/* Quick responses */}
+                      <div className="flex gap-1.5 overflow-x-auto pb-1 text-[10px] font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setChatMessageText("Bonjour, votre demande a été traitée avec succès ! Merci de votre confiance.")}
+                          className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded-lg whitespace-nowrap border border-slate-700 cursor-pointer"
+                        >
+                          ✅ Traité avec succès
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setChatMessageText("Bonjour, veuillez nous envoyer la capture d'écran du transfert Mobile Money pour vérification.")}
+                          className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded-lg whitespace-nowrap border border-slate-700 cursor-pointer"
+                        >
+                          📷 Demander capture
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setChatMessageText("Bonjour, le paiement a été crédité sur votre compte Nutrien.")}
+                          className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded-lg whitespace-nowrap border border-slate-700 cursor-pointer"
+                        >
+                          💰 Solde crédité
+                        </button>
+                      </div>
+
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          if (!chatMessageText.trim()) return;
+                          const targetTicket = [...selectedUserTickets].reverse().find(t => t.status === 'open' || !t.reply);
+                          if (targetTicket) {
+                            replyToTicket(targetTicket.id, chatMessageText.trim());
+                          } else {
+                            sendAdminDirectMessage(selectedChatUser.id, chatMessageText.trim());
+                          }
+                          setChatMessageText('');
+                          showToast('success', 'Message envoyé avec succès au client !');
+                        }}
+                        className="flex items-center space-x-2"
                       >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>Répondre</span>
-                      </button>
+                        <input
+                          type="text"
+                          value={chatMessageText}
+                          onChange={(e) => setChatMessageText(e.target.value)}
+                          placeholder={`Répondre à ${selectedChatUser.name}...`}
+                          className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500"
+                        />
+                        <button
+                          type="submit"
+                          disabled={!chatMessageText.trim()}
+                          className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center space-x-1.5 cursor-pointer transition-all shrink-0"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                          <span>Envoyer</span>
+                        </button>
+                      </form>
                     </div>
-
-                    <div className="bg-slate-900/90 p-3.5 rounded-xl text-xs text-slate-200 leading-relaxed font-sans">
-                      {tkt.message}
-                    </div>
-
-                    {tkt.imageUrl && (
-                      <div className="pt-2 space-y-1">
-                        <span className="text-[10px] text-amber-400 font-mono font-bold uppercase block">
-                          📷 Image transmise par l'utilisateur :
-                        </span>
-                        <div className="rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 max-w-sm max-h-64 shadow-md">
-                          <a href={tkt.imageUrl} target="_blank" rel="noreferrer" title="Cliquer pour agrandir">
-                            <img 
-                              src={tkt.imageUrl} 
-                              alt="Capture envoyée par le client" 
-                              className="w-full h-full object-contain hover:scale-102 transition-transform cursor-pointer" 
-                            />
-                          </a>
-                        </div>
-                      </div>
-                    )}
-
-                    {tkt.reply && (
-                      <div className="bg-emerald-950/40 border border-emerald-500/30 p-3 rounded-xl text-xs text-emerald-200 space-y-1">
-                        <div className="font-bold text-emerald-400 text-[11px] uppercase">Réponse de l'administration :</div>
-                        <p>{tkt.reply}</p>
-                      </div>
-                    )}
+                  </>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center text-slate-400 space-y-2 p-6 text-center">
+                    <Headphones className="w-10 h-10 text-slate-600" />
+                    <p className="text-xs font-bold text-slate-300">Aucun utilisateur sélectionné</p>
                   </div>
-                ))
-              )}
+                )}
+              </div>
             </div>
-
           </div>
         )}
 
@@ -1692,14 +2247,176 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
         {activeAdminTab === 'announcements' && (
           <div className="space-y-6 animate-fadeIn">
             
-            {/* Active Banner Control Card */}
-            <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4">
+            {/* Publisher Form for Official Announcements */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
               <div>
-                <h2 className="text-lg font-bold text-white flex items-center space-x-2">
-                  <Megaphone className="w-5 h-5 text-amber-400" />
+                <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
+                  <Megaphone className="w-5 h-5 text-amber-500" />
+                  <span>Publier une Annonce Officielle (Rubrique « Annonces »)</span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Publiez une annonce avec photo qui s'affichera directement dans la rubrique Annonces pour tous les utilisateurs.
+                </p>
+              </div>
+
+              <form onSubmit={handlePublishAnnouncement} className="space-y-4 text-xs font-medium">
+                <div>
+                  <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
+                    Titre de l'annonce *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Récompenser les agents exceptionnels"
+                    value={newAnnTitle}
+                    onChange={(e) => setNewAnnTitle(e.target.value)}
+                    className="w-full bg-slate-50 text-slate-900 font-bold p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white"
+                    required
+                  />
+                </div>
+
+                {/* Photo Selection with Live Preview */}
+                <div>
+                  <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
+                    Ajouter une photo *
+                  </label>
+                  {newAnnImageUrl ? (
+                    <div className="relative w-full max-w-md h-48 rounded-xl overflow-hidden border border-slate-200 shadow-2xs group">
+                      <img src={newAnnImageUrl} alt="Prévisualisation" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                        <label className="bg-white text-slate-900 font-bold text-xs px-3 py-1.5 rounded-lg cursor-pointer hover:bg-slate-100 shadow-md">
+                          Changer la photo
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAnnImageChange}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setNewAnnImageUrl('')}
+                          className="bg-red-600 text-white font-bold text-xs px-3 py-1.5 rounded-lg hover:bg-red-700 shadow-md cursor-pointer"
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100/80 transition-colors">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Plus className="w-8 h-8 text-slate-400 mb-1" />
+                        <p className="text-xs font-bold text-slate-700">Cliquez pour ajouter une photo depuis votre appareil</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Formats acceptés : PNG, JPG, WEBP</p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAnnImageChange}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
+                    Courte description / contenu complet *
+                  </label>
+                  <textarea
+                    rows={4}
+                    placeholder="Rédigez ici la description complète de votre annonce..."
+                    value={newAnnContent}
+                    onChange={(e) => setNewAnnContent(e.target.value)}
+                    className="w-full bg-slate-50 text-slate-900 font-normal p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white leading-relaxed"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="bg-red-600 hover:bg-red-700 text-white font-black text-xs px-6 py-3.5 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-xs"
+                >
+                  📢 Publier dans la rubrique Annonces
+                </button>
+              </form>
+            </div>
+
+            {/* List of Published Announcements */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
+                    <Sparkles className="w-5 h-5 text-amber-500" />
+                    <span>Annonces Publiées ({announcements.length})</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Toutes les annonces actuellement affichées dans la rubrique Annonces du site.
+                  </p>
+                </div>
+              </div>
+
+              {announcements.length === 0 ? (
+                <div className="py-8 text-center text-slate-500 text-xs">
+                  Aucune annonce publiée pour l'instant.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {announcements.map((ann) => (
+                    <div
+                      key={ann.id}
+                      className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                      <div className="flex items-start space-x-3 max-w-2xl">
+                        {ann.imageUrl && (
+                          <img
+                            src={ann.imageUrl}
+                            alt={ann.title}
+                            className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0"
+                          />
+                        )}
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            {ann.isNew && (
+                              <span className="w-2.5 h-2.5 bg-red-500 rounded-full inline-block shrink-0" />
+                            )}
+                            <h4 className="text-sm font-bold text-slate-900">
+                              {ann.title}
+                            </h4>
+                          </div>
+                          <p className="text-xs text-slate-600 line-clamp-2">
+                            {ann.content}
+                          </p>
+                          <p className="text-[10px] text-slate-400 font-mono">
+                            Publié le : {ann.createdAt}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2 shrink-0">
+                        <button
+                          onClick={() => {
+                            deleteAnnouncement(ann.id);
+                            showToast('success', "Annonce supprimée.");
+                          }}
+                          className="bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold px-3 py-2 rounded-xl border border-red-200 transition-all cursor-pointer"
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Active Banner Control Card */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
+                  <Megaphone className="w-5 h-5 text-amber-500" />
                   <span>Bandeau d'Annonce Défilant (Marquee)</span>
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">Ce message défile en haut de l'écran pour tous les utilisateurs connectés.</p>
+                <p className="text-xs text-slate-500 mt-0.5">Ce message défile en haut de l'écran pour tous les utilisateurs connectés.</p>
               </div>
 
               <div className="flex gap-2">
@@ -1708,14 +2425,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   placeholder="Ex: Événement VIP : Bonus de 10% sur les recharges Orange & MTN..."
                   value={bannerInput}
                   onChange={(e) => setBannerInput(e.target.value)}
-                  className="flex-grow bg-slate-900 text-xs text-white px-3.5 py-3 rounded-xl outline-none border border-slate-700 focus:border-red-500 font-bold"
+                  className="flex-grow bg-slate-50 text-xs text-slate-900 px-3.5 py-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 font-bold"
                 />
                 <button 
                   onClick={() => {
                     sendGlobalNotification(bannerInput.trim() || null);
                     showToast('success', "Bandeau d'annonce mis à jour !");
                   }}
-                  className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-5 py-3 rounded-xl transition-all cursor-pointer whitespace-nowrap"
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-5 py-3 rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-2xs"
                 >
                   Publier
                 </button>
@@ -1726,7 +2443,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                       setBannerInput('');
                       showToast('success', "Bandeau effacé.");
                     }}
-                    className="bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold text-xs px-4 py-3 rounded-xl transition-all cursor-pointer"
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-3 rounded-xl transition-all cursor-pointer"
                   >
                     Effacer
                   </button>
@@ -1735,44 +2452,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
             </div>
 
             {/* Bonus Promo Codes Generator */}
-            <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                  <Gift className="w-5 h-5 text-amber-400" />
+                <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
+                  <Gift className="w-5 h-5 text-amber-500" />
                   <span>Générateur de Codes Promo & Bonus</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">Créez des codes promotionnels que les utilisateurs peuvent utiliser dans la rubrique "Mon Compte".</p>
+                <p className="text-xs text-slate-500 mt-0.5">Créez des codes promotionnels que les utilisateurs peuvent utiliser dans la rubrique "Mon Compte".</p>
               </div>
 
               <form onSubmit={handleCreateBonusCode} className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs font-medium">
                 <div>
-                  <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">Code promo</label>
+                  <label className="block text-slate-600 text-[10px] uppercase font-bold mb-1">Code promo</label>
                   <input 
                     type="text" 
                     placeholder="EX: CADEAU2000"
                     value={newCodeName}
                     onChange={(e) => setNewCodeName(e.target.value)}
-                    className="w-full bg-slate-900 text-white font-mono uppercase font-bold p-2.5 rounded-xl outline-none border border-slate-700 focus:border-red-500"
+                    className="w-full bg-slate-50 text-slate-900 font-mono uppercase font-bold p-2.5 rounded-xl outline-none border border-slate-200 focus:border-red-600"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">Montant crédité (FCFA)</label>
+                  <label className="block text-slate-600 text-[10px] uppercase font-bold mb-1">Montant crédité (FCFA)</label>
                   <input 
                     type="number" 
                     value={newCodeAmount}
                     onChange={(e) => setNewCodeAmount(Number(e.target.value))}
-                    className="w-full bg-slate-900 text-white font-mono font-bold p-2.5 rounded-xl outline-none border border-slate-700 focus:border-red-500"
+                    className="w-full bg-slate-50 text-slate-900 font-mono font-bold p-2.5 rounded-xl outline-none border border-slate-200 focus:border-red-600"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">Limite d'utilisations</label>
+                  <label className="block text-slate-600 text-[10px] uppercase font-bold mb-1">Limite d'utilisations</label>
                   <input 
                     type="number" 
                     value={newCodeMaxUses}
                     onChange={(e) => setNewCodeMaxUses(Number(e.target.value))}
-                    className="w-full bg-slate-900 text-white font-mono font-bold p-2.5 rounded-xl outline-none border border-slate-700 focus:border-red-500"
+                    className="w-full bg-slate-50 text-slate-900 font-mono font-bold p-2.5 rounded-xl outline-none border border-slate-200 focus:border-red-600"
                     required
                   />
                 </div>
@@ -1788,21 +2505,758 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
 
               {/* List of active bonus codes */}
               <div className="pt-2">
-                <h4 className="text-xs font-bold text-slate-300 uppercase mb-2 font-mono">Codes Bonus Actifs ({bonusCodes.length})</h4>
+                <h4 className="text-xs font-bold text-slate-600 uppercase mb-2 font-mono">Codes Bonus Actifs ({bonusCodes.length})</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {bonusCodes.map(b => (
-                    <div key={b.code} className="bg-slate-900 p-3 rounded-xl border border-slate-700/80 flex items-center justify-between text-xs font-mono">
+                    <div key={b.code} className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between text-xs font-mono">
                       <div>
-                        <div className="font-black text-amber-300 text-sm">{b.code}</div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">Valeur: <strong className="text-emerald-400">{b.amount.toLocaleString()} FCFA</strong></div>
+                        <div className="font-black text-amber-600 text-sm">{b.code}</div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">Valeur: <strong className="text-emerald-700">{b.amount.toLocaleString()} FCFA</strong></div>
                       </div>
-                      <div className="text-right text-[11px] text-slate-400">
+                      <div className="text-right text-[11px] text-slate-500">
                         {b.usedBy.length} / {b.maxUses} utilisés
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* 8. GESTION DES PRODUITS DE BIEN-ÊTRE */}
+        {activeAdminTab === 'wellness' && (
+          <div className="space-y-6 animate-fadeIn">
+            
+            {/* Form for Adding or Editing Wellness Product */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
+                    <Sparkles className="w-5 h-5 text-amber-500" />
+                    <span>{editingWellnessId ? "Modifier un produit de bien-être" : "Ajouter un produit de bien-être"}</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {editingWellnessId 
+                      ? "Modifiez les informations du produit sélectionné ci-dessous." 
+                      : "Remplissez les informations ci-dessous pour ajouter un nouveau produit de bien-être."}
+                  </p>
+                </div>
+                {editingWellnessId && (
+                  <button
+                    onClick={handleCancelWellnessEdit}
+                    className="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 px-3 py-1.5 rounded-xl transition-all cursor-pointer"
+                  >
+                    Annuler l'édition
+                  </button>
+                )}
+              </div>
+
+              <form onSubmit={handleSaveWellnessProduct} className="space-y-4 text-xs font-medium">
+                {/* Photo Upload with Preview */}
+                <div>
+                  <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
+                    Ajouter une photo du produit *
+                  </label>
+                  {wellnessImageUrl ? (
+                    <div className="relative w-full max-w-xs h-40 rounded-xl overflow-hidden border border-slate-200 shadow-2xs group">
+                      <img src={wellnessImageUrl} alt="Aperçu du produit" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                        <label className="bg-white text-slate-900 font-bold text-xs px-3 py-1.5 rounded-lg cursor-pointer hover:bg-slate-100 shadow-md">
+                          Changer la photo
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleWellnessImageChange}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setWellnessImageUrl('')}
+                          className="bg-red-600 text-white font-bold text-xs px-3 py-1.5 rounded-lg hover:bg-red-700 shadow-md cursor-pointer"
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100/80 transition-colors">
+                      <div className="flex flex-col items-center justify-center pt-4 pb-4">
+                        <Plus className="w-7 h-7 text-slate-400 mb-1" />
+                        <p className="text-xs font-bold text-slate-700">Sélectionner une photo depuis votre appareil</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">JPG, PNG, WEBP jusqu'à 5 Mo</p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleWellnessImageChange}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {/* Name & Status */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
+                      Nom du produit *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Pack Produit Bien-être Fertilisant"
+                      value={wellnessName}
+                      onChange={(e) => setWellnessName(e.target.value)}
+                      className="w-full bg-slate-50 text-slate-900 font-bold p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
+                      Statut du produit *
+                    </label>
+                    <select
+                      value={wellnessStatus}
+                      onChange={(e) => setWellnessStatus(e.target.value as 'disponible' | 'indisponible')}
+                      className="w-full bg-slate-50 text-slate-900 font-bold p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white"
+                    >
+                      <option value="disponible">🟢 Disponible</option>
+                      <option value="indisponible">🔴 Indisponible</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
+                    Description *
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Renseignez une courte description détaillée du produit de bien-être..."
+                    value={wellnessDescription}
+                    onChange={(e) => setWellnessDescription(e.target.value)}
+                    className="w-full bg-slate-50 text-slate-900 font-normal p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white leading-relaxed"
+                    required
+                  />
+                </div>
+
+                {/* Price & Quantity */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
+                      Prix du produit (FCFA) *
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="30000"
+                      value={wellnessPrice}
+                      onChange={(e) => setWellnessPrice(Number(e.target.value))}
+                      className="w-full bg-slate-50 text-slate-900 font-mono font-bold p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
+                      Quantité disponible *
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="10"
+                      value={wellnessQuantity}
+                      onChange={(e) => setWellnessQuantity(Number(e.target.value))}
+                      className="w-full bg-slate-50 text-slate-900 font-mono font-bold p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex items-center space-x-3 pt-2">
+                  <button
+                    type="submit"
+                    className="bg-red-600 hover:bg-red-700 text-white font-black text-xs px-6 py-3.5 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-xs"
+                  >
+                    {editingWellnessId ? "Enregistrer les modifications" : "Publier le produit"}
+                  </button>
+                  {editingWellnessId && (
+                    <button
+                      type="button"
+                      onClick={handleCancelWellnessEdit}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-5 py-3.5 rounded-xl transition-all cursor-pointer"
+                    >
+                      Annuler
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+
+            {/* List of Registered Wellness Products */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
+                    <Sparkles className="w-5 h-5 text-amber-500" />
+                    <span>Produits de Bien-être Enregistrés ({wellnessProducts.length})</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Tous les produits de bien-être actuellement visibles sur la plateforme.
+                  </p>
+                </div>
+              </div>
+
+              {wellnessProducts.length === 0 ? (
+                <div className="py-8 text-center text-slate-500 text-xs">
+                  Aucun produit de bien-être enregistré pour l'instant.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {wellnessProducts.map((prod) => (
+                    <div
+                      key={prod.id}
+                      className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 flex flex-col justify-between space-y-3"
+                    >
+                      <div className="flex items-start space-x-3">
+                        <img
+                          src={prod.imageUrl || 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80'}
+                          alt={prod.name}
+                          className="w-20 h-20 rounded-xl object-cover border border-slate-200 shrink-0"
+                        />
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-bold text-slate-900 line-clamp-1">
+                              {prod.name}
+                            </h4>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                              prod.status === 'disponible' 
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
+                                : 'bg-red-100 text-red-800 border border-red-200'
+                            }`}>
+                              {prod.status}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-600 line-clamp-2">
+                            {prod.description}
+                          </p>
+                          <div className="flex items-center justify-between pt-1 text-xs">
+                            <span className="font-bold text-red-600 font-mono">
+                              {prod.price.toLocaleString()} FCFA
+                            </span>
+                            <span className="text-slate-500 font-medium">
+                              Stock: <strong className="text-slate-800">{prod.quantity}</strong>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-200/80">
+                        <button
+                          onClick={() => handleEditWellnessProduct(prod)}
+                          className="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+                        >
+                          Modifier
+                        </button>
+                        <button
+                          onClick={() => {
+                            deleteWellnessProduct(prod.id);
+                            showToast('success', "Produit de bien-être supprimé.");
+                          }}
+                          className="bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-red-200 transition-all cursor-pointer"
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
+
+        {/* 9. GESTION DE LA ROUE ET DES TIRAGES AU SORT */}
+        {activeAdminTab === 'wheel' && (
+          <div className="space-y-6 animate-fadeIn">
+            
+            {/* Header banner */}
+            <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                  <h2 className="text-lg font-bold text-white flex items-center space-x-2">
+                    <RotateCw className="w-5 h-5 text-amber-400" />
+                    <span>Gestion de la Roue & Tirages au Sort</span>
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Configurez les règles de tickets, gérez les lots et supervisez le flux en direct des gagnants.
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-2 bg-slate-900 border border-slate-700/80 px-3.5 py-2 rounded-xl text-xs font-mono text-amber-400">
+                  <Ticket className="w-4 h-4 text-amber-400" />
+                  <span>{drawRecords.length} participations réelles</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Grid 1: Rule Configuration & Manual Ticket Assignment */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Ticket Allocation Rule */}
+              <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4">
+                <h3 className="text-sm font-bold text-white flex items-center space-x-2">
+                  <Ticket className="w-4 h-4 text-emerald-400" />
+                  <span>Règle d'Attribution Automatique</span>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Nombre de tickets gratuits attribués automatiquement au parrain lorsqu'un filleul direct (Niveau 1) active une offre VIP.
+                </p>
+
+                <div className="flex items-center space-x-3 pt-2">
+                  <div className="flex-1">
+                    <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">Tickets par Filleul VIP</label>
+                    <input 
+                      type="number" 
+                      min="1"
+                      max="100"
+                      value={ticketsPerRefInput}
+                      onChange={(e) => setTicketsPerRefInput(Number(e.target.value))}
+                      className="w-full bg-slate-900 text-white font-mono font-bold text-sm p-3 rounded-xl border border-slate-700 outline-none focus:border-red-500"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      onClick={() => {
+                        updateWheelConfig({
+                          ...wheelConfig,
+                          ticketsPerReferral: ticketsPerRefInput
+                        });
+                        showToast('success', "Règle des tickets mise à jour !");
+                      }}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-3.5 rounded-xl transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      Enregistrer
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Manual Ticket Assignment */}
+              <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4">
+                <h3 className="text-sm font-bold text-white flex items-center space-x-2">
+                  <Gift className="w-4 h-4 text-amber-400" />
+                  <span>Attribution Manuelle de Tickets</span>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Créditez des tickets de tirage directement au compte d'un utilisateur de votre choix.
+                </p>
+
+                <div className="space-y-3 pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <select
+                      value={manualTicketUserId}
+                      onChange={(e) => setManualTicketUserId(e.target.value)}
+                      className="bg-slate-900 text-white text-xs font-bold p-3 rounded-xl border border-slate-700 outline-none focus:border-red-500"
+                    >
+                      <option value="">Sélectionner un utilisateur...</option>
+                      {users.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} ({u.phone}) - {u.drawTickets || 0} tkt
+                        </option>
+                      ))}
+                    </select>
+
+                    <input 
+                      type="number"
+                      min="1"
+                      max="500"
+                      placeholder="Nombre de tickets"
+                      value={manualTicketCount}
+                      onChange={(e) => setManualTicketCount(Number(e.target.value))}
+                      className="bg-slate-900 text-white font-mono font-bold text-xs p-3 rounded-xl border border-slate-700 outline-none focus:border-red-500"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (!manualTicketUserId) {
+                        showToast('error', "Veuillez choisir un utilisateur.");
+                        return;
+                      }
+                      addTicketsToUser(manualTicketUserId, manualTicketCount);
+                      showToast('success', `${manualTicketCount} ticket(s) attribué(s) avec succès !`);
+                      setManualTicketUserId('');
+                    }}
+                    className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs py-3 rounded-xl transition-all cursor-pointer"
+                  >
+                    ATTRIBUER {manualTicketCount} TICKET(S)
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Wheel Prizes List & Adder */}
+            <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                    <Sparkles className="w-5 h-5 text-amber-400" />
+                    <span>Récompenses & Lots de la Roue ({wheelConfig.prizes.length})</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Modifiez les lots disponibles lors du tirage. Chaque lot correspond à un segment sur la roue.
+                  </p>
+                </div>
+              </div>
+
+              {/* Add New Prize Form */}
+              <div className="bg-slate-900/80 border border-slate-700/80 rounded-xl p-3.5 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">Intitulé du prix</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ex: +500 XAF"
+                    value={newPrizeLabel}
+                    onChange={(e) => setNewPrizeLabel(e.target.value)}
+                    className="w-full bg-slate-950 text-white font-bold p-2.5 rounded-lg border border-slate-700 outline-none focus:border-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">Valeur FCFA</label>
+                  <input 
+                    type="number" 
+                    placeholder="500"
+                    value={newPrizeValue}
+                    onChange={(e) => setNewPrizeValue(Number(e.target.value))}
+                    className="w-full bg-slate-950 text-white font-mono font-bold p-2.5 rounded-lg border border-slate-700 outline-none focus:border-red-500"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={() => {
+                      if (!newPrizeLabel.trim() || newPrizeValue <= 0) {
+                        showToast('error', "Intitulé et valeur valides requis.");
+                        return;
+                      }
+                      const updatedPrizes = [
+                        ...wheelConfig.prizes,
+                        {
+                          id: Date.now(),
+                          label: newPrizeLabel.trim(),
+                          value: newPrizeValue,
+                          color: 'bg-emerald-600 text-white'
+                        }
+                      ];
+                      updateWheelConfig({ ...wheelConfig, prizes: updatedPrizes });
+                      setNewPrizeLabel('');
+                      showToast('success', "Nouveau prix ajouté à la roue !");
+                    }}
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-2.5 rounded-lg transition-all cursor-pointer flex items-center justify-center space-x-1.5"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Ajouter le lot</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Active Prizes Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-1">
+                {wheelConfig.prizes.map((p) => (
+                  <div key={p.id} className="bg-slate-900 border border-slate-700/70 rounded-xl p-3 flex items-center justify-between text-xs">
+                    <div className="flex items-center space-x-2.5">
+                      <div className="w-3 h-3 rounded-full bg-amber-400 shrink-0"></div>
+                      <div>
+                        <div className="font-bold text-white">{p.label}</div>
+                        <div className="text-[11px] text-slate-400 font-mono">+{p.value.toLocaleString()} FCFA</div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        if (wheelConfig.prizes.length <= 2) {
+                          showToast('error', "La roue doit contenir au moins 2 prix.");
+                          return;
+                        }
+                        const updatedPrizes = wheelConfig.prizes.filter(pr => pr.id !== p.id);
+                        updateWheelConfig({ ...wheelConfig, prizes: updatedPrizes });
+                        showToast('success', "Prix supprimé.");
+                      }}
+                      className="text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-all cursor-pointer"
+                      title="Supprimer ce lot"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Real Participations Feed & Fraud Removal Table */}
+            <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                    <Clock className="w-5 h-5 text-emerald-400" />
+                    <span>Historique Réel des Participations & Suppression Fraudes</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Liste dynamique alimentée uniquement par les tirages réels enregistrés en base de données.
+                  </p>
+                </div>
+
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input 
+                    type="text" 
+                    placeholder="Filtrer téléphone ou nom..."
+                    value={drawSearch}
+                    onChange={(e) => setDrawSearch(e.target.value)}
+                    className="w-full bg-slate-900 text-xs text-white pl-9 pr-3 py-2 rounded-xl border border-slate-700 outline-none focus:border-red-500"
+                  />
+                </div>
+              </div>
+
+              {/* Participations Table */}
+              <div className="overflow-x-auto rounded-xl border border-slate-700/70">
+                <table className="w-full text-left text-xs text-slate-300 font-medium">
+                  <thead className="bg-slate-900/90 text-[11px] font-bold uppercase text-slate-400 border-b border-slate-700">
+                    <tr>
+                      <th className="px-4 py-3">Horodatage</th>
+                      <th className="px-4 py-3">Participant</th>
+                      <th className="px-4 py-3">Téléphone (Masqué)</th>
+                      <th className="px-4 py-3">Action</th>
+                      <th className="px-4 py-3">Gain Emporté</th>
+                      <th className="px-4 py-3 text-right">Action Admin</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/50">
+                    {drawRecords.filter(r => 
+                      r.userName.toLowerCase().includes(drawSearch.toLowerCase()) || 
+                      r.userPhone.includes(drawSearch)
+                    ).length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center text-slate-500 italic">
+                          Aucune participation trouvée dans la base de données.
+                        </td>
+                      </tr>
+                    ) : (
+                      drawRecords
+                        .filter(r => 
+                          r.userName.toLowerCase().includes(drawSearch.toLowerCase()) || 
+                          r.userPhone.includes(drawSearch)
+                        )
+                        .map((rec) => (
+                          <tr key={rec.id} className="hover:bg-slate-700/30 transition-all">
+                            <td className="px-4 py-3 font-mono text-[11px] text-slate-400">
+                              {new Date(rec.createdAt).toLocaleString('fr-FR')}
+                            </td>
+                            <td className="px-4 py-3 font-bold text-white">
+                              {rec.userName}
+                            </td>
+                            <td className="px-4 py-3 font-mono text-emerald-400 font-bold">
+                              {rec.userPhone}
+                            </td>
+                            <td className="px-4 py-3 text-slate-300">
+                              {rec.action}
+                            </td>
+                            <td className="px-4 py-3 font-black text-emerald-400 font-mono">
+                              {rec.prizeLabel}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                onClick={() => {
+                                  deleteDrawRecord(rec.id);
+                                  showToast('success', "Participation supprimée du flux en direct !");
+                                }}
+                                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/30 font-bold text-[11px] px-3 py-1.5 rounded-lg transition-all cursor-pointer inline-flex items-center space-x-1"
+                                title="Supprimer la participation si frauduleuse"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Supprimer</span>
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* TAB: FAQ MANAGEMENT */}
+        {activeAdminTab === 'faq' && (
+          <div className="space-y-6">
+            
+            {/* Form Card: Create / Edit FAQ */}
+            <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-bold text-white flex items-center space-x-2">
+                    <HelpCircle className="w-5 h-5 text-amber-400" />
+                    <span>{editingFaqId ? 'Modifier la Question Fréquente' : 'Ajouter une Nouvelle Question Fréquente'}</span>
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Créez ou éditez les questions-réponses affichées dans la rubrique FAQ de la page "Mon Compte".
+                  </p>
+                </div>
+                {editingFaqId && (
+                  <button
+                    onClick={handleCancelEditFaq}
+                    className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold text-xs rounded-lg transition-all cursor-pointer"
+                  >
+                    Annuler l'édition
+                  </button>
+                )}
+              </div>
+
+              <form onSubmit={handleSaveFaq} className="space-y-4 text-xs font-medium">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">
+                      Question posée par les utilisateurs *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Comment effectuer un retrait rapide ?"
+                      value={newFaqQuestion}
+                      onChange={(e) => setNewFaqQuestion(e.target.value)}
+                      className="w-full bg-slate-900 text-white font-bold p-3 rounded-xl outline-none border border-slate-700 focus:border-red-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">
+                      Catégorie
+                    </label>
+                    <select
+                      value={newFaqCategory}
+                      onChange={(e) => setNewFaqCategory(e.target.value)}
+                      className="w-full bg-slate-900 text-white font-bold p-3 rounded-xl outline-none border border-slate-700 focus:border-red-500 cursor-pointer"
+                    >
+                      <option value="Général">Général</option>
+                      <option value="Dépôts & Retraits">Dépôts & Retraits</option>
+                      <option value="Parrainage & Bonus">Parrainage & Bonus</option>
+                      <option value="Compte & Sécurité">Compte & Sécurité</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">
+                    Réponse détaillée *
+                  </label>
+                  <textarea
+                    rows={4}
+                    placeholder="Saisissez la réponse complète et explicite qui sera lue par les utilisateurs..."
+                    value={newFaqAnswer}
+                    onChange={(e) => setNewFaqAnswer(e.target.value)}
+                    className="w-full bg-slate-900 text-white p-3 rounded-xl outline-none border border-slate-700 focus:border-red-500 font-normal leading-relaxed"
+                    required
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-2 pt-1">
+                  <button
+                    type="submit"
+                    className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md flex items-center space-x-2"
+                  >
+                    {editingFaqId ? <Edit2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                    <span>{editingFaqId ? 'Enregistrer les modifications' : 'Ajouter la question'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* List Card: Existing FAQs */}
+            <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                    <HelpCircle className="w-5 h-5 text-teal-400" />
+                    <span>Questions Fréquentes Enregistrées ({faqs.length})</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Modifiez ou supprimez les questions de la FAQ dynamique en temps réel.
+                  </p>
+                </div>
+
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Rechercher une FAQ..."
+                    value={faqSearch}
+                    onChange={(e) => setFaqSearch(e.target.value)}
+                    className="w-full bg-slate-900 text-xs text-white pl-9 pr-3 py-2 rounded-xl border border-slate-700 outline-none focus:border-red-500"
+                  />
+                </div>
+              </div>
+
+              {faqs.length === 0 ? (
+                <div className="text-center py-12 text-slate-500 italic bg-slate-900/50 rounded-xl border border-dashed border-slate-800">
+                  Aucune question fréquente créée pour le moment.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {faqs
+                    .filter(f => 
+                      f.question.toLowerCase().includes(faqSearch.toLowerCase()) ||
+                      f.answer.toLowerCase().includes(faqSearch.toLowerCase()) ||
+                      (f.category || '').toLowerCase().includes(faqSearch.toLowerCase())
+                    )
+                    .map((faq) => (
+                      <div
+                        key={faq.id}
+                        className="bg-slate-900 border border-slate-700/80 rounded-xl p-4 space-y-2 flex flex-col sm:flex-row sm:items-start justify-between gap-4"
+                      >
+                        <div className="space-y-1.5 flex-1">
+                          <div className="flex items-center space-x-2">
+                            <span className="px-2.5 py-0.5 bg-teal-500/20 text-teal-300 border border-teal-500/30 text-[10px] font-bold uppercase rounded-md">
+                              {faq.category || 'Général'}
+                            </span>
+                          </div>
+                          <h4 className="text-sm font-bold text-white leading-snug">
+                            {faq.question}
+                          </h4>
+                          <p className="text-xs text-slate-300 leading-relaxed font-normal whitespace-pre-line">
+                            {faq.answer}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center space-x-2 shrink-0 self-end sm:self-start">
+                          <button
+                            onClick={() => handleEditFaq(faq)}
+                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-600 transition-all cursor-pointer flex items-center space-x-1"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Éditer</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              deleteFaq(faq.id);
+                              showToast('success', "Question FAQ supprimée.");
+                            }}
+                            className="bg-rose-950/60 hover:bg-rose-900 text-rose-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-rose-800/50 transition-all cursor-pointer flex items-center space-x-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                            <span>Supprimer</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
 
           </div>
@@ -1859,9 +3313,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
 
               <button 
                 onClick={handleApplyBalanceAdjust}
-                className="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase rounded-xl transition-all cursor-pointer"
+                className={`w-full py-3 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md ${
+                  balanceAdjustType === 'add' 
+                    ? 'bg-emerald-600 hover:bg-emerald-500' 
+                    : 'bg-red-600 hover:bg-red-500'
+                }`}
               >
-                Confirmer la modification
+                {balanceAdjustType === 'add' ? '+ Créditer le solde' : '- Déduire du solde'} ({Math.abs(Number(balanceAdjustAmount) || 0).toLocaleString()} FCFA)
               </button>
             </div>
           </div>
@@ -1948,8 +3406,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   type="text" 
                   value={prodForm.name}
                   onChange={(e) => setProdForm({ ...prodForm, name: e.target.value })}
+                  placeholder="Ex: Pack Santé & Vitalité VIP 1"
                   className="w-full bg-slate-950 text-white font-bold p-2.5 rounded-xl border border-slate-700 outline-none focus:border-red-500"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">Description du Produit</label>
+                <textarea 
+                  value={prodForm.description}
+                  onChange={(e) => setProdForm({ ...prodForm, description: e.target.value })}
+                  placeholder="Description du produit de bien-être..."
+                  rows={2}
+                  className="w-full bg-slate-950 text-white p-2.5 rounded-xl border border-slate-700 outline-none focus:border-red-500 leading-relaxed resize-none"
                 />
               </div>
 
@@ -1981,7 +3451,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">Durée (Jours)</label>
+                  <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">Cycle / Durée (Jours)</label>
                   <input 
                     type="number" 
                     value={prodForm.duration}
@@ -2028,16 +3498,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
 
               <div>
                 <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">URL de l'image du produit</label>
-                <input 
-                  type="text" 
-                  value={prodForm.image}
-                  onChange={(e) => setProdForm({ ...prodForm, image: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full bg-slate-950 text-white font-mono text-xs p-2.5 rounded-xl border border-slate-700 outline-none focus:border-red-500"
-                />
+                <div className="flex items-center space-x-3">
+                  <input 
+                    type="text" 
+                    value={prodForm.image}
+                    onChange={(e) => setProdForm({ ...prodForm, image: e.target.value })}
+                    placeholder="https://..."
+                    className="w-full bg-slate-950 text-white font-mono text-xs p-2.5 rounded-xl border border-slate-700 outline-none focus:border-red-500"
+                  />
+                  {prodForm.image && (
+                    <img 
+                      src={prodForm.image} 
+                      alt="Aperçu"
+                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80'; }}
+                      className="w-10 h-10 rounded-lg object-cover border border-slate-700 shrink-0"
+                    />
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-center space-x-2 pt-2">
+              <div className="flex items-center space-x-2 pt-2 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
                 <input 
                   type="checkbox" 
                   id="prod-active-toggle"
@@ -2046,7 +3526,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   className="w-4 h-4 rounded text-red-600 accent-red-600 cursor-pointer"
                 />
                 <label htmlFor="prod-active-toggle" className="text-xs text-slate-200 font-bold cursor-pointer">
-                  Produit actif & disponible à l'achat
+                  Produit actif & disponible immédiatement à l'achat sur le site
                 </label>
               </div>
 
@@ -2146,9 +3626,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 <span className="text-slate-400">WhatsApp:</span>
                 <span className="text-white font-mono font-bold">{selectedUserDetails.whatsapp}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800">
+              <div className="flex justify-between items-center py-1 border-b border-slate-800">
                 <span className="text-slate-400">Solde:</span>
-                <span className="text-amber-400 font-mono font-bold">{selectedUserDetails.balance.toLocaleString()} FCFA</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-amber-400 font-mono font-bold">{selectedUserDetails.balance.toLocaleString()} FCFA</span>
+                  <button
+                    onClick={() => {
+                      setSelectedUserForBalance(selectedUserDetails);
+                      setSelectedUserDetails(null);
+                    }}
+                    className="text-[10px] font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                  >
+                    Modifier
+                  </button>
+                </div>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800">
                 <span className="text-slate-400">Code Parrain:</span>

@@ -38,16 +38,14 @@ interface AuthPagesProps {
   };
 }
 
-const COUNTRIES = [
-  { name: "Côte d'Ivoire", code: "CI", prefix: "+225" },
-  { name: "Sénégal", code: "SN", prefix: "+221" },
-  { name: "Mali", code: "ML", prefix: "+223" },
-  { name: "Burkina Faso", code: "BF", prefix: "+226" },
-  { name: "Togo", code: "TG", prefix: "+228" },
-  { name: "Bénin", code: "BJ", prefix: "+229" },
-  { name: "Cameroun", code: "CM", prefix: "+237" },
-  { name: "Niger", code: "NE", prefix: "+227" }
-];
+import { ALLOWED_COUNTRIES } from '../constants/countries';
+
+const COUNTRIES = ALLOWED_COUNTRIES.map(c => ({
+  name: c.name,
+  code: c.code,
+  prefix: c.prefix,
+  flag: c.flag
+}));
 
 export const AuthPages: React.FC<AuthPagesProps> = ({ 
   initialMode, 
@@ -93,7 +91,14 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
   // Read URL params & local storage for referral code
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const refFromUrl = params.get('ref') || localStorage.getItem('aurainvest_ref_code');
+    const refFromUrl = 
+      params.get('ref') || 
+      params.get('code') || 
+      params.get('parrain') || 
+      params.get('refCode') || 
+      params.get('referrer') || 
+      localStorage.getItem('aurainvest_ref_code');
+
     if (refFromUrl) {
       setRegReferrer(refFromUrl);
       setIsReferralFromUrl(true);
@@ -215,10 +220,10 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
           </div>
           <div>
             <span className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-              AURA <span className="text-amber-600">INVEST</span>
+              NUT<span className="text-amber-600">RIEN</span>
             </span>
             <span className="block text-[9px] tracking-[0.25em] font-mono text-amber-800 font-extrabold uppercase mt-0.5">
-              FINTECH SÉCURISÉE & TRANSPARENTE
+              AG SOLUTIONS & FINTECH SÉCURISÉE
             </span>
           </div>
         </div>

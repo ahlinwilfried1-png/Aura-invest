@@ -58,9 +58,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
             </div>
             <div>
               <span className="text-xl font-black tracking-tight text-slate-900">
-                AURA <span className="text-amber-700 font-extrabold">INVEST</span>
+                NUT<span className="text-amber-700 font-extrabold">RIEN</span>
               </span>
-              <span className="block text-[9px] tracking-[0.2em] uppercase font-mono text-amber-800 font-bold">FINTECH VIP</span>
+              <span className="block text-[9px] tracking-[0.2em] uppercase font-mono text-amber-800 font-bold">AG SOLUTIONS</span>
             </div>
           </div>
 
@@ -170,7 +170,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-8 px-4 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto space-y-2">
-          <p className="font-bold text-slate-800">© 2026 AURA INVEST – Nutrien Ag Solutions. Tous droits réservés.</p>
+          <p className="font-bold text-slate-800">© 2026 Nutrien Ag Solutions. Tous droits réservés.</p>
           <p>Plateforme sécurisée de micro-investissement et distribution de produits de bien-être.</p>
         </div>
       </footer>

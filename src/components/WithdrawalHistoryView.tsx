@@ -76,7 +76,7 @@ export const WithdrawalHistoryView: React.FC<WithdrawalHistoryViewProps> = ({
       </div>
 
       {/* 2. List of Withdrawal Cards */}
-      <div className="bg-[#f8f9fa] p-3 sm:p-4 rounded-b-2xl sm:rounded-2xl border-x border-b border-slate-200/80 space-y-3 min-h-[300px]">
+      <div className="py-2 space-y-3 min-h-[300px]">
         {userWithdrawals.length === 0 ? (
           <div className="py-12 text-center text-slate-500 font-medium text-xs sm:text-sm">
             Aucun retrait enregistré pour le moment.
@@ -90,20 +90,20 @@ export const WithdrawalHistoryView: React.FC<WithdrawalHistoryViewProps> = ({
             return (
               <div
                 key={wth.id}
-                className="bg-white border border-red-200/70 sm:border-slate-200 rounded-2xl p-4 shadow-2xs space-y-2 text-slate-900"
+                className="py-3.5 border-b border-slate-200/60 space-y-2 text-slate-900"
               >
                 {/* ID & Status */}
-                <div className="flex items-center justify-between text-xs sm:text-sm font-semibold border-b border-slate-100 pb-2">
+                <div className="flex items-center justify-between text-xs sm:text-sm font-semibold pb-1">
                   <span className="font-mono font-bold text-slate-800 tracking-tight select-all">
                     {displayId}
                   </span>
                   <span
                     className={`font-bold ${
                       wth.status === 'approved'
-                        ? 'text-emerald-500'
+                        ? 'text-emerald-600'
                         : wth.status === 'rejected'
-                        ? 'text-red-500'
-                        : 'text-amber-500'
+                        ? 'text-red-600'
+                        : 'text-amber-600'
                     }`}
                   >
                     {wth.status === 'approved'
@@ -115,14 +115,14 @@ export const WithdrawalHistoryView: React.FC<WithdrawalHistoryViewProps> = ({
                 </div>
 
                 {/* Details Table Lines */}
-                <div className="space-y-1.5 text-xs sm:text-sm text-slate-600 pt-1 font-medium">
+                <div className="space-y-1 text-xs sm:text-sm text-slate-600 font-medium">
                   <div className="flex items-center">
                     <span className="w-20 text-slate-500">Montant</span>
-                    <span className="text-slate-800">: FCFA {wth.amount.toLocaleString()}</span>
+                    <span className="text-slate-800 font-mono font-bold">: FCFA {wth.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}</span>
                   </div>
                   <div className="flex items-center">
                     <span className="w-20 text-slate-500">Reçu</span>
-                    <span className="text-slate-800">: FCFA {received.toLocaleString()}</span>
+                    <span className="text-slate-800 font-mono font-bold">: FCFA {received.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}</span>
                   </div>
                   <div className="flex items-center">
                     <span className="w-20 text-slate-500">Date</span>

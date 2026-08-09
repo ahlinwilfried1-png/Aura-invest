@@ -1,98 +1,145 @@
-import React from 'react';
-import { ArrowLeft, Megaphone, Calendar, Sparkles, ShieldCheck, Gift } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { useApp } from '../context/AppContext';
+import { Announcement } from '../types';
 
 interface AnnouncementsViewProps {
-  notificationText: string | null;
+  notificationText?: string | null;
   onBack: () => void;
 }
 
-export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({
-  notificationText,
-  onBack
-}) => {
-  const announcements = [
-    {
-      id: 'ann-1',
-      title: '🚀 Lancement Officiel de la Gamme Produits Bien-être VIP',
-      date: 'Aujourd\'hui',
-      content: notificationText || 'Profitez de nos 10 produits de bien-être haut de gamme avec des retours sur investissement quotidiens garantis. Rechargez votre compte pour démarrer dès maintenant !',
-      badge: 'Nouveau',
-      icon: Sparkles
-    },
-    {
-      id: 'ann-2',
-      title: '⚡ Recharges et Retraits Instantanés 24h/7j',
-      date: 'Hier',
-      content: 'Nos partenariats avec Orange Money, MTN Mobile Money, Moov Money et Mixx By Yas garantissent le traitement fluide de toutes vos transactions en moins de 10 minutes.',
-      badge: 'Info',
-      icon: ShieldCheck
-    },
-    {
-      id: 'ann-3',
-      title: '🎁 Programme de Parrainage & Commissions jusqu\'à 30%',
-      date: 'Il y a 3 jours',
-      content: 'Invitez vos proches avec votre code unique et touchez 20% sur le niveau 1, 7% sur le niveau 2 et 3% sur le niveau 3 sur chaque souscription de produit.',
-      badge: 'Bonus',
-      icon: Gift
-    }
-  ];
+export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ onBack }) => {
+  const { announcements, markAnnouncementAsRead } = useApp();
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
 
+  // Sort announcements with newest first
+  const sortedAnnouncements = [...announcements].sort((a, b) => {
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  const handleSelectAnnouncement = (ann: Announcement) => {
+    if (ann.isNew) {
+      markAnnouncementAsRead(ann.id);
+    }
+    setSelectedAnnouncement(ann);
+  };
+
+  // IF AN ANNOUNCEMENT IS SELECTED -> SHOW DETAIL PAGE
+  if (selectedAnnouncement) {
+    return (
+      <div className="animate-fadeIn max-w-md sm:max-w-xl mx-auto pb-24 px-3 sm:px-4 text-slate-900">
+        {/* Top Header Bar matching mobile app style */}
+        <div className="flex items-center justify-between py-3.5 border-b border-slate-200/90 mb-4 bg-white/80 sticky top-0 z-10 backdrop-blur-md">
+          <button
+            onClick={() => setSelectedAnnouncement(null)}
+            className="flex items-center space-x-1.5 text-slate-900 hover:text-amber-600 transition-colors font-bold text-sm cursor-pointer"
+          >
+            <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
+          </button>
+          <h1 className="text-base sm:text-lg font-bold text-slate-900 text-center tracking-tight">
+            Message
+          </h1>
+          <div className="w-6"></div>
+        </div>
+
+        {/* Announcement Detail Body */}
+        <div className="space-y-4 py-2 px-1">
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] font-mono font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                Annonce Officielle
+              </span>
+              <span className="text-xs text-slate-500 font-mono flex items-center space-x-1">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <span>{selectedAnnouncement.createdAt}</span>
+              </span>
+            </div>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 leading-snug pt-1">
+              {selectedAnnouncement.title}
+            </h2>
+          </div>
+
+          {/* Featured Image */}
+          <div className="w-full h-48 sm:h-64 rounded-2xl overflow-hidden bg-slate-900 relative">
+            <img
+              src={selectedAnnouncement.imageUrl || 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80'}
+              alt={selectedAnnouncement.title}
+              className="w-full h-full object-cover object-center"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80';
+              }}
+            />
+          </div>
+
+          {/* Full Announcement Text Content */}
+          <div className="pt-2 text-slate-800 text-sm sm:text-base leading-relaxed font-normal whitespace-pre-wrap">
+            {selectedAnnouncement.content}
+          </div>
+
+          <div className="pt-4 flex justify-center">
+            <button
+              onClick={() => setSelectedAnnouncement(null)}
+              className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+            >
+              Retour à la liste des messages
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // LIST VIEW MATCHING THE REFERENCE IMAGE EXACTLY
   return (
-    <div className="animate-fadeIn max-w-3xl mx-auto space-y-6 pb-20">
-      {/* Top Header / Navigation Bar */}
-      <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+    <div className="animate-fadeIn max-w-md sm:max-w-xl mx-auto pb-24 px-3 sm:px-4 text-slate-900">
+      {/* Top Mobile Header Navigation Bar */}
+      <div className="flex items-center justify-between py-3.5 border-b border-slate-200/90 mb-2 bg-white/90 sticky top-0 z-10 backdrop-blur-md">
         <button
           onClick={onBack}
-          className="flex items-center space-x-2 text-slate-700 hover:text-red-600 transition-colors font-bold text-sm cursor-pointer"
+          className="flex items-center space-x-1 text-slate-900 hover:text-amber-600 transition-colors font-bold text-sm cursor-pointer"
         >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Retour</span>
+          <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
         </button>
-        <span className="text-xs font-mono font-bold uppercase text-blue-800 bg-blue-100 px-3 py-1 rounded-full">
-          BULLETIN OFFICIEL
-        </span>
-      </div>
-
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center">
-            <Megaphone className="w-6 h-6 stroke-[2.5px]" />
-          </div>
-          <span>Annonces & Communications Officielles</span>
+        <h1 className="text-base sm:text-lg font-bold text-slate-900 text-center tracking-tight">
+          Message
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 font-medium">
-          Restez informé de toutes les mises à jour, nouveautés produits et bonus exclusifs AURA INVEST.
-        </p>
+        <div className="w-6"></div>
       </div>
 
-      {/* Announcements List */}
-      <div className="space-y-4">
-        {announcements.map((ann) => {
-          const IconComponent = ann.icon;
-          return (
-            <div key={ann.id} className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 space-y-3 shadow-2xs hover:border-amber-400 transition-all">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                  {ann.badge}
-                </span>
-                <span className="text-xs text-slate-400 font-mono flex items-center space-x-1">
-                  <Calendar className="w-3.5 h-3.5 inline" />
-                  <span>{ann.date}</span>
-                </span>
+      {/* Main Container List - Direct on Background */}
+      <div className="space-y-1 py-1 px-1">
+        {sortedAnnouncements.length === 0 ? (
+          <div className="py-12 text-center text-slate-500 text-sm font-medium">
+            Aucun message ou annonce pour le moment.
+          </div>
+        ) : (
+          sortedAnnouncements.map((ann) => (
+            <div
+              key={ann.id}
+              onClick={() => handleSelectAnnouncement(ann)}
+              className="group flex items-center justify-between py-3.5 px-2 hover:bg-slate-50/80 rounded-xl transition-colors cursor-pointer border-b border-slate-100 last:border-0"
+            >
+              <div className="flex-1 pr-3 space-y-1">
+                <div className="flex items-start space-x-2">
+                  {/* Red dot for new announcement */}
+                  {ann.isNew && (
+                    <span className="w-2.5 h-2.5 bg-red-500 rounded-full inline-block shrink-0 mt-1.5" />
+                  )}
+                  <h2 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-amber-700 transition-colors leading-snug line-clamp-2">
+                    {ann.title}
+                  </h2>
+                </div>
+                <p className="text-[11px] sm:text-xs text-slate-500 font-mono pl-0.5">
+                  {ann.createdAt}
+                </p>
               </div>
 
-              <h2 className="text-base sm:text-lg font-black text-slate-900 leading-snug flex items-center space-x-2">
-                <IconComponent className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                <span>{ann.title}</span>
-              </h2>
-
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium bg-slate-50 p-4 rounded-xl border border-slate-100">
-                {ann.content}
-              </p>
+              <div className="shrink-0 text-slate-400 group-hover:text-slate-700 transition-colors">
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2]" />
+              </div>
             </div>
-          );
-        })}
+          ))
+        )}
       </div>
     </div>
   );

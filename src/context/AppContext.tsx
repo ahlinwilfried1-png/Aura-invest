@@ -15,7 +15,14 @@ import {
   BonusCode, 
   CommissionHistory,
   SupportTicket,
-  WithdrawalProof
+  WithdrawalProof,
+  DrawRecord,
+  WheelPrize,
+  WheelConfig,
+  Announcement,
+  RevenueLog,
+  FaqItem,
+  WellnessProduct
 } from '../types';
 
 interface AppContextType {
@@ -26,9 +33,15 @@ interface AppContextType {
   deposits: DepositRequest[];
   withdrawals: WithdrawalRequest[];
   withdrawalProofs: WithdrawalProof[];
+  revenueLogs: RevenueLog[];
   bonusCodes: BonusCode[];
   commissions: CommissionHistory[];
   tickets: SupportTicket[];
+  drawRecords: DrawRecord[];
+  wheelConfig: WheelConfig;
+  announcements: Announcement[];
+  faqs: FaqItem[];
+  wellnessProducts: WellnessProduct[];
   liveStats: {
     membersCount: number;
     depositsSum: number;
@@ -56,9 +69,11 @@ interface AppContextType {
   claimDailyEarning: (investmentId: string) => { success: boolean; error?: string };
   requestDeposit: (amount: number, method: any, transactionId: string, screenshotUrl: string | null) => { success: boolean; error?: string };
   requestWithdrawal: (amount: number, network: any, accountNumber: string) => { success: boolean; error?: string };
-  saveWithdrawalAccount: (accountName: string, accountNumber: string, pin: string) => { success: boolean; error?: string };
+  saveWithdrawalAccount: (accountName: string, accountNumber: string, pin: string, network?: string, country?: string) => { success: boolean; error?: string };
+  sendAdminDirectMessage: (userId: string, message: string) => void;
   redeemBonusCode: (code: string) => { success: boolean; error?: string; amount?: number };
   claimDailyBonus: () => { success: boolean; error?: string; amount?: number };
+  spinLuckyWheel: () => { success: boolean; error?: string; prize?: WheelPrize };
   createSupportTicket: (subject: string, message: string, imageUrl?: string) => void;
   addWithdrawalProof: (amount: number, network: string, message: string, imageUrl?: string | null) => { success: boolean; error?: string };
   
@@ -80,6 +95,17 @@ interface AppContextType {
   replyToTicket: (ticketId: string, reply: string) => void;
   markTicketsAsRead: (userId: string) => void;
   updateUserRole: (userId: string, role: 'admin' | 'user') => void;
+  updateWheelConfig: (newConfig: WheelConfig) => void;
+  deleteDrawRecord: (recordId: string) => void;
+  addTicketsToUser: (userId: string, count: number) => void;
+  addAnnouncement: (data: { title: string; content: string; imageUrl?: string }) => void;
+  deleteAnnouncement: (id: string) => void;
+  markAnnouncementAsRead: (id: string) => void;
+  addFaq: (question: string, answer: string, category?: string) => void;
+  updateFaq: (id: string, question: string, answer: string, category?: string) => void;
+  deleteFaq: (id: string) => void;
+  addOrUpdateWellnessProduct: (product: Omit<WellnessProduct, 'id'> & { id?: string }) => void;
+  deleteWellnessProduct: (id: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -439,6 +465,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return [];
   });
 
+  const [revenueLogs, setRevenueLogs] = useState<RevenueLog[]>(() => {
+    const data = localStorage.getItem('fintech_revenue_logs');
+    if (data) {
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        console.error("Failed to parse revenue logs:", e);
+      }
+    }
+    return [];
+  });
+
   const [bonusCodes, setBonusCodes] = useState<BonusCode[]>(() => {
     const data = localStorage.getItem('fintech_bonus_codes');
     if (data) return JSON.parse(data);
@@ -514,6 +552,263 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return defaultTickets;
   });
 
+  const [wheelConfig, setWheelConfig] = useState<WheelConfig>(() => {
+    const data = localStorage.getItem('fintech_wheel_config');
+    if (data) {
+      try { return JSON.parse(data); } catch (e) { console.error(e); }
+    }
+    return {
+      ticketsPerReferral: 1,
+      dailyFreeTickets: 1,
+      prizes: [
+        { id: 1, label: '+100 XAF', value: 100, color: 'bg-emerald-500 text-white' },
+        { id: 2, label: '+300 XAF', value: 300, color: 'bg-amber-500 text-slate-950' },
+        { id: 3, label: '+500 XAF', value: 500, color: 'bg-blue-600 text-white' },
+        { id: 4, label: '+1 000 XAF', value: 1000, color: 'bg-purple-600 text-white' },
+        { id: 5, label: '+200 XAF', value: 200, color: 'bg-rose-500 text-white' },
+        { id: 6, label: '+2 000 XAF', value: 2000, color: 'bg-emerald-700 text-white' },
+      ]
+    };
+  });
+
+  const [drawRecords, setDrawRecords] = useState<DrawRecord[]>(() => {
+    const data = localStorage.getItem('fintech_draw_records');
+    if (data) {
+      try { return JSON.parse(data); } catch (e) { console.error(e); }
+    }
+    const defaultDraws: DrawRecord[] = [
+      {
+        id: 'draw-init-1',
+        userId: 'user-1',
+        userName: 'Koffi Konan',
+        userPhone: '+228 90****95',
+        action: 'a fait tourner la roue',
+        prizeLabel: '+100 XAF',
+        prizeValue: 100,
+        createdAt: new Date(Date.now() - 2 * 60 * 1000).toISOString()
+      },
+      {
+        id: 'draw-init-2',
+        userId: 'user-2',
+        userName: 'Seydou Keita',
+        userPhone: '+226 76****35',
+        action: 'a fait tourner la roue',
+        prizeLabel: '+1 000 XAF',
+        prizeValue: 1000,
+        createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString()
+      },
+      {
+        id: 'draw-init-3',
+        userId: 'user-3',
+        userName: 'Ablavi Mensah',
+        userPhone: '+228 92****45',
+        action: 'a fait tourner la roue',
+        prizeLabel: '+200 XAF',
+        prizeValue: 200,
+        createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString()
+      },
+      {
+        id: 'draw-init-4',
+        userId: 'user-4',
+        userName: 'Yao Kouadio',
+        userPhone: '+229 97****42',
+        action: 'a fait tourner la roue',
+        prizeLabel: '+500 XOF',
+        prizeValue: 500,
+        createdAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
+      }
+    ];
+    localStorage.setItem('fintech_draw_records', JSON.stringify(defaultDraws));
+    return defaultDraws;
+  });
+
+  const [announcements, setAnnouncements] = useState<Announcement[]>(() => {
+    const data = localStorage.getItem('fintech_announcements');
+    if (data) {
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        // fallback
+      }
+    }
+    const defaultAnnouncements: Announcement[] = [
+      {
+        id: 'ann-1',
+        title: 'Récompenser les agents exceptionnels',
+        content: 'Félicitations à tous nos agents certifiés ! Des primes spéciales de fin de mois ont été créditées sur les comptes des 10 meilleurs parrains de la communauté. Continuez à développer votre réseau pour débloquer plus de récompenses.',
+        imageUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80',
+        createdAt: '2026-08-02 08:33:32',
+        isNew: true
+      },
+      {
+        id: 'ann-2',
+        title: 'Bonjour, bienvenue chez Nutrien !',
+        content: 'Bienvenue sur la plateforme officielle d\'investissement Nutrien. Profitez de nos offres VIP, de retraits rapides 24/7 et de bonus exclusifs.',
+        imageUrl: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80',
+        createdAt: '2026-08-02 07:49:06',
+        isNew: false
+      },
+      {
+        id: 'ann-3',
+        title: 'Preuve de retrait',
+        content: 'Toutes les demandes de retrait soumises par Orange Money, MTN, Moov et Mixx By Yas sont désormais traitées automatiquement en moins de 10 minutes.',
+        imageUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=800&auto=format&fit=crop&q=80',
+        createdAt: '2026-08-01 17:30:34',
+        isNew: false
+      },
+      {
+        id: 'ann-4',
+        title: 'Les 3 équipements agricoles ayant bénéficié du plus grand investissement des utilisateurs',
+        content: 'Découvrez les 3 projets les plus populaires de la semaine avec des rendements quotidiens optimisés.',
+        imageUrl: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80',
+        createdAt: '2026-08-01 15:20:52',
+        isNew: true
+      },
+      {
+        id: 'ann-5',
+        title: 'La meilleure preuve',
+        content: 'Découvrez les témoignages et preuves de retrait de la communauté dans notre canal officiel Telegram et WhatsApp.',
+        imageUrl: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800&auto=format&fit=crop&q=80',
+        createdAt: '2026-07-31 17:52:01',
+        isNew: true
+      },
+      {
+        id: 'ann-6',
+        title: 'Si vous invitez avec succès 6 utilisateurs réels à rejoindre notre entreprise, l\'entreprise vous offrira un équipement agricole d\'une valeur de 100 000 XAF pour vous aider à gagner de l\'argent.',
+        content: 'Profitez de cette offre spéciale de parrainage limité. Chaque fois que 6 filleuls directs souscrivent à un produit VIP, vous recevez gratuitement un bonus exceptionnel !',
+        imageUrl: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop&q=80',
+        createdAt: '2026-07-31 16:48:21',
+        isNew: true
+      },
+      {
+        id: 'ann-7',
+        title: 'Deux façons de gagner de l\'argent',
+        content: '1. Investissez dans des produits à haut rendement quotidien. 2. Développez votre équipe de parrainage et gagnez jusqu\'à 30% de commissions sur 3 niveaux.',
+        imageUrl: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=800&auto=format&fit=crop&q=80',
+        createdAt: '2026-07-31 08:07:32',
+        isNew: false
+      },
+      {
+        id: 'ann-8',
+        title: 'Emprunter de l\'argent pour investir dans des produits de niveau supérieur et gagner plus d\'argent',
+        content: 'Profitez des options de crédit d\'investissement pour débloquer les niveaux VIP 2 et 3 et multiplier vos revenus journaliers.',
+        imageUrl: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80',
+        createdAt: '2026-07-31 06:17:50',
+        isNew: true
+      }
+    ];
+    localStorage.setItem('fintech_announcements', JSON.stringify(defaultAnnouncements));
+    return defaultAnnouncements;
+  });
+
+  const [faqs, setFaqs] = useState<FaqItem[]>(() => {
+    const data = localStorage.getItem('fintech_faqs');
+    if (data) {
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    const defaultFaqs: FaqItem[] = [
+      {
+        id: 'faq-1',
+        question: "Comment s'inscrire et commencer à investir ?",
+        answer: "Pour commencer, inscrivez-vous avec votre numéro de téléphone et votre mot de passe. Rendez-vous ensuite dans la boutique pour choisir un équipement agricole VIP à souscrire. Vos bénéfices seront automatiquement crédités sur votre compte toutes les 24 heures.",
+        category: "Général",
+        order: 1,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'faq-2',
+        question: "Comment effectuer un dépôt ou une recharge ?",
+        answer: "Accédez à la rubrique 'Recharger' ou 'Dépôt', sélectionnez votre pays (Côte d'Ivoire, Bénin, Cameroun, Sénégal, Togo, etc.), choisissez votre réseau Mobile Money (Orange Money, MTN, Moov, Wave, Mixx by Yas) ou carte bancaire, entrez le montant et validez l'opération.",
+        category: "Dépôts & Retraits",
+        order: 2,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'faq-3',
+        question: "Combien de temps prennent les retraits ?",
+        answer: "Toutes les demandes de retrait sont traitées de manière automatisée. Les fonds sont crédités directement sur votre numéro Mobile Money ou carte bancaire liée en moins de 10 à 30 minutes.",
+        category: "Dépôts & Retraits",
+        order: 3,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'faq-4',
+        question: "Quels sont les frais de retrait ?",
+        answer: "Les frais de retrait appliqués sur la plateforme sont de seulement 5% pour assurer un traitement rapide et sécurisé de toutes vos opérations financières.",
+        category: "Dépôts & Retraits",
+        order: 4,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'faq-5',
+        question: "Comment fonctionne le programme de parrainage et d'équipe ?",
+        answer: "En invitant de nouveaux membres via votre lien ou code de parrainage, vous recevez des commissions sur 3 niveaux (Niveau 1: 10%, Niveau 2: 3%, Niveau 3: 2%) ainsi que des tickets gratuits pour la Roue de la Fortune.",
+        category: "Parrainage & Bonus",
+        order: 5,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'faq-6',
+        question: "Comment lier ma carte bancaire ou mon compte de retrait ?",
+        answer: "Dans la rubrique 'Mon compte', cliquez sur 'Lier carte bancaire'. Renseignez le nom du titulaire, le numéro de téléphone ou RIB bancaire et définissez un code PIN secret à 4-6 chiffres pour sécuriser vos retraits.",
+        category: "Compte & Sécurité",
+        order: 6,
+        createdAt: new Date().toISOString()
+      }
+    ];
+    localStorage.setItem('fintech_faqs', JSON.stringify(defaultFaqs));
+    return defaultFaqs;
+  });
+
+  const [wellnessProducts, setWellnessProducts] = useState<WellnessProduct[]>(() => {
+    const data = localStorage.getItem('fintech_wellness_products');
+    if (data) {
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    const defaultWellness: WellnessProduct[] = [
+      {
+        id: 'wellness-car-1',
+        name: 'Voiture intermédiaire 1',
+        description: 'Pack Produit Bien-être - Voiture intermédiaire 1',
+        price: 30000,
+        quantity: 20,
+        status: 'disponible',
+        imageUrl: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'wellness-car-2',
+        name: 'Voiture intermédiaire 2',
+        description: 'Pack Produit Bien-être - Voiture intermédiaire 2',
+        price: 50000,
+        quantity: 15,
+        status: 'disponible',
+        imageUrl: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&auto=format&fit=crop&q=80',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'wellness-car-3',
+        name: 'Voiture Berline Luxe',
+        description: 'Pack Produit Bien-être - Voiture Berline Luxe',
+        price: 100000,
+        quantity: 10,
+        status: 'disponible',
+        imageUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80',
+        createdAt: new Date().toISOString()
+      }
+    ];
+    localStorage.setItem('fintech_wellness_products', JSON.stringify(defaultWellness));
+    return defaultWellness;
+  });
+
   const [globalNotification, setGlobalNotification] = useState<string | null>(() => {
     return localStorage.getItem('fintech_global_notification') || "Bienvenue sur notre plateforme d'investissement VIP ! Profitez d'un taux d'intérêt exceptionnel de bienvenue.";
   });
@@ -547,20 +842,101 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const dbInvestments = await fetchTableData<UserInvestment>('investments');
       if (dbInvestments && dbInvestments.length > 0) setUserInvestments(dbInvestments);
 
+      const dbRevenueLogs = await fetchTableData<RevenueLog>('revenue_logs');
+      if (dbRevenueLogs && dbRevenueLogs.length > 0) setRevenueLogs(dbRevenueLogs);
+
       const dbTickets = await fetchTableData<SupportTicket>('tickets');
-      if (dbTickets && dbTickets.length > 0) setTickets(dbTickets);
+      if (dbTickets && dbTickets.length > 0) {
+        setTickets(prev => {
+          const ticketMap = new Map<string, SupportTicket>();
+          dbTickets.forEach(t => ticketMap.set(t.id, t));
+          
+          prev.forEach(prevT => {
+            const dbT = ticketMap.get(prevT.id);
+            if (!dbT) {
+              ticketMap.set(prevT.id, prevT);
+            } else {
+              const hasNewReply = !!dbT.reply && dbT.reply !== prevT.reply;
+              ticketMap.set(prevT.id, {
+                ...dbT,
+                reply: dbT.reply || prevT.reply,
+                replyCreatedAt: dbT.replyCreatedAt || prevT.replyCreatedAt,
+                status: (prevT.status === 'closed' || dbT.status === 'closed') ? 'closed' : dbT.status,
+                isReadByUser: hasNewReply ? false : (prevT.isReadByUser !== undefined ? prevT.isReadByUser : dbT.isReadByUser),
+              });
+            }
+          });
+
+          const merged = Array.from(ticketMap.values());
+          localStorage.setItem('fintech_tickets', JSON.stringify(merged));
+          return merged;
+        });
+      }
 
       const dbCommissions = await fetchTableData<CommissionHistory>('commissions');
       if (dbCommissions && dbCommissions.length > 0) setCommissions(dbCommissions);
 
       const dbBonusCodes = await fetchTableData<BonusCode>('bonus_codes');
       if (dbBonusCodes && dbBonusCodes.length > 0) setBonusCodes(dbBonusCodes);
+
+      const dbAnnouncements = await fetchTableData<Announcement>('announcements');
+      if (dbAnnouncements && dbAnnouncements.length > 0) setAnnouncements(dbAnnouncements);
+
+      const dbFaqs = await fetchTableData<FaqItem>('faqs');
+      if (dbFaqs && dbFaqs.length > 0) setFaqs(dbFaqs);
     }
 
     hydrateFromSupabase();
 
-    // Poll every 5 seconds for multi-device cross-syncing
-    const syncInterval = setInterval(hydrateFromSupabase, 5000);
+    // Poll every 3 seconds for multi-device cross-syncing
+    const syncInterval = setInterval(hydrateFromSupabase, 3000);
+
+    // Instant cross-tab real-time sync
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'fintech_tickets' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          setTickets(parsed);
+        } catch (err) {
+          console.error("Storage sync tickets error:", err);
+        }
+      }
+      if (e.key === 'fintech_users' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          setUsers(parsed);
+        } catch (err) {
+          console.error("Storage sync users error:", err);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    const handleCustomTicketsChanged = (evt: Event) => {
+      const customEvt = evt as CustomEvent;
+      if (customEvt.detail && Array.isArray(customEvt.detail)) {
+        setTickets(customEvt.detail);
+      }
+    };
+    window.addEventListener('nutrien_tickets_changed', handleCustomTicketsChanged);
+
+    // Fast local polling interval (1s) to ensure instant cross-view & cross-window state updates
+    const ticketPollInterval = setInterval(() => {
+      const stored = localStorage.getItem('fintech_tickets');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            setTickets(prev => {
+              if (JSON.stringify(prev) !== JSON.stringify(parsed)) {
+                return parsed;
+              }
+              return prev;
+            });
+          }
+        } catch {}
+      }
+    }, 1000);
 
     const statsInterval = setInterval(() => {
       setLiveStats(prev => {
@@ -579,6 +955,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => {
       clearInterval(syncInterval);
       clearInterval(statsInterval);
+      clearInterval(ticketPollInterval);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('nutrien_tickets_changed', handleCustomTicketsChanged);
     };
   }, []);
 
@@ -627,8 +1006,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     localStorage.setItem('aurainvest_withdrawal_proofs', JSON.stringify(withdrawalProofs));
+    localStorage.setItem('fintech_withdrawal_proofs', JSON.stringify(withdrawalProofs));
     syncTableData('withdrawal_proofs', withdrawalProofs);
   }, [withdrawalProofs]);
+
+  useEffect(() => {
+    const handleProofsSync = () => {
+      const data = localStorage.getItem('aurainvest_withdrawal_proofs') || localStorage.getItem('fintech_withdrawal_proofs');
+      if (data) {
+        try {
+          const parsed = JSON.parse(data);
+          setWithdrawalProofs(parsed);
+        } catch (e) {
+          console.error("Error parsing synchronized proofs:", e);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleProofsSync);
+    window.addEventListener('nutrien_proofs_changed', handleProofsSync);
+
+    return () => {
+      window.removeEventListener('storage', handleProofsSync);
+      window.removeEventListener('nutrien_proofs_changed', handleProofsSync);
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('fintech_bonus_codes', JSON.stringify(bonusCodes));
@@ -645,6 +1047,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     syncTableData('tickets', tickets);
   }, [tickets]);
 
+  useEffect(() => {
+    localStorage.setItem('fintech_announcements', JSON.stringify(announcements));
+    syncTableData('announcements', announcements);
+  }, [announcements]);
+
+  useEffect(() => {
+    localStorage.setItem('fintech_revenue_logs', JSON.stringify(revenueLogs));
+    syncTableData('revenue_logs', revenueLogs);
+  }, [revenueLogs]);
+
   // AUTOMATIC 24H REVENUE DISTRIBUTION WORKER (Revenus tombent automatiquement chaque 24h)
   useEffect(() => {
     const checkAndDistributeEarnings = () => {
@@ -652,11 +1064,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       let hasChanges = false;
       const userGainsMap: Record<string, number> = {};
+      const newLogsToAdd: RevenueLog[] = [];
 
       const updatedInvestments = userInvestments.map(inv => {
         if (inv.daysRemaining <= 0) return inv;
 
-        const lastClaimMs = new Date(inv.lastClaimDate).getTime();
+        const lastClaimMs = new Date(inv.lastClaimDate || inv.purchaseDate).getTime();
         const elapsedMs = Date.now() - lastClaimMs;
         const cycles = Math.min(inv.daysRemaining, Math.floor(elapsedMs / (24 * 3600 * 1000)));
 
@@ -664,6 +1077,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           hasChanges = true;
           const totalEarnedInCycle = inv.dailyGain * cycles;
           userGainsMap[inv.userId] = (userGainsMap[inv.userId] || 0) + totalEarnedInCycle;
+
+          // Record each 24h cycle transaction in history
+          for (let c = 0; c < cycles; c++) {
+            const creditedTime = new Date(lastClaimMs + (c + 1) * 24 * 3600 * 1000).toISOString();
+            newLogsToAdd.push({
+              id: `rev-${inv.id}-${lastClaimMs}-${c}`,
+              userId: inv.userId,
+              investmentId: inv.id,
+              productName: inv.productName,
+              amount: inv.dailyGain,
+              creditedAt: creditedTime
+            });
+          }
 
           return {
             ...inv,
@@ -676,24 +1102,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (hasChanges) {
         setUserInvestments(updatedInvestments);
-        setUsers(prevUsers => prevUsers.map(u => {
-          const gain = userGainsMap[u.id];
-          if (gain && gain > 0) {
-            return {
-              ...u,
-              balance: u.balance + gain,
-              totalEarnings: u.totalEarnings + gain
-            };
+        localStorage.setItem('fintech_investments', JSON.stringify(updatedInvestments));
+        syncTableData('investments', updatedInvestments);
+
+        // Update Users & CurrentUser Balance
+        setUsers(prevUsers => {
+          const updatedUsers = prevUsers.map(u => {
+            const gain = userGainsMap[u.id];
+            if (gain && gain > 0) {
+              return {
+                ...u,
+                balance: u.balance + gain,
+                dailyEarnings: (u.dailyEarnings || 0) + gain,
+                totalEarnings: (u.totalEarnings || 0) + gain
+              };
+            }
+            return u;
+          });
+
+          // Update logged in user state immediately
+          if (currentUser && userGainsMap[currentUser.id]) {
+            const updatedCurr = updatedUsers.find(u => u.id === currentUser.id);
+            if (updatedCurr) {
+              setCurrentUser(updatedCurr);
+              localStorage.setItem('fintech_current_user', JSON.stringify(updatedCurr));
+            }
           }
-          return u;
-        }));
+
+          localStorage.setItem('fintech_users', JSON.stringify(updatedUsers));
+          syncTableData('users', updatedUsers);
+          return updatedUsers;
+        });
+
+        // Add transaction history records
+        if (newLogsToAdd.length > 0) {
+          setRevenueLogs(prevLogs => {
+            const existingIds = new Set(prevLogs.map(l => l.id));
+            const uniqueLogs = newLogsToAdd.filter(l => !existingIds.has(l.id));
+            if (uniqueLogs.length === 0) return prevLogs;
+            const updatedLogs = [...uniqueLogs, ...prevLogs];
+            localStorage.setItem('fintech_revenue_logs', JSON.stringify(updatedLogs));
+            syncTableData('revenue_logs', updatedLogs);
+            return updatedLogs;
+          });
+        }
       }
     };
 
     checkAndDistributeEarnings();
-    const interval = setInterval(checkAndDistributeEarnings, 5000);
+    const interval = setInterval(checkAndDistributeEarnings, 3000);
     return () => clearInterval(interval);
-  }, [userInvestments]);
+  }, [userInvestments, currentUser]);
 
   // Auth Operations
   const login = async (phone: string, word: string): Promise<{ success: boolean; error?: string }> => {
@@ -985,7 +1444,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
-  const saveWithdrawalAccount = (accountName: string, accountNumber: string, pin: string) => {
+  const saveWithdrawalAccount = (accountName: string, accountNumber: string, pin: string, network?: string, country?: string) => {
     if (!currentUser) return { success: false, error: "Non connecté." };
     if (!accountName.trim()) return { success: false, error: "Le nom complet est requis." };
     if (!accountNumber.trim()) return { success: false, error: "Le numéro de compte de retrait est requis." };
@@ -994,19 +1453,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Obscure PIN securely before storing
     const securePinHash = btoa(pin + '_aura_sec_salt');
 
+    const updatedFields = {
+      withdrawalAccountName: accountName.trim(),
+      withdrawalAccountNumber: accountNumber.trim(),
+      withdrawalNetwork: network,
+      withdrawalCountry: country,
+      withdrawalPinHash: securePinHash
+    };
+
+    setCurrentUser(prev => prev ? { ...prev, ...updatedFields } : null);
+
     setUsers(prev => prev.map(u => {
       if (u.id === currentUser.id) {
         return {
           ...u,
-          withdrawalAccountName: accountName.trim(),
-          withdrawalAccountNumber: accountNumber.trim(),
-          withdrawalPinHash: securePinHash
+          ...updatedFields
         };
       }
       return u;
     }));
 
     return { success: true };
+  };
+
+  const sendAdminDirectMessage = (userId: string, message: string) => {
+    if (!userId || !message.trim()) return;
+    const targetUser = users.find(u => u.id === userId);
+    const fallbackTicket = tickets.find(t => t.userId === userId);
+    const userName = targetUser?.name || fallbackTicket?.userName || 'Client ' + userId.slice(0, 5);
+
+    const newTicket: SupportTicket = {
+      id: 'tkt-adm-' + Math.random().toString(36).substr(2, 9),
+      userId: userId,
+      userName: userName,
+      subject: "Message de l'Administration",
+      message: "Message direct du Support Client Nutrien.",
+      reply: message.trim(),
+      status: 'closed',
+      createdAt: new Date().toISOString(),
+      replyCreatedAt: new Date().toISOString(),
+      isReadByUser: false
+    };
+
+    setTickets(prev => {
+      const updated = [newTicket, ...prev];
+      localStorage.setItem('fintech_tickets', JSON.stringify(updated));
+      syncTableData('tickets', updated);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_tickets_changed', { detail: updated }));
+      }
+      return updated;
+    });
   };
 
   const requestWithdrawal = (amount: number, network: any, accountNumber: string) => {
@@ -1143,6 +1640,93 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, amount: bonusAmount };
   };
 
+  const spinLuckyWheel = () => {
+    if (!currentUser) return { success: false, error: "Veuillez vous connecter." };
+
+    const dbUser = users.find(u => u.id === currentUser.id);
+    if (!dbUser) return { success: false, error: "Utilisateur non trouvé." };
+
+    const availableTickets = dbUser.drawTickets || 0;
+    if (availableTickets <= 0) {
+      return { 
+        success: false, 
+        error: "Vous n'avez aucun ticket de tirage disponible. Partagez votre lien de parrainage pour en gagner !" 
+      };
+    }
+
+    const prizes = wheelConfig.prizes;
+    if (!prizes || prizes.length === 0) {
+      return { success: false, error: "Aucun prix configuré pour le tirage." };
+    }
+
+    // Pick random prize
+    const prize = prizes[Math.floor(Math.random() * prizes.length)];
+
+    // Deduct 1 ticket, credit user balance & total earnings
+    setUsers(prev => prev.map(u => {
+      if (u.id === currentUser.id) {
+        return {
+          ...u,
+          drawTickets: Math.max(0, (u.drawTickets || 1) - 1),
+          balance: u.balance + prize.value,
+          totalEarnings: u.totalEarnings + prize.value
+        };
+      }
+      return u;
+    }));
+
+    // Mask phone number for live feed privacy e.g. +228 90****95
+    let maskedPhone = currentUser.phone;
+    if (maskedPhone.length >= 8) {
+      maskedPhone = maskedPhone.slice(0, 5) + '****' + maskedPhone.slice(-2);
+    }
+
+    // Record real draw action in database/local state
+    const newRecord: DrawRecord = {
+      id: 'draw-' + Math.random().toString(36).substr(2, 9),
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userPhone: maskedPhone,
+      action: 'a fait tourner la roue',
+      prizeLabel: prize.label,
+      prizeValue: prize.value,
+      createdAt: new Date().toISOString()
+    };
+
+    setDrawRecords(prev => {
+      const updated = [newRecord, ...prev];
+      localStorage.setItem('fintech_draw_records', JSON.stringify(updated));
+      return updated;
+    });
+
+    return { success: true, prize };
+  };
+
+  const updateWheelConfig = (newConfig: WheelConfig) => {
+    setWheelConfig(newConfig);
+    localStorage.setItem('fintech_wheel_config', JSON.stringify(newConfig));
+  };
+
+  const deleteDrawRecord = (recordId: string) => {
+    setDrawRecords(prev => {
+      const updated = prev.filter(r => r.id !== recordId);
+      localStorage.setItem('fintech_draw_records', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const addTicketsToUser = (userId: string, count: number) => {
+    setUsers(prev => prev.map(u => {
+      if (u.id === userId) {
+        return {
+          ...u,
+          drawTickets: Math.max(0, (u.drawTickets || 0) + count)
+        };
+      }
+      return u;
+    }));
+  };
+
   const createSupportTicket = (subject: string, message: string, imageUrl?: string) => {
     if (!currentUser) return;
     const newTicket: SupportTicket = {
@@ -1158,6 +1742,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTickets(prev => {
       const updated = [newTicket, ...prev];
       localStorage.setItem('fintech_tickets', JSON.stringify(updated));
+      syncTableData('tickets', updated);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_tickets_changed', { detail: updated }));
+      }
       return updated;
     });
   };
@@ -1183,13 +1771,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateUserBalance = (userId: string, amount: number) => {
-    setUsers(prev => prev.map(u => {
-      if (u.id === userId) {
-        const cleanBalance = Math.max(0, u.balance + amount);
-        return { ...u, balance: cleanBalance };
+    setUsers(prev => {
+      const updated = prev.map(u => {
+        if (u.id === userId) {
+          const cleanBalance = Math.max(0, u.balance + amount);
+          return { ...u, balance: cleanBalance };
+        }
+        return u;
+      });
+      localStorage.setItem('fintech_users', JSON.stringify(updated));
+      syncTableData('users', updated);
+      return updated;
+    });
+
+    setCurrentUser(prev => {
+      if (prev && prev.id === userId) {
+        const updatedUser = { ...prev, balance: Math.max(0, prev.balance + amount) };
+        localStorage.setItem('fintech_current_user', JSON.stringify(updatedUser));
+        return updatedUser;
       }
-      return u;
-    }));
+      return prev;
+    });
   };
 
   const adminUpdateUserPassword = (userId: string, newWord: string): { success: boolean; error?: string } => {
@@ -1324,6 +1926,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         replyCreatedAt: new Date().toISOString() 
       } : t);
       localStorage.setItem('fintech_tickets', JSON.stringify(updated));
+      syncTableData('tickets', updated);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_tickets_changed', { detail: updated }));
+      }
       return updated;
     });
   };
@@ -1334,6 +1940,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!hasUnread) return prev;
       const updated = prev.map(t => t.userId === userId ? { ...t, isReadByUser: true } : t);
       localStorage.setItem('fintech_tickets', JSON.stringify(updated));
+      syncTableData('tickets', updated);
       return updated;
     });
   };
@@ -1371,46 +1978,191 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setWithdrawalProofs(prev => {
       const updated = [newProof, ...prev];
       localStorage.setItem('aurainvest_withdrawal_proofs', JSON.stringify(updated));
+      localStorage.setItem('fintech_withdrawal_proofs', JSON.stringify(updated));
+      syncTableData('withdrawal_proofs', updated);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_proofs_changed', { detail: updated }));
+      }
       return updated;
     });
     return { success: true };
   };
 
   const processWithdrawalProof = (proofId: string, status: 'approved' | 'rejected') => {
-    setWithdrawalProofs(prev => prev.map(p => {
-      if (p.id === proofId) {
-        return {
-          ...p,
-          status,
-          isVerified: status === 'approved'
-        };
+    setWithdrawalProofs(prev => {
+      const updated = prev.map(p => {
+        if (p.id === proofId) {
+          return {
+            ...p,
+            status,
+            isVerified: status === 'approved'
+          };
+        }
+        return p;
+      });
+      localStorage.setItem('aurainvest_withdrawal_proofs', JSON.stringify(updated));
+      localStorage.setItem('fintech_withdrawal_proofs', JSON.stringify(updated));
+      syncTableData('withdrawal_proofs', updated);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_proofs_changed', { detail: updated }));
       }
-      return p;
-    }));
+      return updated;
+    });
   };
 
   const deleteWithdrawalProof = (proofId: string) => {
     setWithdrawalProofs(prev => {
       const updated = prev.filter(p => p.id !== proofId);
       localStorage.setItem('aurainvest_withdrawal_proofs', JSON.stringify(updated));
+      localStorage.setItem('fintech_withdrawal_proofs', JSON.stringify(updated));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_proofs_changed', { detail: updated }));
+      }
       return updated;
     });
     deleteRecord('withdrawal_proofs', proofId);
   };
 
   const updateWithdrawalProof = (proofId: string, data: Partial<WithdrawalProof>) => {
-    setWithdrawalProofs(prev => prev.map(p => {
-      if (p.id === proofId) {
-        const nextStatus = data.status || p.status;
-        return {
-          ...p,
-          ...data,
-          status: nextStatus,
-          isVerified: nextStatus === 'approved'
-        };
+    setWithdrawalProofs(prev => {
+      const updated = prev.map(p => {
+        if (p.id === proofId) {
+          const nextStatus = data.status || p.status;
+          return {
+            ...p,
+            ...data,
+            status: nextStatus,
+            isVerified: nextStatus === 'approved'
+          };
+        }
+        return p;
+      });
+      localStorage.setItem('aurainvest_withdrawal_proofs', JSON.stringify(updated));
+      localStorage.setItem('fintech_withdrawal_proofs', JSON.stringify(updated));
+      syncTableData('withdrawal_proofs', updated);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_proofs_changed', { detail: updated }));
       }
-      return p;
-    }));
+      return updated;
+    });
+  };
+
+  const addAnnouncement = (data: { title: string; content: string; imageUrl?: string }) => {
+    const now = new Date();
+    const pad = (n: number) => (n < 10 ? '0' + n : n);
+    const formattedDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    
+    const newAnn: Announcement = {
+      id: `ann-${Date.now()}`,
+      title: data.title.trim(),
+      content: data.content.trim(),
+      imageUrl: data.imageUrl?.trim() || null,
+      createdAt: formattedDate,
+      isNew: true
+    };
+
+    setAnnouncements(prev => {
+      const updated = [newAnn, ...prev];
+      localStorage.setItem('fintech_announcements', JSON.stringify(updated));
+      syncTableData('announcements', updated);
+      return updated;
+    });
+
+    // Send global notification to all users' accounts
+    const notifMsg = `📢 Nouvel avis officiel : ${data.title.trim()}`;
+    setGlobalNotification(notifMsg);
+    localStorage.setItem('fintech_global_notification', notifMsg);
+  };
+
+  const deleteAnnouncement = (id: string) => {
+    setAnnouncements(prev => {
+      const updated = prev.filter(a => a.id !== id);
+      localStorage.setItem('fintech_announcements', JSON.stringify(updated));
+      deleteRecord('announcements', id);
+      return updated;
+    });
+  };
+
+  const markAnnouncementAsRead = (id: string) => {
+    setAnnouncements(prev => {
+      const updated = prev.map(a => a.id === id ? { ...a, isNew: false } : a);
+      localStorage.setItem('fintech_announcements', JSON.stringify(updated));
+      syncTableData('announcements', updated);
+      return updated;
+    });
+  };
+
+  const addFaq = (question: string, answer: string, category?: string) => {
+    const newFaqItem: FaqItem = {
+      id: `faq-${Date.now()}`,
+      question: question.trim(),
+      answer: answer.trim(),
+      category: category?.trim() || 'Général',
+      order: faqs.length + 1,
+      createdAt: new Date().toISOString()
+    };
+    setFaqs(prev => {
+      const updated = [newFaqItem, ...prev];
+      localStorage.setItem('fintech_faqs', JSON.stringify(updated));
+      syncTableData('faqs', updated);
+      return updated;
+    });
+  };
+
+  const updateFaq = (id: string, question: string, answer: string, category?: string) => {
+    setFaqs(prev => {
+      const updated = prev.map(f => {
+        if (f.id === id) {
+          return {
+            ...f,
+            question: question.trim(),
+            answer: answer.trim(),
+            category: category?.trim() || f.category || 'Général'
+          };
+        }
+        return f;
+      });
+      localStorage.setItem('fintech_faqs', JSON.stringify(updated));
+      syncTableData('faqs', updated);
+      return updated;
+    });
+  };
+
+  const deleteFaq = (id: string) => {
+    setFaqs(prev => {
+      const updated = prev.filter(f => f.id !== id);
+      localStorage.setItem('fintech_faqs', JSON.stringify(updated));
+      deleteRecord('faqs', id);
+      return updated;
+    });
+  };
+
+  const addOrUpdateWellnessProduct = (productData: Omit<WellnessProduct, 'id'> & { id?: string }) => {
+    setWellnessProducts(prev => {
+      let updated: WellnessProduct[];
+      if (productData.id) {
+        updated = prev.map(p => p.id === productData.id ? { ...p, ...productData, id: productData.id } as WellnessProduct : p);
+      } else {
+        const newProd: WellnessProduct = {
+          ...productData,
+          id: `wellness-${Date.now()}`,
+          createdAt: new Date().toISOString()
+        };
+        updated = [newProd, ...prev];
+      }
+      localStorage.setItem('fintech_wellness_products', JSON.stringify(updated));
+      syncTableData('wellness_products', updated);
+      return updated;
+    });
+  };
+
+  const deleteWellnessProduct = (id: string) => {
+    setWellnessProducts(prev => {
+      const updated = prev.filter(p => p.id !== id);
+      localStorage.setItem('fintech_wellness_products', JSON.stringify(updated));
+      deleteRecord('wellness_products', id);
+      return updated;
+    });
   };
 
   return (
@@ -1422,9 +2174,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deposits,
       withdrawals,
       withdrawalProofs,
+      revenueLogs,
       bonusCodes,
       commissions,
       tickets,
+      drawRecords,
+      wheelConfig,
+      announcements,
+      faqs,
+      wellnessProducts,
       liveStats,
       globalNotification,
       
@@ -1439,8 +2197,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       requestDeposit,
       requestWithdrawal,
       saveWithdrawalAccount,
+      sendAdminDirectMessage,
       redeemBonusCode,
       claimDailyBonus,
+      spinLuckyWheel,
       createSupportTicket,
       addWithdrawalProof,
       
@@ -1460,7 +2220,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       sendGlobalNotification,
       replyToTicket,
       markTicketsAsRead,
-      updateUserRole
+      updateUserRole,
+      updateWheelConfig,
+      deleteDrawRecord,
+      addTicketsToUser,
+      addAnnouncement,
+      deleteAnnouncement,
+      markAnnouncementAsRead,
+      addFaq,
+      updateFaq,
+      deleteFaq,
+      addOrUpdateWellnessProduct,
+      deleteWellnessProduct
     }}>
       {children}
     </AppContext.Provider>

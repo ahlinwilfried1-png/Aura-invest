@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { WithdrawalHistoryView } from './WithdrawalHistoryView';
+import { LuckyWheel } from './LuckyWheel';
+import { LinkBankCardView } from './LinkBankCardView';
+import { FaqView } from './FaqView';
+import { useApp } from '../context/AppContext';
 import { 
   User, 
   DepositRequest, 
@@ -30,7 +34,12 @@ import {
   Send,
   HelpCircle,
   FileText,
-  LockKeyhole
+  LockKeyhole,
+  Info,
+  Globe,
+  Building2,
+  Handshake,
+  Award
 } from 'lucide-react';
 
 interface AccountViewProps {
@@ -41,6 +50,8 @@ interface AccountViewProps {
   products: InvestmentProduct[];
   tickets: SupportTicket[];
   globalNotification: string | null;
+  announcements?: any[];
+  unreadChatCount?: number;
   onRequestDeposit: (amount: number, method: any, transactionId: string, screenshotUrl: string | null) => { success: boolean; error?: string };
   onRequestWithdrawal: (amount: number, network: any, accountNumber: string) => { success: boolean; error?: string };
   onUpdateProfile: (data: { name: string; whatsapp: string; country: string }) => void;
@@ -51,7 +62,7 @@ interface AccountViewProps {
   onLogout: () => void;
   onShowToast: (type: 'success' | 'err' | 'info', message: string) => void;
   onBuyProduct?: (product: InvestmentProduct) => void;
-  onOpenTab?: (tab: 'deposit' | 'withdraw' | 'certificate' | 'announcements') => void;
+  onOpenTab?: (tab: 'deposit' | 'withdraw' | 'certificate' | 'announcements' | 'chat') => void;
   onToggleAdmin?: () => void;
 }
 
@@ -67,7 +78,9 @@ type SubPage =
   | 'notifications'
   | 'security'
   | 'support'
-  | 'bonus';
+  | 'bonus'
+  | 'link_card'
+  | 'faq';
 
 export const AccountView: React.FC<AccountViewProps> = ({
   currentUser,
@@ -77,6 +90,8 @@ export const AccountView: React.FC<AccountViewProps> = ({
   products,
   tickets,
   globalNotification,
+  announcements = [],
+  unreadChatCount = 0,
   onRequestDeposit,
   onRequestWithdrawal,
   onUpdateProfile,
@@ -90,7 +105,10 @@ export const AccountView: React.FC<AccountViewProps> = ({
   onOpenTab,
   onToggleAdmin,
 }) => {
+  const { faqs = [] } = useApp();
   const [activeSubPage, setActiveSubPage] = useState<SubPage>(null);
+
+  const hasUnreadAnnouncements = announcements.some(a => a.isNew) || !!globalNotification;
 
   // Forms state
   // Profile edit
@@ -155,97 +173,102 @@ export const AccountView: React.FC<AccountViewProps> = ({
       {/* ========================================================= */}
       {activeSubPage === null && (
         <div className="space-y-4 animate-fadeIn max-w-lg mx-auto pb-6 font-sans">
-          {/* 1. Top Header Card: "Mon portefeuille" smooth & minimalist style */}
-          <div className="bg-white rounded-3xl p-5 relative overflow-hidden space-y-4 border-b border-slate-100">
-            {/* Top-right decorative red accent */}
-            <div className="absolute top-0 right-0 w-24 h-10 bg-red-600/90 rounded-bl-2xl pointer-events-none" />
-
-            {/* Header Title with Wallet Icon */}
-            <div className="flex items-center space-x-2.5 relative z-10">
-              <div className="w-9 h-9 rounded-full bg-red-600 text-white flex items-center justify-center font-bold">
-                <Wallet className="w-4.5 h-4.5" />
+          {/* 1. Top Header Card: "Mon portefeuille" Nutrien Ag Solutions style (White theme) */}
+          <div 
+            className="py-3 px-1 relative overflow-hidden space-y-4 text-slate-900"
+          >
+            {/* Nutrien Ag Badge */}
+            <div className="flex items-center justify-between pb-1">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                  <Wallet className="w-4 h-4" />
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-slate-900">Mon portefeuille</h3>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">Mon portefeuille</h3>
+              <div className="bg-emerald-50 px-2.5 py-1 rounded-full flex items-center space-x-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-black font-mono text-emerald-700 uppercase tracking-widest">Nutrien Ag</span>
+              </div>
             </div>
 
             {/* Balance ("Équilibre") */}
             <div className="relative z-10 pt-0.5">
-              <div className="text-sm sm:text-base text-slate-600 font-normal flex items-baseline space-x-2">
-                <span>Équilibre:</span>
-                <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                  {currentUser.balance.toLocaleString()}
+              <div className="text-xs sm:text-sm text-slate-600 font-medium flex items-baseline space-x-2">
+                <span>Équilibre disponible:</span>
+                <span className="text-2xl sm:text-3xl font-black text-amber-600 tracking-tight font-mono">
+                  {currentUser.balance.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} <span className="text-xs font-sans text-amber-700">FCFA</span>
                 </span>
               </div>
             </div>
 
             {/* 6 Grid items (2 rows x 3 cols) - clean & borderless */}
-            <div className="grid grid-cols-3 gap-y-3.5 gap-x-2 pt-3 text-center border-t border-slate-100">
+            <div className="grid grid-cols-3 gap-y-3.5 gap-x-2 pt-3.5 text-center font-mono">
               <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-bold text-slate-900">
+                <div className="text-sm sm:text-base font-black text-slate-900">
                   {myInvestments.reduce((acc, inv) => acc + (inv.claimsHistory ? inv.claimsHistory.filter(c => new Date(c).toDateString() === new Date().toDateString()).length * inv.dailyGain : 0), 0)}
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-normal text-slate-500 leading-tight">
-                  Aucun revenu reçu aujourd'hui(XAF)
+                <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 leading-tight">
+                  Revenu du jour (FCFA)
                 </div>
               </div>
 
               <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-bold text-slate-900">
-                  {myInvestments.reduce((acc, inv) => acc + (inv.totalGain || 0), 0).toLocaleString()}
+                <div className="text-sm sm:text-base font-black text-amber-600">
+                  {myInvestments.reduce((acc, inv) => acc + (inv.totalGain || 0), 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-normal text-slate-500 leading-tight">
-                  Revenu cumulé(XAF)
-                </div>
-              </div>
-
-              <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-bold text-slate-900">
-                  {myWithdrawals.filter(w => new Date(w.createdAt).toDateString() === new Date().toDateString()).reduce((acc, w) => acc + w.amount, 0).toLocaleString()}
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-normal text-slate-500 leading-tight">
-                  Retirer aujourd'hui(XAF)
+                <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 leading-tight">
+                  Revenu cumulé (FCFA)
                 </div>
               </div>
 
               <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-bold text-slate-900">
-                  {myWithdrawals.filter(w => w.status === 'approved').reduce((acc, w) => acc + w.amount, 0).toLocaleString()}
+                <div className="text-sm sm:text-base font-black text-slate-900">
+                  {myWithdrawals.filter(w => new Date(w.createdAt).toDateString() === new Date().toDateString()).reduce((acc, w) => acc + w.amount, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-normal text-slate-500 leading-tight">
-                  Retraits totaux(XAF)
+                <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 leading-tight">
+                  Retiré aujourd'hui (FCFA)
                 </div>
               </div>
 
               <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-bold text-slate-900">
+                <div className="text-sm sm:text-base font-black text-emerald-600">
+                  {myWithdrawals.filter(w => w.status === 'approved').reduce((acc, w) => acc + w.amount, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
+                </div>
+                <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 leading-tight">
+                  Retraits totaux (FCFA)
+                </div>
+              </div>
+
+              <div className="space-y-0.5">
+                <div className="text-sm sm:text-base font-black text-sky-600">
                   {currentUser.referralsCount || 0}
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-normal text-slate-500 leading-tight">
+                <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 leading-tight">
                   Taille de l'équipe
                 </div>
               </div>
 
               <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-bold text-slate-900">
+                <div className="text-sm sm:text-base font-black text-amber-600">
                   {currentUser.teamBenefits || 0}
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-normal text-slate-500 leading-tight">
-                  Avantages pour l'équipe(XAF)
+                <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 leading-tight">
+                  Avantages équipe (FCFA)
                 </div>
               </div>
             </div>
           </div>
 
           {/* 2. Smooth, Minimalist Row Items List */}
-          <div className="divide-y divide-slate-100 bg-white rounded-2xl px-2 py-1">
+          <div className="divide-y divide-slate-100/80 px-1 py-1">
             {/* Tirage au sort */}
             <div 
               onClick={() => setActiveSubPage('bonus')}
               className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4 h-4" />
+                <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-600 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4.5 h-4.5" />
                 </div>
                 <span className="text-xs sm:text-sm font-semibold text-slate-900">Tirage au sort</span>
               </div>
@@ -265,12 +288,29 @@ export const AccountView: React.FC<AccountViewProps> = ({
               className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0">
                   <Gift className="w-4.5 h-4.5" />
                 </div>
                 <span className="text-xs sm:text-sm font-semibold text-slate-900">De l'argent gratuit</span>
               </div>
               <ChevronRight className="w-4 h-4 text-slate-400" />
+            </div>
+
+            {/* Lier carte bancaire */}
+            <div 
+              onClick={() => setActiveSubPage('link_card')}
+              className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-teal-50 transition-colors rounded-xl border border-teal-200/60 bg-teal-50/30"
+            >
+              <div className="flex items-center space-x-3.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                  <CreditCard className="w-4.5 h-4.5 stroke-[2.2]" />
+                </div>
+                <div>
+                  <span className="text-xs sm:text-sm font-extrabold text-slate-900 block">Lier carte bancaire</span>
+                  <span className="text-[10px] text-slate-500 font-medium">Coordonnées de retrait & RIB bancaire</span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-teal-700" />
             </div>
 
             {/* Facture de solde */}
@@ -279,7 +319,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
               className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/15 text-indigo-600 flex items-center justify-center shrink-0">
                   <FileText className="w-4.5 h-4.5" />
                 </div>
                 <span className="text-xs sm:text-sm font-semibold text-slate-900">Facture de solde</span>
@@ -293,7 +333,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
               className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-sky-500/15 text-sky-600 flex items-center justify-center shrink-0">
                   <ArrowUpRight className="w-4.5 h-4.5" />
                 </div>
                 <span className="text-xs sm:text-sm font-semibold text-slate-900">Recharger l'enregistrement</span>
@@ -307,7 +347,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
               className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/15 text-rose-600 flex items-center justify-center shrink-0">
                   <ArrowDownLeft className="w-4.5 h-4.5" />
                 </div>
                 <span className="text-xs sm:text-sm font-semibold text-slate-900">Enregistrement des retraits</span>
@@ -321,7 +361,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
               className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-orange-500/15 text-orange-600 flex items-center justify-center shrink-0">
                   <Lock className="w-4.5 h-4.5" />
                 </div>
                 <span className="text-xs sm:text-sm font-semibold text-slate-900">Modifier le mot de passe</span>
@@ -329,16 +369,65 @@ export const AccountView: React.FC<AccountViewProps> = ({
               <ChevronRight className="w-4 h-4 text-slate-400" />
             </div>
 
-            {/* Profil / Infos Personnelles */}
+            {/* À propos de Nutrien */}
             <div 
               onClick={() => setActiveSubPage('profile')}
               className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
-                  <UserIcon className="w-4.5 h-4.5" />
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0">
+                  <Info className="w-4.5 h-4.5" />
                 </div>
-                <span className="text-xs sm:text-sm font-semibold text-slate-900">Profil & Infos Personnelles</span>
+                <span className="text-xs sm:text-sm font-semibold text-slate-900">À propos</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </div>
+
+            {/* Foire Aux Questions (FAQ) */}
+            <div 
+              onClick={() => setActiveSubPage('faq')}
+              className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
+            >
+              <div className="flex items-center space-x-3.5">
+                <div className="w-9 h-9 rounded-xl bg-teal-500/15 text-teal-600 flex items-center justify-center shrink-0">
+                  <HelpCircle className="w-4.5 h-4.5 stroke-[2.2]" />
+                </div>
+                <div>
+                  <span className="text-xs sm:text-sm font-semibold text-slate-900 block">Foire Aux Questions (FAQ)</span>
+                  <span className="text-[10px] text-slate-500 font-medium">Réponses instantanées à vos questions</span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </div>
+
+            {/* Service Client (Chat Support) */}
+            <div 
+              onClick={() => {
+                if (onOpenTab) {
+                  onOpenTab('chat');
+                } else {
+                  setActiveSubPage('support');
+                }
+              }}
+              className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl relative"
+            >
+              <div className="flex items-center space-x-3.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-600 flex items-center justify-center shrink-0 relative">
+                  <Headphones className="w-4.5 h-4.5" />
+                  {unreadChatCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-600 text-white font-black text-[9px] min-w-[16px] h-[16px] px-1 rounded-full flex items-center justify-center border-2 border-white animate-bounce shadow-xs">
+                      {unreadChatCount}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs sm:text-sm font-semibold text-slate-900">Service Client (Chat)</span>
+                  {unreadChatCount > 0 && (
+                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                      Nouveau message ({unreadChatCount})
+                    </span>
+                  )}
+                </div>
               </div>
               <ChevronRight className="w-4 h-4 text-slate-400" />
             </div>
@@ -353,22 +442,20 @@ export const AccountView: React.FC<AccountViewProps> = ({
                     onShowToast('info', "Accès au panneau d'administration");
                   }
                 }}
-                className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-amber-500/10 transition-colors rounded-xl border border-amber-200/60 bg-amber-50/40"
+                className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-red-500/10 transition-colors rounded-xl border border-red-200/60 bg-red-50/40"
               >
                 <div className="flex items-center space-x-3.5">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold shrink-0 shadow-xs">
+                  <div className="w-9 h-9 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
                     <LockKeyhole className="w-4.5 h-4.5 stroke-[2.5]" />
                   </div>
                   <div>
                     <span className="text-xs sm:text-sm font-bold text-slate-900 block">Panneau Administratif</span>
-                    <span className="text-[10px] font-semibold text-amber-800">Gestion globale du site & utilisateurs</span>
+                    <span className="text-[10px] font-semibold text-red-800">Gestion globale du site & utilisateurs</span>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-amber-700" />
+                <ChevronRight className="w-4 h-4 text-red-700" />
               </div>
             )}
-
-
 
             {/* Se déconnecter */}
             <div 
@@ -376,7 +463,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
               className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-red-50/50 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-red-500/15 text-red-600 flex items-center justify-center shrink-0">
                   <LogOut className="w-4.5 h-4.5" />
                 </div>
                 <span className="text-xs sm:text-sm font-semibold text-red-600">Se déconnecter</span>
@@ -388,62 +475,349 @@ export const AccountView: React.FC<AccountViewProps> = ({
       )}
 
       {/* ========================================================= */}
-      {/* SUB-PAGE 1: PROFIL / INFORMATIONS PERSONNELLES */}
+      {/* SUB-PAGE 1: À PROPOS DE NUTRIEN */}
       {/* ========================================================= */}
       {activeSubPage === 'profile' && (
-        <div className="space-y-4">
-          {renderHeader('Profil / Informations Personnelles')}
+        <div className="space-y-6 animate-fadeIn pb-8">
+          {renderHeader('À propos de Nutrien')}
 
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4 shadow-2xs">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 font-mono">NOM COMPLET</label>
-              <input
-                type="text"
-                value={profileForm.name}
-                onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-slate-900 outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 font-mono">TÉLÉPHONE (NON MODIFIABLE)</label>
-              <input
-                type="text"
-                value={currentUser.phone}
-                disabled
-                className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono text-slate-500 cursor-not-allowed"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 font-mono">NUMÉRO WHATSAPP</label>
-              <input
-                type="text"
-                value={profileForm.whatsapp}
-                onChange={(e) => setProfileForm({ ...profileForm, whatsapp: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-slate-900 outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 font-mono">PAYS</label>
-              <input
-                type="text"
-                value={profileForm.country}
-                onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-slate-900 outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <button
-              onClick={() => {
-                onUpdateProfile(profileForm);
-                onShowToast('success', 'Profil mis à jour avec succès !');
-              }}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-2xs"
+          {/* Clean presentation laid directly on background without borders or outer card boxes */}
+          <div className="space-y-6 text-slate-900 font-sans px-1">
+            
+            {/* OFFICIAL PARTNERSHIP DOCUMENT IMAGE / CARD (NON-TOUCHABLE / NON-ENLARGEABLE) */}
+            <div 
+              className="relative rounded-2xl overflow-hidden border border-emerald-800/20 shadow-md bg-white select-none pointer-events-none touch-none"
+              style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none' }}
+              onContextMenu={(e) => e.preventDefault()}
+              onClick={(e) => e.preventDefault()}
             >
-              Enregistrer les modifications
-            </button>
+              {/* Green Header Banner with Agricultural Fields motif */}
+              <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-900 text-white p-4 text-center relative">
+                <div className="flex items-center justify-center space-x-2 mb-1">
+                  <div className="w-8 h-8 rounded-full bg-white text-emerald-800 flex items-center justify-center font-black text-sm shadow-xs">
+                    🌱
+                  </div>
+                  <span className="font-black tracking-widest text-sm uppercase text-amber-300">
+                    NUTRIEN AGRICULTURE
+                  </span>
+                </div>
+                <h2 className="text-base sm:text-lg font-black tracking-tight text-white uppercase">
+                  ACCORD DE PARTENARIAT INTERNATIONAL
+                </h2>
+                <p className="text-[11px] font-bold tracking-wider text-emerald-100 uppercase mt-0.5">
+                  SIGNATURE DE CONTRAT DE COLLABORATION
+                </p>
+              </div>
+
+              {/* Document Preamble */}
+              <div className="p-4 sm:p-5 space-y-4 bg-slate-50/50">
+                <p className="text-center text-xs sm:text-sm text-slate-700 font-medium italic leading-relaxed max-w-xl mx-auto">
+                  « Nous, soussignés, confirmons par la présente la signature d'un accord de partenariat stratégique en vue de promouvoir le <strong className="text-slate-900 font-bold">développement durable de l'agriculture à l'échelle mondiale</strong>. »
+                </p>
+
+                {/* Section Banner 1 */}
+                <div className="bg-emerald-900 text-white text-[11px] sm:text-xs font-black uppercase tracking-widest py-1.5 px-4 rounded-full text-center shadow-xs">
+                  PARTENAIRES ENGAGÉS POUR UNE AGRICULTURE DURABLE
+                </div>
+
+                {/* 6 Partners Grid with Logos, Flags and Locations */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
+                  {/* Partner 1: Nutrien */}
+                  <div className="py-2 px-1 text-center space-y-1">
+                    <div className="flex items-center justify-center space-x-1">
+                      <span className="text-xs">🇹🇬</span>
+                      <span className="text-[10px] font-bold text-slate-600">TOGO</span>
+                    </div>
+                    <div className="font-black text-xs text-emerald-800 uppercase">
+                      NUTRIEN AGRICULTURE
+                    </div>
+                    <div className="text-[9px] font-mono text-slate-400">Siège Social</div>
+                  </div>
+
+                  {/* Partner 2: Corteva */}
+                  <div className="py-2 px-1 text-center space-y-1">
+                    <div className="flex items-center justify-center space-x-1">
+                      <span className="text-xs">🇺🇸</span>
+                      <span className="text-[10px] font-bold text-slate-600">ÉTATS-UNIS</span>
+                    </div>
+                    <div className="font-black text-xs text-slate-900 uppercase">
+                      CORTEVA AGRISCIENCE
+                    </div>
+                    <div className="text-[9px] font-mono text-slate-400">Directeur Général</div>
+                  </div>
+
+                  {/* Partner 3: Bayer */}
+                  <div className="py-2 px-1 text-center space-y-1">
+                    <div className="flex items-center justify-center space-x-1">
+                      <span className="text-xs">🇩🇪</span>
+                      <span className="text-[10px] font-bold text-slate-600">ALLEMAGNE</span>
+                    </div>
+                    <div className="font-black text-xs text-slate-900 uppercase">
+                      BAYER AG
+                    </div>
+                    <div className="text-[9px] font-mono text-slate-400">Agriscence Crop</div>
+                  </div>
+
+                  {/* Partner 4: Syngenta */}
+                  <div className="py-2 px-1 text-center space-y-1">
+                    <div className="flex items-center justify-center space-x-1">
+                      <span className="text-xs">🇨🇭</span>
+                      <span className="text-[10px] font-bold text-slate-600">SUISSE</span>
+                    </div>
+                    <div className="font-black text-xs text-slate-900 uppercase">
+                      SYNGENTA
+                    </div>
+                    <div className="text-[9px] font-mono text-slate-400">Alliance Suisse</div>
+                  </div>
+
+                  {/* Partner 5: Yara */}
+                  <div className="py-2 px-1 text-center space-y-1">
+                    <div className="flex items-center justify-center space-x-1">
+                      <span className="text-xs">🇳🇴</span>
+                      <span className="text-[10px] font-bold text-slate-600">NORVÈGE</span>
+                    </div>
+                    <div className="font-black text-xs text-slate-900 uppercase">
+                      YARA INTERNATIONAL
+                    </div>
+                    <div className="text-[9px] font-mono text-slate-400">Engrais Verts</div>
+                  </div>
+
+                  {/* Partner 6: FMC */}
+                  <div className="py-2 px-1 text-center space-y-1">
+                    <div className="flex items-center justify-center space-x-1">
+                      <span className="text-xs">🇺🇸</span>
+                      <span className="text-[10px] font-bold text-slate-600">ÉTATS-UNIS</span>
+                    </div>
+                    <div className="font-black text-xs text-slate-900 uppercase">
+                      FMC CORPORATION
+                    </div>
+                    <div className="text-[9px] font-mono text-slate-400">Technologies Ag</div>
+                  </div>
+                </div>
+
+                <p className="text-center text-[11px] text-slate-600 font-medium italic pt-1">
+                  Ce partenariat vise à combiner nos expertises et nos ressources pour relever ensemble les défis mondiaux de la sécurité alimentaire et de l'innovation agricole.
+                </p>
+
+                {/* Section Banner 2 */}
+                <div className="bg-emerald-900 text-white text-[11px] sm:text-xs font-black uppercase tracking-widest py-1.5 px-4 rounded-full text-center shadow-xs mt-2">
+                  SIGNATURES DES DIRECTEURS GÉNÉRAUX
+                </div>
+
+                {/* Signatures & Stamps */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+                  {/* Director 1 */}
+                  <div className="py-2 px-1 text-center space-y-1">
+                    <div className="text-xs font-serif italic text-emerald-800 font-bold border-b border-slate-200 pb-1">
+                      ~ Koffi A. Essowe ~
+                    </div>
+                    <div className="text-[11px] font-black text-slate-900 leading-tight">
+                      M. Koffi A. ESSOWE
+                    </div>
+                    <div className="text-[9px] text-slate-500 font-bold uppercase">
+                      Directeur Général NUTRIEN
+                    </div>
+                    <div className="w-8 h-8 rounded-full border-2 border-emerald-600 text-emerald-700 text-[8px] font-mono font-bold flex items-center justify-center mx-auto mt-1 uppercase rotate-[-12deg]">
+                      Sceau
+                    </div>
+                  </div>
+
+                  {/* Director 2 */}
+                  <div className="py-2 px-1 text-center space-y-1">
+                    <div className="text-xs font-serif italic text-sky-800 font-bold border-b border-slate-200 pb-1">
+                      ~ Chuck Magro ~
+                    </div>
+                    <div className="text-[11px] font-black text-slate-900 leading-tight">
+                      M. Chuck MAGRO
+                    </div>
+                    <div className="text-[9px] text-slate-500 font-bold uppercase">
+                      Directeur CORTEVA
+                    </div>
+                    <div className="w-8 h-8 rounded-full border-2 border-sky-600 text-sky-700 text-[8px] font-mono font-bold flex items-center justify-center mx-auto mt-1 uppercase rotate-[8deg]">
+                      Sceau
+                    </div>
+                  </div>
+
+                  {/* Director 3 */}
+                  <div className="py-2 px-1 text-center space-y-1">
+                    <div className="text-xs font-serif italic text-emerald-800 font-bold border-b border-slate-200 pb-1">
+                      ~ Werner Baumann ~
+                    </div>
+                    <div className="text-[11px] font-black text-slate-900 leading-tight">
+                      M. Werner BAUMANN
+                    </div>
+                    <div className="text-[9px] text-slate-500 font-bold uppercase">
+                      Directeur BAYER AG
+                    </div>
+                    <div className="w-8 h-8 rounded-full border-2 border-emerald-600 text-emerald-700 text-[8px] font-mono font-bold flex items-center justify-center mx-auto mt-1 uppercase rotate-[-6deg]">
+                      Sceau
+                    </div>
+                  </div>
+
+                  {/* Director 4 */}
+                  <div className="py-2 px-1 text-center space-y-1">
+                    <div className="text-xs font-serif italic text-purple-800 font-bold border-b border-slate-200 pb-1">
+                      ~ Erik Fjällström ~
+                    </div>
+                    <div className="text-[11px] font-black text-slate-900 leading-tight">
+                      M. Erik FJÄLLSTRÖM
+                    </div>
+                    <div className="text-[9px] text-slate-500 font-bold uppercase">
+                      Directeur SYNGENTA
+                    </div>
+                    <div className="w-8 h-8 rounded-full border-2 border-purple-600 text-purple-700 text-[8px] font-mono font-bold flex items-center justify-center mx-auto mt-1 uppercase rotate-[10deg]">
+                      Sceau
+                    </div>
+                  </div>
+
+                  {/* Director 5 */}
+                  <div className="py-2 px-1 text-center space-y-1">
+                    <div className="text-xs font-serif italic text-blue-800 font-bold border-b border-slate-200 pb-1">
+                      ~ Svein Tore Holsether ~
+                    </div>
+                    <div className="text-[11px] font-black text-slate-900 leading-tight">
+                      M. Svein TORE HOLSETHER
+                    </div>
+                    <div className="text-[9px] text-slate-500 font-bold uppercase">
+                      Directeur YARA
+                    </div>
+                    <div className="w-8 h-8 rounded-full border-2 border-blue-600 text-blue-700 text-[8px] font-mono font-bold flex items-center justify-center mx-auto mt-1 uppercase rotate-[-10deg]">
+                      Sceau
+                    </div>
+                  </div>
+
+                  {/* Director 6 */}
+                  <div className="py-2 px-1 text-center space-y-1">
+                    <div className="text-xs font-serif italic text-rose-800 font-bold border-b border-slate-200 pb-1">
+                      ~ Pierre Brondy ~
+                    </div>
+                    <div className="text-[11px] font-black text-slate-900 leading-tight">
+                      M. Pierre BRONDY
+                    </div>
+                    <div className="text-[9px] text-slate-500 font-bold uppercase">
+                      Directeur FMC CORP
+                    </div>
+                    <div className="w-8 h-8 rounded-full border-2 border-rose-600 text-rose-700 text-[8px] font-mono font-bold flex items-center justify-center mx-auto mt-1 uppercase rotate-[5deg]">
+                      Sceau
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Date */}
+                <div className="text-center pt-2 border-t border-slate-200/80">
+                  <span className="text-[11px] font-mono font-extrabold text-emerald-900 uppercase bg-emerald-100/90 px-3 py-1 rounded-full">
+                    Fait à Lomé, le 05 Mai 2024
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Header Hero Banner */}
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2 text-amber-700 font-mono font-extrabold text-xs uppercase tracking-wider">
+                <Globe className="w-4 h-4 text-amber-600" />
+                <span>Leader Mondial de l'Agro-Industrie & FinTech</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                Nutrien Ag Solutions
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                Nutrien est le plus grand fournisseur mondial d'intrants agricoles, de nutrition des cultures et de solutions financières d'investissement à fort impact. Avec plus de 25 000 collaborateurs et une présence dans plus de 50 pays, Nutrien produit et distribue plus de 27 millions de tonnes de potasse, d'azote et de phosphate.
+              </p>
+            </div>
+
+            {/* Section: Mission & Vision */}
+            <div className="space-y-2 pt-2">
+              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center space-x-2">
+                <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>Notre Mission & Vision Globale</span>
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                Notre mission est d'alimenter l'avenir de manière durable en combinant la puissance de la technologie agricole, des investissements responsables et du bien-être. Nous permettons à des centaines de milliers de membres à travers le monde de participer au rendement direct des chaînes de valeur agricoles mondiales.
+              </p>
+            </div>
+
+            {/* Section: Contrats & Accords avec les Plus Grandes Entreprises */}
+            <div className="space-y-4 pt-3">
+              <div className="space-y-1">
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center space-x-2">
+                  <Handshake className="w-5 h-5 text-amber-600 shrink-0" />
+                  <span>Contrats & Accords Internationaux Majeurs</span>
+                </h3>
+                <p className="text-xs text-slate-600 font-medium">
+                  Nutrien entretient des alliances stratégiques et des contrats de distribution exclusive avec les géants mondiaux de l'industrie :
+                </p>
+              </div>
+
+              <div className="space-y-3 pt-1">
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">Bayer CropScience</span>
+                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Accord Cadre Exclusif</span>
+                  </div>
+                  <p className="text-xs text-slate-700 leading-relaxed font-medium pl-6">
+                    Partenariat stratégique pluriannuel pour la distribution exclusive de semences de haute qualité, d'intrants certifiés et le développement de technologies agricoles à rendement garanti.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">Yara International</span>
+                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Partenariat Décarbonation</span>
+                  </div>
+                  <p className="text-xs text-slate-700 leading-relaxed font-medium pl-6">
+                    Accord international pour la production et la distribution d'engrais verts à faible empreinte carbone et le financement des chaînes d'approvisionnement durables.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">The Mosaic Company</span>
+                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Alliance Logistique</span>
+                  </div>
+                  <p className="text-xs text-slate-700 leading-relaxed font-medium pl-6">
+                    Joint-venture mondiale sécurisant l'approvisionnement en nutriments essentiels (potasse et phosphates) pour stabiliser les retours sur investissement.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">Syngenta Group & BASF</span>
+                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Alliance Numérique</span>
+                  </div>
+                  <p className="text-xs text-slate-700 leading-relaxed font-medium pl-6">
+                    Contrats d'intégration technologique garantissant la traçabilité numérique, la protection des actifs et la certification des produits de bien-être.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">Cargill & John Deere</span>
+                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Partenariat FinTech</span>
+                  </div>
+                  <p className="text-xs text-slate-700 leading-relaxed font-medium pl-6">
+                    Accords de liquidité financière et d'automatisation des paiements garantissant des retraits rapides et sécurisés 24/7 pour tous les investisseurs.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Section: Certifications & Garanties */}
+            <div className="space-y-2 pt-3">
+              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center space-x-2">
+                <Award className="w-5 h-5 text-amber-600 shrink-0" />
+                <span>Certifications & Garanties d'Investissement</span>
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                Nutrien opère sous licence d'exploitation internationale FinTech & AgTech (#NUTRIEN-2026-8890). Tous les projets distribués font l'objet d'un audit de conformité rigoureux assurant la transparence totale et la régularité des paiements quotidiens.
+              </p>
+            </div>
+
           </div>
         </div>
       )}
@@ -455,10 +829,10 @@ export const AccountView: React.FC<AccountViewProps> = ({
         <div className="space-y-4">
           {renderHeader('Dépôt (Recharger le Solde)')}
 
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4 shadow-2xs">
-            <div className="bg-amber-50 p-3 rounded-xl text-xs text-amber-800 space-y-1">
+          <div className="space-y-4 pt-2">
+            <div className="bg-amber-50 p-3.5 rounded-xl text-xs text-amber-900 space-y-1">
               <p className="font-bold">Instructions de Dépôt Mobile Money :</p>
-              <p className="text-[11px] font-normal">
+              <p className="text-[11px] font-medium leading-relaxed">
                 Effectuez le dépôt vers le numéro officiel de la plateforme, puis saisissez le montant et le numéro de transaction reçu par SMS.
               </p>
             </div>
@@ -509,7 +883,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                   onShowToast('err', res.error || 'Erreur lors du dépôt.');
                 }
               }}
-              className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-2xs"
+              className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3.5 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-xs"
             >
               Soumettre la demande de dépôt
             </button>
@@ -524,10 +898,10 @@ export const AccountView: React.FC<AccountViewProps> = ({
         <div className="space-y-4">
           {renderHeader('Retrait (Demander un Paiement)')}
 
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4 shadow-2xs">
-            <div className="bg-emerald-50 p-3 rounded-xl text-xs text-emerald-800 space-y-1">
+          <div className="space-y-4 pt-2">
+            <div className="bg-emerald-50 p-3.5 rounded-xl text-xs text-emerald-900 space-y-1">
               <p className="font-bold">Conditions de Retrait :</p>
-              <p className="text-[11px] font-normal">
+              <p className="text-[11px] font-medium leading-relaxed">
                 Montant minimum : <strong className="font-mono font-bold">1 500 FCFA</strong>. Les retraits sont traités rapidement par Mobile Money.
               </p>
             </div>
@@ -564,7 +938,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 onChange={(e) => setWthForm({ ...wthForm, amount: Number(e.target.value) })}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-slate-900 outline-none"
               />
-              <span className="text-[10px] text-slate-400 block font-mono">
+              <span className="text-[10px] text-slate-500 block font-mono pt-0.5">
                 Solde actuel : {currentUser.balance.toLocaleString()} FCFA
               </span>
             </div>
@@ -579,7 +953,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                   onShowToast('err', res.error || 'Erreur lors de la demande.');
                 }
               }}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-2xs"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3.5 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-xs"
             >
               Confirmer la demande de retrait
             </button>
@@ -594,13 +968,13 @@ export const AccountView: React.FC<AccountViewProps> = ({
         <div className="space-y-4">
           {renderHeader(`Historique des Dépôts (${myDeposits.length})`)}
 
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
+          <div className="space-y-2 pt-2">
             {myDeposits.length === 0 ? (
               <p className="text-xs text-slate-500 py-6 text-center">Aucun dépôt enregistré.</p>
             ) : (
               <div className="space-y-2">
                 {myDeposits.map((dep) => (
-                  <div key={dep.id} className="bg-slate-50 p-3 rounded-xl flex items-center justify-between text-xs">
+                  <div key={dep.id} className="py-3 border-b border-slate-200/60 flex items-center justify-between text-xs">
                     <div>
                       <span className="font-bold text-slate-900 block">{dep.method}</span>
                       <span className="text-[10px] text-slate-400 font-mono">
@@ -650,13 +1024,13 @@ export const AccountView: React.FC<AccountViewProps> = ({
         <div className="space-y-4">
           {renderHeader(`Historique des Commandes (${myInvestments.length})`)}
 
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
+          <div className="space-y-3 pt-2">
             {myInvestments.length === 0 ? (
               <p className="text-xs text-slate-500 py-6 text-center">Aucune commande enregistrée.</p>
             ) : (
               <div className="space-y-3">
                 {myInvestments.map((inv) => (
-                  <div key={inv.id} className="bg-slate-50 p-3.5 rounded-xl space-y-2 text-xs">
+                  <div key={inv.id} className="py-3 border-b border-slate-200/60 space-y-2 text-xs">
                     <div className="flex justify-between items-start">
                       <div>
                         <span className="font-black text-slate-900 block text-sm">{inv.productName}</span>
@@ -669,7 +1043,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center text-[11px] pt-1 border-t border-slate-200/60 text-slate-600">
+                    <div className="flex justify-between items-center text-[11px] pt-1 text-slate-600">
                       <span>Gain quotidien : <strong className="text-emerald-600 font-mono font-bold">+{inv.dailyGain.toLocaleString()} FCFA</strong></span>
                       <span>Restant : <strong className="text-slate-900 font-mono font-bold">{inv.daysRemaining} j</strong></span>
                     </div>
@@ -688,11 +1062,12 @@ export const AccountView: React.FC<AccountViewProps> = ({
         <div className="space-y-4">
           {renderHeader(`Catalogue Produits (${products.filter((p) => p.isActive).length})`)}
 
-          <div className="space-y-3">
+          <div className="space-y-3 pt-2">
             {products
-              .filter((p) => p.isActive)
+              .filter((p) => p.isActive !== false)
+              .sort((a, b) => (a.order || 99) - (b.order || 99))
               .map((prod) => (
-                <div key={prod.id} className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-2xs">
+                <div key={prod.id} className="py-3 border-b border-slate-200/60 flex items-center justify-between gap-3">
                   <div className="flex items-center space-x-3 min-w-0 flex-1">
                     <img 
                       src={prod.image || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80'} 
@@ -712,7 +1087,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                   {onBuyProduct && (
                     <button
                       onClick={() => onBuyProduct(prod)}
-                      className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer flex-shrink-0"
+                      className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer flex-shrink-0 shadow-xs"
                     >
                       Investir
                     </button>
@@ -730,7 +1105,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
         <div className="space-y-4">
           {renderHeader('Notifications & Annonces Officielles')}
 
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-3">
+          <div className="space-y-3 pt-2">
             {globalNotification ? (
               <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-4 space-y-1">
                 <div className="flex items-center space-x-2 text-amber-800 font-extrabold text-xs font-mono uppercase">
@@ -753,7 +1128,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
         <div className="space-y-4">
           {renderHeader('Sécurité & Mot de Passe')}
 
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4 shadow-2xs">
+          <div className="space-y-4 pt-2">
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-700 font-mono">ANCIEN MOT DE PASSE</label>
               <input
@@ -799,7 +1174,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                   onShowToast('err', res.error || 'Erreur lors du changement.');
                 }
               }}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-3 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-2xs"
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-3.5 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-xs"
             >
               Mettre à jour le mot de passe
             </button>
@@ -810,62 +1185,43 @@ export const AccountView: React.FC<AccountViewProps> = ({
 
 
       {/* ========================================================= */}
-      {/* SUB-PAGE 11: BONUS & CODE PROMO */}
+      {/* SUB-PAGE 11: ROUE DE LA CHANCE (TIRAGE AU SORT) */}
       {/* ========================================================= */}
       {activeSubPage === 'bonus' && (
         <div className="space-y-4">
-          {renderHeader('Bonus Quotidien & Code Promo')}
-
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4 shadow-2xs">
-            <div className="bg-yellow-50 p-4 rounded-xl flex items-center justify-between">
-              <div>
-                <span className="font-bold text-slate-900 text-sm block">Pointage Quotidien</span>
-                <span className="text-xs text-slate-500">Réclamez votre bonus chaque jour</span>
-              </div>
-              <button
-                onClick={() => {
-                  const res = onClaimDailyBonus();
-                  if (res.success) {
-                    onShowToast('success', `Pointage récompensé ! +${res.amount || 100} FCFA`);
-                  } else {
-                    onShowToast('info', res.error || "Pointage déjà effectué aujourd'hui.");
-                  }
-                }}
-                className="bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black text-xs px-4 py-2 rounded-xl cursor-pointer"
-              >
-                Pointer
-              </button>
-            </div>
-
-            <div className="space-y-2 pt-2">
-              <label className="text-xs font-bold text-slate-700 font-mono uppercase">UTILISER UN CODE CADEAU / PROMO</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Ex: BIENVENU"
-                  value={bonusInput}
-                  onChange={(e) => setBonusInput(e.target.value)}
-                  className="flex-grow bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-slate-900 outline-none uppercase"
-                />
-                <button
-                  onClick={() => {
-                    if (!bonusInput.trim()) return;
-                    const res = onRedeemBonusCode(bonusInput);
-                    if (res.success) {
-                      onShowToast('success', `Code validé ! +${res.amount} FCFA ajoutés à votre solde.`);
-                      setBonusInput('');
-                    } else {
-                      onShowToast('err', res.error || 'Code invalide ou expiré.');
-                    }
-                  }}
-                  className="bg-slate-900 hover:bg-slate-800 text-white font-black text-xs px-4 py-2.5 rounded-xl cursor-pointer"
-                >
-                  Activer
-                </button>
-              </div>
-            </div>
-          </div>
+          {renderHeader('Roue de la Chance & Tirage')}
+          <LuckyWheel 
+            onShowToast={onShowToast}
+          />
         </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* SUB-PAGE 12: LIER CARTE BANCAIRE (PAGE DÉDIÉE FLUIDE) */}
+      {/* ========================================================= */}
+      {activeSubPage === 'link_card' && (
+        <LinkBankCardView
+          currentUser={currentUser}
+          onBack={() => setActiveSubPage(null)}
+          onShowToast={onShowToast}
+        />
+      )}
+
+      {/* ========================================================= */}
+      {/* SUB-PAGE 13: FOIRE AUX QUESTIONS (FAQ DYNAMIQUE) */}
+      {/* ========================================================= */}
+      {activeSubPage === 'faq' && (
+        <FaqView
+          faqs={faqs}
+          onBack={() => setActiveSubPage(null)}
+          onOpenSupport={() => {
+            if (onOpenTab) {
+              onOpenTab('chat');
+            } else {
+              setActiveSubPage('support');
+            }
+          }}
+        />
       )}
     </div>
   );

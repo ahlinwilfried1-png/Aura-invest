@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
-import { LandingPage } from './components/LandingPage';
 import { AuthPages } from './components/AuthPages';
 import { DashboardLayout } from './components/DashboardLayout';
 
@@ -52,7 +51,13 @@ function AppContent() {
   // Automatically detect partner referral codes from URL parameters
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const refCode = params.get('ref');
+    const refCode = 
+      params.get('ref') || 
+      params.get('code') || 
+      params.get('parrain') || 
+      params.get('refCode') || 
+      params.get('referrer');
+
     if (refCode) {
       localStorage.setItem('aurainvest_ref_code', refCode);
     }

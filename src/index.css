@@ -1,19 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Serif:ital,opsz,wght@0,8..144,300..800;1,8..144,300..800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk", sans-serif;
+  --font-sans: "Roboto Serif", Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-serif: "Roboto Serif", Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-display: "Roboto Serif", Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-heading: "Roboto Serif", Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: "JetBrains Mono", monospace;
   
-  --animate-marquee: marquee 35s linear infinite;
+  --animate-marquee: marquee 25s linear infinite;
   --animate-fadeIn: fadeIn 0.4s ease-out forwards;
   --animate-scaleIn: scaleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   --animate-shake: shake 0.4s ease-in-out;
   
   @keyframes marquee {
-    0% { transform: translateX(10%); }
-    100% { transform: translateX(-100%); }
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
   }
   @keyframes fadeIn {
     0% { opacity: 0; transform: translateY(10px); }
@@ -30,12 +32,46 @@
   }
 }
 
-/* Base custom modifications */
+/* Global Serif Font Application for All Elements */
+html, body, button, input, textarea, select, table, th, td, h1, h2, h3, h4, h5, h6, p, span, a, div, li, ul, ol, nav, form, label, option {
+  font-family: "Roboto Serif", Georgia, Cambria, "Times New Roman", Times, serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
 body {
-  font-family: var(--font-sans);
+  font-family: "Roboto Serif", Georgia, Cambria, "Times New Roman", Times, serif;
   background-color: #f8fafc;
   color: #0f172a;
   overflow-x: hidden;
+  font-size: 15px;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+h1, h2, h3, h4, h5, h6, .font-heading, .font-display {
+  font-family: "Roboto Serif", Georgia, Cambria, "Times New Roman", Times, serif;
+  letter-spacing: -0.015em;
+}
+
+/* Base title typography standardizations */
+h1 {
+  font-size: clamp(24px, 4vw, 32px);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: clamp(20px, 3vw, 26px);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: clamp(18px, 2.5vw, 22px);
+  font-weight: 600;
+  line-height: 1.35;
 }
 
 /* Immersive UI Special Styling Classes */

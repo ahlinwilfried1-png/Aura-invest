@@ -20,6 +20,10 @@ interface OrdersViewProps {
   onShowToast: (type: 'success' | 'err' | 'info', message: string) => void;
 }
 
+const formatAmount = (num: number): string => {
+  return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
+
 export const OrdersView: React.FC<OrdersViewProps> = ({
   currentUser,
   userInvestments,
@@ -59,25 +63,38 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
         </p>
       </div>
 
-      {/* Summary KPI Cards */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-slate-50 border border-slate-200/70 rounded-2xl p-3.5 sm:p-4">
-          <span className="text-[10px] uppercase font-mono font-bold text-slate-400 block">
-            Commandes Actives
-          </span>
-          <span className="text-lg sm:text-2xl font-black text-slate-900 mt-1 block">
-            {activeCount}
-          </span>
+      {/* Summary KPI Cards - Nombre de produits & Revenus collectés */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        {/* Card 1: Nombre de produits */}
+        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-2xs">
+          <div>
+            <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold text-slate-500 tracking-wider block">
+              PRODUITS SOUSCRITS
+            </span>
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 font-mono mt-1 block">
+              {myInvestments.reduce((acc, inv) => acc + (inv.quantity || 1), 0)}{' '}
+              <span className="text-xs font-sans text-slate-500 font-normal">produit(s)</span>
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold shrink-0">
+            <Package className="w-5 h-5 stroke-[2.25]" />
+          </div>
         </div>
 
-        <div className="bg-slate-50 border border-slate-200/70 rounded-2xl p-3.5 sm:p-4">
-          <span className="text-[10px] uppercase font-mono font-bold text-slate-400 block">
-            Gains Collectés
-          </span>
-          <span className="text-lg sm:text-2xl font-black text-emerald-600 font-mono mt-1 block">
-            {totalCollectedAmount.toLocaleString()}{' '}
-            <span className="text-xs font-sans text-emerald-600">FCFA</span>
-          </span>
+        {/* Card 2: Revenus collectés */}
+        <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-2xs">
+          <div>
+            <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold text-emerald-800 tracking-wider block">
+              REVENUS COLLECTÉS
+            </span>
+            <span className="text-2xl sm:text-3xl font-black text-emerald-700 font-mono mt-1 block">
+              {formatAmount(totalCollectedAmount)}{' '}
+              <span className="text-xs font-sans text-emerald-700 font-normal">FCFA</span>
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold shrink-0">
+            <TrendingUp className="w-5 h-5 stroke-[2.5]" />
+          </div>
         </div>
       </div>
 
@@ -153,7 +170,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                         MONTANT PAYÉ
                       </span>
                       <span className="text-base sm:text-lg font-black text-red-600 font-mono">
-                        {inv.price.toLocaleString()} FCFA
+                        {formatAmount(inv.price)} FCFA
                       </span>
                     </div>
                   </div>
@@ -191,7 +208,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                       </div>
 
                       <div className="flex justify-between items-center text-[11px] text-slate-500 pt-1">
-                        <span>Revenu quotidien : <strong className="text-slate-800 font-mono font-bold">+{inv.dailyGain.toLocaleString()} FCFA</strong></span>
+                        <span>Revenu quotidien : <strong className="text-slate-800 font-mono font-bold">+{formatAmount(inv.dailyGain)} FCFA</strong></span>
                         <span>Date de crédit prévue : <strong className="text-slate-800 font-mono">{new Date(nextClaimTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</strong></span>
                       </div>
                     </div>

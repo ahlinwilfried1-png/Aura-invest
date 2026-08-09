@@ -71,6 +71,9 @@ import { CertificateView } from './CertificateView';
 import { AnnouncementsView } from './AnnouncementsView';
 import { ProductDetailView } from './ProductDetailView';
 import { ProofOfWithdrawalView } from './ProofOfWithdrawalView';
+import { LinkBankCardView } from './LinkBankCardView';
+import { LuckyWheel } from './LuckyWheel';
+import { WellnessProductCard } from './WellnessProductCard';
 
 interface DashboardLayoutProps {
   currentUser: UserType;
@@ -148,15 +151,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   sendGlobalNotification,
   replyToTicket
 }) => {
-  const { markTicketsAsRead } = useApp();
+  const { announcements, markTicketsAsRead, revenueLogs = [] } = useApp();
+  const userRevenueLogs = revenueLogs.filter(log => log.userId === currentUser.id);
 
   // Calculate unread chat messages/replies for current user
   const unreadChatCount = tickets.filter(
     t => t.userId === currentUser.id && !!t.reply && t.isReadByUser === false
   ).length;
 
+  const hasUnreadAnnouncements = announcements.some(a => a.isNew) || !!globalNotification;
+
   // Navigation State (Req: Accueil, Commande, Équipe, Chat, Mon compte + full-page operations)
-  const [activeTab, setActiveTab] = useState<'home' | 'orders' | 'team' | 'chat' | 'profile' | 'deposit' | 'withdraw' | 'certificate' | 'announcements'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'orders' | 'team' | 'chat' | 'profile' | 'deposit' | 'withdraw' | 'certificate' | 'announcements' | 'link_card' | 'proofs'>('home');
 
   useEffect(() => {
     if (activeTab === 'chat' && unreadChatCount > 0) {
@@ -358,17 +364,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </div>
       )}
 
-      {/* Global Announcement Marquee bar */}
-      {globalNotification && (
-        <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 font-black px-4 py-2 z-40 text-xs flex items-center shadow-xs">
-          <Megaphone className="w-4 h-4 mr-2 flex-shrink-0" />
-          <div className="overflow-hidden relative w-full h-4">
-            <div className="absolute whitespace-nowrap animate-marquee flex items-center text-slate-950 text-[11px] sm:text-xs font-extrabold leading-normal">
-              🏆 ANNONCE OFFICIELLE : {globalNotification} ---- Investissez dès aujourd'hui pour sécuriser vos rendements premium.
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Live Official Announcement Ticker Bar with Megaphone */}
+      <RecentRechargesTicker notificationText={globalNotification} />
 
       {/* Main Container Workspace (Stuck to top of site) */}
       <main className="max-w-7xl mx-auto px-2 sm:px-6 pt-1 sm:pt-3 pb-2 flex-grow w-full">
@@ -417,6 +414,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       }
                     }}
                     onAnnonces={() => setActiveTab('announcements')}
+                    onChat={() => setActiveTab('chat')}
+                    hasUnreadAnnouncements={hasUnreadAnnouncements}
+                    unreadChatCount={unreadChatCount}
+                  />
+
+                  {/* 3.5. SECTION PRODUIT DE BIEN-ÊTRE */}
+                  <WellnessProductCard 
+                    onSelectProduct={(product) => setSelectedProductDetail(product)} 
                   />
 
                   {/* 4. TOUS LES PRODUITS EN DISPOSITION VERTICALE */}
@@ -427,12 +432,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                           CATALOGUE D'INVESTISSEMENT
                         </span>
                         <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                          Nos Produits Nutrien Agriculture ({activeProducts.length})
+                          Nos Produits Agriculture
                         </h3>
                       </div>
-                      <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-900 px-2.5 py-1 rounded-full uppercase">
-                        Offres VIP
-                      </span>
                     </div>
 
                     {/* Vertical stack of product cards matching reference image */}
@@ -524,13 +526,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 currentUser={currentUser}
                 users={users}
                 commissions={commissions}
+                userInvestments={userInvestments}
                 onShowToast={showToast}
               />
             )}
 
             {/* TAB 4: CHAT (REQ: LIVE CHAT & MODERN MESSENGER) */}
             {activeTab === 'chat' && (
-              <div className="animate-fadeIn pb-16">
+              <div className="animate-fadeIn">
                 <ChatMessenger 
                   currentUser={currentUser}
                   tickets={tickets}
@@ -551,6 +554,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 products={products}
                 tickets={tickets}
                 globalNotification={globalNotification}
+                announcements={announcements}
+                unreadChatCount={unreadChatCount}
                 onRequestDeposit={requestDeposit}
                 onRequestWithdrawal={requestWithdrawal}
                 onUpdateProfile={updateProfile}
@@ -585,6 +590,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 onRequestWithdrawal={requestWithdrawal}
                 onBack={() => setActiveTab('home')}
                 onShowToast={showToast}
+                onOpenLinkCard={() => setActiveTab('link_card')}
               />
             )}
 
@@ -609,6 +615,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             {activeTab === 'proofs' && (
               <ProofOfWithdrawalView
                 onBack={() => setActiveTab('home')}
+              />
+            )}
+
+            {/* FULL-PAGE VIEW 6: LIER CARTE BANCAIRE (PAGE DÉDIÉE FLUIDE SANS CADRES) */}
+            {activeTab === 'link_card' && (
+              <LinkBankCardView
+                currentUser={currentUser}
+                onBack={() => setActiveTab('profile')}
+                onShowToast={showToast}
               />
             )}
           </div>
@@ -865,46 +880,20 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         notificationText={globalNotification}
       />
 
-      {/* 5. PROMO & DRAW MODAL */}
+      {/* 5. PROMO & DRAW MODAL - ROUE DE LA CHANCE */}
       {showPromoModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full relative space-y-4">
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="max-w-md w-full relative">
             <button 
               onClick={() => setShowPromoModal(false)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer"
+              className="absolute top-3 right-3 z-40 w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
-            <div>
-              <span className="text-[10px] font-mono font-bold uppercase text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">Tirage au sort & Cadeaux</span>
-              <h3 className="text-xl font-black text-slate-900 mt-2">Zone Promo & Tirage</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Entrez votre code promo pour recevoir votre bonus instantané.</p>
-            </div>
-
-            <form onSubmit={(e) => {
-              handleRedeemBonus(e);
-              setShowPromoModal(false);
-            }} className="space-y-4 text-xs font-medium">
-              <div>
-                <label className="block text-[10px] uppercase font-mono text-slate-500 mb-1 font-bold">Code Promotionnel</label>
-                <input 
-                  type="text" 
-                  placeholder="EX: BIENVENU"
-                  value={bonusCodeInput}
-                  onChange={(e) => setBonusCodeInput(e.target.value)}
-                  className="w-full bg-slate-50 outline-none rounded-xl py-3 px-3.5 text-slate-900 font-mono font-bold text-sm uppercase"
-                  required
-                />
-              </div>
-
-              <button 
-                type="submit"
-                className="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
-              >
-                Activer le Code
-              </button>
-            </form>
+            <LuckyWheel 
+              onShowToast={showToast}
+            />
           </div>
         </div>
       )}
@@ -984,6 +973,24 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             </div>
 
             <div className="overflow-y-auto space-y-3 pr-1 flex-1 text-xs">
+              {(showHistoryModal === 'all' || showHistoryModal === 'deposits') && userRevenueLogs.map(log => (
+                <div key={log.id} className="p-3 bg-emerald-50/70 rounded-xl flex items-center justify-between border border-emerald-200/60">
+                  <div>
+                    <div className="font-bold text-slate-900 text-sm flex items-center space-x-1.5">
+                      <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Revenu 24h : {log.productName}</span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">{new Date(log.creditedAt).toLocaleString()}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-emerald-700 text-sm">+{log.amount.toLocaleString()} FCFA</div>
+                    <div className="text-[9px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 inline-block font-mono">
+                      Crédit Automatique
+                    </div>
+                  </div>
+                </div>
+              ))}
+
               {(showHistoryModal === 'all' || showHistoryModal === 'deposits') && userDeposits.map(dep => (
                 <div key={dep.id} className="p-3 bg-slate-50 rounded-xl flex items-center justify-between border border-slate-100">
                   <div>
@@ -1014,7 +1021,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 </div>
               ))}
 
-              {userDeposits.length === 0 && userWithdrawals.length === 0 && (
+              {userRevenueLogs.length === 0 && userDeposits.length === 0 && userWithdrawals.length === 0 && (
                 <div className="py-8 text-center text-slate-400 font-medium">
                   Aucun enregistrement trouvé.
                 </div>
