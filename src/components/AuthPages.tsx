@@ -97,11 +97,18 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
       params.get('parrain') || 
       params.get('refCode') || 
       params.get('referrer') || 
+      params.get('inviter') ||
+      params.get('invite') ||
+      params.get('referral') ||
       localStorage.getItem('aurainvest_ref_code');
 
     if (refFromUrl) {
       setRegReferrer(refFromUrl);
       setIsReferralFromUrl(true);
+      setMode('register');
+      if (!localStorage.getItem('aurainvest_ref_code')) {
+        localStorage.setItem('aurainvest_ref_code', refFromUrl);
+      }
     }
   }, []);
 

@@ -88,18 +88,18 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
       </div>
 
       {/* 2. Banner: Compact warm yellow-orange gradient banner */}
-      <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[#FEDB87] via-[#FEBA4F] to-[#FA9E2C] px-3 py-2.5 sm:p-3 shadow-2xs border border-amber-300/40 flex items-center justify-between min-h-[72px]">
-        <div className="max-w-[72%] space-y-0.5 z-10">
-          <h2 className="text-slate-950 font-extrabold text-[11px] sm:text-xs leading-snug tracking-wide font-sans uppercase">
+      <div className="relative overflow-hidden rounded-md bg-gradient-to-r from-[#FEDB87] via-[#FEBA4F] to-[#FA9E2C] px-2.5 py-2 shadow-2xs border border-amber-200/60 flex items-center justify-between min-h-[60px]">
+        <div className="max-w-[75%] space-y-0.5 z-10">
+          <h2 className="text-slate-950 font-extrabold text-[10px] sm:text-[11px] leading-snug tracking-wide font-sans uppercase">
             TÉLÉCHARGEZ VOTRE BON DE RETRAIT POUR DES RÉCOMPENSES EN ESPÈCES
           </h2>
-          <p className="text-[10px] sm:text-[11px] text-amber-950/90 font-medium leading-tight">
+          <p className="text-[9px] sm:text-[10px] text-amber-950/90 font-medium leading-tight">
             Partagez vos captures de retrait validées et gagnez des bonus exclusifs.
           </p>
         </div>
 
         {/* Money Bag & Gold Coins Illustration */}
-        <div className="absolute -right-2 -bottom-2 w-20 sm:w-22 h-20 sm:h-22 pointer-events-none select-none flex items-center justify-center">
+        <div className="absolute -right-2 -bottom-2 w-16 sm:w-18 h-16 sm:h-18 pointer-events-none select-none flex items-center justify-center">
           <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-2xs">
             <circle cx="110" cy="110" r="75" fill="#FFEAA7" opacity="0.6" />
             <path d="M60 160 C50 110, 65 80, 100 80 C135 80, 150 110, 140 160 C135 180, 65 180, 60 160 Z" fill="#E67E22" />
@@ -115,25 +115,25 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
       </div>
 
       {/* 3. User Upload Section */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight">
+          <h3 className="text-xs font-bold text-slate-900 tracking-tight">
             Téléchargement des preuves
           </h3>
           <button
             onClick={() => setShowUploadForm(!showUploadForm)}
-            className="text-[10px] sm:text-[11px] font-bold bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded-md transition-all shadow-2xs flex items-center space-x-1 cursor-pointer"
+            className="text-[10px] font-bold bg-slate-900 hover:bg-slate-800 text-white px-2 py-0.5 rounded transition-all flex items-center space-x-1 cursor-pointer"
           >
-            <Upload className="w-3 h-3" />
+            <Upload className="w-2.5 h-2.5" />
             <span>{showUploadForm ? 'Fermer' : 'Ajouter une preuve'}</span>
           </button>
         </div>
 
         {/* Upload Form Box */}
         {showUploadForm && (
-          <form onSubmit={handleFormSubmit} className="bg-white rounded-lg border border-slate-200 p-2.5 space-y-2.5 shadow-2xs animate-fadeIn">
-            <div className="flex items-center space-x-1.5 text-[10px] sm:text-[11px] font-semibold text-emerald-700 bg-emerald-50 p-1.5 rounded-md border border-emerald-200">
-              <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+          <form onSubmit={handleFormSubmit} className="bg-white rounded-md border border-slate-200/70 p-2 space-y-2 animate-fadeIn">
+            <div className="flex items-center space-x-1.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50/80 p-1.5 rounded border border-emerald-100">
+              <ShieldCheck className="w-3 h-3 shrink-0 text-emerald-600" />
               <span>Vos informations personnelles (numéro de téléphone) seront automatiquement masquées.</span>
             </div>
 
@@ -148,7 +148,7 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
                 value={amountInput}
                 onChange={(e) => setAmountInput(Number(e.target.value))}
                 placeholder="Ex: 2000"
-                className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 font-bold text-xs outline-none focus:border-slate-900"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-slate-900 font-bold text-xs outline-none focus:border-slate-900"
                 required
               />
             </div>
@@ -162,7 +162,7 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
                 placeholder="Ex: Merci beaucoup Nutrien très bonne application"
-                className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-slate-900 text-xs outline-none focus:border-slate-900 resize-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-slate-900 text-xs outline-none focus:border-slate-900 resize-none"
                 required
               />
             </div>
@@ -171,7 +171,7 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
               <label className="block text-[10px] font-bold text-slate-700 mb-0.5">
                 Image de la preuve (Screenshot du reçu)
               </label>
-              <div className="border border-dashed border-slate-200 hover:border-slate-400 rounded-md p-2 text-center cursor-pointer bg-slate-50/50 relative">
+              <div className="border border-dashed border-slate-200 hover:border-slate-400 rounded p-1.5 text-center cursor-pointer bg-slate-50/50 relative">
                 <input
                   type="file"
                   accept="image/*"
@@ -180,12 +180,12 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
                 />
                 {imageInput ? (
                   <div className="flex items-center justify-center space-x-2">
-                    <img src={imageInput} alt="Aperçu" className="h-10 w-10 object-cover rounded-md border border-slate-300" />
+                    <img src={imageInput} alt="Aperçu" className="h-8 w-8 object-cover rounded border border-slate-300" />
                     <span className="text-[10px] font-bold text-emerald-600">Image chargée !</span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center space-y-0.5">
-                    <Upload className="w-3.5 h-3.5 text-slate-400" />
+                    <Upload className="w-3 h-3 text-slate-400" />
                     <span className="text-[10px] font-medium text-slate-600">Cliquez pour importer la preuve</span>
                   </div>
                 )}
@@ -195,9 +195,9 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-2 bg-red-500 hover:bg-red-600 text-white font-bold text-xs rounded-md transition-all shadow-2xs flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50"
+              className="w-full py-1.5 bg-red-500 hover:bg-red-600 text-white font-bold text-xs rounded transition-all flex items-center justify-center space-x-1 cursor-pointer disabled:opacity-50"
             >
-              <Send className="w-3.5 h-3.5" />
+              <Send className="w-3 h-3" />
               <span>{isSubmitting ? 'Publication...' : 'Publier la preuve instantanément'}</span>
             </button>
           </form>
@@ -205,20 +205,20 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
       </div>
 
       {/* 4. List of Public Proofs matching reference image layout - Compact Cards */}
-      <div className="space-y-2 pt-0.5">
+      <div className="space-y-1.5 pt-0.5">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight">
+          <h3 className="text-xs font-bold text-slate-900 tracking-tight">
             Preuves de retrait
           </h3>
         </div>
 
         {approvedProofs.length === 0 ? (
-          <div className="bg-white rounded-lg border border-slate-200 p-4 text-center space-y-1">
-            <MessageCircle className="w-5 h-5 text-slate-300 mx-auto" />
+          <div className="bg-white rounded-md border border-slate-100 p-3 text-center space-y-1">
+            <MessageCircle className="w-4 h-4 text-slate-300 mx-auto" />
             <p className="text-[10px] font-medium text-slate-500">Aucune preuve publiée pour le moment.</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {approvedProofs.map((proof) => {
               const maskPhone = (phoneStr: string) => {
                 if (!phoneStr) return '****';
@@ -240,16 +240,16 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
               return (
                 <div
                   key={proof.id}
-                  className="bg-white rounded-lg border border-slate-200/90 px-2.5 py-2 sm:px-3 sm:py-2.5 shadow-2xs transition-all relative overflow-hidden"
+                  className="bg-white rounded-md border border-slate-200/60 px-2.5 py-1.5 sm:px-3 sm:py-2 transition-all relative overflow-hidden"
                 >
                   <div className="flex items-start justify-between gap-2">
                     {/* Left Column: Phone, Amount, Date, Comment */}
                     <div className="space-y-0.5 flex-1 min-w-0 pr-1">
                       <div className="flex items-baseline justify-between flex-wrap gap-x-2">
-                        <span className="font-extrabold text-slate-900 text-xs tracking-tight">
+                        <span className="font-extrabold text-slate-900 text-[11px] sm:text-xs tracking-tight">
                           {formattedPhone}
                         </span>
-                        <span className="font-black text-red-600 text-xs tracking-tight font-sans">
+                        <span className="font-black text-red-600 text-[11px] sm:text-xs tracking-tight font-sans">
                           {formattedAmount}
                         </span>
                       </div>
@@ -259,7 +259,7 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
                       </div>
 
                       {proof.message && (
-                        <p className="text-slate-700 font-medium text-[10px] sm:text-[11px] leading-snug pt-0.5 font-sans">
+                        <p className="text-slate-700 font-medium text-[10px] leading-snug pt-0.5 font-sans">
                           {proof.message}
                         </p>
                       )}
@@ -268,7 +268,7 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
                     {/* Right Column: Reduced Mobile Screenshot Frame */}
                     <div className="shrink-0">
                       {proof.imageUrl ? (
-                        <div className="w-12 sm:w-14 h-14 sm:h-18 rounded-md border border-slate-800 overflow-hidden bg-slate-950 shadow-2xs relative group cursor-pointer">
+                        <div className="w-10 sm:w-12 h-12 sm:h-14 rounded border border-slate-700 overflow-hidden bg-slate-950 relative group cursor-pointer">
                           <img
                             src={proof.imageUrl}
                             alt="Preuve de retrait"
@@ -276,8 +276,8 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
                           />
                         </div>
                       ) : (
-                        <div className="w-12 sm:w-14 h-14 sm:h-18 rounded-md border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-0.5 text-center text-slate-400">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 mb-0.5" />
+                        <div className="w-10 sm:w-12 h-12 sm:h-14 rounded border border-slate-200/80 bg-slate-50 flex flex-col items-center justify-center p-0.5 text-center text-slate-400">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500 mb-0.5" />
                           <span className="text-[8px] font-bold text-slate-500 leading-tight">Confirmé</span>
                         </div>
                       )}

@@ -307,13 +307,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const data = localStorage.getItem('fintech_current_user');
-    if (data) return JSON.parse(data);
-    // Default to active user so user immediately accesses the home dashboard
-    const defaultUser = users[1] || users[0];
-    if (defaultUser) {
-      localStorage.setItem('fintech_current_user', JSON.stringify(defaultUser));
+    if (data) {
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        return null;
+      }
     }
-    return defaultUser || null;
+    return null;
   });
 
   // Keep passwords in a separate simulated secure store or simulated in local storage
@@ -1201,9 +1202,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let parentReferrer: User | null = null;
     
     if (data.referrerCode.trim()) {
-      const parent = users.find(u => u.referralCode === data.referrerCode.trim());
+      const codeClean = data.referrerCode.trim();
+      const parent = users.find(u => 
+        u.referralCode?.toLowerCase() === codeClean.toLowerCase() || 
+        u.phone === codeClean || 
+        u.phone.replace(/\s+/g, '') === codeClean.replace(/\s+/g, '')
+      );
       if (parent) {
-        referredByCodeObj = data.referrerCode.trim();
+        referredByCodeObj = parent.referralCode;
         parentReferrer = parent;
       } else {
         return { success: false, error: "Code d'invitation invalide." };

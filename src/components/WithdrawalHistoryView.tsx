@@ -90,20 +90,20 @@ export const WithdrawalHistoryView: React.FC<WithdrawalHistoryViewProps> = ({
             return (
               <div
                 key={wth.id}
-                className="py-3.5 border-b border-slate-200/60 space-y-2 text-slate-900"
+                className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs space-y-2.5 text-slate-900 transition-all hover:border-slate-300"
               >
                 {/* ID & Status */}
-                <div className="flex items-center justify-between text-xs sm:text-sm font-semibold pb-1">
-                  <span className="font-mono font-bold text-slate-800 tracking-tight select-all">
+                <div className="flex items-center justify-between text-xs sm:text-sm font-semibold border-b border-slate-100 pb-2">
+                  <span className="font-mono font-bold text-slate-900 tracking-tight select-all">
                     {displayId}
                   </span>
                   <span
-                    className={`font-bold ${
+                    className={`font-bold px-2 py-0.5 rounded-md text-[11px] sm:text-xs uppercase font-mono ${
                       wth.status === 'approved'
-                        ? 'text-emerald-600'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                         : wth.status === 'rejected'
-                        ? 'text-red-600'
-                        : 'text-amber-600'
+                        ? 'bg-red-50 text-red-700 border border-red-200'
+                        : 'bg-amber-50 text-amber-700 border border-amber-200'
                     }`}
                   >
                     {wth.status === 'approved'

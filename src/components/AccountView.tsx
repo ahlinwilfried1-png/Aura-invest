@@ -39,7 +39,9 @@ import {
   Globe,
   Building2,
   Handshake,
-  Award
+  Award,
+  AlertCircle,
+  MessageCircle
 } from 'lucide-react';
 
 interface AccountViewProps {
@@ -79,6 +81,7 @@ type SubPage =
   | 'security'
   | 'support'
   | 'bonus'
+  | 'code_cadeau'
   | 'link_card'
   | 'faq';
 
@@ -139,8 +142,46 @@ export const AccountView: React.FC<AccountViewProps> = ({
     confirmWord: '',
   });
 
-  // Promo code form
+  // Promo / Gift code form state
   const [bonusInput, setBonusInput] = useState('');
+  const [bonusFeedback, setBonusFeedback] = useState<{
+    type: 'success' | 'used' | 'error';
+    message: string;
+  } | null>(null);
+
+  // Validate Code Cadeau against server/database
+  const handleValidateCode = () => {
+    if (!bonusInput.trim()) return;
+    const cleanCode = bonusInput.trim().toUpperCase();
+    const res = onRedeemBonusCode(cleanCode);
+
+    if (res.success) {
+      const amountStr = res.amount ? ` +${res.amount.toLocaleString('en-US')} FCFA` : '';
+      setBonusFeedback({
+        type: 'success',
+        message: `Félicitations ! Le code « ${cleanCode} » est valide.${amountStr} ont été crédités sur votre portefeuille.`
+      });
+      onShowToast('success', `Code cadeau validé !${amountStr}`);
+      setBonusInput('');
+    } else {
+      const errText = res.error || 'Code invalide ou expiré.';
+      const isAlreadyUsed = errText.toLowerCase().includes('déjà') || errText.toLowerCase().includes('already');
+
+      if (isAlreadyUsed) {
+        setBonusFeedback({
+          type: 'used',
+          message: `Vous avez déjà utilisé le code cadeau « ${cleanCode} ».`
+        });
+        onShowToast('err', `Code « ${cleanCode} » déjà utilisé.`);
+      } else {
+        setBonusFeedback({
+          type: 'error',
+          message: errText
+        });
+        onShowToast('err', errText);
+      }
+    }
+  };
 
   // Support ticket form
   const [ticketSubject, setTicketSubject] = useState('');
@@ -259,12 +300,86 @@ export const AccountView: React.FC<AccountViewProps> = ({
             </div>
           </div>
 
-          {/* 2. Smooth, Minimalist Row Items List */}
-          <div className="divide-y divide-slate-100/80 px-1 py-1">
+          {/* 2. Framed Cards for key actions (Lier carte bancaire, Rechargement enregistré, Retrait enregistré) */}
+          <div className="space-y-2.5 pt-1">
+            {/* Lier carte bancaire */}
+            <div 
+              onClick={() => setActiveSubPage('link_card')}
+              className="bg-white hover:bg-slate-50/90 border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs cursor-pointer flex items-center justify-between transition-all group"
+            >
+              <div className="flex items-center space-x-3.5">
+                <div className="w-10 h-10 rounded-xl bg-teal-500/10 text-teal-600 flex items-center justify-center font-bold shrink-0 group-hover:bg-teal-500 group-hover:text-white transition-all">
+                  <CreditCard className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <div>
+                  <span className="text-xs sm:text-sm font-extrabold text-slate-900 block">Lier carte bancaire</span>
+                  <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Coordonnées de retrait & RIB bancaire</span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-teal-600 transition-colors" />
+            </div>
+
+            {/* Rechargement enregistré */}
+            <div 
+              onClick={() => setActiveSubPage('deposit_history')}
+              className="bg-white hover:bg-slate-50/90 border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs cursor-pointer flex items-center justify-between transition-all group"
+            >
+              <div className="flex items-center space-x-3.5">
+                <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center font-bold shrink-0 group-hover:bg-sky-500 group-hover:text-white transition-all">
+                  <ArrowUpRight className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <div>
+                  <span className="text-xs sm:text-sm font-extrabold text-slate-900 block">Rechargement enregistré</span>
+                  <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Historique de tous vos dépôts</span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-sky-600 transition-colors" />
+            </div>
+
+            {/* Retrait enregistré */}
+            <div 
+              onClick={() => setActiveSubPage('withdraw_history')}
+              className="bg-white hover:bg-slate-50/90 border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs cursor-pointer flex items-center justify-between transition-all group"
+            >
+              <div className="flex items-center space-x-3.5">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold shrink-0 group-hover:bg-rose-500 group-hover:text-white transition-all">
+                  <ArrowDownLeft className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <div>
+                  <span className="text-xs sm:text-sm font-extrabold text-slate-900 block">Retrait enregistré</span>
+                  <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Historique de vos retraits</span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-rose-600 transition-colors" />
+            </div>
+          </div>
+
+          {/* 3. Navigation items group */}
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-2 shadow-2xs divide-y divide-slate-100 mt-3">
+            {/* Code cadeau (Replaces Argent gratuit) */}
+            <div 
+              onClick={() => {
+                setBonusFeedback(null);
+                setActiveSubPage('code_cadeau');
+              }}
+              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
+            >
+              <div className="flex items-center space-x-3.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0">
+                  <Gift className="w-4.5 h-4.5" />
+                </div>
+                <div>
+                  <span className="text-xs sm:text-sm font-bold text-slate-900 block">Code cadeau</span>
+                  <span className="text-[10px] text-slate-500 font-medium">Entrer un code cadeau ou coupon bonus</span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </div>
+
             {/* Tirage au sort */}
             <div 
               onClick={() => setActiveSubPage('bonus')}
-              className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
+              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
                 <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-600 flex items-center justify-center shrink-0">
@@ -275,90 +390,10 @@ export const AccountView: React.FC<AccountViewProps> = ({
               <ChevronRight className="w-4 h-4 text-slate-400" />
             </div>
 
-            {/* De l'argent gratuit */}
-            <div 
-              onClick={() => {
-                const res = onClaimDailyBonus();
-                if (res.success) {
-                  onShowToast('success', `Bonus quotidien débloqué ! +${res.amount} FCFA`);
-                } else {
-                  setActiveSubPage('bonus');
-                }
-              }}
-              className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
-            >
-              <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0">
-                  <Gift className="w-4.5 h-4.5" />
-                </div>
-                <span className="text-xs sm:text-sm font-semibold text-slate-900">De l'argent gratuit</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
-            </div>
-
-            {/* Lier carte bancaire */}
-            <div 
-              onClick={() => setActiveSubPage('link_card')}
-              className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-teal-50 transition-colors rounded-xl border border-teal-200/60 bg-teal-50/30"
-            >
-              <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
-                  <CreditCard className="w-4.5 h-4.5 stroke-[2.2]" />
-                </div>
-                <div>
-                  <span className="text-xs sm:text-sm font-extrabold text-slate-900 block">Lier carte bancaire</span>
-                  <span className="text-[10px] text-slate-500 font-medium">Coordonnées de retrait & RIB bancaire</span>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-teal-700" />
-            </div>
-
-            {/* Facture de solde */}
-            <div 
-              onClick={() => setActiveSubPage('order_history')}
-              className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
-            >
-              <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-indigo-500/15 text-indigo-600 flex items-center justify-center shrink-0">
-                  <FileText className="w-4.5 h-4.5" />
-                </div>
-                <span className="text-xs sm:text-sm font-semibold text-slate-900">Facture de solde</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
-            </div>
-
-            {/* Recharger l'enregistrement */}
-            <div 
-              onClick={() => setActiveSubPage('deposit_history')}
-              className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
-            >
-              <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-sky-500/15 text-sky-600 flex items-center justify-center shrink-0">
-                  <ArrowUpRight className="w-4.5 h-4.5" />
-                </div>
-                <span className="text-xs sm:text-sm font-semibold text-slate-900">Recharger l'enregistrement</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
-            </div>
-
-            {/* Enregistrement des retraits */}
-            <div 
-              onClick={() => setActiveSubPage('withdraw_history')}
-              className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
-            >
-              <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-rose-500/15 text-rose-600 flex items-center justify-center shrink-0">
-                  <ArrowDownLeft className="w-4.5 h-4.5" />
-                </div>
-                <span className="text-xs sm:text-sm font-semibold text-slate-900">Enregistrement des retraits</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
-            </div>
-
             {/* Modifier le mot de passe */}
             <div 
               onClick={() => setActiveSubPage('security')}
-              className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
+              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
                 <div className="w-9 h-9 rounded-xl bg-orange-500/15 text-orange-600 flex items-center justify-center shrink-0">
@@ -372,7 +407,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
             {/* À propos de Nutrien */}
             <div 
               onClick={() => setActiveSubPage('profile')}
-              className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
+              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
                 <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0">
@@ -386,7 +421,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
             {/* Foire Aux Questions (FAQ) */}
             <div 
               onClick={() => setActiveSubPage('faq')}
-              className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
+              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
                 <div className="w-9 h-9 rounded-xl bg-teal-500/15 text-teal-600 flex items-center justify-center shrink-0">
@@ -409,7 +444,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                   setActiveSubPage('support');
                 }
               }}
-              className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl relative"
+              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl relative"
             >
               <div className="flex items-center space-x-3.5">
                 <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-600 flex items-center justify-center shrink-0 relative">
@@ -442,7 +477,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                     onShowToast('info', "Accès au panneau d'administration");
                   }
                 }}
-                className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-red-500/10 transition-colors rounded-xl border border-red-200/60 bg-red-50/40"
+                className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-red-500/10 transition-colors rounded-xl border border-red-200/60 bg-red-50/40"
               >
                 <div className="flex items-center space-x-3.5">
                   <div className="w-9 h-9 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
@@ -460,7 +495,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
             {/* Se déconnecter */}
             <div 
               onClick={onLogout}
-              className="py-3.5 px-3 flex items-center justify-between cursor-pointer hover:bg-red-50/50 transition-colors rounded-xl"
+              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-red-50/50 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
                 <div className="w-9 h-9 rounded-xl bg-red-500/15 text-red-600 flex items-center justify-center shrink-0">
@@ -470,6 +505,128 @@ export const AccountView: React.FC<AccountViewProps> = ({
               </div>
               <ChevronRight className="w-4 h-4 text-red-400" />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* SUB-PAGE: CODE CADEAU */}
+      {/* ========================================================= */}
+      {activeSubPage === 'code_cadeau' && (
+        <div className="space-y-4 animate-fadeIn max-w-lg mx-auto pb-6 font-sans">
+          {renderHeader('Code cadeau')}
+
+          {/* Clean, modern framed card */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-2xs space-y-5">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto">
+                <Gift className="w-6 h-6 stroke-[2.2]" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
+                Obtenir ma récompense
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-sm mx-auto">
+                Saisissez votre code cadeau ou coupon privilège ci-dessous pour débloquer votre bonus instantané.
+              </p>
+            </div>
+
+            {/* Input Form */}
+            <div className="space-y-3.5 pt-1">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 tracking-wide uppercase font-mono block">
+                  Code Cadeau / Coupon
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: BIENVENU ou FINTECH2026"
+                  value={bonusInput}
+                  onChange={(e) => {
+                    setBonusInput(e.target.value.toUpperCase());
+                    setBonusFeedback(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleValidateCode();
+                    }
+                  }}
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl px-4 py-3 text-sm font-mono font-bold text-slate-900 uppercase tracking-widest outline-none transition-all placeholder:text-slate-400 placeholder:font-normal placeholder:tracking-normal"
+                />
+              </div>
+
+              <button
+                onClick={handleValidateCode}
+                disabled={!bonusInput.trim()}
+                className={`w-full py-3.5 rounded-xl text-sm sm:text-base font-extrabold transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-xs ${
+                  bonusInput.trim() 
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.99]' 
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                <Check className="w-4 h-4 stroke-[3]" />
+                <span>Valider</span>
+              </button>
+            </div>
+
+            {/* Feedback alert banner */}
+            {bonusFeedback && (
+              <div className={`p-4 rounded-xl border text-xs sm:text-sm flex items-start space-x-3 animate-fadeIn ${
+                bonusFeedback.type === 'success' 
+                  ? 'bg-emerald-50 border-emerald-200/80 text-emerald-900' 
+                  : bonusFeedback.type === 'used'
+                  ? 'bg-amber-50 border-amber-200/80 text-amber-900'
+                  : 'bg-rose-50 border-rose-200/80 text-rose-900'
+              }`}>
+                {bonusFeedback.type === 'success' && (
+                  <Sparkles className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                )}
+                {bonusFeedback.type === 'used' && (
+                  <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                )}
+                {bonusFeedback.type === 'error' && (
+                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                )}
+                <div className="space-y-0.5 font-medium">
+                  <p className="font-bold">
+                    {bonusFeedback.type === 'success' && 'Code validé avec succès !'}
+                    {bonusFeedback.type === 'used' && 'Code déjà utilisé'}
+                    {bonusFeedback.type === 'error' && 'Code invalide ou expiré'}
+                  </p>
+                  <p className="leading-snug text-xs opacity-90">
+                    {bonusFeedback.message}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* WhatsApp Channel Banner for Gift Codes */}
+          <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-700 text-white rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5">
+            <div className="flex items-start space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0">
+                <MessageCircle className="w-5 h-5 fill-white text-white" />
+              </div>
+              <div className="space-y-1 min-w-0 flex-1">
+                <div className="text-[10px] font-black uppercase tracking-wider text-emerald-200">
+                  Codes Cadeaux & Privilèges
+                </div>
+                <h4 className="text-sm sm:text-base font-extrabold tracking-tight leading-snug">
+                  Rejoignez notre chaîne WhatsApp officielle
+                </h4>
+                <p className="text-xs text-emerald-100 font-medium leading-relaxed">
+                  Abonnez-vous à la chaîne pour recevoir quotidiennement de nouveaux codes coupons et bonus exclusifs publiés par l'équipe.
+                </p>
+              </div>
+            </div>
+
+            <a
+              href="https://wa.me/22501010101"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full bg-white hover:bg-emerald-50 active:scale-[0.99] text-emerald-800 font-extrabold text-xs py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-xs"
+            >
+              <MessageCircle className="w-4 h-4 fill-emerald-700 text-emerald-700" />
+              <span>Rejoindre la chaîne WhatsApp</span>
+            </a>
           </div>
         </div>
       )}
@@ -966,33 +1123,33 @@ export const AccountView: React.FC<AccountViewProps> = ({
       {/* ========================================================= */}
       {activeSubPage === 'deposit_history' && (
         <div className="space-y-4">
-          {renderHeader(`Historique des Dépôts (${myDeposits.length})`)}
+          {renderHeader(`Rechargement enregistré (${myDeposits.length})`)}
 
           <div className="space-y-2 pt-2">
             {myDeposits.length === 0 ? (
               <p className="text-xs text-slate-500 py-6 text-center">Aucun dépôt enregistré.</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {myDeposits.map((dep) => (
-                  <div key={dep.id} className="py-3 border-b border-slate-200/60 flex items-center justify-between text-xs">
-                    <div>
-                      <span className="font-bold text-slate-900 block">{dep.method}</span>
-                      <span className="text-[10px] text-slate-400 font-mono">
+                  <div key={dep.id} className="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-2xs flex items-center justify-between text-xs transition-all hover:border-slate-300">
+                    <div className="space-y-0.5">
+                      <span className="font-extrabold text-slate-900 block text-sm">{dep.method}</span>
+                      <span className="text-[10px] text-slate-500 font-mono block">
                         TxID: {dep.transactionId} • {new Date(dep.createdAt).toLocaleDateString()}
                       </span>
                     </div>
 
-                    <div className="text-right">
-                      <span className="font-black text-amber-600 font-mono block">
+                    <div className="text-right space-y-1">
+                      <span className="font-black text-amber-600 font-mono text-sm block">
                         +{dep.amount.toLocaleString()} FCFA
                       </span>
                       <span
-                        className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase font-mono ${
+                        className={`inline-block text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase font-mono border ${
                           dep.status === 'approved'
-                            ? 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                             : dep.status === 'pending'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-red-100 text-red-800'
+                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                            : 'bg-red-50 text-red-800 border-red-200'
                         }`}
                       >
                         {dep.status === 'approved' ? 'Validé' : dep.status === 'pending' ? 'En attente' : 'Refusé'}
@@ -1015,44 +1172,6 @@ export const AccountView: React.FC<AccountViewProps> = ({
           currentUser={currentUser}
           onBack={() => setActiveSubPage(null)}
         />
-      )}
-
-      {/* ========================================================= */}
-      {/* SUB-PAGE 6: HISTORIQUE DES COMMANDES */}
-      {/* ========================================================= */}
-      {activeSubPage === 'order_history' && (
-        <div className="space-y-4">
-          {renderHeader(`Historique des Commandes (${myInvestments.length})`)}
-
-          <div className="space-y-3 pt-2">
-            {myInvestments.length === 0 ? (
-              <p className="text-xs text-slate-500 py-6 text-center">Aucune commande enregistrée.</p>
-            ) : (
-              <div className="space-y-3">
-                {myInvestments.map((inv) => (
-                  <div key={inv.id} className="py-3 border-b border-slate-200/60 space-y-2 text-xs">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="font-black text-slate-900 block text-sm">{inv.productName}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          Date d'achat : {new Date(inv.purchaseDate).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <span className="font-black text-red-600 font-mono text-sm">
-                        {inv.price.toLocaleString()} FCFA
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center text-[11px] pt-1 text-slate-600">
-                      <span>Gain quotidien : <strong className="text-emerald-600 font-mono font-bold">+{inv.dailyGain.toLocaleString()} FCFA</strong></span>
-                      <span>Restant : <strong className="text-slate-900 font-mono font-bold">{inv.daysRemaining} j</strong></span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
       )}
 
       {/* ========================================================= */}
@@ -1181,8 +1300,6 @@ export const AccountView: React.FC<AccountViewProps> = ({
           </div>
         </div>
       )}
-
-
 
       {/* ========================================================= */}
       {/* SUB-PAGE 11: ROUE DE LA CHANCE (TIRAGE AU SORT) */}

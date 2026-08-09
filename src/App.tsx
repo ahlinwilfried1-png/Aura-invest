@@ -56,17 +56,25 @@ function AppContent() {
       params.get('code') || 
       params.get('parrain') || 
       params.get('refCode') || 
-      params.get('referrer');
+      params.get('referrer') ||
+      params.get('inviter') ||
+      params.get('invite') ||
+      params.get('referral');
 
     if (refCode) {
       localStorage.setItem('aurainvest_ref_code', refCode);
+      if (!currentUser) {
+        setNavigationMode('register');
+      }
     }
-  }, []);
+  }, [currentUser]);
 
-  // Sync navigation base when user logs in or out
+  // Sync navigation mode when user state changes
   useEffect(() => {
     if (currentUser) {
-      setNavigationMode('login'); // Handled natively by dashboard check below
+      setNavigationMode('login'); // Handled natively by dashboard view check below
+    } else {
+      setNavigationMode('register'); // Always default to registration page for new/unauthenticated users
     }
   }, [currentUser]);
 

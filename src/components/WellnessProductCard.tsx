@@ -62,13 +62,13 @@ export const WellnessProductCard: React.FC<WellnessProductCardProps> = ({ onSele
   }
 
   return (
-    <div className="w-full my-3">
+    <div className="w-full my-2.5 max-w-lg mx-auto">
       {/* Outer Red Container Card matching reference image */}
-      <div className="bg-[#be1d2c] rounded-[24px] p-3 sm:p-4 text-center shadow-md relative overflow-hidden">
+      <div className="bg-[#be1d2c] rounded-[20px] p-2.5 sm:p-3 text-center shadow-md relative overflow-hidden">
         
         {/* Section Header Title */}
-        <div className="pb-3 pt-1">
-          <h3 className="text-white font-extrabold text-base sm:text-lg tracking-tight text-center font-sans">
+        <div className="pb-2 pt-0.5">
+          <h3 className="text-white font-extrabold text-sm sm:text-base tracking-tight text-center font-sans">
             Produit de bien-être
           </h3>
         </div>
@@ -77,7 +77,7 @@ export const WellnessProductCard: React.FC<WellnessProductCardProps> = ({ onSele
         <div 
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth space-x-4 scrollbar-none pb-1"
+          className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth space-x-3 scrollbar-none pb-0.5"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {wellnessProducts.map((product: WellnessProduct) => {
@@ -106,13 +106,13 @@ export const WellnessProductCard: React.FC<WellnessProductCardProps> = ({ onSele
                     });
                   }
                 }}
-                className="min-w-full snap-center bg-white rounded-[20px] p-3 sm:p-3.5 text-left shadow-2xs space-y-3 cursor-pointer group hover:shadow-md transition-all shrink-0"
+                className="min-w-full snap-center bg-white rounded-[16px] p-2.5 sm:p-3 text-left shadow-2xs space-y-2 cursor-pointer group hover:shadow-md transition-all shrink-0"
               >
                 {/* Product Image with HOT Badge on Top-Left */}
-                <div className="relative w-full h-44 sm:h-52 rounded-[16px] overflow-hidden bg-slate-100">
+                <div className="relative w-full h-32 sm:h-38 rounded-[12px] overflow-hidden bg-slate-100">
                   {/* HOT Flame Badge */}
-                  <div className="absolute top-2.5 left-2.5 bg-[#ef3838] text-white font-black text-[9px] px-2 py-0.5 rounded-full flex items-center space-x-0.5 shadow-md z-10 tracking-wider">
-                    <Flame className="w-3 h-3 text-white fill-white" />
+                  <div className="absolute top-2 left-2 bg-[#ef3838] text-white font-black text-[8px] px-2 py-0.5 rounded-full flex items-center space-x-0.5 shadow-md z-10 tracking-wider">
+                    <Flame className="w-2.5 h-2.5 text-white fill-white" />
                     <span>HOT</span>
                   </div>
 
@@ -127,7 +127,7 @@ export const WellnessProductCard: React.FC<WellnessProductCardProps> = ({ onSele
                 </div>
 
                 {/* Product Title */}
-                <h4 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight leading-snug font-sans px-0.5">
+                <h4 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight leading-snug font-sans px-0.5 truncate">
                   {product.name}
                 </h4>
 
@@ -135,30 +135,30 @@ export const WellnessProductCard: React.FC<WellnessProductCardProps> = ({ onSele
                 <div className="grid grid-cols-3 gap-1 text-center py-1 font-sans border-t border-slate-100/80">
                   {/* Column 1: Cycle d'investissement */}
                   <div className="space-y-0.5">
-                    <div className="text-sm sm:text-base font-extrabold text-slate-900">
-                      <span>{duration}</span> <span className="text-xs text-slate-700 font-medium">Jours</span>
+                    <div className="text-xs sm:text-sm font-extrabold text-slate-900">
+                      <span>{duration}</span> <span className="text-[10px] text-slate-700 font-medium">Jours</span>
                     </div>
-                    <div className="text-[10px] sm:text-[11px] text-slate-500 font-normal leading-tight">
-                      Cycle d'investissement
+                    <div className="text-[9px] sm:text-[10px] text-slate-500 font-normal leading-tight">
+                      Cycle d'invest.
                     </div>
                   </div>
 
                   {/* Column 2: Revenu quotidien */}
                   <div className="space-y-0.5">
-                    <div className="text-sm sm:text-base font-extrabold text-[#1d6bd3]">
+                    <div className="text-xs sm:text-sm font-extrabold text-[#1d6bd3]">
                       {dailyGain.toLocaleString('en-US')}
                     </div>
-                    <div className="text-[10px] sm:text-[11px] text-slate-500 font-normal leading-tight">
-                      Revenu quotidien
+                    <div className="text-[9px] sm:text-[10px] text-slate-500 font-normal leading-tight">
+                      Revenu quot.
                     </div>
                   </div>
 
                   {/* Column 3: Revenu total */}
                   <div className="space-y-0.5">
-                    <div className="text-sm sm:text-base font-extrabold text-[#1d6bd3]">
+                    <div className="text-xs sm:text-sm font-extrabold text-[#1d6bd3]">
                       {totalGain.toLocaleString('en-US')}
                     </div>
-                    <div className="text-[10px] sm:text-[11px] text-slate-500 font-normal leading-tight">
+                    <div className="text-[9px] sm:text-[10px] text-slate-500 font-normal leading-tight">
                       Revenu total
                     </div>
                   </div>
@@ -183,13 +183,13 @@ export const WellnessProductCard: React.FC<WellnessProductCardProps> = ({ onSele
                       });
                     }
                   }}
-                  className={`w-full py-3 text-white font-black text-lg sm:text-xl rounded-[14px] shadow-xs transition-all flex items-center justify-center font-sans tracking-wide ${
+                  className={`w-full py-2.5 text-white font-black text-sm sm:text-base rounded-[12px] shadow-xs transition-all flex items-center justify-center font-sans tracking-wide ${
                     isAvailable 
                       ? 'bg-[#1d6bd3] hover:bg-[#185cb8] active:scale-[0.99] cursor-pointer' 
                       : 'bg-slate-400 cursor-not-allowed opacity-70'
                   }`}
                 >
-                  {isAvailable ? `${product.price.toLocaleString('en-US')}XAF` : 'Stock Épuisé'}
+                  {isAvailable ? `${product.price.toLocaleString('en-US')} XAF` : 'Stock Épuisé'}
                 </button>
 
               </div>

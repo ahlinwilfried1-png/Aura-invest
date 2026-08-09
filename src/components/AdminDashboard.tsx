@@ -232,6 +232,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     setNewFaqQuestion(faq.question);
     setNewFaqAnswer(faq.answer);
     setNewFaqCategory(faq.category || 'Général');
+    
+    // Scroll smoothly to the FAQ edit form container so the admin sees the form prefilled
+    setTimeout(() => {
+      const formEl = document.getElementById('faq-form-container');
+      if (formEl) {
+        formEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+  };
+
+  const handleDeleteFaq = (faq: FaqItem) => {
+    if (window.confirm(`Voulez-vous vraiment supprimer la question FAQ : "${faq.question}" ?`)) {
+      deleteFaq(faq.id);
+      if (editingFaqId === faq.id) {
+        handleCancelEditFaq();
+      }
+      showToast('success', "Question FAQ supprimée avec succès.");
+    }
   };
 
   const handleCancelEditFaq = () => {
@@ -3098,7 +3116,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
           <div className="space-y-6">
             
             {/* Form Card: Create / Edit FAQ */}
-            <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4">
+            <div id="faq-form-container" className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4">
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-lg font-bold text-white flex items-center space-x-2">
@@ -3243,10 +3261,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                             <span>Éditer</span>
                           </button>
                           <button
-                            onClick={() => {
-                              deleteFaq(faq.id);
-                              showToast('success', "Question FAQ supprimée.");
-                            }}
+                            onClick={() => handleDeleteFaq(faq)}
                             className="bg-rose-950/60 hover:bg-rose-900 text-rose-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-rose-800/50 transition-all cursor-pointer flex items-center space-x-1"
                           >
                             <Trash2 className="w-3.5 h-3.5 text-rose-400" />
