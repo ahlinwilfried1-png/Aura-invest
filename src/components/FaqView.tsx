@@ -58,7 +58,7 @@ export const FaqView: React.FC<FaqViewProps> = ({
       </div>
 
       {/* Banner / Intro */}
-      <div className="bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-600 rounded-3xl p-5 text-white shadow-md relative overflow-hidden">
+      <div className="bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 rounded-3xl p-5 text-white shadow-md relative overflow-hidden">
         <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-20 pointer-events-none">
           <HelpCircle className="w-36 h-36" />
         </div>

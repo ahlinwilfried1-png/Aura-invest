@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import partnershipImage from '../assets/partnership_accord.svg';
 import { WithdrawalHistoryView } from './WithdrawalHistoryView';
 import { LuckyWheel } from './LuckyWheel';
 import { LinkBankCardView } from './LinkBankCardView';
@@ -111,7 +112,9 @@ export const AccountView: React.FC<AccountViewProps> = ({
   const { faqs = [] } = useApp();
   const [activeSubPage, setActiveSubPage] = useState<SubPage>(null);
 
-  const hasUnreadAnnouncements = announcements.some(a => a.isNew) || !!globalNotification;
+  const unreadAnnouncementsCount = announcements.filter((a: any) => a.isNew).length;
+  const hasUnreadAnnouncements = unreadAnnouncementsCount > 0 || !!globalNotification;
+  const totalUnreadAnnouncements = unreadAnnouncementsCount > 0 ? unreadAnnouncementsCount : (hasUnreadAnnouncements ? 1 : 0);
 
   // Forms state
   // Profile edit
@@ -191,7 +194,11 @@ export const AccountView: React.FC<AccountViewProps> = ({
   const myDeposits = deposits.filter((d) => d.userId === currentUser.id);
   const myWithdrawals = withdrawals.filter((w) => w.userId === currentUser.id);
   const myInvestments = userInvestments.filter((i) => i.userId === currentUser.id);
-  const myTickets = tickets.filter((t) => t.userId === currentUser.id);
+  const myTickets = tickets.filter((t) => 
+    t.userId === currentUser.id ||
+    (currentUser.phone && currentUser.phone !== 'Non renseigné' && t.userPhone === currentUser.phone) ||
+    (currentUser.name && t.userName === currentUser.name)
+  );
 
   // Render Sub-Page Header with Back Button
   const renderHeader = (title: string) => (
@@ -641,232 +648,20 @@ export const AccountView: React.FC<AccountViewProps> = ({
           {/* Clean presentation laid directly on background without borders or outer card boxes */}
           <div className="space-y-6 text-slate-900 font-sans px-1">
             
-            {/* OFFICIAL PARTNERSHIP DOCUMENT IMAGE / CARD (NON-TOUCHABLE / NON-ENLARGEABLE) */}
+            {/* OFFICIAL PARTNERSHIP DOCUMENT IMAGE (NON-TOUCHABLE / NON-ENLARGEABLE) */}
             <div 
-              className="relative rounded-2xl overflow-hidden border border-emerald-800/20 shadow-md bg-white select-none pointer-events-none touch-none"
+              className="relative rounded-2xl overflow-hidden border border-emerald-800/20 shadow-lg bg-white select-none pointer-events-none touch-none"
               style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none' }}
               onContextMenu={(e) => e.preventDefault()}
               onClick={(e) => e.preventDefault()}
             >
-              {/* Green Header Banner with Agricultural Fields motif */}
-              <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-900 text-white p-4 text-center relative">
-                <div className="flex items-center justify-center space-x-2 mb-1">
-                  <div className="w-8 h-8 rounded-full bg-white text-emerald-800 flex items-center justify-center font-black text-sm shadow-xs">
-                    🌱
-                  </div>
-                  <span className="font-black tracking-widest text-sm uppercase text-amber-300">
-                    NUTRIEN AGRICULTURE
-                  </span>
-                </div>
-                <h2 className="text-base sm:text-lg font-black tracking-tight text-white uppercase">
-                  ACCORD DE PARTENARIAT INTERNATIONAL
-                </h2>
-                <p className="text-[11px] font-bold tracking-wider text-emerald-100 uppercase mt-0.5">
-                  SIGNATURE DE CONTRAT DE COLLABORATION
-                </p>
-              </div>
-
-              {/* Document Preamble */}
-              <div className="p-4 sm:p-5 space-y-4 bg-slate-50/50">
-                <p className="text-center text-xs sm:text-sm text-slate-700 font-medium italic leading-relaxed max-w-xl mx-auto">
-                  « Nous, soussignés, confirmons par la présente la signature d'un accord de partenariat stratégique en vue de promouvoir le <strong className="text-slate-900 font-bold">développement durable de l'agriculture à l'échelle mondiale</strong>. »
-                </p>
-
-                {/* Section Banner 1 */}
-                <div className="bg-emerald-900 text-white text-[11px] sm:text-xs font-black uppercase tracking-widest py-1.5 px-4 rounded-full text-center shadow-xs">
-                  PARTENAIRES ENGAGÉS POUR UNE AGRICULTURE DURABLE
-                </div>
-
-                {/* 6 Partners Grid with Logos, Flags and Locations */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
-                  {/* Partner 1: Nutrien */}
-                  <div className="py-2 px-1 text-center space-y-1">
-                    <div className="flex items-center justify-center space-x-1">
-                      <span className="text-xs">🇹🇬</span>
-                      <span className="text-[10px] font-bold text-slate-600">TOGO</span>
-                    </div>
-                    <div className="font-black text-xs text-emerald-800 uppercase">
-                      NUTRIEN AGRICULTURE
-                    </div>
-                    <div className="text-[9px] font-mono text-slate-400">Siège Social</div>
-                  </div>
-
-                  {/* Partner 2: Corteva */}
-                  <div className="py-2 px-1 text-center space-y-1">
-                    <div className="flex items-center justify-center space-x-1">
-                      <span className="text-xs">🇺🇸</span>
-                      <span className="text-[10px] font-bold text-slate-600">ÉTATS-UNIS</span>
-                    </div>
-                    <div className="font-black text-xs text-slate-900 uppercase">
-                      CORTEVA AGRISCIENCE
-                    </div>
-                    <div className="text-[9px] font-mono text-slate-400">Directeur Général</div>
-                  </div>
-
-                  {/* Partner 3: Bayer */}
-                  <div className="py-2 px-1 text-center space-y-1">
-                    <div className="flex items-center justify-center space-x-1">
-                      <span className="text-xs">🇩🇪</span>
-                      <span className="text-[10px] font-bold text-slate-600">ALLEMAGNE</span>
-                    </div>
-                    <div className="font-black text-xs text-slate-900 uppercase">
-                      BAYER AG
-                    </div>
-                    <div className="text-[9px] font-mono text-slate-400">Agriscence Crop</div>
-                  </div>
-
-                  {/* Partner 4: Syngenta */}
-                  <div className="py-2 px-1 text-center space-y-1">
-                    <div className="flex items-center justify-center space-x-1">
-                      <span className="text-xs">🇨🇭</span>
-                      <span className="text-[10px] font-bold text-slate-600">SUISSE</span>
-                    </div>
-                    <div className="font-black text-xs text-slate-900 uppercase">
-                      SYNGENTA
-                    </div>
-                    <div className="text-[9px] font-mono text-slate-400">Alliance Suisse</div>
-                  </div>
-
-                  {/* Partner 5: Yara */}
-                  <div className="py-2 px-1 text-center space-y-1">
-                    <div className="flex items-center justify-center space-x-1">
-                      <span className="text-xs">🇳🇴</span>
-                      <span className="text-[10px] font-bold text-slate-600">NORVÈGE</span>
-                    </div>
-                    <div className="font-black text-xs text-slate-900 uppercase">
-                      YARA INTERNATIONAL
-                    </div>
-                    <div className="text-[9px] font-mono text-slate-400">Engrais Verts</div>
-                  </div>
-
-                  {/* Partner 6: FMC */}
-                  <div className="py-2 px-1 text-center space-y-1">
-                    <div className="flex items-center justify-center space-x-1">
-                      <span className="text-xs">🇺🇸</span>
-                      <span className="text-[10px] font-bold text-slate-600">ÉTATS-UNIS</span>
-                    </div>
-                    <div className="font-black text-xs text-slate-900 uppercase">
-                      FMC CORPORATION
-                    </div>
-                    <div className="text-[9px] font-mono text-slate-400">Technologies Ag</div>
-                  </div>
-                </div>
-
-                <p className="text-center text-[11px] text-slate-600 font-medium italic pt-1">
-                  Ce partenariat vise à combiner nos expertises et nos ressources pour relever ensemble les défis mondiaux de la sécurité alimentaire et de l'innovation agricole.
-                </p>
-
-                {/* Section Banner 2 */}
-                <div className="bg-emerald-900 text-white text-[11px] sm:text-xs font-black uppercase tracking-widest py-1.5 px-4 rounded-full text-center shadow-xs mt-2">
-                  SIGNATURES DES DIRECTEURS GÉNÉRAUX
-                </div>
-
-                {/* Signatures & Stamps */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
-                  {/* Director 1 */}
-                  <div className="py-2 px-1 text-center space-y-1">
-                    <div className="text-xs font-serif italic text-emerald-800 font-bold border-b border-slate-200 pb-1">
-                      ~ Koffi A. Essowe ~
-                    </div>
-                    <div className="text-[11px] font-black text-slate-900 leading-tight">
-                      M. Koffi A. ESSOWE
-                    </div>
-                    <div className="text-[9px] text-slate-500 font-bold uppercase">
-                      Directeur Général NUTRIEN
-                    </div>
-                    <div className="w-8 h-8 rounded-full border-2 border-emerald-600 text-emerald-700 text-[8px] font-mono font-bold flex items-center justify-center mx-auto mt-1 uppercase rotate-[-12deg]">
-                      Sceau
-                    </div>
-                  </div>
-
-                  {/* Director 2 */}
-                  <div className="py-2 px-1 text-center space-y-1">
-                    <div className="text-xs font-serif italic text-sky-800 font-bold border-b border-slate-200 pb-1">
-                      ~ Chuck Magro ~
-                    </div>
-                    <div className="text-[11px] font-black text-slate-900 leading-tight">
-                      M. Chuck MAGRO
-                    </div>
-                    <div className="text-[9px] text-slate-500 font-bold uppercase">
-                      Directeur CORTEVA
-                    </div>
-                    <div className="w-8 h-8 rounded-full border-2 border-sky-600 text-sky-700 text-[8px] font-mono font-bold flex items-center justify-center mx-auto mt-1 uppercase rotate-[8deg]">
-                      Sceau
-                    </div>
-                  </div>
-
-                  {/* Director 3 */}
-                  <div className="py-2 px-1 text-center space-y-1">
-                    <div className="text-xs font-serif italic text-emerald-800 font-bold border-b border-slate-200 pb-1">
-                      ~ Werner Baumann ~
-                    </div>
-                    <div className="text-[11px] font-black text-slate-900 leading-tight">
-                      M. Werner BAUMANN
-                    </div>
-                    <div className="text-[9px] text-slate-500 font-bold uppercase">
-                      Directeur BAYER AG
-                    </div>
-                    <div className="w-8 h-8 rounded-full border-2 border-emerald-600 text-emerald-700 text-[8px] font-mono font-bold flex items-center justify-center mx-auto mt-1 uppercase rotate-[-6deg]">
-                      Sceau
-                    </div>
-                  </div>
-
-                  {/* Director 4 */}
-                  <div className="py-2 px-1 text-center space-y-1">
-                    <div className="text-xs font-serif italic text-purple-800 font-bold border-b border-slate-200 pb-1">
-                      ~ Erik Fjällström ~
-                    </div>
-                    <div className="text-[11px] font-black text-slate-900 leading-tight">
-                      M. Erik FJÄLLSTRÖM
-                    </div>
-                    <div className="text-[9px] text-slate-500 font-bold uppercase">
-                      Directeur SYNGENTA
-                    </div>
-                    <div className="w-8 h-8 rounded-full border-2 border-purple-600 text-purple-700 text-[8px] font-mono font-bold flex items-center justify-center mx-auto mt-1 uppercase rotate-[10deg]">
-                      Sceau
-                    </div>
-                  </div>
-
-                  {/* Director 5 */}
-                  <div className="py-2 px-1 text-center space-y-1">
-                    <div className="text-xs font-serif italic text-blue-800 font-bold border-b border-slate-200 pb-1">
-                      ~ Svein Tore Holsether ~
-                    </div>
-                    <div className="text-[11px] font-black text-slate-900 leading-tight">
-                      M. Svein TORE HOLSETHER
-                    </div>
-                    <div className="text-[9px] text-slate-500 font-bold uppercase">
-                      Directeur YARA
-                    </div>
-                    <div className="w-8 h-8 rounded-full border-2 border-blue-600 text-blue-700 text-[8px] font-mono font-bold flex items-center justify-center mx-auto mt-1 uppercase rotate-[-10deg]">
-                      Sceau
-                    </div>
-                  </div>
-
-                  {/* Director 6 */}
-                  <div className="py-2 px-1 text-center space-y-1">
-                    <div className="text-xs font-serif italic text-rose-800 font-bold border-b border-slate-200 pb-1">
-                      ~ Pierre Brondy ~
-                    </div>
-                    <div className="text-[11px] font-black text-slate-900 leading-tight">
-                      M. Pierre BRONDY
-                    </div>
-                    <div className="text-[9px] text-slate-500 font-bold uppercase">
-                      Directeur FMC CORP
-                    </div>
-                    <div className="w-8 h-8 rounded-full border-2 border-rose-600 text-rose-700 text-[8px] font-mono font-bold flex items-center justify-center mx-auto mt-1 uppercase rotate-[5deg]">
-                      Sceau
-                    </div>
-                  </div>
-                </div>
-
-                {/* Footer Date */}
-                <div className="text-center pt-2 border-t border-slate-200/80">
-                  <span className="text-[11px] font-mono font-extrabold text-emerald-900 uppercase bg-emerald-100/90 px-3 py-1 rounded-full">
-                    Fait à Lomé, le 05 Mai 2024
-                  </span>
-                </div>
-              </div>
+              <img 
+                src={partnershipImage} 
+                alt="Accord de Partenariat International - Nutrien Agriculture" 
+                className="w-full h-auto object-cover block"
+                referrerPolicy="no-referrer"
+                loading="eager"
+              />
             </div>
 
             {/* Header Hero Banner */}

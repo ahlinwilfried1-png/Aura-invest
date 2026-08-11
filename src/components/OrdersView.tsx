@@ -177,7 +177,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
 
                   {/* 24h Progress & Next Scheduled Credit Bar */}
                   {!isCompleted && (
-                    <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3 sm:p-4 space-y-2">
+                    <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3 sm:p-4 space-y-3">
                       <div className="flex justify-between items-center text-xs">
                         <span className="font-extrabold text-slate-700 font-mono flex items-center space-x-1">
                           <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
@@ -186,7 +186,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
 
                         <span className="font-mono text-slate-600 font-bold">
                           {isReadyToClaim ? (
-                            <span className="text-emerald-600 font-black">Rendement Prêt !</span>
+                            <span className="text-emerald-600 font-black animate-pulse">Rendement Prêt !</span>
                           ) : (
                             <span className="text-slate-500">
                               Prochain crédit : {hoursLeft.toString().padStart(2, '0')}:
@@ -211,6 +211,17 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                         <span>Revenu quotidien : <strong className="text-slate-800 font-mono font-bold">+{formatAmount(inv.dailyGain)} FCFA</strong></span>
                         <span>Date de crédit prévue : <strong className="text-slate-800 font-mono">{new Date(nextClaimTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</strong></span>
                       </div>
+
+                      {/* Claim Button when 24h cycle complete */}
+                      {isReadyToClaim && (
+                        <button
+                          onClick={() => onClaimDailyEarning(inv.id)}
+                          className="w-full py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center space-x-2"
+                        >
+                          <Zap className="w-4 h-4 fill-white" />
+                          <span>Recevoir mon revenu (+{formatAmount(inv.dailyGain)} FCFA) sur le solde principal</span>
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

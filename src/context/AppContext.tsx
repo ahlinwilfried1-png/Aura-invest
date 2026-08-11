@@ -69,7 +69,7 @@ interface AppContextType {
   claimDailyEarning: (investmentId: string) => { success: boolean; error?: string };
   requestDeposit: (amount: number, method: any, transactionId: string, screenshotUrl: string | null) => { success: boolean; error?: string };
   requestWithdrawal: (amount: number, network: any, accountNumber: string) => { success: boolean; error?: string };
-  saveWithdrawalAccount: (accountName: string, accountNumber: string, pin: string, network?: string, country?: string) => { success: boolean; error?: string };
+  saveWithdrawalAccount: (accountName: string, accountNumber: string, pin: string, network?: string, country?: string, isAdminOverride?: boolean) => { success: boolean; error?: string };
   sendAdminDirectMessage: (userId: string, message: string) => void;
   redeemBonusCode: (code: string) => { success: boolean; error?: string; amount?: number };
   claimDailyBonus: () => { success: boolean; error?: string; amount?: number };
@@ -80,8 +80,9 @@ interface AppContextType {
   // Administrative tasks (accessible when currentUser.role === 'admin')
   setUsers: React.Dispatch<React.SetStateAction<User[]>>;
   toggleBlockUser: (userId: string) => void;
-  updateUserBalance: (userId: string, amount: number) => void;
+  updateUserBalance: (userId: string, amount: number, isDirectSet?: boolean) => void;
   adminUpdateUserPassword: (userId: string, newWord: string) => { success: boolean; error?: string };
+  adminUpdateUserPin: (userId: string, newPin: string) => { success: boolean; error?: string };
   processDeposit: (depositId: string, status: 'approved' | 'rejected') => void;
   processWithdrawal: (withdrawalId: string, status: 'approved' | 'rejected') => void;
   processWithdrawalProof: (proofId: string, status: 'approved' | 'rejected') => void;
@@ -256,8 +257,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: 'admin-1',
         name: 'Administrateur Principal',
         phone: '11111111',
-        whatsapp: '+225 01010101',
-        country: 'Côte d\'Ivoire',
+        whatsapp: '+228 90909090',
+        country: 'Togo',
         balance: 10000000,
         dailyEarnings: 0,
         totalEarnings: 0,
@@ -272,8 +273,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: 'user-1',
         name: 'Koffi Konan',
         phone: '07070707',
-        whatsapp: '+225 07070707',
-        country: 'Côte d\'Ivoire',
+        whatsapp: '+228 90000000',
+        country: 'Togo',
         balance: 8500,
         dailyEarnings: 600,
         totalEarnings: 3600,
@@ -554,21 +555,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [wheelConfig, setWheelConfig] = useState<WheelConfig>(() => {
+    const defaultPrizes: WheelPrize[] = [
+      { id: 1, label: '+25 FCFA', value: 25, color: 'bg-emerald-500 text-white' },
+      { id: 2, label: '+30 FCFA', value: 30, color: 'bg-amber-500 text-slate-950' },
+      { id: 3, label: '+35 FCFA', value: 35, color: 'bg-blue-600 text-white' },
+      { id: 4, label: '+40 FCFA', value: 40, color: 'bg-purple-600 text-white' },
+      { id: 5, label: '+45 FCFA', value: 45, color: 'bg-rose-500 text-white' },
+      { id: 6, label: '+50 FCFA', value: 50, color: 'bg-emerald-700 text-white' },
+    ];
+
     const data = localStorage.getItem('fintech_wheel_config');
     if (data) {
-      try { return JSON.parse(data); } catch (e) { console.error(e); }
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed && Array.isArray(parsed.prizes)) {
+          const sanitizedPrizes = parsed.prizes.map((p: WheelPrize) => {
+            const clampedVal = Math.min(50, Math.max(25, Number(p.value) || 25));
+            return {
+              ...p,
+              value: clampedVal,
+              label: `+${clampedVal} FCFA`
+            };
+          });
+          return { ...parsed, prizes: sanitizedPrizes };
+        }
+      } catch (e) { console.error(e); }
     }
     return {
       ticketsPerReferral: 1,
       dailyFreeTickets: 1,
-      prizes: [
-        { id: 1, label: '+100 XAF', value: 100, color: 'bg-emerald-500 text-white' },
-        { id: 2, label: '+300 XAF', value: 300, color: 'bg-amber-500 text-slate-950' },
-        { id: 3, label: '+500 XAF', value: 500, color: 'bg-blue-600 text-white' },
-        { id: 4, label: '+1 000 XAF', value: 1000, color: 'bg-purple-600 text-white' },
-        { id: 5, label: '+200 XAF', value: 200, color: 'bg-rose-500 text-white' },
-        { id: 6, label: '+2 000 XAF', value: 2000, color: 'bg-emerald-700 text-white' },
-      ]
+      prizes: defaultPrizes
     };
   });
 
@@ -584,8 +600,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         userName: 'Koffi Konan',
         userPhone: '+228 90****95',
         action: 'a fait tourner la roue',
-        prizeLabel: '+100 XAF',
-        prizeValue: 100,
+        prizeLabel: '+50 FCFA',
+        prizeValue: 50,
         createdAt: new Date(Date.now() - 2 * 60 * 1000).toISOString()
       },
       {
@@ -594,8 +610,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         userName: 'Seydou Keita',
         userPhone: '+226 76****35',
         action: 'a fait tourner la roue',
-        prizeLabel: '+1 000 XAF',
-        prizeValue: 1000,
+        prizeLabel: '+25 FCFA',
+        prizeValue: 25,
         createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString()
       },
       {
@@ -604,8 +620,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         userName: 'Ablavi Mensah',
         userPhone: '+228 92****45',
         action: 'a fait tourner la roue',
-        prizeLabel: '+200 XAF',
-        prizeValue: 200,
+        prizeLabel: '+35 FCFA',
+        prizeValue: 35,
         createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString()
       },
       {
@@ -614,8 +630,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         userName: 'Yao Kouadio',
         userPhone: '+229 97****42',
         action: 'a fait tourner la roue',
-        prizeLabel: '+500 XOF',
-        prizeValue: 500,
+        prizeLabel: '+40 FCFA',
+        prizeValue: 40,
         createdAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
       }
     ];
@@ -723,7 +739,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       {
         id: 'faq-2',
         question: "Comment effectuer un dépôt ou une recharge ?",
-        answer: "Accédez à la rubrique 'Recharger' ou 'Dépôt', sélectionnez votre pays (Côte d'Ivoire, Bénin, Cameroun, Sénégal, Togo, etc.), choisissez votre réseau Mobile Money (Orange Money, MTN, Moov, Wave, Mixx by Yas) ou carte bancaire, entrez le montant et validez l'opération.",
+        answer: "Accédez à la rubrique 'Recharger' ou 'Dépôt', sélectionnez votre pays (Togo, Bénin, Cameroun, Sénégal, Burkina Faso, etc.), choisissez votre réseau Mobile Money (TMoney, MTN, Moov, Wave, Mixx by Yas) ou carte bancaire, entrez le montant et validez l'opération.",
         category: "Dépôts & Retraits",
         order: 2,
         createdAt: new Date().toISOString()
@@ -826,7 +842,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     async function hydrateFromSupabase() {
       const dbUsers = await fetchTableData<User>('users');
-      if (dbUsers && dbUsers.length > 0) setUsers(dbUsers);
+      if (dbUsers && dbUsers.length > 0) {
+        setUsers(prev => {
+          const userMap = new Map<string, User>();
+          dbUsers.forEach(u => userMap.set(u.id, u));
+          prev.forEach(u => {
+            const dbU = userMap.get(u.id);
+            if (!dbU) {
+              userMap.set(u.id, u);
+            } else {
+              // Preserve local updates (e.g. balance modifications, blocking status, role)
+              userMap.set(u.id, {
+                ...dbU,
+                balance: u.balance !== undefined ? u.balance : dbU.balance,
+                isBlocked: u.isBlocked !== undefined ? u.isBlocked : dbU.isBlocked,
+                role: u.role || dbU.role
+              });
+            }
+          });
+          const merged = Array.from(userMap.values());
+          localStorage.setItem('fintech_users', JSON.stringify(merged));
+          return merged;
+        });
+      }
 
       const dbProducts = await fetchTableData<InvestmentProduct>('products');
       if (dbProducts && dbProducts.length > 0) setProducts(dbProducts);
@@ -838,7 +876,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (dbWithdrawals && dbWithdrawals.length > 0) setWithdrawals(dbWithdrawals);
 
       const dbProofs = await fetchTableData<WithdrawalProof>('withdrawal_proofs');
-      if (dbProofs && dbProofs.length > 0) setWithdrawalProofs(dbProofs);
+      if (dbProofs && dbProofs.length > 0) {
+        setWithdrawalProofs(prev => {
+          const deletedProofIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_proof_ids') || '[]');
+          const proofMap = new Map<string, WithdrawalProof>();
+          dbProofs.forEach(p => {
+            if (!deletedProofIds.includes(p.id)) {
+              proofMap.set(p.id, p);
+            }
+          });
+          prev.forEach(p => {
+            if (!deletedProofIds.includes(p.id) && !proofMap.has(p.id)) {
+              proofMap.set(p.id, p);
+            }
+          });
+          const filtered = Array.from(proofMap.values());
+          localStorage.setItem('aurainvest_withdrawal_proofs', JSON.stringify(filtered));
+          localStorage.setItem('fintech_withdrawal_proofs', JSON.stringify(filtered));
+          return filtered;
+        });
+      }
 
       const dbInvestments = await fetchTableData<UserInvestment>('investments');
       if (dbInvestments && dbInvestments.length > 0) setUserInvestments(dbInvestments);
@@ -885,6 +942,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const dbFaqs = await fetchTableData<FaqItem>('faqs');
       if (dbFaqs && dbFaqs.length > 0) setFaqs(dbFaqs);
+
+      const dbWellness = await fetchTableData<WellnessProduct>('wellness_products');
+      if (dbWellness && dbWellness.length > 0) {
+        setWellnessProducts(prev => {
+          const deletedIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_wellness_ids') || '[]');
+          const prodMap = new Map<string, WellnessProduct>();
+          dbWellness.forEach(p => {
+            if (!deletedIds.includes(p.id)) {
+              prodMap.set(p.id, p);
+            }
+          });
+          prev.forEach(p => {
+            if (!deletedIds.includes(p.id) && !prodMap.has(p.id)) {
+              prodMap.set(p.id, p);
+            }
+          });
+          const filtered = Array.from(prodMap.values());
+          localStorage.setItem('fintech_wellness_products', JSON.stringify(filtered));
+          return filtered;
+        });
+      }
     }
 
     hydrateFromSupabase();
@@ -910,8 +988,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           console.error("Storage sync users error:", err);
         }
       }
+      if ((e.key === 'aurainvest_withdrawal_proofs' || e.key === 'fintech_withdrawal_proofs') && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          const deletedProofIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_proof_ids') || '[]');
+          setWithdrawalProofs(parsed.filter((p: any) => !deletedProofIds.includes(p.id)));
+        } catch (err) {
+          console.error("Storage sync proofs error:", err);
+        }
+      }
+      if (e.key === 'fintech_wellness_products' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          const deletedWellnessIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_wellness_ids') || '[]');
+          setWellnessProducts(parsed.filter((p: any) => !deletedWellnessIds.includes(p.id)));
+        } catch (err) {
+          console.error("Storage sync wellness error:", err);
+        }
+      }
+      if (e.key === 'fintech_announcements' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          setAnnouncements(parsed);
+        } catch (err) {
+          console.error("Storage sync announcements error:", err);
+        }
+      }
     };
     window.addEventListener('storage', handleStorageChange);
+
+    const handleCustomUsersChanged = (evt: Event) => {
+      const customEvt = evt as CustomEvent;
+      if (customEvt.detail && Array.isArray(customEvt.detail)) {
+        setUsers(customEvt.detail);
+      }
+    };
+    window.addEventListener('nutrien_users_changed', handleCustomUsersChanged);
 
     const handleCustomTicketsChanged = (evt: Event) => {
       const customEvt = evt as CustomEvent;
@@ -920,6 +1032,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     };
     window.addEventListener('nutrien_tickets_changed', handleCustomTicketsChanged);
+
+    const handleCustomWellnessChanged = (evt: Event) => {
+      const customEvt = evt as CustomEvent;
+      if (customEvt.detail && Array.isArray(customEvt.detail)) {
+        const deletedWellnessIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_wellness_ids') || '[]');
+        setWellnessProducts(customEvt.detail.filter((p: any) => !deletedWellnessIds.includes(p.id)));
+      }
+    };
+    window.addEventListener('nutrien_wellness_changed', handleCustomWellnessChanged);
+
+    const handleCustomAnnouncementsChanged = (evt: Event) => {
+      const customEvt = evt as CustomEvent;
+      if (customEvt.detail && Array.isArray(customEvt.detail)) {
+        setAnnouncements(customEvt.detail);
+      }
+    };
+    window.addEventListener('nutrien_announcements_changed', handleCustomAnnouncementsChanged);
 
     // Fast local polling interval (1s) to ensure instant cross-view & cross-window state updates
     const ticketPollInterval = setInterval(() => {
@@ -931,6 +1060,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setTickets(prev => {
               if (JSON.stringify(prev) !== JSON.stringify(parsed)) {
                 return parsed;
+              }
+              return prev;
+            });
+          }
+        } catch {}
+      }
+      const storedAnn = localStorage.getItem('fintech_announcements');
+      if (storedAnn) {
+        try {
+          const parsedAnn = JSON.parse(storedAnn);
+          if (Array.isArray(parsedAnn)) {
+            setAnnouncements(prev => {
+              if (JSON.stringify(prev) !== JSON.stringify(parsedAnn)) {
+                return parsedAnn;
               }
               return prev;
             });
@@ -959,6 +1102,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       clearInterval(ticketPollInterval);
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('nutrien_tickets_changed', handleCustomTicketsChanged);
+      window.removeEventListener('nutrien_wellness_changed', handleCustomWellnessChanged);
+      window.removeEventListener('nutrien_announcements_changed', handleCustomAnnouncementsChanged);
     };
   }, []);
 
@@ -1150,30 +1295,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     };
 
+    // Automatic 24h revenue distribution loop
     checkAndDistributeEarnings();
-    const interval = setInterval(checkAndDistributeEarnings, 3000);
+    const interval = setInterval(checkAndDistributeEarnings, 5000);
     return () => clearInterval(interval);
   }, [userInvestments, currentUser]);
 
   // Auth Operations
   const login = async (phone: string, word: string): Promise<{ success: boolean; error?: string }> => {
-    // Simulating delay for futuristic API spinner
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // Simulating delay for API spinner
+    await new Promise(resolve => setTimeout(resolve, 600));
     
     const cleanPhone = phone.trim();
-    const user = users.find(u => u.phone === cleanPhone);
+    const strippedPhone = cleanPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+    
+    // Find user by exact match or stripped match
+    const user = users.find(u => {
+      const uClean = u.phone.trim();
+      const uStripped = uClean.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+      return uClean === cleanPhone || uStripped === strippedPhone || uClean.endsWith(strippedPhone.slice(-8));
+    });
     
     if (!user) {
-      return { success: false, error: "Compte introuvable. Veuillez vous inscrire." };
+      return { success: false, error: "Compte introuvable. Veuillez vérifier votre numéro ou vous inscrire." };
     }
     
     if (user.isBlocked) {
       return { success: false, error: "Ce compte a été suspendu par l'administration. Contactez le support." };
     }
     
-    const correctWord = passwords[cleanPhone];
+    const correctWord = passwords[user.phone] || passwords[cleanPhone] || passwords[strippedPhone];
     if (correctWord !== word) {
-      return { success: false, error: "Mot de passe incorrect." };
+      return { success: false, error: "Mot de passe incorrect. Veuillez réessayer." };
     }
     
     setCurrentUser(user);
@@ -1188,11 +1341,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     word: string;
     referrerCode: string;
   }): Promise<{ success: boolean; error?: string }> => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 800));
     
     const cleanPhone = data.phone.trim();
-    if (users.some(u => u.phone === cleanPhone)) {
-      return { success: false, error: "Un compte existe déjà avec ce numéro de téléphone." };
+    const strippedPhone = cleanPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+
+    // Duplicate check
+    const exists = users.some(u => {
+      const uClean = u.phone.trim();
+      const uStripped = uClean.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+      return uClean === cleanPhone || uStripped === strippedPhone;
+    });
+
+    if (exists) {
+      return { success: false, error: "Un compte existe déjà avec ce numéro de téléphone. Veuillez vous connecter." };
     }
     
     // Generate a unique referral code
@@ -1222,7 +1384,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       phone: cleanPhone,
       whatsapp: data.whatsapp,
       country: data.country,
-      balance: 1000, // 1000 FCFA gift for registering
+      balance: 200, // 200 XOF / XAF bonus d'inscription
       dailyEarnings: 0,
       totalEarnings: 0,
       vipLevel: 0,
@@ -1233,11 +1395,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       referredByCode: referredByCodeObj
     };
     
-    // Save password
-    setPasswords(prev => ({ ...prev, [cleanPhone]: data.word }));
+    // Save password under cleanPhone and user.phone
+    setPasswords(prev => ({ 
+      ...prev, 
+      [cleanPhone]: data.word,
+      [strippedPhone]: data.word,
+      [newUser.phone]: data.word 
+    }));
     setUsers(prev => [...prev, newUser]);
     
-    // Trigger commissions welcome gift system if needed or log it
     setCurrentUser(newUser);
     return { success: true };
   };
@@ -1323,7 +1489,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const l1 = updatedUsers.find(u => u.referralCode === dbUser.referredByCode);
       if (l1) {
         const commL1 = Math.round(totalPrice * 0.15); // 15% Level 1
-        updatedUsers = updatedUsers.map(u => u.id === l1.id ? { ...u, balance: u.balance + commL1, totalEarnings: u.totalEarnings + commL1 } : u);
+        const ticketsGained = (wheelConfig?.ticketsPerReferral || 1) * quantity;
+        updatedUsers = updatedUsers.map(u => u.id === l1.id ? { 
+          ...u, 
+          balance: u.balance + commL1, 
+          totalEarnings: u.totalEarnings + commL1,
+          drawTickets: (u.drawTickets || 0) + ticketsGained
+        } : u);
         newCommissions.push({
           id: 'comm-' + Math.random().toString(36).substr(2, 9),
           referrerId: l1.id,
@@ -1419,12 +1591,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return {
           ...u,
           balance: u.balance + investment.dailyGain,
+          dailyEarnings: (u.dailyEarnings || 0) + investment.dailyGain,
           totalEarnings: u.totalEarnings + investment.dailyGain
         };
       }
       return u;
     }));
-    
+
+    const updatedCurr = {
+      ...currentUser,
+      balance: currentUser.balance + investment.dailyGain,
+      dailyEarnings: (currentUser.dailyEarnings || 0) + investment.dailyGain,
+      totalEarnings: currentUser.totalEarnings + investment.dailyGain
+    };
+    setCurrentUser(updatedCurr);
+    localStorage.setItem('fintech_current_user', JSON.stringify(updatedCurr));
+
+    // Record revenue log
+    const newLog: RevenueLog = {
+      id: `rev-${investment.id}-${Date.now()}`,
+      userId: currentUser.id,
+      investmentId: investment.id,
+      productName: investment.productName,
+      amount: investment.dailyGain,
+      creditedAt: new Date().toISOString()
+    };
+    setRevenueLogs(prev => [newLog, ...prev]);
+
     return { success: true };
   };
 
@@ -1450,8 +1643,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
-  const saveWithdrawalAccount = (accountName: string, accountNumber: string, pin: string, network?: string, country?: string) => {
+  const saveWithdrawalAccount = (accountName: string, accountNumber: string, pin: string, network?: string, country?: string, isAdminOverride?: boolean) => {
     if (!currentUser) return { success: false, error: "Non connecté." };
+
+    // Anti-Fraud Locking: Once linked, account details (name and number) cannot be modified or changed
+    const isAlreadyLinked = Boolean(currentUser.withdrawalAccountName && currentUser.withdrawalAccountNumber);
+    if (isAlreadyLinked && !isAdminOverride) {
+      const isChangingDetails = (
+        accountName.trim() !== currentUser.withdrawalAccountName ||
+        accountNumber.trim() !== currentUser.withdrawalAccountNumber
+      );
+      if (isChangingDetails) {
+        return {
+          success: false,
+          error: "Votre compte bancaire/retrait est déjà lié et verrouillé définitivement. Modification impossible."
+        };
+      }
+    }
+
     if (!accountName.trim()) return { success: false, error: "Le nom complet est requis." };
     if (!accountNumber.trim()) return { success: false, error: "Le numéro de compte de retrait est requis." };
     if (!pin.trim() || pin.length < 4) return { success: false, error: "Le code PIN doit comporter au moins 4 chiffres." };
@@ -1484,14 +1693,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const sendAdminDirectMessage = (userId: string, message: string) => {
     if (!userId || !message.trim()) return;
-    const targetUser = users.find(u => u.id === userId);
-    const fallbackTicket = tickets.find(t => t.userId === userId);
+    const targetUser = users.find(u => u.id === userId || (u.phone && u.phone === userId) || (u.name && u.name === userId));
+    const fallbackTicket = tickets.find(t => t.userId === userId || (t.userPhone && t.userPhone === userId) || (t.userName && t.userName === userId));
+    const actualUserId = targetUser?.id || fallbackTicket?.userId || userId;
     const userName = targetUser?.name || fallbackTicket?.userName || 'Client ' + userId.slice(0, 5);
+    const userPhone = targetUser?.phone || fallbackTicket?.userPhone;
 
     const newTicket: SupportTicket = {
       id: 'tkt-adm-' + Math.random().toString(36).substr(2, 9),
-      userId: userId,
+      userId: actualUserId,
       userName: userName,
+      userPhone: userPhone,
       subject: "Message de l'Administration",
       message: "Message direct du Support Client Nutrien.",
       reply: message.trim(),
@@ -1507,6 +1719,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       syncTableData('tickets', updated);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('nutrien_tickets_changed', { detail: updated }));
+        window.dispatchEvent(new Event('storage'));
       }
       return updated;
     });
@@ -1514,6 +1727,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const requestWithdrawal = (amount: number, network: any, accountNumber: string) => {
     if (!currentUser) return { success: false, error: "Non connecté." };
+
+    // 1. Check time window (09h00 to 17h00)
+    const currentHour = new Date().getHours();
+    if (currentHour < 9 || currentHour >= 17) {
+      return { success: false, error: "Les retraits sont uniquement autorisés de 09h00 à 17h00." };
+    }
+
+    // 2. Check active products / investments
+    const hasActiveProduct = userInvestments.some(
+      inv => inv.userId === currentUser.id && inv.daysRemaining > 0
+    );
+    if (!hasActiveProduct) {
+      return { success: false, error: "Impossible d'effectuer un retrait : vous devez posséder au moins un produit actif." };
+    }
+
     if (amount < 1000) return { success: false, error: "Le montant minimum de retrait est de 1 000 XAF." };
     if (!accountNumber.trim()) return { success: false, error: "Le numéro de compte de réception est requis." };
     
@@ -1524,11 +1752,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: "Solde insuffisant pour ce montant de retrait." };
     }
 
-    // Check 1 withdrawal per day limit
+    // Check 2 withdrawals per day limit
     const todayIso = new Date().toISOString().split('T')[0];
-    const hasWithdrawnToday = withdrawals.some(w => w.userId === currentUser.id && w.createdAt.startsWith(todayIso));
-    if (hasWithdrawnToday) {
-      return { success: false, error: "Vous avez déjà effectué une demande de retrait aujourd'hui. Limité à un seul retrait par jour." };
+    const todaysWithdrawalsCount = withdrawals.filter(w => w.userId === currentUser.id && w.createdAt.startsWith(todayIso)).length;
+    if (todaysWithdrawalsCount >= 2) {
+      return { success: false, error: "Vous avez déjà effectué 2 demandes de retrait aujourd'hui. Limité à 2 retraits par jour." };
     }
     
     // Deduct pending balance automatically or manually inside admin
@@ -1616,16 +1844,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const claimDailyBonus = () => {
     if (!currentUser) return { success: false, error: "Non connecté." };
     
-    // Simulate simple daily attendance check in localStorage with timestamp
+    // Daily attendance pointage gives strictly 20 FCFA for all users
     const bonusKey = `daily_bonus_claim_${currentUser.id}`;
     const lastClaim = localStorage.getItem(bonusKey);
-    const bonusAmount = Math.floor(Math.random() * 200) + 100; // 100 to 300 FCFA daily bonus
+    const bonusAmount = 20; // Strictly 20 FCFA per day
     
     if (lastClaim) {
       const hoursSinceClaim = (Date.now() - parseInt(lastClaim)) / (3600 * 1000);
       if (hoursSinceClaim < 24) {
         const remainingHours = Math.ceil(24 - hoursSinceClaim);
-        return { success: false, error: `Revenez demain ! Prochain bonus disponible dans ${remainingHours} heures.` };
+        return { success: false, error: `Revenez demain ! Prochain pointage disponible dans ${remainingHours} heures.` };
       }
     }
     
@@ -1660,13 +1888,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
-    const prizes = wheelConfig.prizes;
-    if (!prizes || prizes.length === 0) {
+    const rawPrizes = wheelConfig.prizes || [];
+    if (rawPrizes.length === 0) {
       return { success: false, error: "Aucun prix configuré pour le tirage." };
     }
 
-    // Pick random prize
-    const prize = prizes[Math.floor(Math.random() * prizes.length)];
+    // Ensure all prizes vary strictly between 25 FCFA and 50 FCFA
+    const validPrizes = rawPrizes.map(p => {
+      const clamped = Math.min(50, Math.max(25, Number(p.value) || 25));
+      return {
+        ...p,
+        value: clamped,
+        label: `+${clamped} FCFA`
+      };
+    });
+
+    // Pick random prize strictly between 25 FCFA and 50 FCFA
+    const prize = validPrizes[Math.floor(Math.random() * validPrizes.length)];
 
     // Deduct 1 ticket, credit user balance & total earnings
     setUsers(prev => prev.map(u => {
@@ -1739,6 +1977,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: 'tkt-' + Math.random().toString(36).substr(2, 9),
       userId: currentUser.id,
       userName: currentUser.name,
+      userPhone: currentUser.phone,
       subject,
       message,
       imageUrl,
@@ -1751,6 +1990,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       syncTableData('tickets', updated);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('nutrien_tickets_changed', { detail: updated }));
+        window.dispatchEvent(new Event('storage'));
       }
       return updated;
     });
@@ -1776,24 +2016,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
-  const updateUserBalance = (userId: string, amount: number) => {
+  const updateUserBalance = (userId: string, amount: number, isDirectSet: boolean = false) => {
     setUsers(prev => {
       const updated = prev.map(u => {
         if (u.id === userId) {
-          const cleanBalance = Math.max(0, u.balance + amount);
+          const cleanBalance = isDirectSet ? Math.max(0, amount) : Math.max(0, u.balance + amount);
           return { ...u, balance: cleanBalance };
         }
         return u;
       });
       localStorage.setItem('fintech_users', JSON.stringify(updated));
       syncTableData('users', updated);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_users_changed', { detail: updated }));
+        window.dispatchEvent(new Event('storage'));
+      }
       return updated;
     });
 
     setCurrentUser(prev => {
       if (prev && prev.id === userId) {
-        const updatedUser = { ...prev, balance: Math.max(0, prev.balance + amount) };
+        const cleanBalance = isDirectSet ? Math.max(0, amount) : Math.max(0, prev.balance + amount);
+        const updatedUser = { ...prev, balance: cleanBalance };
         localStorage.setItem('fintech_current_user', JSON.stringify(updatedUser));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('storage'));
+        }
         return updatedUser;
       }
       return prev;
@@ -1811,6 +2059,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('fintech_passwords', JSON.stringify(updated));
       return updated;
     });
+    return { success: true };
+  };
+
+  const adminUpdateUserPin = (userId: string, newPin: string): { success: boolean; error?: string } => {
+    const usr = users.find(u => u.id === userId);
+    if (!usr) return { success: false, error: "Utilisateur non trouvé." };
+    if (!newPin || newPin.trim().length < 4) {
+      return { success: false, error: "Le code PIN de retrait doit comporter au moins 4 chiffres." };
+    }
+    const securePinHash = btoa(newPin.trim() + '_aura_sec_salt');
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, withdrawalPinHash: securePinHash } : u));
+    if (currentUser && currentUser.id === userId) {
+      setCurrentUser(prev => prev ? { ...prev, withdrawalPinHash: securePinHash } : null);
+    }
     return { success: true };
   };
 
@@ -1924,29 +2186,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const replyToTicket = (ticketId: string, reply: string) => {
     setTickets(prev => {
-      const updated = prev.map(t => t.id === ticketId ? { 
-        ...t, 
-        reply, 
-        status: 'closed' as const, 
-        isReadByUser: false, 
-        replyCreatedAt: new Date().toISOString() 
-      } : t);
+      const targetTicket = prev.find(t => t.id === ticketId);
+      const updated = prev.map(t => {
+        const matchesTargetUser = targetTicket && (
+          t.userId === targetTicket.userId ||
+          (targetTicket.userPhone && targetTicket.userPhone !== 'Non renseigné' && t.userPhone === targetTicket.userPhone) ||
+          (targetTicket.userName && t.userName === targetTicket.userName)
+        );
+        if (t.id === ticketId || (matchesTargetUser && t.status === 'open')) {
+          return {
+            ...t,
+            reply: t.id === ticketId ? reply : (t.reply || reply),
+            status: 'closed' as const,
+            isReadByUser: false,
+            replyCreatedAt: new Date().toISOString()
+          };
+        }
+        return t;
+      });
       localStorage.setItem('fintech_tickets', JSON.stringify(updated));
       syncTableData('tickets', updated);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('nutrien_tickets_changed', { detail: updated }));
+        window.dispatchEvent(new Event('storage'));
       }
       return updated;
     });
   };
 
   const markTicketsAsRead = (userId: string) => {
+    const targetUser = users.find(u => u.id === userId);
     setTickets(prev => {
-      const hasUnread = prev.some(t => t.userId === userId && t.isReadByUser === false);
+      const isUserTicket = (t: SupportTicket) => 
+        t.userId === userId || 
+        (targetUser?.phone && targetUser.phone !== 'Non renseigné' && t.userPhone === targetUser.phone) ||
+        (targetUser?.name && t.userName === targetUser.name);
+
+      const hasUnread = prev.some(t => isUserTicket(t) && t.isReadByUser === false);
       if (!hasUnread) return prev;
-      const updated = prev.map(t => t.userId === userId ? { ...t, isReadByUser: true } : t);
+      const updated = prev.map(t => isUserTicket(t) ? { ...t, isReadByUser: true } : t);
       localStorage.setItem('fintech_tickets', JSON.stringify(updated));
       syncTableData('tickets', updated);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_tickets_changed', { detail: updated }));
+        window.dispatchEvent(new Event('storage'));
+      }
       return updated;
     });
   };
@@ -2021,8 +2305,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const updated = prev.filter(p => p.id !== proofId);
       localStorage.setItem('aurainvest_withdrawal_proofs', JSON.stringify(updated));
       localStorage.setItem('fintech_withdrawal_proofs', JSON.stringify(updated));
+
+      const deletedProofIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_proof_ids') || '[]');
+      if (!deletedProofIds.includes(proofId)) {
+        deletedProofIds.push(proofId);
+        localStorage.setItem('aurainvest_deleted_proof_ids', JSON.stringify(deletedProofIds));
+      }
+
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('nutrien_proofs_changed', { detail: updated }));
+        window.dispatchEvent(new Event('storage'));
       }
       return updated;
     });
@@ -2071,6 +2363,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const updated = [newAnn, ...prev];
       localStorage.setItem('fintech_announcements', JSON.stringify(updated));
       syncTableData('announcements', updated);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_announcements_changed', { detail: updated }));
+        window.dispatchEvent(new Event('storage'));
+      }
       return updated;
     });
 
@@ -2085,6 +2381,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const updated = prev.filter(a => a.id !== id);
       localStorage.setItem('fintech_announcements', JSON.stringify(updated));
       deleteRecord('announcements', id);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_announcements_changed', { detail: updated }));
+        window.dispatchEvent(new Event('storage'));
+      }
       return updated;
     });
   };
@@ -2094,6 +2394,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const updated = prev.map(a => a.id === id ? { ...a, isNew: false } : a);
       localStorage.setItem('fintech_announcements', JSON.stringify(updated));
       syncTableData('announcements', updated);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_announcements_changed', { detail: updated }));
+        window.dispatchEvent(new Event('storage'));
+      }
       return updated;
     });
   };
@@ -2157,7 +2461,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updated = [newProd, ...prev];
       }
       localStorage.setItem('fintech_wellness_products', JSON.stringify(updated));
+      
+      if (productData.id) {
+        const deletedIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_wellness_ids') || '[]');
+        if (deletedIds.includes(productData.id)) {
+          const newDeleted = deletedIds.filter(id => id !== productData.id);
+          localStorage.setItem('aurainvest_deleted_wellness_ids', JSON.stringify(newDeleted));
+        }
+      }
+
       syncTableData('wellness_products', updated);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_wellness_changed', { detail: updated }));
+        window.dispatchEvent(new Event('storage'));
+      }
       return updated;
     });
   };
@@ -2166,7 +2483,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setWellnessProducts(prev => {
       const updated = prev.filter(p => p.id !== id);
       localStorage.setItem('fintech_wellness_products', JSON.stringify(updated));
+      
+      const deletedIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_wellness_ids') || '[]');
+      if (!deletedIds.includes(id)) {
+        deletedIds.push(id);
+        localStorage.setItem('aurainvest_deleted_wellness_ids', JSON.stringify(deletedIds));
+      }
+
       deleteRecord('wellness_products', id);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_wellness_changed', { detail: updated }));
+        window.dispatchEvent(new Event('storage'));
+      }
       return updated;
     });
   };
@@ -2214,6 +2542,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       toggleBlockUser,
       updateUserBalance,
       adminUpdateUserPassword,
+      adminUpdateUserPin,
       processDeposit,
       processWithdrawal,
       processWithdrawalProof,

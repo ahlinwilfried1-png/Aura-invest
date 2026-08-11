@@ -24,6 +24,14 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ onBack }) 
     setSelectedAnnouncement(ann);
   };
 
+  const unreadCount = announcements.filter(a => a.isNew).length;
+
+  const handleMarkAllAsRead = () => {
+    announcements.forEach(a => {
+      if (a.isNew) markAnnouncementAsRead(a.id);
+    });
+  };
+
   // IF AN ANNOUNCEMENT IS SELECTED -> SHOW DETAIL PAGE
   if (selectedAnnouncement) {
     return (
@@ -101,9 +109,18 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ onBack }) 
           <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
         </button>
         <h1 className="text-base sm:text-lg font-bold text-slate-900 text-center tracking-tight">
-          Message
+          Annonces & Messages
         </h1>
-        <div className="w-6"></div>
+        {unreadCount > 0 ? (
+          <button
+            onClick={handleMarkAllAsRead}
+            className="text-[11px] font-extrabold text-amber-800 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+          >
+            Tout lire
+          </button>
+        ) : (
+          <div className="w-6"></div>
+        )}
       </div>
 
       {/* Main Container List - Direct on Background */}

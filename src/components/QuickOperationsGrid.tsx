@@ -1,5 +1,5 @@
 import React from 'react';
-import { CreditCard, ArrowUpRight, Award, Calendar, Bell, Headphones } from 'lucide-react';
+import { CreditCard, ArrowUpRight, Award, Calendar, Bell } from 'lucide-react';
 
 interface QuickOperationsGridProps {
   onRecharger: () => void;
@@ -7,8 +7,10 @@ interface QuickOperationsGridProps {
   onCertificat: () => void;
   onPointage: () => void;
   onAnnonces: () => void;
+  onGuide?: () => void;
   onChat?: () => void;
   hasUnreadAnnouncements?: boolean;
+  unreadAnnouncementsCount?: number;
   unreadChatCount?: number;
 }
 
@@ -18,9 +20,8 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
   onCertificat,
   onPointage,
   onAnnonces,
-  onChat,
   hasUnreadAnnouncements,
-  unreadChatCount
+  unreadAnnouncementsCount = 0,
 }) => {
   const operations = [
     {
@@ -34,7 +35,7 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
       id: 'retirer',
       label: 'Retirer',
       icon: ArrowUpRight,
-      color: 'bg-emerald-600 text-white shadow-emerald-600/20',
+      color: 'bg-slate-900 text-amber-400 shadow-slate-900/20',
       action: onRetirer
     },
     {
@@ -57,6 +58,7 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
       icon: Bell,
       color: 'bg-blue-600 text-white shadow-blue-600/20',
       action: onAnnonces,
+      unreadCount: unreadAnnouncementsCount || (hasUnreadAnnouncements ? 1 : 0),
       hasBadge: hasUnreadAnnouncements
     }
   ];
@@ -65,7 +67,7 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
     <div className="w-full space-y-3">
       {/* Section Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-black uppercase tracking-wider text-emerald-800 font-mono">
+        <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 font-mono">
           OPÉRATIONS RAPIDES
         </h3>
         <span className="text-[10px] font-bold uppercase font-mono px-2.5 py-0.5 rounded-full text-amber-800 bg-amber-100">
@@ -77,6 +79,7 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
       <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
         {operations.map((op) => {
           const Icon = op.icon;
+          const displayCount = op.unreadCount || 0;
           return (
             <button
               key={op.id}
@@ -87,9 +90,13 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
                 className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl ${op.color} flex items-center justify-center group-hover:scale-110 transition-all shadow-xs shrink-0 relative`}
               >
                 <Icon className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.25]" />
-                {op.hasBadge && (
+                {displayCount > 0 ? (
+                  <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white font-black text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-white animate-bounce shadow-xs z-10">
+                    {displayCount}
+                  </span>
+                ) : op.hasBadge ? (
                   <span className="absolute -top-1 -right-1 bg-red-600 w-3.5 h-3.5 rounded-full border-2 border-white animate-pulse" />
-                )}
+                ) : null}
               </div>
               <span className="text-[11px] sm:text-xs md:text-sm font-black text-slate-900 group-hover:text-amber-700 transition-colors text-center leading-tight whitespace-nowrap overflow-visible">
                 {op.label}

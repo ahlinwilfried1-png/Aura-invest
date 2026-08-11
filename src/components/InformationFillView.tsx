@@ -45,7 +45,7 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
     onUpdateProfile({
       name: formData.name.trim(),
       whatsapp: formData.whatsapp.trim(),
-      country: formData.country.trim() || 'Côte d\'Ivoire'
+      country: formData.country.trim() || 'Togo'
     });
 
     setIsSaved(true);
@@ -77,13 +77,13 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
       </div>
 
       {/* 2. Intro Banner */}
-      <div className="bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 rounded-2xl p-4 sm:p-5 text-white shadow-xs space-y-2">
+      <div className="bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-xs space-y-2">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-5 h-5 text-white" />
+            <ShieldCheck className="w-5 h-5 text-amber-400" />
           </div>
           <div>
-            <span className="text-xs font-mono uppercase tracking-wider text-emerald-200 block font-bold">
+            <span className="text-xs font-mono uppercase tracking-wider text-amber-300 block font-bold">
               Formulaire Sécurisé
             </span>
             <h2 className="text-sm sm:text-base font-extrabold leading-snug">
@@ -91,7 +91,7 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
             </h2>
           </div>
         </div>
-        <p className="text-xs text-emerald-100/90 leading-relaxed font-medium pt-1">
+        <p className="text-xs text-slate-200 leading-relaxed font-medium pt-1">
           Remplissez soigneusement vos données ci-dessous. Vos informations permettent de valider vos retraits automatiques et d'assurer la gestion sécurisée de votre compte.
         </p>
       </div>
@@ -170,7 +170,7 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
               required
               value={formData.whatsapp}
               onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-              placeholder="Ex: +2250707070707"
+              placeholder="Ex: +22890909090"
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-slate-900 outline-none focus:border-slate-900 transition-colors"
             />
           </div>
@@ -255,8 +255,8 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
 
         {/* Status indicator */}
         {isSaved && (
-          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl flex items-center space-x-2 text-xs font-bold">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl flex items-center space-x-2 text-xs font-bold">
+            <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
             <span>Vos données sont validées et enregistrées dans la base de données.</span>
           </div>
         )}
@@ -264,9 +264,9 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
         {/* Submit Button */}
         <button
           type="submit"
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm py-3 rounded-xl transition-all shadow-2xs flex items-center justify-center space-x-2 cursor-pointer active:scale-[0.99]"
+          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm py-3 rounded-xl transition-all shadow-2xs flex items-center justify-center space-x-2 cursor-pointer active:scale-[0.99]"
         >
-          <Send className="w-4 h-4" />
+          <Send className="w-4 h-4 text-amber-400" />
           <span>Valider et enregistrer les informations</span>
         </button>
       </form>

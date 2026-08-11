@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { InvestmentProduct, User, DepositRequest, WithdrawalRequest, SupportTicket, FaqItem } from '../types';
 import { 
@@ -30,6 +30,7 @@ import {
   Wallet,
   AlertCircle,
   Lock,
+  KeyRound,
   RotateCw,
   Ticket,
   MessageCircle,
@@ -40,11 +41,30 @@ import {
   HelpCircle
 } from 'lucide-react';
 
+const ADMIN_BG_IMAGES = [
+  'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1600&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1592417817098-8f3d6ef23a81?w=1600&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=1600&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=1600&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=1600&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=1600&auto=format&fit=crop&q=80'
+];
+
 interface AdminDashboardProps {
   onExitAdmin: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) => {
+  // Rotating background images state
+  const [bgIndex, setBgIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setBgIndex((prev) => (prev + 1) % ADMIN_BG_IMAGES.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
   const {
     users,
     products,
@@ -62,6 +82,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     updateWithdrawalProof,
     updateUserBalance,
     adminUpdateUserPassword,
+    adminUpdateUserPin,
     toggleBlockUser,
     updateUserRole,
     addOrUpdateProduct,
@@ -184,6 +205,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     setWellnessQuantity(product.quantity);
     setWellnessStatus(product.status);
     setWellnessImageUrl(product.imageUrl || '');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleCancelWellnessEdit = () => {
@@ -262,7 +286,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   // Wheel Admin States
   const [ticketsPerRefInput, setTicketsPerRefInput] = useState<number>(wheelConfig.ticketsPerReferral || 1);
   const [newPrizeLabel, setNewPrizeLabel] = useState('');
-  const [newPrizeValue, setNewPrizeValue] = useState<number>(500);
+  const [newPrizeValue, setNewPrizeValue] = useState<number>(35);
   const [manualTicketUserId, setManualTicketUserId] = useState('');
   const [manualTicketCount, setManualTicketCount] = useState<number>(1);
   const [drawSearch, setDrawSearch] = useState('');
@@ -291,6 +315,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   const [selectedChatUserId, setSelectedChatUserId] = useState<string | null>(null);
   const [chatMessageText, setChatMessageText] = useState<string>('');
   const [chatSearch, setChatSearch] = useState<string>('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Toast Feedback State
   const [toast, setToast] = useState<{ status: 'success' | 'error'; text: string } | null>(null);
@@ -304,11 +329,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   // 1. Balance adjustment modal
   const [selectedUserForBalance, setSelectedUserForBalance] = useState<User | null>(null);
   const [balanceAdjustAmount, setBalanceAdjustAmount] = useState<number>(1000);
-  const [balanceAdjustType, setBalanceAdjustType] = useState<'add' | 'subtract'>('add');
+  const [balanceAdjustType, setBalanceAdjustType] = useState<'add' | 'subtract' | 'set'>('add');
 
   // 1.5. Password adjustment modal
   const [selectedUserForPassword, setSelectedUserForPassword] = useState<User | null>(null);
   const [newUserPassword, setNewUserPassword] = useState<string>('');
+
+  // 1.6. PIN adjustment modal
+  const [selectedUserForPin, setSelectedUserForPin] = useState<User | null>(null);
+  const [newUserPin, setNewUserPin] = useState<string>('');
 
   // 2. User details modal
   const [selectedUserDetails, setSelectedUserDetails] = useState<User | null>(null);
@@ -462,17 +491,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   // Balance adjustment handler
   const handleApplyBalanceAdjust = () => {
     if (!selectedUserForBalance) return;
-    const absAmount = Math.abs(Number(balanceAdjustAmount));
-    if (isNaN(absAmount) || absAmount <= 0) {
-      showToast('error', 'Veuillez saisir un montant valide supérieur à 0.');
+    const val = Number(balanceAdjustAmount);
+    if (isNaN(val) || (balanceAdjustType !== 'set' && val <= 0) || (balanceAdjustType === 'set' && val < 0)) {
+      showToast('error', 'Veuillez saisir un montant valide.');
       return;
     }
-    const finalChange = balanceAdjustType === 'add' ? absAmount : -absAmount;
-    updateUserBalance(selectedUserForBalance.id, finalChange);
-    showToast(
-      'success', 
-      `Solde de ${selectedUserForBalance.name} ${finalChange > 0 ? 'crédité (+)' : 'déduit (-)'} de ${absAmount.toLocaleString()} FCFA avec succès !`
-    );
+
+    if (balanceAdjustType === 'set') {
+      updateUserBalance(selectedUserForBalance.id, val, true);
+      showToast(
+        'success',
+        `Solde de ${selectedUserForBalance.name} défini à ${val.toLocaleString()} FCFA avec succès !`
+      );
+    } else {
+      const finalChange = balanceAdjustType === 'add' ? Math.abs(val) : -Math.abs(val);
+      updateUserBalance(selectedUserForBalance.id, finalChange, false);
+      showToast(
+        'success', 
+        `Solde de ${selectedUserForBalance.name} ${finalChange > 0 ? 'crédité (+)' : 'déduit (-)'} de ${Math.abs(val).toLocaleString()} FCFA avec succès !`
+      );
+    }
     setSelectedUserForBalance(null);
   };
 
@@ -557,36 +595,55 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   });
 
   // Per-user chat thread helpers
-  const allUserIdsInTickets: string[] = Array.from(new Set(tickets.map(t => t.userId)));
   const existingUserMap = new Map(users.map(u => [u.id, u]));
-
   const combinedChatUsers = [...users.filter(u => u.role !== 'admin')];
-  allUserIdsInTickets.forEach(uId => {
-    if (uId && !existingUserMap.has(uId)) {
-      const sampleTicket = tickets.find(t => t.userId === uId);
-      combinedChatUsers.push({
-        id: uId,
-        name: sampleTicket?.userName || 'Client ' + uId.slice(0, 5),
-        phone: 'Non renseigné',
-        balance: 0,
-        dailyEarnings: 0,
-        totalEarnings: 0,
-        vipLevel: 0,
-        isBlocked: false,
-        createdAt: sampleTicket?.createdAt || new Date().toISOString(),
-        role: 'user',
-        referralCode: 'REF' + uId.slice(0, 4)
-      });
+
+  // Guarantee that every single support ticket maps to a chat thread user
+  tickets.forEach(t => {
+    if (!t) return;
+    const uId = t.userId || 'usr-' + (t.userPhone || t.userName || 'guest');
+    const matchesAny = combinedChatUsers.some(u => 
+      u.id === uId || 
+      (u.phone && u.phone !== 'Non renseigné' && u.phone === t.userPhone) ||
+      (u.name && t.userName && u.name.trim().toLowerCase() === t.userName.trim().toLowerCase())
+    );
+    if (!matchesAny) {
+      const existingUser = existingUserMap.get(uId);
+      if (existingUser) {
+        combinedChatUsers.push(existingUser);
+      } else {
+        combinedChatUsers.push({
+          id: uId,
+          name: t.userName || 'Client ' + uId.slice(0, 5),
+          phone: t.userPhone || 'Non renseigné',
+          balance: 0,
+          dailyEarnings: 0,
+          totalEarnings: 0,
+          vipLevel: 0,
+          isBlocked: false,
+          createdAt: t.createdAt || new Date().toISOString(),
+          role: 'user',
+          referralCode: 'REF' + uId.slice(0, 4)
+        });
+      }
     }
   });
+
+  const getTicketsForUser = (usr: User) => {
+    return tickets.filter(t => 
+      t.userId === usr.id ||
+      (usr.phone && usr.phone !== 'Non renseigné' && t.userPhone === usr.phone) ||
+      (usr.name && t.userName && t.userName.trim().toLowerCase() === usr.name.trim().toLowerCase())
+    );
+  };
 
   const chatUserList = combinedChatUsers.filter(u => {
     if (!chatSearch.trim()) return true;
     const q = chatSearch.toLowerCase();
     return u.name.toLowerCase().includes(q) || u.phone.includes(q);
   }).sort((a, b) => {
-    const aTickets = tickets.filter(t => t.userId === a.id);
-    const bTickets = tickets.filter(t => t.userId === b.id);
+    const aTickets = getTicketsForUser(a);
+    const bTickets = getTicketsForUser(b);
     const aUnread = aTickets.some(t => t.status === 'open');
     const bUnread = bTickets.some(t => t.status === 'open');
     if (aUnread && !bUnread) return -1;
@@ -600,11 +657,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   const selectedChatUser = combinedChatUsers.find(u => u.id === selectedChatUserId) || chatUserList[0] || null;
 
   const selectedUserTickets = selectedChatUser
-    ? [...tickets].filter(t => t.userId === selectedChatUser.id).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    ? getTicketsForUser(selectedChatUser).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
     : [];
 
+  useEffect(() => {
+    if (activeAdminTab === 'support') {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [selectedUserTickets.length, activeAdminTab, selectedChatUserId]);
+
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col font-sans pb-16">
+    <div className="min-h-screen bg-slate-950 text-slate-900 flex flex-col font-sans pb-16 relative">
+      
+      {/* Changing Background Image Layer with Smooth Crossfade Transition */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        {ADMIN_BG_IMAGES.map((imgUrl, idx) => (
+          <div
+            key={imgUrl}
+            className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 transform scale-105 ${
+              idx === bgIndex ? 'opacity-35' : 'opacity-0'
+            }`}
+            style={{ backgroundImage: `url('${imgUrl}')` }}
+          />
+        ))}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-900/75 to-slate-950/90 backdrop-blur-[2px]" />
+      </div>
+
+      {/* Main Admin UI Layer */}
+      <div className="relative z-10 flex flex-col min-h-screen">
       
       {/* Toast Notification */}
       {toast && (
@@ -640,13 +720,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
             </div>
           </div>
 
-          <button 
-            onClick={onExitAdmin}
-            className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold px-4 py-2 rounded-xl border border-slate-200 transition-all flex items-center space-x-2 cursor-pointer shadow-2xs"
-          >
-            <LogOut className="w-4 h-4 text-slate-600" />
-            <span className="hidden sm:inline">Quitter l'administration</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            {/* Background Image Switcher Badge */}
+            <button 
+              onClick={() => setBgIndex((prev) => (prev + 1) % ADMIN_BG_IMAGES.length)}
+              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer shadow-2xs"
+              title="Changer l'image d'arrière-plan de l'admin"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden sm:inline text-[11px]">Fond ({bgIndex + 1}/{ADMIN_BG_IMAGES.length})</span>
+            </button>
+
+            <button 
+              onClick={onExitAdmin}
+              className="bg-red-600 hover:bg-red-700 active:scale-95 text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl border border-red-500 transition-all flex items-center space-x-1.5 cursor-pointer shadow-md shrink-0"
+              title="Quitter le panneau d'administration"
+            >
+              <LogOut className="w-4 h-4 text-white" />
+              <span className="font-black uppercase text-[11px] tracking-tight">Sortir Admin</span>
+            </button>
+          </div>
         </div>
 
         {/* HORIZONTAL NAVIGATION BAR */}
@@ -1560,6 +1653,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                           </button>
 
                           <button 
+                            onClick={() => {
+                              setSelectedUserForPin(usr);
+                              setNewUserPin('');
+                            }}
+                            className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center space-x-1"
+                            title="Modifier le code PIN de retrait"
+                          >
+                            <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                            <span className="hidden sm:inline">Code PIN</span>
+                          </button>
+
+                          <button 
                             onClick={() => setSelectedUserDetails(usr)}
                             className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center space-x-1"
                             title="Voir détails"
@@ -2033,7 +2138,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                     </div>
                   ) : (
                     chatUserList.map(usr => {
-                      const userTickets = tickets.filter(t => t.userId === usr.id);
+                      const userTickets = getTicketsForUser(usr);
                       const openCount = userTickets.filter(t => t.status === 'open').length;
                       const isSelected = selectedChatUser?.id === usr.id;
 
@@ -2188,6 +2293,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                         );
                       })
                     )}
+                    <div ref={chatEndRef} />
                     </div>
 
                     {/* Chat Input */}
@@ -2783,6 +2889,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                         <button
                           onClick={() => {
                             deleteWellnessProduct(prod.id);
+                            if (editingWellnessId === prod.id) {
+                              handleCancelWellnessEdit();
+                            }
                             showToast('success', "Produit de bien-être supprimé.");
                           }}
                           className="bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-red-200 transition-all cursor-pointer"
@@ -2940,17 +3049,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">Intitulé du prix</label>
                   <input 
                     type="text" 
-                    placeholder="Ex: +500 XAF"
+                    placeholder="Ex: +35 FCFA"
                     value={newPrizeLabel}
                     onChange={(e) => setNewPrizeLabel(e.target.value)}
                     className="w-full bg-slate-950 text-white font-bold p-2.5 rounded-lg border border-slate-700 outline-none focus:border-red-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">Valeur FCFA</label>
+                  <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">Valeur FCFA (25 - 50 FCFA)</label>
                   <input 
                     type="number" 
-                    placeholder="500"
+                    placeholder="35"
+                    min={25}
+                    max={50}
                     value={newPrizeValue}
                     onChange={(e) => setNewPrizeValue(Number(e.target.value))}
                     className="w-full bg-slate-950 text-white font-mono font-bold p-2.5 rounded-lg border border-slate-700 outline-none focus:border-red-500"
@@ -2959,22 +3070,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 <div className="flex items-end">
                   <button
                     onClick={() => {
-                      if (!newPrizeLabel.trim() || newPrizeValue <= 0) {
-                        showToast('error', "Intitulé et valeur valides requis.");
+                      if (!newPrizeLabel.trim()) {
+                        showToast('error', "Intitulé du prix requis.");
                         return;
                       }
+                      const clampedVal = Math.min(50, Math.max(25, newPrizeValue));
                       const updatedPrizes = [
                         ...wheelConfig.prizes,
                         {
                           id: Date.now(),
                           label: newPrizeLabel.trim(),
-                          value: newPrizeValue,
+                          value: clampedVal,
                           color: 'bg-emerald-600 text-white'
                         }
                       ];
                       updateWheelConfig({ ...wheelConfig, prizes: updatedPrizes });
                       setNewPrizeLabel('');
-                      showToast('success', "Nouveau prix ajouté à la roue !");
+                      showToast('success', `Nouveau prix (+${clampedVal} FCFA) ajouté à la roue !`);
                     }}
                     className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-2.5 rounded-lg transition-all cursor-pointer flex items-center justify-center space-x-1.5"
                   >
@@ -3297,27 +3409,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
             </div>
 
             <div className="space-y-4 text-xs">
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 <button 
                   onClick={() => setBalanceAdjustType('add')}
-                  className={`flex-1 py-2.5 rounded-xl font-bold cursor-pointer transition-all ${
-                    balanceAdjustType === 'add' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'
+                  className={`flex-1 py-2.5 px-2 rounded-xl text-[11px] font-bold cursor-pointer transition-all ${
+                    balanceAdjustType === 'add' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-800 text-slate-400'
                   }`}
                 >
-                  + Ajouter (Créditer)
+                  + Créditer
                 </button>
                 <button 
                   onClick={() => setBalanceAdjustType('subtract')}
-                  className={`flex-1 py-2.5 rounded-xl font-bold cursor-pointer transition-all ${
-                    balanceAdjustType === 'subtract' ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-400'
+                  className={`flex-1 py-2.5 px-2 rounded-xl text-[11px] font-bold cursor-pointer transition-all ${
+                    balanceAdjustType === 'subtract' ? 'bg-red-600 text-white shadow-xs' : 'bg-slate-800 text-slate-400'
                   }`}
                 >
-                  - Déduire (Débiter)
+                  - Déduire
+                </button>
+                <button 
+                  onClick={() => {
+                    setBalanceAdjustType('set');
+                    if (selectedUserForBalance) setBalanceAdjustAmount(selectedUserForBalance.balance);
+                  }}
+                  className={`flex-1 py-2.5 px-2 rounded-xl text-[11px] font-bold cursor-pointer transition-all ${
+                    balanceAdjustType === 'set' ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  ✏️ Définir solde
                 </button>
               </div>
 
               <div>
-                <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">Montant (FCFA)</label>
+                <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">
+                  {balanceAdjustType === 'set' ? 'Nouveau solde exact (FCFA)' : 'Montant à ajouter ou déduire (FCFA)'}
+                </label>
                 <input 
                   type="number" 
                   value={balanceAdjustAmount}
@@ -3328,13 +3453,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
 
               <button 
                 onClick={handleApplyBalanceAdjust}
-                className={`w-full py-3 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md ${
+                className={`w-full py-3.5 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md ${
                   balanceAdjustType === 'add' 
                     ? 'bg-emerald-600 hover:bg-emerald-500' 
-                    : 'bg-red-600 hover:bg-red-500'
+                    : balanceAdjustType === 'subtract'
+                    ? 'bg-red-600 hover:bg-red-500'
+                    : 'bg-amber-600 hover:bg-amber-500'
                 }`}
               >
-                {balanceAdjustType === 'add' ? '+ Créditer le solde' : '- Déduire du solde'} ({Math.abs(Number(balanceAdjustAmount) || 0).toLocaleString()} FCFA)
+                {balanceAdjustType === 'add' 
+                  ? `+ Créditer le solde (${Math.abs(Number(balanceAdjustAmount) || 0).toLocaleString()} FCFA)` 
+                  : balanceAdjustType === 'subtract'
+                  ? `- Déduire du solde (${Math.abs(Number(balanceAdjustAmount) || 0).toLocaleString()} FCFA)`
+                  : `Confirmer le nouveau solde (${(Number(balanceAdjustAmount) || 0).toLocaleString()} FCFA)`
+                }
               </button>
             </div>
           </div>
@@ -3390,6 +3522,68 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md"
               >
                 Confirmer le nouveau mot de passe
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: USER PIN MODIFICATION */}
+      {selectedUserForPin && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-md w-full relative space-y-4 shadow-2xl">
+            <button 
+              onClick={() => setSelectedUserForPin(null)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div>
+              <span className="text-[10px] font-mono font-bold uppercase text-amber-400 bg-amber-500/20 px-2.5 py-0.5 rounded-full">
+                Code PIN de Retrait
+              </span>
+              <h3 className="text-lg font-bold text-white mt-2">Modifier le code PIN de retrait</h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Utilisateur: <strong className="text-white font-bold">{selectedUserForPin.name}</strong> ({selectedUserForPin.phone})
+              </p>
+            </div>
+
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                const res = adminUpdateUserPin(selectedUserForPin.id, newUserPin);
+                if (res.success) {
+                  showToast('success', `Code PIN de retrait de ${selectedUserForPin.name} modifié avec succès !`);
+                  setSelectedUserForPin(null);
+                  setNewUserPin('');
+                } else {
+                  showToast('error', res.error || "Erreur de modification du code PIN.");
+                }
+              }}
+              className="space-y-4 text-xs"
+            >
+              <div>
+                <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">
+                  Nouveau code PIN de retrait (4 chiffres min)
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="Ex: 1234"
+                  value={newUserPin}
+                  onChange={(e) => setNewUserPin(e.target.value.replace(/\D/g, ''))}
+                  className="w-full bg-slate-950 text-white font-mono font-bold text-lg p-3 rounded-xl border border-slate-700 outline-none focus:border-amber-500 text-center tracking-widest"
+                  required
+                  minLength={4}
+                  maxLength={6}
+                />
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md"
+              >
+                Enregistrer le nouveau code PIN
               </button>
             </form>
           </div>
@@ -3664,6 +3858,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 <span className="text-slate-400">Pays:</span>
                 <span className="text-white font-bold">{selectedUserDetails.country}</span>
               </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-800">
+                <span className="text-slate-400">Compte de Retrait:</span>
+                <span className="text-white font-mono font-bold text-[11px]">
+                  {selectedUserDetails.withdrawalAccountNumber 
+                    ? `${selectedUserDetails.withdrawalAccountName || ''} (${selectedUserDetails.withdrawalAccountNumber})` 
+                    : 'Non lié'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-800">
+                <span className="text-slate-400">Code PIN Retrait:</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-amber-400 font-mono font-bold">
+                    {selectedUserDetails.withdrawalPinHash ? '•••• (Configuré)' : 'Non configuré'}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setSelectedUserForPin(selectedUserDetails);
+                      setSelectedUserDetails(null);
+                    }}
+                    className="text-[10px] font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                  >
+                    Modifier
+                  </button>
+                </div>
+              </div>
               <div className="flex justify-between items-center py-1">
                 <span className="text-slate-400">Rôle:</span>
                 <div className="flex items-center space-x-2">
@@ -3910,6 +4129,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
         </div>
       )}
 
+      {/* Floating Quick Exit Button */}
+      <div className="fixed bottom-5 right-5 z-40">
+        <button
+          onClick={onExitAdmin}
+          className="bg-red-600 hover:bg-red-700 active:scale-95 text-white font-extrabold text-xs px-4 py-3 rounded-2xl shadow-2xl border-2 border-red-400 flex items-center space-x-2 cursor-pointer transition-transform hover:scale-105"
+          title="Quitter l'administration"
+        >
+          <LogOut className="w-4 h-4 text-white" />
+          <span className="font-black uppercase tracking-wider text-xs">Sortir Admin</span>
+        </button>
+      </div>
+
+      </div>
     </div>
   );
 };

@@ -24,8 +24,8 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
   const [imageInput, setImageInput] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Filter only approved / verified proofs for public view
-  const approvedProofs = withdrawalProofs.filter(p => p.status === 'approved' || p.isVerified);
+  // Filter all published proofs (non-rejected) for public view across all accounts
+  const approvedProofs = withdrawalProofs.filter(p => p.status !== 'rejected');
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

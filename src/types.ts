@@ -126,6 +126,7 @@ export interface SupportTicket {
   id: string;
   userId: string;
   userName: string;
+  userPhone?: string;
   subject: string;
   message: string;
   imageUrl?: string;

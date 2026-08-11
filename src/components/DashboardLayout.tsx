@@ -43,7 +43,8 @@ import {
   MessageCircle,
   Zap,
   CreditCard,
-  X
+  X,
+  Headphones
 } from 'lucide-react';
 import { 
   User as UserType, 
@@ -61,6 +62,7 @@ import { QuickOperationsGrid } from './QuickOperationsGrid';
 import { CertificateModal } from './CertificateModal';
 import { ChatMessenger } from './ChatMessenger';
 import { AnnouncementsModal } from './AnnouncementsModal';
+import { UserGuideModal } from './UserGuideModal';
 import { AdminDashboard } from './AdminDashboard';
 import { TeamView } from './TeamView';
 import { OrdersView } from './OrdersView';
@@ -74,6 +76,7 @@ import { ProofOfWithdrawalView } from './ProofOfWithdrawalView';
 import { LinkBankCardView } from './LinkBankCardView';
 import { LuckyWheel } from './LuckyWheel';
 import { WellnessProductCard } from './WellnessProductCard';
+import { ServiceClientView } from './ServiceClientView';
 
 interface DashboardLayoutProps {
   currentUser: UserType;
@@ -154,15 +157,28 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const { announcements, markTicketsAsRead, revenueLogs = [] } = useApp();
   const userRevenueLogs = revenueLogs.filter(log => log.userId === currentUser.id);
 
+  const isCurrentUserTicket = (t: SupportTicket) =>
+    t.userId === currentUser.id ||
+    (currentUser.phone && currentUser.phone !== 'Non renseigné' && t.userPhone === currentUser.phone) ||
+    (currentUser.name && t.userName === currentUser.name);
+
   // Calculate unread chat messages/replies for current user
   const unreadChatCount = tickets.filter(
-    t => t.userId === currentUser.id && !!t.reply && t.isReadByUser === false
+    t => isCurrentUserTicket(t) && !!t.reply && t.isReadByUser === false
   ).length;
 
-  const hasUnreadAnnouncements = announcements.some(a => a.isNew) || !!globalNotification;
+  const unreadAnnouncementsCount = announcements.filter(a => a.isNew).length;
+  const hasUnreadAnnouncements = unreadAnnouncementsCount > 0 || !!globalNotification;
+  const totalUnreadAnnouncements = unreadAnnouncementsCount > 0 ? unreadAnnouncementsCount : (hasUnreadAnnouncements ? 1 : 0);
 
   // Navigation State (Req: Accueil, Commande, Équipe, Chat, Mon compte + full-page operations)
   const [activeTab, setActiveTab] = useState<'home' | 'orders' | 'team' | 'chat' | 'profile' | 'deposit' | 'withdraw' | 'certificate' | 'announcements' | 'link_card' | 'proofs'>('home');
+
+  const navigateToHome = () => {
+    setSelectedProductDetail(null);
+    setActiveTab('home');
+    setGuideModalOpen(true);
+  };
 
   useEffect(() => {
     if (activeTab === 'chat' && unreadChatCount > 0) {
@@ -178,6 +194,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [certificatModalOpen, setCertificatModalOpen] = useState(false);
   const [annoncesModalOpen, setAnnoncesModalOpen] = useState(false);
+  const [guideModalOpen, setGuideModalOpen] = useState(true);
 
   // Profile feature modals
   const [showPromoModal, setShowPromoModal] = useState(false);
@@ -352,11 +369,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {feedbackToast && (
         <div className={`fixed top-4 right-4 left-4 sm:left-auto z-50 max-w-md p-4 rounded-2xl shadow-xl border flex items-center space-x-3 animate-fadeIn ${
           feedbackToast.status === 'success' 
-            ? 'bg-emerald-50 border-emerald-300 text-emerald-900' 
+            ? 'bg-amber-50 border-amber-300 text-amber-950' 
             : 'bg-red-50 border-red-300 text-red-900'
         }`}>
           {feedbackToast.status === 'success' ? (
-            <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+            <CheckCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
           ) : (
             <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
           )}
@@ -398,6 +415,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     onOpenHistory={() => {
                       setActiveTab('orders');
                     }}
+                    onOpenSupport={() => setActiveTab('service_client')}
                   />
 
                   {/* 3. Section Opérations Rapides */}
@@ -408,14 +426,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     onPointage={() => {
                       const res = claimDailyBonus();
                       if (res.success) {
-                        showToast('success', `Pointage quotidien récompensé ! +${res.amount || 100} FCFA crédités.`);
+                        showToast('success', `Pointage quotidien récompensé ! +${res.amount || 20} FCFA crédités.`);
                       } else {
                         showToast('err', res.error || "Pointage déjà effectué aujourd'hui.");
                       }
                     }}
                     onAnnonces={() => setActiveTab('announcements')}
-                    onChat={() => setActiveTab('chat')}
+                    onGuide={() => setGuideModalOpen(true)}
+                    onChat={() => setActiveTab('service_client')}
                     hasUnreadAnnouncements={hasUnreadAnnouncements}
+                    unreadAnnouncementsCount={totalUnreadAnnouncements}
                     unreadChatCount={unreadChatCount}
                   />
 
@@ -577,7 +597,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 currentUser={currentUser}
                 deposits={deposits}
                 onRequestDeposit={requestDeposit}
-                onBack={() => setActiveTab('home')}
+                onBack={navigateToHome}
                 onShowToast={showToast}
               />
             )}
@@ -588,7 +608,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 currentUser={currentUser}
                 withdrawals={withdrawals}
                 onRequestWithdrawal={requestWithdrawal}
-                onBack={() => setActiveTab('home')}
+                onBack={navigateToHome}
                 onShowToast={showToast}
                 onOpenLinkCard={() => setActiveTab('link_card')}
               />
@@ -598,7 +618,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             {activeTab === 'certificate' && (
               <CertificateView
                 currentUser={currentUser}
-                onBack={() => setActiveTab('home')}
+                onBack={navigateToHome}
                 onShowToast={showToast}
               />
             )}
@@ -607,14 +627,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             {activeTab === 'announcements' && (
               <AnnouncementsView
                 notificationText={globalNotification}
-                onBack={() => setActiveTab('home')}
+                onBack={navigateToHome}
               />
             )}
 
             {/* FULL-PAGE VIEW 5: PREUVES DE RETRAIT (PAGE TOUT ENTIÈRE) */}
             {activeTab === 'proofs' && (
               <ProofOfWithdrawalView
-                onBack={() => setActiveTab('home')}
+                onBack={navigateToHome}
               />
             )}
 
@@ -626,9 +646,27 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 onShowToast={showToast}
               />
             )}
+
+            {/* FULL-PAGE VIEW 7: SERVICE CLIENT (PAGE DÉDIÉE SANS CADRES NI TRACE) */}
+            {activeTab === 'service_client' && (
+              <ServiceClientView
+                onBack={navigateToHome}
+              />
+            )}
           </div>
 
       </main>
+
+      {/* Floating Headphone ("Casque") Button to open Service Client page */}
+      {!isAdminMode && activeTab !== 'service_client' && (
+        <button
+          onClick={() => setActiveTab('service_client')}
+          className="fixed bottom-20 right-4 z-30 w-12 h-12 rounded-full bg-[#E60000] hover:bg-red-700 text-white flex items-center justify-center shadow-lg shadow-red-500/30 transition-all active:scale-95 cursor-pointer border-2 border-white"
+          title="Service Client"
+        >
+          <Headphones className="w-6 h-6 stroke-[2.2]" />
+        </button>
+      )}
 
       {/* DYNAMIC FIXED FOOTER NAVIGATION TABS MENU BAR */}
       {/* REQ ORDER: Accueil – Commande – Équipe – Chat – Mon compte */}
@@ -638,10 +676,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             
             {/* 1. Accueil */}
             <button 
-              onClick={() => {
-                setSelectedProductDetail(null);
-                setActiveTab('home');
-              }}
+              onClick={navigateToHome}
               className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer ${
                 activeTab === 'home' ? 'text-amber-700 font-black scale-105' : 'text-slate-400 hover:text-slate-600 font-medium'
               }`}
@@ -752,7 +787,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <div className="p-3 bg-amber-500/10 rounded-xl space-y-1 font-mono text-[11px]">
                 <span className="text-slate-500 font-sans block text-[10px]">Numéro marchand pour le transfert ({depMethod}) :</span>
                 <div className="text-slate-900 font-extrabold text-sm flex items-center justify-between">
-                  <span>+225 07 00 00 00 00</span>
+                  <span>+228 90 00 00 00</span>
                   <span className="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded uppercase font-bold">Infoline</span>
                 </div>
               </div>
@@ -805,7 +840,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             </button>
 
             <div>
-              <span className="text-[10px] font-mono font-bold uppercase text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">Demande de Retrait</span>
+              <span className="text-[10px] font-mono font-bold uppercase text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full">Demande de Retrait</span>
               <h3 className="text-xl font-black text-slate-900 mt-2">Retirer vers Mobile Money</h3>
               <p className="text-xs text-slate-500 mt-0.5">Solde actuel disponible : <strong className="text-slate-900 font-mono">{currentUser.balance.toLocaleString()} FCFA</strong></p>
             </div>
@@ -821,7 +856,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       onClick={() => setWthNetwork(net)}
                       className={`p-2.5 rounded-xl text-center transition-all font-bold cursor-pointer ${
                         wthNetwork === net 
-                          ? 'bg-emerald-600 text-white font-black' 
+                          ? 'bg-amber-500 text-slate-950 font-black' 
                           : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
                       }`}
                     >
@@ -858,7 +893,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
               <button 
                 type="submit"
-                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
               >
                 Confirmer le Retrait ({wthAmount.toLocaleString()} FCFA)
               </button>
@@ -878,6 +913,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         isOpen={annoncesModalOpen} 
         onClose={() => setAnnoncesModalOpen(false)} 
         notificationText={globalNotification}
+      />
+
+      {/* 4.5. USER GUIDE MODAL (GUIDE DE DÉMARRAGE RAPIDE) */}
+      <UserGuideModal
+        isOpen={guideModalOpen}
+        onClose={() => setGuideModalOpen(false)}
       />
 
       {/* 5. PROMO & DRAW MODAL - ROUE DE LA CHANCE */}
@@ -974,17 +1015,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
             <div className="overflow-y-auto space-y-3 pr-1 flex-1 text-xs">
               {(showHistoryModal === 'all' || showHistoryModal === 'deposits') && userRevenueLogs.map(log => (
-                <div key={log.id} className="p-3 bg-emerald-50/70 rounded-xl flex items-center justify-between border border-emerald-200/60">
+                <div key={log.id} className="p-3 bg-blue-50/70 rounded-xl flex items-center justify-between border border-blue-200/60">
                   <div>
                     <div className="font-bold text-slate-900 text-sm flex items-center space-x-1.5">
-                      <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                      <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
                       <span>Revenu 24h : {log.productName}</span>
                     </div>
                     <div className="text-[10px] text-slate-500 font-mono mt-0.5">{new Date(log.creditedAt).toLocaleString()}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-emerald-700 text-sm">+{log.amount.toLocaleString()} FCFA</div>
-                    <div className="text-[9px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 inline-block font-mono">
+                    <div className="font-bold text-blue-700 text-sm">+{log.amount.toLocaleString()} FCFA</div>
+                    <div className="text-[9px] uppercase font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 inline-block font-mono">
                       Crédit Automatique
                     </div>
                   </div>
@@ -998,8 +1039,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     <div className="text-[10px] text-slate-500">{new Date(dep.createdAt).toLocaleString()}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-emerald-600 text-sm">+{dep.amount.toLocaleString()} FCFA</div>
-                    <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${dep.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : dep.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
+                    <div className="font-bold text-blue-600 text-sm">+{dep.amount.toLocaleString()} FCFA</div>
+                    <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${dep.status === 'approved' ? 'bg-blue-100 text-blue-800' : dep.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
                       {dep.status === 'approved' ? 'Validé' : dep.status === 'rejected' ? 'Refusé' : 'En attente'}
                     </div>
                   </div>
@@ -1014,7 +1055,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   </div>
                   <div className="text-right">
                     <div className="font-bold text-red-600 text-sm">-{wth.amount.toLocaleString()} FCFA</div>
-                    <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${wth.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : wth.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
+                    <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${wth.status === 'approved' ? 'bg-blue-100 text-blue-800' : wth.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
                       {wth.status === 'approved' ? 'Payé' : wth.status === 'rejected' ? 'Refusé' : 'En traitement'}
                     </div>
                   </div>

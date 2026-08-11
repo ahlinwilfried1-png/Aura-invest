@@ -34,8 +34,8 @@ export const RecentRechargesTicker: React.FC = () => {
           {LIVE_WITHDRAWALS.concat(LIVE_WITHDRAWALS).map((item, idx) => (
             <div key={`${item.id}-${idx}`} className="inline-flex items-center space-x-2 mr-8 text-slate-900">
               <span className="font-extrabold text-slate-900">{item.phone}</span>
-              <span className="inline-flex items-center space-x-1 text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full text-[11px]">
-                <ArrowUpRight className="w-3 h-3 text-emerald-600 shrink-0" />
+              <span className="inline-flex items-center space-x-1 text-amber-800 font-bold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full text-[11px]">
+                <ArrowUpRight className="w-3 h-3 text-amber-600 shrink-0" />
                 <span>+{item.amount}</span>
               </span>
               <span className="text-[10px] text-slate-500 font-sans">

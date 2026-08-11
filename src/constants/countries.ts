@@ -12,14 +12,7 @@ export const ALLOWED_COUNTRIES: AllowedCountry[] = [
     prefix: '+225',
     name: "Côte d'Ivoire",
     flag: '🇨🇮',
-    networks: ['Orange Money', 'MTN MoMo', 'Moov Money', 'Wave']
-  },
-  {
-    code: 'BJ',
-    prefix: '+229',
-    name: 'Bénin',
-    flag: '🇧🇯',
-    networks: ['MTN Mobile Money', 'Moov Money', 'Wave']
+    networks: ['Orange Money', 'MTN Mobile Money', 'Moov Money', 'Wave']
   },
   {
     code: 'TG',
@@ -27,6 +20,13 @@ export const ALLOWED_COUNTRIES: AllowedCountry[] = [
     name: 'Togo',
     flag: '🇹🇬',
     networks: ['TMoney', 'Moov Money']
+  },
+  {
+    code: 'BJ',
+    prefix: '+229',
+    name: 'Bénin',
+    flag: '🇧🇯',
+    networks: ['MTN Mobile Money', 'Moov Money', 'Wave']
   },
   {
     code: 'BF',

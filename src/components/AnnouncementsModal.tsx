@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, ChevronRight, ChevronLeft, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, ChevronRight, ChevronLeft, Calendar, Megaphone, ListFilter } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Announcement } from '../types';
 
@@ -16,11 +16,21 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
   const { announcements, markAnnouncementAsRead } = useApp();
   const [selectedAnn, setSelectedAnn] = useState<Announcement | null>(null);
 
-  if (!isOpen) return null;
-
   const sortedAnnouncements = [...announcements].sort((a, b) => {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      if (sortedAnnouncements.length > 0) {
+        setSelectedAnn(sortedAnnouncements[0]);
+      } else {
+        setSelectedAnn(null);
+      }
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
 
   const handleSelect = (ann: Announcement) => {
     if (ann.isNew) {
@@ -41,19 +51,21 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
         </button>
 
         {/* Header */}
-        <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
-          {selectedAnn ? (
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3 pr-8">
+          <div className="flex items-center space-x-2">
+            <Megaphone className="w-5 h-5 text-amber-600" />
+            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+              Annonce Officielle
+            </h3>
+          </div>
+          {selectedAnn && sortedAnnouncements.length > 1 && (
             <button
               onClick={() => setSelectedAnn(null)}
-              className="text-slate-800 hover:text-amber-600 font-bold flex items-center space-x-1 cursor-pointer"
+              className="text-xs font-bold text-amber-700 hover:text-amber-800 flex items-center space-x-1 bg-amber-50 px-2.5 py-1 rounded-full cursor-pointer"
             >
-              <ChevronLeft className="w-5 h-5" />
-              <span className="text-sm font-bold">Retour</span>
+              <ListFilter className="w-3.5 h-3.5" />
+              <span>Toutes les annonces ({sortedAnnouncements.length})</span>
             </button>
-          ) : (
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-              Message
-            </h3>
           )}
         </div>
 
@@ -65,10 +77,10 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
                 <Calendar className="w-3.5 h-3.5" />
                 <span>{selectedAnn.createdAt}</span>
               </div>
-              <h4 className="text-base font-bold text-slate-900 leading-snug">
+              <h4 className="text-base sm:text-lg font-black text-slate-900 leading-snug">
                 {selectedAnn.title}
               </h4>
-              <div className="w-full h-44 rounded-2xl overflow-hidden bg-slate-900 relative">
+              <div className="w-full h-44 sm:h-52 rounded-2xl overflow-hidden bg-slate-900 relative shadow-inner">
                 <img
                   src={selectedAnn.imageUrl || 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80'}
                   alt={selectedAnn.title}
@@ -78,17 +90,24 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
                   }}
                 />
               </div>
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal whitespace-pre-wrap">
-                {selectedAnn.content}
-              </p>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium whitespace-pre-wrap">
+                  {selectedAnn.content}
+                </p>
+              </div>
             </div>
           ) : (
             <div className="space-y-1">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Liste des Messages
+                </span>
+              </div>
               {sortedAnnouncements.map((ann) => (
                 <div
                   key={ann.id}
                   onClick={() => handleSelect(ann)}
-                  className="group flex items-center justify-between py-3 px-2 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer border-b border-slate-100 last:border-0"
+                  className="group flex items-center justify-between py-3 px-3 hover:bg-amber-50/60 rounded-2xl transition-all cursor-pointer border border-transparent hover:border-amber-200"
                 >
                   <div className="flex-1 pr-3 space-y-1">
                     <div className="flex items-start space-x-2">
@@ -103,7 +122,7 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
                       {ann.createdAt}
                     </p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 shrink-0" />
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-amber-700 shrink-0" />
                 </div>
               ))}
             </div>
@@ -113,7 +132,7 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
         {/* Footer button */}
         <button
           onClick={onClose}
-          className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shrink-0 mt-2"
+          className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shrink-0 shadow-md"
         >
           Fermer
         </button>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, CreditCard, History, X, PlusCircle, Edit3, ShieldCheck, LockKeyhole, Globe, Smartphone } from 'lucide-react';
+import { ArrowLeft, CreditCard, History, X, PlusCircle, Edit3, ShieldCheck, LockKeyhole, Globe, Smartphone, Lock } from 'lucide-react';
 import { User, WithdrawalRequest } from '../types';
 import { useApp } from '../context/AppContext';
 import { WithdrawalHistoryView } from './WithdrawalHistoryView';
@@ -55,6 +55,11 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
 
   const handleSaveAccount = (e: React.FormEvent) => {
     e.preventDefault();
+    if (currentUser.withdrawalAccountName && currentUser.withdrawalAccountNumber) {
+      onShowToast('err', "Votre compte bancaire/retrait est verrouillé et ne peut pas être modifié.");
+      setShowBindModal(false);
+      return;
+    }
     if (!bindName.trim()) {
       onShowToast('err', "Veuillez entrer votre nom complet.");
       return;
@@ -137,11 +142,11 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
       );
     }
 
-    // Check 1 withdrawal per day limit
+    // Check 2 withdrawals per day limit
     const todayIso = new Date().toISOString().split('T')[0];
-    const hasWithdrawnToday = myWithdrawals.some(w => w.createdAt.startsWith(todayIso));
-    if (hasWithdrawnToday) {
-      onShowToast('err', "Vous avez déjà effectué une demande de retrait aujourd'hui. Limité à 1 retrait par jour.");
+    const todaysWithdrawalsCount = myWithdrawals.filter(w => w.createdAt.startsWith(todayIso)).length;
+    if (todaysWithdrawalsCount >= 2) {
+      onShowToast('err', "Vous avez déjà effectué 2 demandes de retrait aujourd'hui. Limité à 2 retraits par jour.");
       return;
     }
 
@@ -219,20 +224,13 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
 
               <button
                 onClick={() => {
-                  if (onOpenLinkCard) {
-                    onOpenLinkCard();
-                  } else {
-                    setBindName(currentUser.withdrawalAccountName || currentUser.name || '');
-                    setBindPhone(currentUser.withdrawalAccountNumber || currentUser.phone || '');
-                    if (currentUser.withdrawalCountry) setBindCountryCode(currentUser.withdrawalCountry);
-                    if (currentUser.withdrawalNetwork) setBindNetwork(currentUser.withdrawalNetwork);
-                    setShowBindModal(true);
-                  }
+                  onShowToast('err', "Votre compte bancaire/retrait est verrouillé définitivement. Modification impossible.");
                 }}
-                className="text-[10px] font-bold bg-amber-950/10 hover:bg-amber-950/20 text-slate-950 px-2.5 py-1 rounded-lg flex items-center space-x-1 cursor-pointer transition-colors"
+                className="text-[10px] font-extrabold bg-amber-950/15 text-slate-950 px-2.5 py-1 rounded-lg flex items-center space-x-1 cursor-pointer hover:bg-amber-950/20 transition-colors border border-amber-950/20"
+                title="Compte lié verrouillé"
               >
-                <Edit3 className="w-3 h-3" />
-                <span>Modifier</span>
+                <Lock className="w-3 h-3 text-amber-900" />
+                <span>Verrouillé</span>
               </button>
             </div>
 
@@ -268,8 +266,8 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
         )}
 
         <div className="text-center pt-1">
-          <span className="text-xs font-semibold text-slate-600">
-            Montant minimum de retrait: <strong className="text-amber-700 font-black">1,000XAF</strong>
+          <span className="text-xs font-semibold text-slate-600 block">
+            Montant minimum de retrait : <strong className="text-amber-700 font-bold">1 000 FCFA</strong> (Frais : 15%)
           </span>
         </div>
       </div>
@@ -285,24 +283,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
           )}
         </h2>
 
-        {/* Informative destination badge if account is linked */}
-        {isAccountLinked && (
-          <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-3 flex items-center justify-between text-xs text-slate-800 shadow-2xs">
-            <div className="flex items-center space-x-2.5 min-w-0">
-              <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-900 flex items-center justify-center shrink-0">
-                <CreditCard className="w-4 h-4 stroke-[2.2]" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-[10px] text-amber-900 font-bold uppercase font-mono block">
-                  Compte de destination
-                </span>
-                <span className="font-extrabold text-slate-900 text-xs truncate block">
-                  {currentUser.withdrawalNetwork || 'Mobile Money / Carte'} • {currentUser.withdrawalAccountNumber} ({currentUser.withdrawalAccountName})
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Demande de retrait form */}
 
         <form onSubmit={handleWithdrawSubmit} className="space-y-3.5">
           {/* Champ de saisie avec XAF à gauche */}

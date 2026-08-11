@@ -6,24 +6,20 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Phone, 
-  Lock, 
-  User, 
-  Globe, 
-  UserPlus, 
-  ArrowLeft, 
   Eye, 
-  EyeOff,
-  AlertCircle,
-  TrendingUp,
-  CheckCircle2,
-  XCircle,
-  Send
+  EyeOff, 
+  AlertCircle, 
+  CheckCircle2, 
+  XCircle, 
+  ChevronDown,
+  ArrowLeft,
+  Gift
 } from 'lucide-react';
+import { ALLOWED_COUNTRIES } from '../constants/countries';
 
 interface AuthPagesProps {
   initialMode: 'login' | 'register';
-  onBackToLanding: () => void;
+  onBackToLanding?: () => void;
   onSuccess: () => void;
   authActions: {
     login: (phone: string, word: string) => Promise<{ success: boolean; error?: string }>;
@@ -38,8 +34,6 @@ interface AuthPagesProps {
   };
 }
 
-import { ALLOWED_COUNTRIES } from '../constants/countries';
-
 const COUNTRIES = ALLOWED_COUNTRIES.map(c => ({
   name: c.name,
   code: c.code,
@@ -49,46 +43,47 @@ const COUNTRIES = ALLOWED_COUNTRIES.map(c => ({
 
 export const AuthPages: React.FC<AuthPagesProps> = ({ 
   initialMode, 
-  onBackToLanding, 
   onSuccess,
   authActions 
 }) => {
-  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialMode);
 
   useEffect(() => {
-    setMode(initialMode);
+    if (initialMode) {
+      setMode(initialMode);
+    }
   }, [initialMode]);
-  
+
+  // Country Code State (Default +228 Togo)
+  const [countryPrefix, setCountryPrefix] = useState("+228");
+  const [countryName, setCountryName] = useState("Togo");
+
   // Login Form State
   const [loginPhone, setLoginPhone] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  
+
   // Register Form State
-  const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
-  const [regCountryPrefix, setRegCountryPrefix] = useState("+225");
-  const [regCountryName, setRegCountryName] = useState("Côte d'Ivoire");
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
   const [regReferrer, setRegReferrer] = useState('');
   const [isReferralFromUrl, setIsReferralFromUrl] = useState(false);
-  
-  // Visibility toggles
+
+  // Visibility Toggles
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
-  // Loading & Error States
+
+  // Status States
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  
-  // Forgot Password Flow State
-  const [forgotPasswordActive, setForgotPasswordActive] = useState(false);
+
+  // Forgot Password State
   const [forgotPhone, setForgotPhone] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
 
-  // Read URL params & local storage for referral code
+  // Detect referral code from URL or localStorage
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const refFromUrl = 
@@ -99,6 +94,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
       params.get('referrer') || 
       params.get('inviter') ||
       params.get('invite') ||
+      params.get('invitation') ||
       params.get('referral') ||
       localStorage.getItem('aurainvest_ref_code');
 
@@ -113,10 +109,10 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
   }, []);
 
   const handleCountryChange = (prefix: string) => {
-    setRegCountryPrefix(prefix);
+    setCountryPrefix(prefix);
     const found = COUNTRIES.find(c => c.prefix === prefix);
     if (found) {
-      setRegCountryName(found.name);
+      setCountryName(found.name);
     }
   };
 
@@ -128,15 +124,19 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
     }
     setErrorMsg(null);
     setLoading(true);
+
     try {
-      const res = await authActions.login(loginPhone.trim(), loginPassword);
+      const cleanInput = loginPhone.trim();
+      const fullPhone = cleanInput.startsWith('+') ? cleanInput : `${countryPrefix}${cleanInput}`;
+      const res = await authActions.login(fullPhone, loginPassword);
+
       if (res.success) {
         onSuccess();
       } else {
-        setErrorMsg(res.error || "Une erreur est survenue lors de la connexion.");
+        setErrorMsg(res.error || "Informations de connexion incorrectes.");
       }
     } catch (err) {
-      setErrorMsg("Erreur de connexion au serveur. Veuillez réessayer.");
+      setErrorMsg("Erreur de connexion. Veuillez réessayer.");
     } finally {
       setLoading(false);
     }
@@ -153,7 +153,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
       return;
     }
     if (!regPassword) {
-      setErrorMsg("Veuillez choisir un mot de passe.");
+      setErrorMsg("Veuillez entrer votre mot de passe.");
       return;
     }
     if (regPassword.length < 4) {
@@ -161,34 +161,29 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
       return;
     }
     if (regPassword !== regConfirmPassword) {
-      setErrorMsg("Les deux mots de passe ne correspondent pas.");
+      setErrorMsg("Les mots de passe ne correspondent pas.");
       return;
     }
 
     setLoading(true);
     try {
-      // Build full phone with prefix if user didn't write leading +
-      const fullPhone = cleanPhone.startsWith('+') 
-        ? cleanPhone 
-        : `${regCountryPrefix} ${cleanPhone}`;
-
-      // Default name if left blank
-      const fullName = regName.trim() || `Membre ${cleanPhone.slice(-4)}`;
+      const fullPhone = cleanPhone.startsWith('+') ? cleanPhone : `${countryPrefix}${cleanPhone}`;
+      const defaultName = `Membre ${cleanPhone.slice(-4)}`;
 
       const res = await authActions.register({
-        name: fullName,
+        name: defaultName,
         phone: fullPhone,
         whatsapp: fullPhone,
-        country: regCountryName,
+        country: countryName,
         word: regPassword,
         referrerCode: regReferrer.trim()
       });
 
       if (res.success) {
-        setSuccessMsg("Inscription réussie ! Connexion automatique...");
+        setSuccessMsg("Inscription réussie ! Redirection vers votre espace...");
         setTimeout(() => {
           onSuccess();
-        }, 1000);
+        }, 800);
       } else {
         setErrorMsg(res.error || "Une erreur est survenue lors de l'inscription.");
       }
@@ -199,343 +194,167 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
     }
   };
 
-  const handleForgotPassword = (e: React.FormEvent) => {
+  const handleForgotPasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotPhone.trim()) {
-      setErrorMsg("Veuillez saisir votre numéro de téléphone.");
+      setErrorMsg("Veuillez entrer votre numéro de téléphone.");
       return;
     }
     setErrorMsg(null);
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      setForgotSuccess("Instructions de réinitialisation envoyées ! Si votre numéro est enregistré, un code temporaire vous sera transmis via WhatsApp.");
-    }, 1000);
+      setForgotSuccess("Instructions de réinitialisation transmises. Un agent du service client va traiter votre demande.");
+    }, 800);
   };
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex flex-col justify-center items-center px-4 py-8 sm:py-12 relative font-sans">
+    <div className="min-h-screen bg-slate-900 flex flex-col font-sans select-none antialiased relative overflow-hidden">
       
+      {/* Background Nutrien Agricultural Product Image Layer */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20 pointer-events-none transform scale-105"
+        style={{ backgroundImage: `url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200&auto=format&fit=crop&q=80')` }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/80 via-slate-950/75 to-slate-900/95 pointer-events-none" />
 
-      {/* Main Content Area - Form directly on background without outer card or heavy shadow */}
-      <div className="w-full max-w-md my-auto space-y-6">
+      {/* HEADER SECTION (WITH PRODUCT HERO BACKDROP) */}
+      <div className="relative text-white pt-7 pb-12 px-5 shadow-md overflow-hidden">
+        {/* Product image background overlay for header */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-35 mix-blend-overlay"
+          style={{ backgroundImage: `url('https://images.unsplash.com/photo-1592417817098-8f3d6ef23a81?w=1200&auto=format&fit=crop&q=80')` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#046A38] via-[#03542c]/95 to-[#023d20]" />
         
-        {/* Logo and Site Brand */}
-        <div className="flex flex-col items-center text-center space-y-2">
-          <div className="w-14 h-14 bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-300 rounded-2xl flex items-center justify-center shadow-md shadow-amber-500/20">
-            <TrendingUp className="w-7 h-7 text-slate-950 stroke-[2.5px]" />
-          </div>
-          <div>
-            <span className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-              NUT<span className="text-amber-600">RIEN</span>
+        {/* Top Header Bar: Logo & Centered Title */}
+        <div className="relative z-10 flex items-center justify-between mb-4">
+          {/* Logo "Nutrien" on Top Left */}
+          <div className="flex items-center space-x-2">
+            <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white font-black text-sm tracking-tight border border-white/30 shadow-xs">
+              <svg className="w-5 h-5 fill-current text-white" viewBox="0 0 24 24">
+                <path d="M17 8C14.23 8 12 10.23 12 13C12 15.77 14.23 18 17 18C19.77 18 22 15.77 22 13C22 10.23 19.77 8 17 8ZM17 16C15.35 16 14 14.65 14 13C14 11.35 15.35 10 17 10C18.65 10 20 11.35 20 13C20 14.65 18.65 16 17 16ZM12 3C8.13 3 5 6.13 5 10C5 12.38 6.19 14.47 8 15.74V21H10V16C11.3 15.42 12.36 14.42 13 13.15C12.37 12.22 12 11.16 12 10C12 7.24 13.79 4.88 16.3 4.2C15.11 3.44 13.61 3 12 3Z" />
+              </svg>
+            </div>
+            <span className="text-2xl font-black tracking-tight text-white drop-shadow-xs">
+              Nutrien
             </span>
-            <span className="block text-[9px] tracking-[0.25em] font-mono text-amber-800 font-extrabold uppercase mt-0.5">
-              AG SOLUTIONS & FINTECH SÉCURISÉE
-            </span>
           </div>
+
+          {/* Centered Title */}
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white text-center flex-1 pr-12">
+            {mode === 'register' ? 'Inscription' : mode === 'login' ? 'Connexion' : 'Mot de passe oublié'}
+          </h1>
         </div>
 
-        {/* AnimatePresence for smooth transitions */}
+        {/* Header Subtitle text */}
+        <p className="relative z-10 text-xs sm:text-sm font-medium text-emerald-100 max-w-sm leading-relaxed tracking-wide">
+          {mode === 'register' 
+            ? 'Fournissez vos informations pour enregistrer votre compte'
+            : mode === 'login'
+            ? 'Connectez-vous à votre compte pour continuer'
+            : 'Saisissez votre numéro de téléphone pour réinitialiser votre compte'}
+        </p>
+      </div>
+
+      {/* FORM SECTION (ELEGANT WHITE CARD WITH ROUNDED TOP CORNERS) */}
+      <div className="relative z-10 flex-1 bg-white -mt-6 rounded-t-[32px] px-5 sm:px-8 pt-7 pb-10 shadow-2xl max-w-md w-full mx-auto flex flex-col justify-between border-t border-emerald-100">
+        
         <AnimatePresence mode="wait">
-          {forgotPasswordActive ? (
-            /* ========================================================= */
-            /* 1. FORGOT PASSWORD VIEW                                  */
-            /* ========================================================= */
-            <motion.div
-              key="forgot"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-5"
-            >
-              <div className="text-center space-y-1">
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900">
-                  Mot de passe oublié ?
-                </h2>
-                <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                  Saisissez votre numéro de téléphone d'inscription pour réinitialiser l'accès à votre compte.
-                </p>
-              </div>
-
-              {errorMsg && (
-                <div className="bg-red-50 border border-red-200 p-3 rounded-2xl flex items-center space-x-2 text-xs text-red-700 animate-fadeIn">
-                  <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                  <span>{errorMsg}</span>
-                </div>
-              )}
-
-              {forgotSuccess && (
-                <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-xs text-emerald-800 leading-relaxed font-medium animate-fadeIn space-y-2">
-                  <div className="flex items-center space-x-1.5 font-bold text-emerald-900">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Demande prise en compte</span>
-                  </div>
-                  <p>{forgotSuccess}</p>
-                </div>
-              )}
-
-              <form onSubmit={handleForgotPassword} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Numéro de Téléphone
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input 
-                      type="tel" 
-                      placeholder="Ex: 07070707" 
-                      value={forgotPhone}
-                      onChange={(e) => setForgotPhone(e.target.value)}
-                      className="w-full bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-amber-500 outline-none rounded-2xl py-3.5 pl-10 pr-4 text-sm font-bold text-slate-900 transition-all"
-                      id="forgot-phone-input"
-                    />
-                  </div>
-                </div>
-
-                <button 
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-105 active:scale-[0.99] text-slate-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-sm cursor-pointer transition-all flex items-center justify-center space-x-2"
-                  id="forgot-submit-btn"
-                >
-                  {loading ? (
-                    <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <span>Envoyer la demande</span>
-                      <Send className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-
-                <div className="text-center pt-2">
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setForgotPasswordActive(false);
-                      setForgotSuccess(null);
-                      setErrorMsg(null);
-                    }}
-                    className="text-xs font-bold text-slate-600 hover:text-amber-600 transition-colors cursor-pointer"
-                    id="back-to-login-btn-from-forgot"
-                  >
-                    ← Retour à la connexion
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          ) : mode === 'login' ? (
-            /* ========================================================= */
-            /* 2. PAGE DE CONNEXION                                     */
-            /* ========================================================= */
-            <motion.div
-              key="login"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-5"
-            >
-              {/* Header Title & Subtitle */}
-              <div className="text-center space-y-1">
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                  Bienvenue
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                  Connectez-vous à votre compte pour continuer.
-                </p>
-              </div>
-
-              {/* Error Message Display */}
-              {errorMsg && (
-                <div className="bg-red-50 border border-red-200 p-3.5 rounded-2xl flex items-center space-x-2 text-xs text-red-700 animate-fadeIn font-medium">
-                  <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                  <span>{errorMsg}</span>
-                </div>
-              )}
-
-              {/* Login Form */}
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
-                {/* Numéro de téléphone */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Numéro de Téléphone
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input 
-                      type="tel" 
-                      placeholder="Saisissez votre numéro"
-                      value={loginPhone}
-                      onChange={(e) => setLoginPhone(e.target.value)}
-                      className="w-full bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-amber-500 outline-none rounded-2xl py-3.5 pl-10 pr-4 text-sm font-bold text-slate-900 transition-all"
-                      id="login-phone-input"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Mot de passe */}
-                <div>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <label className="block text-xs font-bold text-slate-700">
-                      Mot de passe
-                    </label>
-                  </div>
-                  <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input 
-                      type={showLoginPassword ? "text" : "password"} 
-                      placeholder="••••••••" 
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      className="w-full bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-amber-500 outline-none rounded-2xl py-3.5 pl-10 pr-11 text-sm font-bold text-slate-900 transition-all"
-                      id="login-password-input"
-                      required
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => setShowLoginPassword(!showLoginPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-1"
-                      title={showLoginPassword ? "Masquer" : "Afficher"}
-                    >
-                      {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Main Submit Button */}
-                <button 
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-105 active:scale-[0.99] text-slate-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-sm cursor-pointer transition-all flex items-center justify-center space-x-2"
-                  id="login-submit-btn"
-                >
-                  {loading ? (
-                    <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <span>SE CONNECTER</span>
-                  )}
-                </button>
-              </form>
-
-              {/* Footer Switcher */}
-              <div className="text-center pt-3 border-t border-slate-200/80">
-                <span className="text-xs text-slate-500 font-medium">Vous n'avez pas encore de compte ? </span>
-                <button 
-                  onClick={() => {
-                    setMode('register');
-                    setErrorMsg(null);
-                    setSuccessMsg(null);
-                  }}
-                  className="text-xs text-amber-600 font-black hover:underline cursor-pointer"
-                  id="switch-to-register-btn"
-                >
-                  S'inscrire
-                </button>
-              </div>
-            </motion.div>
-          ) : (
-            /* ========================================================= */
-            /* 3. PAGE D'INSCRIPTION                                    */
-            /* ========================================================= */
+          {/* ========================================================= */}
+          {/* 1. PAGE D'INSCRIPTION (REGISTER)                          */}
+          {/* ========================================================= */}
+          {mode === 'register' && (
             <motion.div
               key="register"
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.2 }}
               className="space-y-5"
             >
-              {/* Header Title & Subtitle */}
-              <div className="text-center space-y-1">
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                  Créer un compte
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                  Inscrivez-vous pour accéder à votre espace personnel
-                </p>
-              </div>
+              {/* Alert Messages */}
+              {errorMsg && (
+                <div className="bg-red-50 border border-red-200 p-3.5 rounded-2xl flex items-center space-x-2.5 text-xs text-red-700 animate-fadeIn font-medium">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
 
-              {/* Success Message Display */}
               {successMsg && (
-                <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl flex items-center space-x-2 text-xs text-emerald-800 animate-fadeIn font-bold">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl flex items-center space-x-2.5 text-xs text-emerald-800 animate-fadeIn font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>{successMsg}</span>
                 </div>
               )}
 
-              {/* Error Message Display */}
-              {errorMsg && (
-                <div className="bg-red-50 border border-red-200 p-3.5 rounded-2xl flex items-center space-x-2 text-xs text-red-700 animate-fadeIn font-medium">
-                  <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                  <span>{errorMsg}</span>
-                </div>
-              )}
+              {/* Bonus Gift Banner */}
+              <div className="bg-amber-50/90 border border-amber-200 p-3 rounded-2xl flex items-center space-x-2.5 text-[11px] sm:text-xs text-amber-900 font-medium">
+                <Gift className="w-5 h-5 text-amber-600 shrink-0" />
+                <span>
+                  <strong>Bonus de bienvenue :</strong> <strong>200 XOF</strong> (<strong>200 XAF</strong> pour le Cameroun) automatiquement crédités à la création du compte !
+                </span>
+              </div>
 
-              {/* Register Form */}
-              <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
-
-                {/* 1. Numéro de téléphone (avec indicatif pays + icône téléphone) */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Numéro de Téléphone
+              <form onSubmit={handleRegisterSubmit} className="space-y-4">
+                
+                {/* 1. Téléphone */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-800">
+                    Téléphone
                   </label>
-                  <div className="flex space-x-2">
-                    {/* Indicatif pays */}
-                    <div className="relative w-32 flex-shrink-0">
-                      <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-                      <select 
-                        value={regCountryPrefix}
+                  
+                  <div className="flex items-center bg-[#f4f5f8] rounded-2xl px-3.5 py-3 border border-transparent focus-within:border-emerald-500 focus-within:bg-white transition-all">
+                    {/* Indicatif pays selector */}
+                    <div className="relative flex items-center pr-2 border-r border-slate-200/80 mr-2 shrink-0">
+                      <select
+                        value={countryPrefix}
                         onChange={(e) => handleCountryChange(e.target.value)}
-                        className="w-full bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-amber-500 outline-none rounded-2xl py-3 pl-8 pr-2 text-xs font-extrabold text-slate-900 transition-all cursor-pointer appearance-none"
-                        id="reg-country-select"
+                        className="bg-transparent text-xs font-bold text-slate-800 outline-none pr-4 cursor-pointer appearance-none"
+                        id="reg-country-prefix"
                       >
                         {COUNTRIES.map(c => (
                           <option key={c.code} value={c.prefix}>
-                            {c.prefix} ({c.code})
+                            {c.prefix} ({c.name})
                           </option>
                         ))}
                       </select>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-0 pointer-events-none" />
                     </div>
 
-                    {/* Champ numéro */}
-                    <div className="relative flex-1">
-                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <input 
-                        type="tel" 
-                        placeholder="Ex: 07080910" 
-                        value={regPhone}
-                        onChange={(e) => setRegPhone(e.target.value)}
-                        className="w-full bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-amber-500 outline-none rounded-2xl py-3 pl-10 pr-4 text-sm font-bold text-slate-900 transition-all"
-                        id="reg-phone-input"
-                        required
-                      />
-                    </div>
+                    {/* Champ de saisie numéro */}
+                    <input
+                      type="tel"
+                      placeholder="Veuillez entrer le numéro de télép..."
+                      value={regPhone}
+                      onChange={(e) => setRegPhone(e.target.value)}
+                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400"
+                      id="reg-phone-input"
+                      required
+                    />
                   </div>
                 </div>
 
                 {/* 2. Mot de passe */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-800">
                     Mot de passe
                   </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input 
-                      type={showRegPassword ? "text" : "password"} 
-                      placeholder="Créez votre mot de passe"
+
+                  <div className="flex items-center bg-[#f4f5f8] rounded-2xl px-3.5 py-3 border border-transparent focus-within:border-emerald-500 focus-within:bg-white transition-all relative">
+                    <input
+                      type={showRegPassword ? "text" : "password"}
+                      placeholder="Veuillez entrer le mot de passe"
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
-                      className="w-full bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-amber-500 outline-none rounded-2xl py-3 pl-10 pr-11 text-sm font-bold text-slate-900 transition-all"
+                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 pr-8"
                       id="reg-password-input"
                       required
                     />
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setShowRegPassword(!showRegPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-1"
+                      className="absolute right-3.5 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
                       title={showRegPassword ? "Masquer" : "Afficher"}
                     >
                       {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -544,34 +363,34 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                 </div>
 
                 {/* 3. Confirmer le mot de passe */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Confirmer le mot de passe
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-800">
+                    Mot de passe
                   </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input 
-                      type={showConfirmPassword ? "text" : "password"} 
-                      placeholder="Répétez votre mot de passe" 
+
+                  <div className="flex items-center bg-[#f4f5f8] rounded-2xl px-3.5 py-3 border border-transparent focus-within:border-emerald-500 focus-within:bg-white transition-all relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Veuillez entrer le mot de passe"
                       value={regConfirmPassword}
                       onChange={(e) => setRegConfirmPassword(e.target.value)}
-                      className="w-full bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-amber-500 outline-none rounded-2xl py-3 pl-10 pr-11 text-sm font-bold text-slate-900 transition-all"
+                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 pr-8"
                       id="reg-confirm-password-input"
                       required
                     />
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-1"
+                      className="absolute right-3.5 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
                       title={showConfirmPassword ? "Masquer" : "Afficher"}
                     >
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
 
-                  {/* Automatic password match indicator */}
+                  {/* Dynamic Match Indicator */}
                   {regConfirmPassword.length > 0 && (
-                    <div className="mt-1.5 flex items-center space-x-1.5 text-[11px] font-bold">
+                    <div className="pt-0.5 text-[11px] font-medium">
                       {regPassword === regConfirmPassword ? (
                         <span className="text-emerald-600 flex items-center space-x-1">
                           <CheckCircle2 className="w-3.5 h-3.5" />
@@ -587,67 +406,347 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                   )}
                 </div>
 
-                {/* 4. Code parrain */}
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="block text-xs font-bold text-slate-700">
-                      Code parrain <span className="text-slate-400 font-normal">(Optionnel)</span>
+                {/* 4. Code d'invitation */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-semibold text-slate-800">
+                      Code d'invitation
                     </label>
                     {isReferralFromUrl && (
-                      <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                        Code d'invitation appliqué
+                      <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md">
+                        Appliqué automatiquement
                       </span>
                     )}
                   </div>
-                  <div className="relative">
-                    <UserPlus className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input 
-                      type="text" 
-                      placeholder="Code d'invitation (Ex: INV123456)" 
+
+                  <div className="flex items-center bg-[#f4f5f8] rounded-2xl px-3.5 py-3 border border-transparent focus-within:border-emerald-500 focus-within:bg-white transition-all">
+                    <input
+                      type="text"
+                      placeholder="97194059"
                       value={regReferrer}
                       onChange={(e) => setRegReferrer(e.target.value)}
-                      className="w-full bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-amber-500 outline-none rounded-2xl py-3 pl-10 pr-4 text-sm font-mono font-bold text-slate-900 uppercase transition-all"
+                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400"
                       id="reg-referrer-input"
                     />
                   </div>
                 </div>
 
-                {/* Main Submit Button */}
-                <button 
+                {/* Grand Bouton Vert: S'inscrire */}
+                <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-105 active:scale-[0.99] text-slate-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-sm cursor-pointer transition-all flex items-center justify-center space-x-2 mt-2"
+                  className="w-full py-3.5 bg-[#046A38] hover:bg-[#03542c] active:scale-[0.99] text-white font-bold text-sm sm:text-base rounded-2xl shadow-sm cursor-pointer transition-all flex items-center justify-center space-x-2 mt-4"
                   id="reg-submit-btn"
                 >
                   {loading ? (
-                    <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <span>S'INSCRIRE</span>
+                    <span>S'inscrire</span>
                   )}
                 </button>
               </form>
 
-              {/* Footer Switcher */}
-              <div className="text-center pt-3 border-t border-slate-200/80">
-                <span className="text-xs text-slate-500 font-medium">Vous avez déjà un compte ? </span>
-                <button 
+              {/* Link Se connecter */}
+              <div className="text-center pt-2">
+                <span className="text-xs text-slate-600">Vous avez déjà un compte ? </span>
+                <button
+                  type="button"
                   onClick={() => {
                     setMode('login');
                     setErrorMsg(null);
                     setSuccessMsg(null);
                   }}
-                  className="text-xs text-amber-600 font-black hover:underline cursor-pointer"
+                  className="text-xs font-bold text-[#046A38] hover:underline cursor-pointer"
                   id="switch-to-login-btn"
                 >
                   Se connecter
                 </button>
               </div>
+
+              {/* Logo Nutrien en bas de la page d'inscription */}
+              <div className="pt-5 border-t border-slate-100 mt-5 flex flex-col items-center justify-center text-center space-y-2">
+                <div className="p-3 bg-emerald-50/90 rounded-2xl border border-emerald-100 flex items-center justify-center space-x-3 w-full shadow-2xs">
+                  {/* Nutrien Green Sprout Leaf SVG Logo Icon */}
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#046A38] via-[#03542c] to-[#023d20] text-white flex items-center justify-center shrink-0 shadow-xs border border-emerald-400/30">
+                    <svg className="w-7 h-7 fill-current text-white" viewBox="0 0 24 24">
+                      <path d="M17 8C14.23 8 12 10.23 12 13C12 15.77 14.23 18 17 18C19.77 18 22 15.77 22 13C22 10.23 19.77 8 17 8ZM17 16C15.35 16 14 14.65 14 13C14 11.35 15.35 10 17 10C18.65 10 20 11.35 20 13C20 14.65 18.65 16 17 16ZM12 3C8.13 3 5 6.13 5 10C5 12.38 6.19 14.47 8 15.74V21H10V16C11.3 15.42 12.36 14.42 13 13.15C12.37 12.22 12 11.16 12 10C12 7.24 13.79 4.88 16.3 4.2C15.11 3.44 13.61 3 12 3Z" />
+                    </svg>
+                  </div>
+                  <div className="text-left min-w-0">
+                    <div className="flex items-center space-x-1.5">
+                      <span className="text-base font-black tracking-tight text-[#046A38]">Nutrien</span>
+                      <span className="text-[10px] font-black text-amber-700 bg-amber-100/80 px-1.5 py-0.2 rounded font-mono">Ag</span>
+                    </div>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate">
+                      Nutrien Ag Solutions • Feeding the Future
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  © Nutrien Ag Solutions — Plateforme Officielle Certifiée
+                </span>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ========================================================= */}
+          {/* 2. PAGE DE CONNEXION (LOGIN)                              */}
+          {/* ========================================================= */}
+          {mode === 'login' && (
+            <motion.div
+              key="login"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-5"
+            >
+              {/* Alert Messages */}
+              {errorMsg && (
+                <div className="bg-red-50 border border-red-200 p-3.5 rounded-2xl flex items-center space-x-2.5 text-xs text-red-700 animate-fadeIn font-medium">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
+                
+                {/* 1. Téléphone */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-800">
+                    Téléphone
+                  </label>
+
+                  <div className="flex items-center bg-[#f4f5f8] rounded-2xl px-3.5 py-3 border border-transparent focus-within:border-emerald-500 focus-within:bg-white transition-all">
+                    {/* Indicatif pays selector */}
+                    <div className="relative flex items-center pr-2 border-r border-slate-200/80 mr-2 shrink-0">
+                      <select
+                        value={countryPrefix}
+                        onChange={(e) => handleCountryChange(e.target.value)}
+                        className="bg-transparent text-xs font-bold text-slate-800 outline-none pr-4 cursor-pointer appearance-none"
+                        id="login-country-prefix"
+                      >
+                        {COUNTRIES.map(c => (
+                          <option key={c.code} value={c.prefix}>
+                            {c.prefix} ({c.name})
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-0 pointer-events-none" />
+                    </div>
+
+                    {/* Champ de saisie numéro */}
+                    <input
+                      type="tel"
+                      placeholder="Veuillez entrer le numéro de télép..."
+                      value={loginPhone}
+                      onChange={(e) => setLoginPhone(e.target.value)}
+                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400"
+                      id="login-phone-input"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* 2. Mot de passe */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-800">
+                    Mot de passe
+                  </label>
+
+                  <div className="flex items-center bg-[#f4f5f8] rounded-2xl px-3.5 py-3 border border-transparent focus-within:border-emerald-500 focus-within:bg-white transition-all relative">
+                    <input
+                      type={showLoginPassword ? "text" : "password"}
+                      placeholder="Veuillez entrer le mot de passe"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 pr-8"
+                      id="login-password-input"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      className="absolute right-3.5 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                      title={showLoginPassword ? "Masquer" : "Afficher"}
+                    >
+                      {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Link Mot de passe oublié ? */}
+                <div className="text-right pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('forgot');
+                      setErrorMsg(null);
+                    }}
+                    className="text-xs font-semibold text-slate-600 hover:text-emerald-700 transition-colors cursor-pointer"
+                    id="forgot-password-link"
+                  >
+                    Mot de passe oublié ?
+                  </button>
+                </div>
+
+                {/* Grand Bouton Vert: SE CONNECTER */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3.5 bg-[#046A38] hover:bg-[#03542c] active:scale-[0.99] text-white font-bold text-sm sm:text-base rounded-2xl shadow-sm cursor-pointer transition-all flex items-center justify-center space-x-2 mt-2"
+                  id="login-submit-btn"
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <span>SE CONNECTER</span>
+                  )}
+                </button>
+              </form>
+
+              {/* Link S'inscrire */}
+              <div className="text-center pt-2">
+                <span className="text-xs text-slate-600">Vous n'avez pas encore de compte ? </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('register');
+                    setErrorMsg(null);
+                    setSuccessMsg(null);
+                  }}
+                  className="text-xs font-bold text-[#046A38] hover:underline cursor-pointer"
+                  id="switch-to-register-btn"
+                >
+                  S'inscrire
+                </button>
+              </div>
+
+              {/* Logo Nutrien en bas de la page de connexion */}
+              <div className="pt-5 border-t border-slate-100 mt-5 flex flex-col items-center justify-center text-center space-y-2">
+                <div className="p-3 bg-emerald-50/90 rounded-2xl border border-emerald-100 flex items-center justify-center space-x-3 w-full shadow-2xs">
+                  {/* Nutrien Green Sprout Leaf SVG Logo Icon */}
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#046A38] via-[#03542c] to-[#023d20] text-white flex items-center justify-center shrink-0 shadow-xs border border-emerald-400/30">
+                    <svg className="w-7 h-7 fill-current text-white" viewBox="0 0 24 24">
+                      <path d="M17 8C14.23 8 12 10.23 12 13C12 15.77 14.23 18 17 18C19.77 18 22 15.77 22 13C22 10.23 19.77 8 17 8ZM17 16C15.35 16 14 14.65 14 13C14 11.35 15.35 10 17 10C18.65 10 20 11.35 20 13C20 14.65 18.65 16 17 16ZM12 3C8.13 3 5 6.13 5 10C5 12.38 6.19 14.47 8 15.74V21H10V16C11.3 15.42 12.36 14.42 13 13.15C12.37 12.22 12 11.16 12 10C12 7.24 13.79 4.88 16.3 4.2C15.11 3.44 13.61 3 12 3Z" />
+                    </svg>
+                  </div>
+                  <div className="text-left min-w-0">
+                    <div className="flex items-center space-x-1.5">
+                      <span className="text-base font-black tracking-tight text-[#046A38]">Nutrien</span>
+                      <span className="text-[10px] font-black text-amber-700 bg-amber-100/80 px-1.5 py-0.2 rounded font-mono">Ag</span>
+                    </div>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate">
+                      Nutrien Ag Solutions • Feeding the Future
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  © Nutrien Ag Solutions — Plateforme Officielle Certifiée
+                </span>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ========================================================= */}
+          {/* 3. MOT DE PASSE OUBLIÉ (FORGOT PASSWORD)                 */}
+          {/* ========================================================= */}
+          {mode === 'forgot' && (
+            <motion.div
+              key="forgot"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-5"
+            >
+              {/* Alert Messages */}
+              {errorMsg && (
+                <div className="bg-red-50 border border-red-200 p-3.5 rounded-2xl flex items-center space-x-2.5 text-xs text-red-700 animate-fadeIn font-medium">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              {forgotSuccess && (
+                <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-xs text-emerald-800 leading-relaxed font-medium animate-fadeIn space-y-2">
+                  <div className="flex items-center space-x-1.5 font-bold text-emerald-900">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Demande enregistrée</span>
+                  </div>
+                  <p>{forgotSuccess}</p>
+                </div>
+              )}
+
+              <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-800">
+                    Numéro de Téléphone
+                  </label>
+
+                  <div className="flex items-center bg-[#f4f5f8] rounded-2xl px-3.5 py-3 border border-transparent focus-within:border-emerald-500 focus-within:bg-white transition-all">
+                    <div className="relative flex items-center pr-2 border-r border-slate-200/80 mr-2 shrink-0">
+                      <select
+                        value={countryPrefix}
+                        onChange={(e) => handleCountryChange(e.target.value)}
+                        className="bg-transparent text-xs font-bold text-slate-800 outline-none pr-4 cursor-pointer appearance-none"
+                        id="forgot-country-prefix"
+                      >
+                        {COUNTRIES.map(c => (
+                          <option key={c.code} value={c.prefix}>
+                            {c.prefix} ({c.name})
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-0 pointer-events-none" />
+                    </div>
+
+                    <input
+                      type="tel"
+                      placeholder="Veuillez entrer le numéro de télép..."
+                      value={forgotPhone}
+                      onChange={(e) => setForgotPhone(e.target.value)}
+                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400"
+                      id="forgot-phone-input"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3.5 bg-[#046A38] hover:bg-[#03542c] active:scale-[0.99] text-white font-bold text-sm sm:text-base rounded-2xl shadow-sm cursor-pointer transition-all flex items-center justify-center space-x-2 mt-2"
+                  id="forgot-submit-btn"
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <span>ENVOYER LA DEMANDE</span>
+                  )}
+                </button>
+              </form>
+
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setErrorMsg(null);
+                    setForgotSuccess(null);
+                  }}
+                  className="text-xs font-bold text-[#046A38] hover:underline cursor-pointer flex items-center justify-center space-x-1 mx-auto"
+                  id="back-to-login-btn"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Retour à la connexion</span>
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
 
+      </div>
     </div>
   );
 };
-

@@ -41,7 +41,11 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
 
   // Filter tickets belonging to current user and sort chronologically (oldest to newest)
   const userTickets = [...tickets]
-    .filter(t => t.userId === currentUser.id)
+    .filter(t => 
+      t.userId === currentUser.id ||
+      (currentUser.phone && currentUser.phone !== 'Non renseigné' && t.userPhone === currentUser.phone) ||
+      (currentUser.name && t.userName === currentUser.name)
+    )
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   // Auto-scroll to bottom of chat area
