@@ -42,7 +42,9 @@ import {
   Handshake,
   Award,
   AlertCircle,
-  MessageCircle
+  MessageCircle,
+  Users,
+  HeartHandshake
 } from 'lucide-react';
 
 interface AccountViewProps {
@@ -113,8 +115,8 @@ export const AccountView: React.FC<AccountViewProps> = ({
   const [activeSubPage, setActiveSubPage] = useState<SubPage>(null);
 
   const unreadAnnouncementsCount = announcements.filter((a: any) => a.isNew).length;
-  const hasUnreadAnnouncements = unreadAnnouncementsCount > 0 || !!globalNotification;
-  const totalUnreadAnnouncements = unreadAnnouncementsCount > 0 ? unreadAnnouncementsCount : (hasUnreadAnnouncements ? 1 : 0);
+  const hasUnreadAnnouncements = unreadAnnouncementsCount > 0;
+  const totalUnreadAnnouncements = unreadAnnouncementsCount;
 
   // Forms state
   // Profile edit
@@ -648,12 +650,11 @@ export const AccountView: React.FC<AccountViewProps> = ({
           {/* Clean presentation laid directly on background without borders or outer card boxes */}
           <div className="space-y-6 text-slate-900 font-sans px-1">
             
-            {/* OFFICIAL PARTNERSHIP DOCUMENT IMAGE (NON-TOUCHABLE / NON-ENLARGEABLE) */}
+            {/* OFFICIAL PARTNERSHIP DOCUMENT IMAGE (STATIC / NON-TOUCHABLE) */}
             <div 
               className="relative rounded-2xl overflow-hidden border border-emerald-800/20 shadow-lg bg-white select-none pointer-events-none touch-none"
               style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none' }}
               onContextMenu={(e) => e.preventDefault()}
-              onClick={(e) => e.preventDefault()}
             >
               <img 
                 src={partnershipImage} 
@@ -770,6 +771,46 @@ export const AccountView: React.FC<AccountViewProps> = ({
               </p>
             </div>
 
+            {/* Section: Équipe Nutrien & Engagement Communautaire (En bas de page) */}
+            <div className="space-y-3 pt-5 border-t border-slate-200">
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2 text-emerald-800 font-extrabold text-xs uppercase tracking-wider">
+                  <Users className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Notre Équipe & Engagement Communautaire</span>
+                </div>
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+                  L'Équipe Nutrien sur le Terrain
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                  Nos collaborateurs en maillots verts Nutrien s'engagent activement au quotidien dans les initiatives de développement durable, d'action sociale et de protection de l'environnement.
+                </p>
+              </div>
+
+              {/* IMAGE DE L'ÉQUIPE NUTRIEN */}
+              <div 
+                className="relative rounded-2xl overflow-hidden border border-emerald-800/20 shadow-lg bg-white select-none pointer-events-none touch-none"
+                style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none' }}
+                onContextMenu={(e) => e.preventDefault()}
+              >
+                <img 
+                  src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=1200&auto=format&fit=crop&q=80" 
+                  alt="Équipe Nutrien - Action Communautaire & Environnementale" 
+                  className="w-full h-auto object-cover block"
+                  referrerPolicy="no-referrer"
+                  loading="eager"
+                />
+                <div className="p-3 bg-gradient-to-r from-emerald-900 via-emerald-850 to-teal-900 text-white flex items-center justify-between text-xs font-bold">
+                  <span className="flex items-center space-x-1.5">
+                    <HeartHandshake className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Semaine d'Action & Engagement Communautaire</span>
+                  </span>
+                  <span className="text-[10px] bg-emerald-500/30 text-emerald-200 px-2.5 py-0.5 rounded-full border border-emerald-400/30 font-mono">
+                    Nutrien Green Team
+                  </span>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
@@ -854,7 +895,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
             <div className="bg-emerald-50 p-3.5 rounded-xl text-xs text-emerald-900 space-y-1">
               <p className="font-bold">Conditions de Retrait :</p>
               <p className="text-[11px] font-medium leading-relaxed">
-                Montant minimum : <strong className="font-mono font-bold">1 500 FCFA</strong>. Les retraits sont traités rapidement par Mobile Money.
+                Montant minimum : <strong className="font-mono font-bold">1 000 FCFA</strong> (Limité à 2 retraits par jour). Les retraits sont traités rapidement par Mobile Money.
               </p>
             </div>
 

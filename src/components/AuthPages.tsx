@@ -12,10 +12,11 @@ import {
   CheckCircle2, 
   XCircle, 
   ChevronDown,
-  ArrowLeft,
-  Gift
+  ArrowLeft
 } from 'lucide-react';
 import { ALLOWED_COUNTRIES } from '../constants/countries';
+import { useApp } from '../context/AppContext';
+import { LiveWithdrawalFeed } from './LiveWithdrawalFeed';
 
 interface AuthPagesProps {
   initialMode: 'login' | 'register';
@@ -46,6 +47,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
   onSuccess,
   authActions 
 }) => {
+  const { withdrawals = [] } = useApp();
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialMode);
 
   useEffect(() => {
@@ -218,14 +220,15 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
       />
       <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/80 via-slate-950/75 to-slate-900/95 pointer-events-none" />
 
-      {/* HEADER SECTION (WITH PRODUCT HERO BACKDROP) */}
-      <div className="relative text-white pt-7 pb-12 px-5 shadow-md overflow-hidden">
-        {/* Product image background overlay for header */}
+      {/* HEADER SECTION (WITH NUTRIEN TRADING PHONE HERO BACKDROP) */}
+      <div className="relative text-white pt-8 pb-14 px-5 shadow-md overflow-hidden min-h-[150px] flex flex-col justify-center">
+        {/* Nutrien Green Screen Smartphone & Trading Charts Hero Image */}
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-35 mix-blend-overlay"
-          style={{ backgroundImage: `url('https://images.unsplash.com/photo-1592417817098-8f3d6ef23a81?w=1200&auto=format&fit=crop&q=80')` }}
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transform scale-105"
+          style={{ backgroundImage: `url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&auto=format&fit=crop&q=80')` }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#046A38] via-[#03542c]/95 to-[#023d20]" />
+        {/* Green Nutrien brand overlay with backdrop contrast */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#046A38]/90 via-[#03542c]/85 to-[#023d20]/90 backdrop-blur-[1px]" />
         
         {/* Top Header Bar: Logo & Centered Title */}
         <div className="relative z-10 flex items-center justify-between mb-4">
@@ -271,8 +274,11 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.2 }}
-              className="space-y-5"
+              className="space-y-4"
             >
+              {/* Petit cadre : Flux de retraits en direct au-dessus */}
+              <LiveWithdrawalFeed withdrawals={withdrawals} />
+
               {/* Alert Messages */}
               {errorMsg && (
                 <div className="bg-red-50 border border-red-200 p-3.5 rounded-2xl flex items-center space-x-2.5 text-xs text-red-700 animate-fadeIn font-medium">
@@ -287,14 +293,6 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                   <span>{successMsg}</span>
                 </div>
               )}
-
-              {/* Bonus Gift Banner */}
-              <div className="bg-amber-50/90 border border-amber-200 p-3 rounded-2xl flex items-center space-x-2.5 text-[11px] sm:text-xs text-amber-900 font-medium">
-                <Gift className="w-5 h-5 text-amber-600 shrink-0" />
-                <span>
-                  <strong>Bonus de bienvenue :</strong> <strong>200 XOF</strong> (<strong>200 XAF</strong> pour le Cameroun) automatiquement crédités à la création du compte !
-                </span>
-              </div>
 
               <form onSubmit={handleRegisterSubmit} className="space-y-4">
                 

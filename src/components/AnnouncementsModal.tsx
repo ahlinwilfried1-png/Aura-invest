@@ -23,7 +23,11 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       if (sortedAnnouncements.length > 0) {
-        setSelectedAnn(sortedAnnouncements[0]);
+        const topAnn = sortedAnnouncements[0];
+        setSelectedAnn(topAnn);
+        if (topAnn.isNew) {
+          markAnnouncementAsRead(topAnn.id);
+        }
       } else {
         setSelectedAnn(null);
       }

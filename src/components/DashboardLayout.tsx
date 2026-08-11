@@ -168,8 +168,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   ).length;
 
   const unreadAnnouncementsCount = announcements.filter(a => a.isNew).length;
-  const hasUnreadAnnouncements = unreadAnnouncementsCount > 0 || !!globalNotification;
-  const totalUnreadAnnouncements = unreadAnnouncementsCount > 0 ? unreadAnnouncementsCount : (hasUnreadAnnouncements ? 1 : 0);
+  const hasUnreadAnnouncements = unreadAnnouncementsCount > 0;
+  const totalUnreadAnnouncements = unreadAnnouncementsCount;
 
   // Navigation State (Req: Accueil, Commande, Équipe, Chat, Mon compte + full-page operations)
   const [activeTab, setActiveTab] = useState<'home' | 'orders' | 'team' | 'chat' | 'profile' | 'deposit' | 'withdraw' | 'certificate' | 'announcements' | 'link_card' | 'proofs'>('home');

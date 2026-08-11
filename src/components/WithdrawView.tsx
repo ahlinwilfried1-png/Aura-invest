@@ -333,7 +333,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
       {/* 4. Règles de retrait */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-100/80 space-y-3.5 text-xs sm:text-sm text-slate-800 leading-relaxed font-sans">
         <p className="font-medium text-slate-800">
-          <strong className="font-extrabold text-slate-900">Règles de retrait :</strong> Le montant minimum de retrait est de 1 000 XAF, limité à un retrait par jour.
+          <strong className="font-extrabold text-slate-900">Règles de retrait :</strong> Le montant minimum de retrait est de 1 000 XAF, limité à 2 retraits par jour.
         </p>
 
         <p className="font-medium text-slate-800">

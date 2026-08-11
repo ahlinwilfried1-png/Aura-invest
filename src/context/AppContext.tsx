@@ -640,10 +640,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [announcements, setAnnouncements] = useState<Announcement[]>(() => {
+    const deletedIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_announcement_ids') || '[]');
     const data = localStorage.getItem('fintech_announcements');
     if (data) {
       try {
-        return JSON.parse(data);
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((a: any) => !deletedIds.includes(a.id));
+        }
       } catch (e) {
         // fallback
       }
@@ -714,15 +718,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isNew: true
       }
     ];
-    localStorage.setItem('fintech_announcements', JSON.stringify(defaultAnnouncements));
-    return defaultAnnouncements;
+    const filteredDefaults = defaultAnnouncements.filter(a => !deletedIds.includes(a.id));
+    localStorage.setItem('fintech_announcements', JSON.stringify(filteredDefaults));
+    return filteredDefaults;
   });
 
   const [faqs, setFaqs] = useState<FaqItem[]>(() => {
+    const deletedIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_faq_ids') || '[]');
     const data = localStorage.getItem('fintech_faqs');
     if (data) {
       try {
-        return JSON.parse(data);
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((f: any) => !deletedIds.includes(f.id));
+        }
       } catch (e) {
         console.error(e);
       }
@@ -777,8 +786,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createdAt: new Date().toISOString()
       }
     ];
-    localStorage.setItem('fintech_faqs', JSON.stringify(defaultFaqs));
-    return defaultFaqs;
+    const filteredDefaults = defaultFaqs.filter(f => !deletedIds.includes(f.id));
+    localStorage.setItem('fintech_faqs', JSON.stringify(filteredDefaults));
+    return filteredDefaults;
   });
 
   const [wellnessProducts, setWellnessProducts] = useState<WellnessProduct[]>(() => {
@@ -935,13 +945,71 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (dbCommissions && dbCommissions.length > 0) setCommissions(dbCommissions);
 
       const dbBonusCodes = await fetchTableData<BonusCode>('bonus_codes');
-      if (dbBonusCodes && dbBonusCodes.length > 0) setBonusCodes(dbBonusCodes);
+      if (dbBonusCodes && dbBonusCodes.length > 0) {
+        setBonusCodes(prev => {
+          const codeMap = new Map<string, BonusCode>();
+          prev.forEach(b => codeMap.set(b.code.toUpperCase(), b));
+          dbBonusCodes.forEach(dbB => {
+            const clean = dbB.code.toUpperCase();
+            const existing = codeMap.get(clean);
+            if (!existing) {
+              codeMap.set(clean, dbB);
+            } else {
+              const mergedUsedBy = Array.from(new Set([...existing.usedBy, ...(dbB.usedBy || [])]));
+              codeMap.set(clean, {
+                ...existing,
+                ...dbB,
+                usedBy: mergedUsedBy
+              });
+            }
+          });
+          const merged = Array.from(codeMap.values());
+          localStorage.setItem('fintech_bonus_codes', JSON.stringify(merged));
+          return merged;
+        });
+      }
 
       const dbAnnouncements = await fetchTableData<Announcement>('announcements');
-      if (dbAnnouncements && dbAnnouncements.length > 0) setAnnouncements(dbAnnouncements);
+      if (dbAnnouncements && dbAnnouncements.length > 0) {
+        setAnnouncements(prev => {
+          const deletedIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_announcement_ids') || '[]');
+          const annMap = new Map<string, Announcement>();
+          dbAnnouncements.forEach(a => {
+            if (!deletedIds.includes(a.id)) {
+              annMap.set(a.id, a);
+            }
+          });
+          prev.forEach(a => {
+            if (!deletedIds.includes(a.id) && !annMap.has(a.id)) {
+              annMap.set(a.id, a);
+            }
+          });
+          const filtered = Array.from(annMap.values());
+          localStorage.setItem('fintech_announcements', JSON.stringify(filtered));
+          return filtered;
+        });
+      }
 
       const dbFaqs = await fetchTableData<FaqItem>('faqs');
-      if (dbFaqs && dbFaqs.length > 0) setFaqs(dbFaqs);
+      if (dbFaqs && dbFaqs.length > 0) {
+        setFaqs(prev => {
+          const deletedIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_faq_ids') || '[]');
+          const faqMap = new Map<string, FaqItem>();
+          dbFaqs.forEach(f => {
+            if (!deletedIds.includes(f.id)) {
+              faqMap.set(f.id, f);
+            }
+          });
+          prev.forEach(f => {
+            if (!deletedIds.includes(f.id) && !faqMap.has(f.id)) {
+              faqMap.set(f.id, f);
+            }
+          });
+          const filtered = Array.from(faqMap.values());
+          localStorage.setItem('fintech_faqs', JSON.stringify(filtered));
+          return filtered;
+        });
+      }
 
       const dbWellness = await fetchTableData<WellnessProduct>('wellness_products');
       if (dbWellness && dbWellness.length > 0) {
@@ -1009,9 +1077,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (e.key === 'fintech_announcements' && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
-          setAnnouncements(parsed);
+          const deletedAnnIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_announcement_ids') || '[]');
+          setAnnouncements(parsed.filter((a: any) => !deletedAnnIds.includes(a.id)));
         } catch (err) {
           console.error("Storage sync announcements error:", err);
+        }
+      }
+      if (e.key === 'fintech_faqs' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          const deletedFaqIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_faq_ids') || '[]');
+          setFaqs(parsed.filter((f: any) => !deletedFaqIds.includes(f.id)));
+        } catch (err) {
+          console.error("Storage sync faqs error:", err);
+        }
+      }
+      if (e.key === 'fintech_bonus_codes' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          setBonusCodes(parsed);
+        } catch (err) {
+          console.error("Storage sync bonus codes error:", err);
         }
       }
     };
@@ -1045,10 +1131,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const handleCustomAnnouncementsChanged = (evt: Event) => {
       const customEvt = evt as CustomEvent;
       if (customEvt.detail && Array.isArray(customEvt.detail)) {
-        setAnnouncements(customEvt.detail);
+        const deletedAnnIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_announcement_ids') || '[]');
+        setAnnouncements(customEvt.detail.filter((a: any) => !deletedAnnIds.includes(a.id)));
       }
     };
     window.addEventListener('nutrien_announcements_changed', handleCustomAnnouncementsChanged);
+
+    const handleCustomFaqsChanged = (evt: Event) => {
+      const customEvt = evt as CustomEvent;
+      if (customEvt.detail && Array.isArray(customEvt.detail)) {
+        const deletedFaqIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_faq_ids') || '[]');
+        setFaqs(customEvt.detail.filter((f: any) => !deletedFaqIds.includes(f.id)));
+      }
+    };
+    window.addEventListener('nutrien_faqs_changed', handleCustomFaqsChanged);
+
+    const handleCustomBonusCodesChanged = (evt: Event) => {
+      const customEvt = evt as CustomEvent;
+      if (customEvt.detail && Array.isArray(customEvt.detail)) {
+        setBonusCodes(customEvt.detail);
+      }
+    };
+    window.addEventListener('nutrien_bonus_codes_changed', handleCustomBonusCodesChanged);
 
     // Fast local polling interval (1s) to ensure instant cross-view & cross-window state updates
     const ticketPollInterval = setInterval(() => {
@@ -1071,9 +1175,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
           const parsedAnn = JSON.parse(storedAnn);
           if (Array.isArray(parsedAnn)) {
+            const deletedAnnIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_announcement_ids') || '[]');
+            const filtered = parsedAnn.filter((a: any) => !deletedAnnIds.includes(a.id));
             setAnnouncements(prev => {
-              if (JSON.stringify(prev) !== JSON.stringify(parsedAnn)) {
-                return parsedAnn;
+              if (JSON.stringify(prev) !== JSON.stringify(filtered)) {
+                return filtered;
+              }
+              return prev;
+            });
+          }
+        } catch {}
+      }
+      const storedFaqs = localStorage.getItem('fintech_faqs');
+      if (storedFaqs) {
+        try {
+          const parsedFaqs = JSON.parse(storedFaqs);
+          if (Array.isArray(parsedFaqs)) {
+            const deletedFaqIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_faq_ids') || '[]');
+            const filtered = parsedFaqs.filter((f: any) => !deletedFaqIds.includes(f.id));
+            setFaqs(prev => {
+              if (JSON.stringify(prev) !== JSON.stringify(filtered)) {
+                return filtered;
+              }
+              return prev;
+            });
+          }
+        } catch {}
+      }
+      const storedBonus = localStorage.getItem('fintech_bonus_codes');
+      if (storedBonus) {
+        try {
+          const parsedBonus = JSON.parse(storedBonus);
+          if (Array.isArray(parsedBonus)) {
+            setBonusCodes(prev => {
+              if (JSON.stringify(prev) !== JSON.stringify(parsedBonus)) {
+                return parsedBonus;
               }
               return prev;
             });
@@ -1104,6 +1240,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       window.removeEventListener('nutrien_tickets_changed', handleCustomTicketsChanged);
       window.removeEventListener('nutrien_wellness_changed', handleCustomWellnessChanged);
       window.removeEventListener('nutrien_announcements_changed', handleCustomAnnouncementsChanged);
+      window.removeEventListener('nutrien_faqs_changed', handleCustomFaqsChanged);
+      window.removeEventListener('nutrien_bonus_codes_changed', handleCustomBonusCodesChanged);
     };
   }, []);
 
@@ -1197,6 +1335,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('fintech_announcements', JSON.stringify(announcements));
     syncTableData('announcements', announcements);
   }, [announcements]);
+
+  useEffect(() => {
+    localStorage.setItem('fintech_faqs', JSON.stringify(faqs));
+    syncTableData('faqs', faqs);
+  }, [faqs]);
 
   useEffect(() => {
     localStorage.setItem('fintech_revenue_logs', JSON.stringify(revenueLogs));
@@ -1801,42 +1944,65 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!currentUser) return { success: false, error: "Non connecté." };
     
     const cleanCode = code.trim().toUpperCase();
-    const bonus = bonusCodes.find(b => b.code === cleanCode);
+    const bonus = bonusCodes.find(b => b.code.toUpperCase() === cleanCode);
     
     if (!bonus) {
       return { success: false, error: "Code promo invalide ou expiré." };
     }
     
-    if (bonus.usedBy.includes(currentUser.id)) {
+    if (bonus.usedBy && bonus.usedBy.includes(currentUser.id)) {
       return { success: false, error: "Vous avez déjà réclamé ce code bonus." };
     }
     
-    if (bonus.usedBy.length >= bonus.maxUses) {
+    if (bonus.usedBy && bonus.usedBy.length >= bonus.maxUses) {
       return { success: false, error: "Ce code bonus a atteint sa limite d'utilisation." };
     }
     
     // Update code uses
-    setBonusCodes(prev => prev.map(b => {
-      if (b.code === cleanCode) {
+    const updatedBonusCodes = bonusCodes.map(b => {
+      if (b.code.toUpperCase() === cleanCode) {
         return {
           ...b,
-          usedBy: [...b.usedBy, currentUser.id]
+          usedBy: [...(b.usedBy || []), currentUser.id]
         };
       }
       return b;
-    }));
+    });
+    setBonusCodes(updatedBonusCodes);
+    localStorage.setItem('fintech_bonus_codes', JSON.stringify(updatedBonusCodes));
+    syncTableData('bonus_codes', updatedBonusCodes);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nutrien_bonus_codes_changed', { detail: updatedBonusCodes }));
+      window.dispatchEvent(new Event('storage'));
+    }
     
     // Credit User balance
-    setUsers(prev => prev.map(u => {
+    const updatedUsers = users.map(u => {
       if (u.id === currentUser.id) {
         return {
           ...u,
-          balance: u.balance + bonus.amount,
-          totalEarnings: u.totalEarnings + bonus.amount
+          balance: (u.balance || 0) + bonus.amount,
+          totalEarnings: (u.totalEarnings || 0) + bonus.amount
         };
       }
       return u;
-    }));
+    });
+    setUsers(updatedUsers);
+    localStorage.setItem('fintech_users', JSON.stringify(updatedUsers));
+    syncTableData('users', updatedUsers);
+
+    const updatedCurrent = {
+      ...currentUser,
+      balance: (currentUser.balance || 0) + bonus.amount,
+      totalEarnings: (currentUser.totalEarnings || 0) + bonus.amount
+    };
+    setCurrentUser(updatedCurrent);
+    localStorage.setItem('fintech_current_user', JSON.stringify(updatedCurrent));
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nutrien_users_changed', { detail: updatedUsers }));
+      window.dispatchEvent(new Event('storage'));
+    }
     
     return { success: true, amount: bonus.amount };
   };
@@ -2159,7 +2325,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const cleanCode = code.trim().toUpperCase();
     if (!cleanCode) return { success: false, error: "Le code ne peut pas être vide." };
     
-    if (bonusCodes.some(b => b.code === cleanCode)) {
+    if (bonusCodes.some(b => b.code.toUpperCase() === cleanCode)) {
       return { success: false, error: "Ce code bonus existe déjà." };
     }
     
@@ -2171,7 +2337,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString()
     };
     
-    setBonusCodes(prev => [newCode, ...prev]);
+    const updatedBonusCodes = [newCode, ...bonusCodes];
+    setBonusCodes(updatedBonusCodes);
+    localStorage.setItem('fintech_bonus_codes', JSON.stringify(updatedBonusCodes));
+    syncTableData('bonus_codes', updatedBonusCodes);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nutrien_bonus_codes_changed', { detail: updatedBonusCodes }));
+      window.dispatchEvent(new Event('storage'));
+    }
+    
     return { success: true };
   };
 
@@ -2377,10 +2551,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteAnnouncement = (id: string) => {
+    const deletedAnnIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_announcement_ids') || '[]');
+    if (!deletedAnnIds.includes(id)) {
+      deletedAnnIds.push(id);
+      localStorage.setItem('aurainvest_deleted_announcement_ids', JSON.stringify(deletedAnnIds));
+    }
     setAnnouncements(prev => {
       const updated = prev.filter(a => a.id !== id);
       localStorage.setItem('fintech_announcements', JSON.stringify(updated));
       deleteRecord('announcements', id);
+      syncTableData('announcements', updated);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('nutrien_announcements_changed', { detail: updated }));
         window.dispatchEvent(new Event('storage'));
@@ -2415,6 +2595,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const updated = [newFaqItem, ...prev];
       localStorage.setItem('fintech_faqs', JSON.stringify(updated));
       syncTableData('faqs', updated);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_faqs_changed', { detail: updated }));
+        window.dispatchEvent(new Event('storage'));
+      }
       return updated;
     });
   };
@@ -2434,15 +2618,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       localStorage.setItem('fintech_faqs', JSON.stringify(updated));
       syncTableData('faqs', updated);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_faqs_changed', { detail: updated }));
+        window.dispatchEvent(new Event('storage'));
+      }
       return updated;
     });
   };
 
   const deleteFaq = (id: string) => {
+    const deletedFaqIds: string[] = JSON.parse(localStorage.getItem('aurainvest_deleted_faq_ids') || '[]');
+    if (!deletedFaqIds.includes(id)) {
+      deletedFaqIds.push(id);
+      localStorage.setItem('aurainvest_deleted_faq_ids', JSON.stringify(deletedFaqIds));
+    }
     setFaqs(prev => {
       const updated = prev.filter(f => f.id !== id);
       localStorage.setItem('fintech_faqs', JSON.stringify(updated));
       deleteRecord('faqs', id);
+      syncTableData('faqs', updated);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nutrien_faqs_changed', { detail: updated }));
+        window.dispatchEvent(new Event('storage'));
+      }
       return updated;
     });
   };
