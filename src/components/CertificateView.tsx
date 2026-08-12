@@ -14,7 +14,7 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
   onBack,
   onShowToast
 }) => {
-  const { withdrawalProofs, addWithdrawalProof } = useApp();
+  const { withdrawalProofs, withdrawals, addWithdrawalProof } = useApp();
 
   // Submission form toggle & states
   const [showUploadForm, setShowUploadForm] = useState<boolean>(false);
@@ -24,39 +24,119 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
   const [imageInput, setImageInput] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Filter all published proofs (non-rejected) for public view across all accounts
-  const approvedProofs = withdrawalProofs.filter(p => p.status !== 'rejected');
+  // Combine published proofs and system-approved withdrawals so all proofs are visibly available across all user accounts
+  const approvedProofs = React.useMemo(() => {
+    const list = [...(withdrawalProofs || []).filter(p => p.status !== 'rejected')];
+    const existingProofIds = new Set(list.map(p => p.id));
+    
+    (withdrawals || []).forEach(w => {
+      if (w.status === 'approved') {
+        const proofId = 'proof-auto-' + w.id;
+        if (!existingProofIds.has(proofId) && !existingProofIds.has(w.id)) {
+          const rawPhone = (w.userPhone || w.accountNumber || '').trim();
+          let maskedPhone = rawPhone;
+          if (rawPhone.length >= 6) {
+            maskedPhone = `${rawPhone.slice(0, 3)}****${rawPhone.slice(-3)}`;
+          } else if (rawPhone.length > 0) {
+            maskedPhone = `****${rawPhone.slice(-2)}`;
+          } else {
+            maskedPhone = '****';
+          }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        onShowToast('err', "L'image ne doit pas dépasser 5 Mo.");
-        return;
+          list.push({
+            id: proofId,
+            userId: w.userId,
+            userName: w.userName || 'Membre VIP',
+            userPhone: maskedPhone,
+            amount: w.amount,
+            network: w.network || 'Mobile Money',
+            message: 'Retrait validé et payé avec succès par Nutrien.',
+            imageUrl: null,
+            createdAt: w.createdAt ? w.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+            isVerified: true,
+            status: 'approved'
+          });
+        }
       }
+    });
+
+    return list;
+  }, [withdrawalProofs, withdrawals]);
+
+  // Image Compression Helper - Never fails
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImageInput(reader.result as string);
-        onShowToast('success', "Capture de preuve chargée !");
+      reader.onerror = () => resolve('');
+      reader.onload = (event) => {
+        const rawDataUrl = (event.target?.result as string) || '';
+        if (!rawDataUrl) {
+          resolve('');
+          return;
+        }
+        const img = new Image();
+        img.onerror = () => resolve(rawDataUrl);
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const maxWidth = 600;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+
+            canvas.width = width || 300;
+            canvas.height = height || 300;
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              resolve(rawDataUrl);
+              return;
+            }
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+            resolve(dataUrl || rawDataUrl);
+          } catch (e) {
+            resolve(rawDataUrl);
+          }
+        };
+        img.src = rawDataUrl;
       };
       reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsSubmitting(true);
+      try {
+        const compressedDataUrl = await compressImage(file);
+        if (compressedDataUrl) {
+          setImageInput(compressedDataUrl);
+          onShowToast('success', "Capture de preuve chargée !");
+        } else {
+          onShowToast('err', "Impossible de lire la capture.");
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amountInput || amountInput <= 0) {
-      onShowToast('err', "Veuillez entrer un montant valide.");
-      return;
-    }
-    if (!messageInput.trim()) {
-      onShowToast('err', "Veuillez ajouter un commentaire de satisfaction.");
-      return;
-    }
+    const finalAmount = Number(amountInput) > 0 ? Number(amountInput) : 2000;
+    const finalMessage = messageInput.trim() || `Retrait reçu avec succès via ${networkInput}. Merci Nutrien !`;
 
     setIsSubmitting(true);
     setTimeout(() => {
-      const res = addWithdrawalProof(amountInput, networkInput, messageInput, imageInput);
+      const res = addWithdrawalProof(finalAmount, networkInput, finalMessage, imageInput);
       setIsSubmitting(false);
 
       if (res.success) {
@@ -67,7 +147,7 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
       } else {
         onShowToast('err', res.error || "Une erreur est survenue lors de l'envoi.");
       }
-    }, 200);
+    }, 150);
   };
 
   return (
@@ -139,6 +219,24 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
 
             <div>
               <label className="block text-[10px] font-bold text-slate-700 mb-0.5">
+                Moyen de paiement / Réseau
+              </label>
+              <select
+                value={networkInput}
+                onChange={(e) => setNetworkInput(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-slate-900 font-bold text-xs outline-none focus:border-slate-900"
+              >
+                <option value="Mobile Money">Mobile Money</option>
+                <option value="Wave">Wave</option>
+                <option value="Orange Money">Orange Money</option>
+                <option value="MTN Mobile Money">MTN Mobile Money</option>
+                <option value="Moov Money">Moov Money</option>
+                <option value="Telecel Cash">Telecel Cash</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-slate-700 mb-0.5">
                 Montant du retrait (XOF/FCFA)
               </label>
               <input
@@ -179,9 +277,12 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
                   className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                 />
                 {imageInput ? (
-                  <div className="flex items-center justify-center space-x-2">
-                    <img src={imageInput} alt="Aperçu" className="h-8 w-8 object-cover rounded border border-slate-300" />
-                    <span className="text-[10px] font-bold text-emerald-600">Image chargée !</span>
+                  <div className="flex flex-col items-center justify-center p-1 space-y-1">
+                    <img src={imageInput} alt="Aperçu" className="max-h-28 max-w-full object-contain rounded-md border border-slate-300 shadow-2xs" />
+                    <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      Image chargée avec succès (cliquez pour remplacer)
+                    </span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center space-y-0.5">
@@ -265,20 +366,20 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
                       )}
                     </div>
 
-                    {/* Right Column: Reduced Mobile Screenshot Frame */}
+                    {/* Right Column: Mobile Screenshot Frame */}
                     <div className="shrink-0">
                       {proof.imageUrl ? (
-                        <div className="w-10 sm:w-12 h-12 sm:h-14 rounded border border-slate-700 overflow-hidden bg-slate-950 relative group cursor-pointer">
+                        <div className="w-16 sm:w-20 h-20 sm:h-24 rounded-lg border border-slate-300 overflow-hidden bg-slate-900 shadow-2xs flex items-center justify-center">
                           <img
                             src={proof.imageUrl}
                             alt="Preuve de retrait"
-                            className="w-full h-full object-cover object-top"
+                            className="w-full h-full object-cover object-top pointer-events-none select-none"
                           />
                         </div>
                       ) : (
-                        <div className="w-10 sm:w-12 h-12 sm:h-14 rounded border border-slate-200/80 bg-slate-50 flex flex-col items-center justify-center p-0.5 text-center text-slate-400">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-500 mb-0.5" />
-                          <span className="text-[8px] font-bold text-slate-500 leading-tight">Confirmé</span>
+                        <div className="w-14 sm:w-16 h-16 sm:h-18 rounded-lg border border-slate-200/80 bg-slate-50 flex flex-col items-center justify-center p-1 text-center text-slate-400">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 mb-0.5" />
+                          <span className="text-[8px] font-bold text-slate-600 leading-tight">Reçu Confirmé</span>
                         </div>
                       )}
                     </div>

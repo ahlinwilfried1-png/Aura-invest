@@ -182,19 +182,19 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
                 Canal WhatsApp Officiel
               </div>
               <div className="text-xs sm:text-sm font-extrabold text-slate-900">
-                Rejoindre la communauté WhatsApp
+                Rejoindre la chaîne WhatsApp
               </div>
             </div>
           </div>
 
           <a
-            href="https://wa.me/22501010101"
+            href="https://whatsapp.com/channel/0029Vb8YR5RInlqVFq9AOa33"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full sm:w-auto bg-[#25D366] hover:bg-[#20ba5a] active:scale-[0.98] text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-1.5 shrink-0 shadow-xs"
           >
             <MessageCircle className="w-4 h-4 fill-white text-white" />
-            <span>Rejoindre canal</span>
+            <span>Rejoindre la chaîne</span>
           </a>
         </div>
 
@@ -467,6 +467,36 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
             <span>COPIER MON LIEN DE PARRAINAGE</span>
           </button>
         </div>
+      </div>
+
+      {/* 4. CANAL WHATSAPP OFFICIEL POUR LES TIRAGES AU SORT */}
+      <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-700 text-white rounded-3xl p-4 sm:p-5 shadow-2xs space-y-3.5">
+        <div className="flex items-start space-x-3">
+          <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0">
+            <MessageCircle className="w-5 h-5 fill-white text-white" />
+          </div>
+          <div className="space-y-1 min-w-0 flex-1">
+            <div className="text-[10px] font-black uppercase tracking-wider text-emerald-200">
+              Résultats & Lots du Tirage
+            </div>
+            <h4 className="text-sm sm:text-base font-extrabold tracking-tight leading-snug">
+              Chaîne WhatsApp Officielle des Tirages
+            </h4>
+            <p className="text-xs text-emerald-100 font-medium leading-relaxed">
+              Suivez la publication quotidienne des gagnants, les événements spéciaux de tirage au sort et les codes bonus exclusifs sur notre chaîne.
+            </p>
+          </div>
+        </div>
+
+        <a
+          href="https://whatsapp.com/channel/0029Vb8YR5RInlqVFq9AOa33"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full bg-white hover:bg-emerald-50 active:scale-[0.99] text-emerald-800 font-extrabold text-xs sm:text-sm py-3.5 rounded-2xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-xs"
+        >
+          <MessageCircle className="w-4 h-4 fill-emerald-700 text-emerald-700" />
+          <span>REJOINDRE LA CHAÎNE WHATSAPP</span>
+        </a>
       </div>
 
     </div>

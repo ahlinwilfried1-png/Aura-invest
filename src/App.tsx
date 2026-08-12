@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { AuthPages } from './components/AuthPages';
 import { DashboardLayout } from './components/DashboardLayout';
+import { safeSetLocalStorage } from './lib/storage';
 
 function AppContent() {
   const {
@@ -62,7 +63,7 @@ function AppContent() {
       params.get('referral');
 
     if (refCode) {
-      localStorage.setItem('aurainvest_ref_code', refCode);
+      safeSetLocalStorage('aurainvest_ref_code', refCode);
       if (!currentUser) {
         setNavigationMode('register');
       }
@@ -72,9 +73,10 @@ function AppContent() {
   // Sync navigation mode when user state changes
   useEffect(() => {
     if (currentUser) {
-      setNavigationMode('login'); // Handled natively by dashboard view check below
+      setNavigationMode('login');
     } else {
-      setNavigationMode('register'); // Always default to registration page for new/unauthenticated users
+      // Unauthenticated users land on the registration page automatically
+      setNavigationMode('register');
     }
   }, [currentUser]);
 

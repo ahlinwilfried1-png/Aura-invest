@@ -100,7 +100,7 @@ interface DashboardLayoutProps {
   logout: () => void;
   updateProfile: (data: { name: string; whatsapp: string; country: string }) => void;
   changePassword: (oldWord: string, newWord: string) => { success: boolean; error?: string };
-  buyInvestment: (productId: string) => { success: boolean; error?: string };
+  buyInvestment: (productId: string, quantity?: number) => { success: boolean; error?: string };
   claimDailyEarning: (investmentId: string) => { success: boolean; error?: string };
   requestDeposit: (amount: number, method: any, transactionId: string, screenshotUrl: string | null) => { success: boolean; error?: string };
   requestWithdrawal: (amount: number, network: any, accountNumber: string) => { success: boolean; error?: string };
@@ -172,7 +172,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const totalUnreadAnnouncements = unreadAnnouncementsCount;
 
   // Navigation State (Req: Accueil, Commande, Équipe, Chat, Mon compte + full-page operations)
-  const [activeTab, setActiveTab] = useState<'home' | 'orders' | 'team' | 'chat' | 'profile' | 'deposit' | 'withdraw' | 'certificate' | 'announcements' | 'link_card' | 'proofs'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'orders' | 'team' | 'chat' | 'profile' | 'deposit' | 'withdraw' | 'certificate' | 'announcements' | 'link_card' | 'proofs' | 'service_client'>('home');
 
   const navigateToHome = () => {
     setSelectedProductDetail(null);

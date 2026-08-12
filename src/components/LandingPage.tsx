@@ -37,7 +37,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col relative overflow-hidden font-sans">
       {/* Floating WhatsApp Sticky Action */}
       <a 
-        href="https://wa.me/22501010101" 
+        href="https://whatsapp.com/channel/0029Vb8YR5RInlqVFq9AOa33" 
         target="_blank" 
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 z-50 bg-[#25D366] hover:bg-[#20ba5a] text-white p-4 rounded-full shadow-xl shadow-green-500/20 flex items-center justify-center transition-transform hover:scale-110 group cursor-pointer"
@@ -45,7 +45,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
       >
         <MessageCircle className="w-6 h-6 fill-white text-green-500" />
         <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out whitespace-nowrap text-sm font-bold pl-0 group-hover:pl-2">
-          Support WhatsApp
+          Chaîne WhatsApp
         </span>
       </a>
 

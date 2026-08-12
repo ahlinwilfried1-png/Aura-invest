@@ -238,7 +238,7 @@ export const DepositView: React.FC<DepositViewProps> = ({
 
             <button
               type="button"
-              onClick={() => onShowToast('info', "Service Client Nutrien 24/7 disponible.")}
+              onClick={() => onShowToast('success', "Service Client Nutrien 24/7 disponible.")}
               className="bg-slate-900 hover:bg-slate-800 text-amber-400 rounded-xl px-3 py-2 flex items-center space-x-1.5 cursor-pointer shrink-0"
               title="Support Client"
             >

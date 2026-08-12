@@ -7,8 +7,8 @@ export interface User {
   id: string;
   name: string;
   phone: string;
-  whatsapp: string;
-  country: string;
+  whatsapp?: string;
+  country?: string;
   balance: number;
   dailyEarnings: number;
   totalEarnings: number;
@@ -17,13 +17,15 @@ export interface User {
   createdAt: string;
   role: 'admin' | 'user';
   referralCode: string;
-  referredByCode: string | null;
+  referredByCode?: string | null;
   withdrawalAccountName?: string;
   withdrawalAccountNumber?: string;
   withdrawalNetwork?: string;
   withdrawalCountry?: string;
   withdrawalPinHash?: string;
   drawTickets?: number;
+  referralsCount?: number;
+  teamBenefits?: number;
 }
 
 export interface WheelPrize {
@@ -76,6 +78,9 @@ export interface UserInvestment {
   daysRemaining: number;
   purchaseDate: string;
   lastClaimDate: string;
+  claimsHistory?: string[];
+  totalGain?: number;
+  quantity?: number;
 }
 
 export interface DepositRequest {

@@ -12,7 +12,7 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
   onBack,
   telegramUrl = "https://t.me/tamashi_official",
   whatsappServiceUrl = "https://wa.me/22501010101",
-  whatsappChannelUrl = "https://whatsapp.com/channel/0029VaXXXXXXXXXX"
+  whatsappChannelUrl = "https://whatsapp.com/channel/0029Vb8YR5RInlqVFq9AOa33"
 }) => {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 pb-20 font-sans animate-fadeIn">

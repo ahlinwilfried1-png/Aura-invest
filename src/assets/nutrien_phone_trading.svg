@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="100%" height="100%">
+  <defs>
+    <!-- Laptop screen background gradient -->
+    <linearGradient id="laptopBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="40%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </linearGradient>
+
+    <!-- Candlestick chart glow -->
+    <filter id="chartGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- Phone screen green gradient -->
+    <linearGradient id="nutrienScreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00e676"/>
+      <stop offset="50%" stop-color="#00c853"/>
+      <stop offset="100%" stop-color="#00a13e"/>
+    </linearGradient>
+
+    <!-- Phone bezel & metal finish -->
+    <linearGradient id="phoneBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="15" stdDeviation="20" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- BACKGROUND: LAPTOP SCREEN WITH FINANCIAL STOCK CHARTS -->
+  <rect width="1200" height="675" fill="url(#laptopBg)"/>
+
+  <!-- Laptop Screen Grid Lines -->
+  <g opacity="0.15" stroke="#38bdf8" stroke-width="1" stroke-dasharray="4,4">
+    <line x1="0" y1="100" x2="1200" y2="100" />
+    <line x1="0" y1="200" x2="1200" y2="200" />
+    <line x1="0" y1="300" x2="1200" y2="300" />
+    <line x1="0" y1="400" x2="1200" y2="400" />
+    <line x1="200" y1="0" x2="200" y2="675" />
+    <line x1="400" y1="0" x2="400" y2="675" />
+    <line x1="600" y1="0" x2="600" y2="675" />
+    <line x1="800" y1="0" x2="800" y2="675" />
+    <line x1="1000" y1="0" x2="1000" y2="675" />
+  </g>
+
+  <!-- Financial Candlesticks Chart in Background (Blurred/Atmospheric) -->
+  <g opacity="0.45" filter="url(#chartGlow)">
+    <!-- Bullish Green Candles -->
+    <line x1="650" y1="120" x2="650" y2="280" stroke="#22c55e" stroke-width="2"/>
+    <rect x="642" y="150" width="16" height="90" fill="#22c55e" rx="2"/>
+
+    <line x1="710" y1="100" x2="710" y2="240" stroke="#22c55e" stroke-width="2"/>
+    <rect x="702" y="120" width="16" height="80" fill="#22c55e" rx="2"/>
+
+    <line x1="770" y1="80" x2="770" y2="210" stroke="#22c55e" stroke-width="2"/>
+    <rect x="762" y="90" width="16" height="100" fill="#22c55e" rx="2"/>
+
+    <!-- Bearish Red Candles -->
+    <line x1="830" y1="90" x2="830" y2="260" stroke="#ef4444" stroke-width="2"/>
+    <rect x="822" y="110" width="16" height="120" fill="#ef4444" rx="2"/>
+
+    <line x1="890" y1="180" x2="890" y2="310" stroke="#ef4444" stroke-width="2"/>
+    <rect x="882" y="200" width="16" height="80" fill="#ef4444" rx="2"/>
+
+    <!-- Upward Trend Line -->
+    <path d="M 600,260 Q 750,150 950,80 T 1150,120" fill="none" stroke="#22c55e" stroke-width="4" opacity="0.8"/>
+    <path d="M 600,280 Q 750,170 950,100 T 1150,140" fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6,6" opacity="0.6"/>
+  </g>
+
+  <!-- LAPTOP KEYBOARD (BOTTOM RIGHT FOREGROUND) -->
+  <path d="M 500,450 L 1200,380 L 1200,675 L 350,675 Z" fill="#0f172a" opacity="0.95"/>
+  <path d="M 500,450 L 1200,380" stroke="#334155" stroke-width="3"/>
+  
+  <!-- Keyboard Keys Rows -->
+  <g fill="#1e293b" stroke="#334155" stroke-width="1.5" opacity="0.8">
+    <rect x="680" y="460" width="55" height="35" rx="4" transform="skewX(-20)"/>
+    <rect x="745" y="455" width="55" height="35" rx="4" transform="skewX(-20)"/>
+    <rect x="810" y="450" width="55" height="35" rx="4" transform="skewX(-20)"/>
+    <rect x="875" y="445" width="55" height="35" rx="4" transform="skewX(-20)"/>
+    <rect x="940" y="440" width="55" height="35" rx="4" transform="skewX(-20)"/>
+
+    <rect x="660" y="510" width="60" height="38" rx="4" transform="skewX(-20)"/>
+    <rect x="730" y="505" width="60" height="38" rx="4" transform="skewX(-20)"/>
+    <rect x="800" y="500" width="60" height="38" rx="4" transform="skewX(-20)"/>
+    <rect x="870" y="495" width="60" height="38" rx="4" transform="skewX(-20)"/>
+
+    <rect x="640" y="565" width="65" height="42" rx="4" transform="skewX(-20)"/>
+    <rect x="715" y="560" width="65" height="42" rx="4" transform="skewX(-20)"/>
+    <rect x="790" y="555" width="65" height="42" rx="4" transform="skewX(-20)"/>
+    <rect x="865" y="550" width="65" height="42" rx="4" transform="skewX(-20)"/>
+  </g>
+
+  <!-- FOREGROUND WHITE NOTEBOOK / DESK SURFACE (BOTTOM LEFT) -->
+  <polygon points="0,320 620,380 480,675 0,675" fill="#f8fafc" />
+  <!-- Notebook Spiral Rings -->
+  <g fill="#94a3b8" opacity="0.6">
+    <ellipse cx="60" cy="350" rx="12" ry="5"/>
+    <ellipse cx="60" cy="380" rx="12" ry="5"/>
+    <ellipse cx="60" cy="410" rx="12" ry="5"/>
+    <ellipse cx="60" cy="440" rx="12" ry="5"/>
+    <ellipse cx="60" cy="470" rx="12" ry="5"/>
+    <ellipse cx="60" cy="500" rx="12" ry="5"/>
+    <ellipse cx="60" cy="530" rx="12" ry="5"/>
+    <ellipse cx="60" cy="560" rx="12" ry="5"/>
+  </g>
+
+  <!-- THE MAIN FEATURE: SMARTPHONE WITH GREEN NUTRIEN SCREEN -->
+  <g filter="url(#shadow)">
+    <!-- Smartphone Body Outer Case -->
+    <rect x="180" y="280" width="720" height="330" rx="36" fill="url(#phoneBorder)" stroke="#475569" stroke-width="3" transform="rotate(-6, 540, 445)" />
+
+    <!-- Inner Screen Area (Vibrant Green) -->
+    <rect x="195" y="293" width="690" height="304" rx="26" fill="url(#nutrienScreen)" transform="rotate(-6, 540, 445)" />
+
+    <!-- Smartphone Camera Notch / Punchhole -->
+    <circle cx="225" cy="445" r="7" fill="#0f172a" />
+
+    <!-- NUTRIEN LOGO ON THE GREEN SCREEN -->
+    <g transform="translate(290, 360) rotate(-6) scale(1.65)">
+      <!-- Leaf Symbol in Yellow/Green Accent -->
+      <path d="M 28 12 C 16 12 8 20 8 32 C 8 44 16 52 28 52 C 40 52 48 44 48 32 C 48 20 40 12 28 12 Z" fill="#76ff03" opacity="0.9" />
+      <path d="M 28 12 C 38 12 48 22 48 32 C 38 32 28 22 28 12 Z" fill="#ccff90" />
+      <path d="M 28 22 C 22 28 20 38 22 46" stroke="#00c853" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+      <!-- "Nutrien" Bold Text -->
+      <text x="56" y="44" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="44" fill="#0a0a0a" letter-spacing="-1.5">
+        Nutrien
+      </text>
+    </g>
+
+    <!-- Screen Glass Shine / Reflection Highlight -->
+    <path d="M 195,293 L 600,293 L 350,597 L 195,597 Z" fill="#ffffff" opacity="0.12" transform="rotate(-6, 540, 445)"/>
+  </g>
+</svg>

@@ -1,0 +1,202 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="100%" height="100%">
+  <defs>
+    <!-- Sky & Background Gradients -->
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e2f1f8"/>
+      <stop offset="45%" stop-color="#f1f7fa"/>
+      <stop offset="100%" stop-color="#d4e6db"/>
+    </linearGradient>
+
+    <linearGradient id="fieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7a9a60"/>
+      <stop offset="30%" stop-color="#5a7a40"/>
+      <stop offset="100%" stop-color="#3b5626"/>
+    </linearGradient>
+
+    <!-- John Deere Green Gradients -->
+    <linearGradient id="jdGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#367c2b"/>
+      <stop offset="50%" stop-color="#285c20"/>
+      <stop offset="100%" stop-color="#1b4015"/>
+    </linearGradient>
+
+    <!-- John Deere Yellow Accent -->
+    <linearGradient id="jdYellow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffe100"/>
+      <stop offset="100%" stop-color="#e6cb00"/>
+    </linearGradient>
+
+    <!-- Tire Rubber Gradient -->
+    <linearGradient id="tireRubber" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="30%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+
+    <!-- Truck Metallic White -->
+    <linearGradient id="truckBody" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+
+    <!-- Tank Metallic Finish -->
+    <linearGradient id="tankMetal" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#cbd5e1"/>
+      <stop offset="30%" stop-color="#f8fafc"/>
+      <stop offset="70%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#64748b"/>
+    </linearGradient>
+
+    <!-- Shadow -->
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- SKY & LANDSCAPE BACKGROUND -->
+  <rect width="1200" height="420" fill="url(#skyGrad)" />
+  <rect y="380" width="1200" height="295" fill="url(#fieldGrad)" />
+
+  <!-- Grass lines / field texture -->
+  <g stroke="#324b1e" stroke-width="1.5" opacity="0.4">
+    <line x1="0" y1="420" x2="1200" y2="440" />
+    <line x1="0" y1="460" x2="1200" y2="480" />
+    <line x1="0" y1="510" x2="1200" y2="530" />
+    <line x1="0" y1="570" x2="1200" y2="590" />
+    <line x1="0" y1="630" x2="1200" y2="650" />
+  </g>
+
+  <!-- AGRICULTURAL SPRAYER TANK (BACKGROUND RIGHT) -->
+  <ellipse cx="980" cy="380" rx="160" ry="180" fill="url(#tankMetal)" stroke="#64748b" stroke-width="3" filter="url(#softShadow)"/>
+  <ellipse cx="980" cy="380" rx="130" ry="150" fill="none" stroke="#e2e8f0" stroke-width="2" opacity="0.6"/>
+
+  <!-- BACK WHEELS OF TRACTOR/SPRAYER -->
+  <!-- Back Left Wheel -->
+  <g fill="url(#tireRubber)" stroke="#020617" stroke-width="3">
+    <rect x="740" y="380" width="100" height="230" rx="30" />
+    <!-- Treads -->
+    <path d="M 740,400 L 780,385 L 800,400 L 760,415 Z" fill="#475569" />
+    <path d="M 740,440 L 780,425 L 800,440 L 760,455 Z" fill="#475569" />
+    <path d="M 740,480 L 780,465 L 800,480 L 760,495 Z" fill="#475569" />
+    <path d="M 740,520 L 780,505 L 800,520 L 760,535 Z" fill="#475569" />
+    <path d="M 740,560 L 780,545 L 800,560 L 760,575 Z" fill="#475569" />
+  </g>
+
+  <!-- Far Back Right Wheel -->
+  <g fill="url(#tireRubber)">
+    <rect x="1080" y="390" width="90" height="250" rx="28" />
+    <circle cx="1125" cy="515" r="30" fill="url(#jdYellow)"/>
+  </g>
+
+  <!-- MAIN FRONT RIGHT TIRE (MASSIVE TREADED TIRE) -->
+  <g fill="url(#tireRubber)" filter="url(#softShadow)">
+    <rect x="835" y="280" width="170" height="380" rx="50" transform="rotate(3, 920, 470)"/>
+    <!-- Yellow Rim -->
+    <ellipse cx="920" cy="470" rx="55" ry="85" fill="url(#jdYellow)" stroke="#ca8a04" stroke-width="4"/>
+    <circle cx="920" cy="470" r="22" fill="#1e293b"/>
+
+    <!-- Massive Deep V-Treads -->
+    <g fill="#475569">
+      <polygon points="840,310 910,290 940,315 870,335" />
+      <polygon points="840,360 910,340 940,365 870,385" />
+      <polygon points="840,410 910,390 940,415 870,435" />
+      <polygon points="840,460 910,440 940,465 870,485" />
+      <polygon points="840,510 910,490 940,515 870,535" />
+      <polygon points="840,560 910,540 940,565 870,585" />
+      <polygon points="840,610 910,590 940,615 870,635" />
+    </g>
+  </g>
+
+  <!-- FRONT LEFT TIRE -->
+  <g fill="url(#tireRubber)">
+    <rect x="390" y="320" width="115" height="310" rx="35" transform="rotate(-3, 447, 475)"/>
+    <ellipse cx="447" cy="475" rx="35" ry="60" fill="url(#jdYellow)"/>
+  </g>
+
+  <!-- SPRAYER FRAME & CHASSIS (JOHN DEERE GREEN & PIPES) -->
+  <g fill="url(#jdGreen)" stroke="#14360e" stroke-width="2">
+    <!-- Main Frame Pillars -->
+    <rect x="420" y="210" width="460" height="120" rx="10" />
+    <path d="M 450,120 L 780,120 L 800,240 L 410,240 Z" fill="#163810" />
+
+    <!-- Yellow Accent Stripe -->
+    <polygon points="410,200 820,200 810,215 410,215" fill="url(#jdYellow)"/>
+
+    <!-- Hood & Cab Base -->
+    <rect x="390" y="140" width="220" height="140" rx="12" fill="url(#jdGreen)"/>
+    
+    <!-- Front Grill Black Section -->
+    <rect x="392" y="160" width="120" height="100" rx="8" fill="#0f172a"/>
+    <circle cx="415" cy="185" r="10" fill="#fef08a"/> <!-- Headlight 1 -->
+    <circle cx="440" cy="185" r="10" fill="#fef08a"/> <!-- Headlight 2 -->
+    <!-- John Deere Logo Emblem -->
+    <circle cx="427" cy="220" r="11" fill="url(#jdYellow)"/>
+    <path d="M 423,215 L 431,218 L 425,225" fill="#15803d" />
+
+    <!-- Cab Glass & Frame -->
+    <path d="M 520,60 L 740,60 L 770,180 L 520,180 Z" fill="#0284c7" opacity="0.35" stroke="#1e293b" stroke-width="5"/>
+    <path d="M 520,60 L 740,60 L 770,180 L 520,180 Z" fill="none" stroke="#22c55e" stroke-width="6"/>
+    <!-- Cab Roof -->
+    <path d="M 500,50 L 760,50 L 750,70 L 510,70 Z" fill="url(#jdGreen)"/>
+    <!-- GPS Receiver / Yellow Dome on Roof -->
+    <ellipse cx="630" cy="45" rx="25" ry="10" fill="url(#jdYellow)"/>
+
+    <!-- Exhaust Pipe -->
+    <rect x="560" y="30" width="16" height="110" rx="4" fill="#1e293b"/>
+
+    <!-- Access Ladder & Safety Railings (Green Steel) -->
+    <g fill="none" stroke="url(#jdGreen)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+      <!-- Railings -->
+      <path d="M 460,330 L 570,160 L 720,160 L 800,280" />
+      <path d="M 480,340 L 580,180 L 710,180" />
+      <!-- Ladder Rungs -->
+      <path d="M 440,510 L 560,250" stroke-width="8"/>
+      <path d="M 470,510 L 590,250" stroke-width="8"/>
+      <line x1="460" y1="480" x2="490" y2="480" stroke-width="5"/>
+      <line x1="480" y1="440" x2="510" y2="440" stroke-width="5"/>
+      <line x1="500" y1="400" x2="530" y2="400" stroke-width="5"/>
+      <line x1="520" y1="360" x2="550" y2="360" stroke-width="5"/>
+      <line x1="540" y1="320" x2="570" y2="320" stroke-width="5"/>
+    </g>
+
+    <!-- Fire Extinguisher (Red Accent) -->
+    <rect x="710" y="170" width="14" height="35" rx="4" fill="#dc2626"/>
+  </g>
+
+  <!-- FOREGROUND LEFT: WHITE NUTRIEN AG SOLUTIONS TRUCK / SERVICE VEHICLE -->
+  <g filter="url(#softShadow)">
+    <!-- Truck Side Panel Body -->
+    <path d="M -50,-20 L 380,-20 L 320,530 L 260,680 L -50,680 Z" fill="url(#truckBody)" stroke="#cbd5e1" stroke-width="3"/>
+    <path d="M 380,-20 L 320,530" stroke="#94a3b8" stroke-width="4"/>
+
+    <!-- Vehicle Roof Light Beacon -->
+    <ellipse cx="330" cy="15" rx="45" ry="18" fill="#f59e0b" stroke="#b45309" stroke-width="2"/>
+
+    <!-- Truck Door Handle / Latch -->
+    <rect x="220" y="390" width="28" height="55" rx="8" fill="#1e293b" stroke="#64748b" stroke-width="2"/>
+    <rect x="230" y="405" width="8" height="25" rx="2" fill="#94a3b8"/>
+
+    <!-- NUTRIEN AG SOLUTIONS BRAND LOGO ON TRUCK SIDE -->
+    <g transform="translate(30, 80) scale(1.35)">
+      <!-- Leaf Icon (Green Leaf above the 'u' in Nutrien) -->
+      <path d="M 38 10 C 26 10 18 18 18 30 C 18 42 26 50 38 50 C 50 50 58 42 58 30 C 58 18 50 10 38 10 Z" fill="#22c55e" />
+      <path d="M 38 10 C 48 10 58 20 58 30 C 48 30 38 20 38 10 Z" fill="#86efac" />
+      <path d="M 38 20 C 32 26 30 36 32 44" stroke="#15803d" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+      <!-- "Nutrien" Main Logo Text -->
+      <text x="65" y="44" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="46" fill="#0f172a" letter-spacing="-1.5">
+        Nutrien
+      </text>
+
+      <!-- "Ag Solutions" Subtitle Text -->
+      <text x="20" y="88" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="30" fill="#334155" letter-spacing="-0.5">
+        Ag Solutions
+      </text>
+    </g>
+
+    <!-- Side Car Hood / Mirror Corner (Bottom Left Corner) -->
+    <path d="M -50,410 C 50,420 180,480 230,680 L -50,680 Z" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+    <path d="M -40,430 C 40,440 160,500 200,680" stroke="#38bdf8" stroke-width="3" fill="none" opacity="0.5"/>
+  </g>
+</svg>
