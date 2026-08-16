@@ -44,6 +44,7 @@ export const LinkBankCardView: React.FC<LinkBankCardViewProps> = ({
   const [pinCode, setPinCode] = useState<string>('');
 
   const [isSaved, setIsSaved] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const handleCountryChange = (code: string) => {
     if (isAlreadyBound) return;
@@ -54,7 +55,7 @@ export const LinkBankCardView: React.FC<LinkBankCardViewProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (isAlreadyBound) {
@@ -77,20 +78,27 @@ export const LinkBankCardView: React.FC<LinkBankCardViewProps> = ({
       return;
     }
 
-    const res = saveWithdrawalAccount(
-      accountName.trim(),
-      accountNumber.trim(),
-      pinCode.trim(),
-      network,
-      countryCode
-    );
+    setIsSubmitting(true);
+    try {
+      const res = await saveWithdrawalAccount(
+        accountName.trim(),
+        accountNumber.trim(),
+        pinCode.trim(),
+        network,
+        countryCode
+      );
 
-    if (res.success) {
-      setIsSaved(true);
-      onShowToast('success', "Carte bancaire / Compte de paiement lié avec succès !");
-      setPinCode('');
-    } else {
-      onShowToast('err', res.error || "Erreur lors de la liaison de la carte.");
+      if (res && res.success) {
+        setIsSaved(true);
+        onShowToast('success', "Compte bancaire enregistré avec succès !");
+        setPinCode('');
+      } else {
+        onShowToast('err', res?.error || "Erreur lors de l'enregistrement de la carte sur le serveur central.");
+      }
+    } catch (err: any) {
+      onShowToast('err', err?.message || "Erreur réseau lors de l'enregistrement.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -375,10 +383,13 @@ export const LinkBankCardView: React.FC<LinkBankCardViewProps> = ({
             {/* Action Button */}
             <button
               type="submit"
-              className="w-full py-3.5 bg-gradient-to-r from-amber-500 via-amber-500 to-amber-600 hover:brightness-105 active:scale-[0.99] text-slate-950 font-black text-sm uppercase tracking-wider rounded-xl shadow-xs cursor-pointer transition-all flex items-center justify-center space-x-2"
+              disabled={isSubmitting}
+              className={`w-full py-3.5 bg-gradient-to-r from-amber-500 via-amber-500 to-amber-600 hover:brightness-105 active:scale-[0.99] text-slate-950 font-black text-sm uppercase tracking-wider rounded-xl shadow-xs cursor-pointer transition-all flex items-center justify-center space-x-2 ${
+                isSubmitting ? 'opacity-60 cursor-not-allowed' : ''
+              }`}
             >
               <CreditCard className="w-5 h-5 stroke-[2.5]" />
-              <span>Lier la carte bancaire</span>
+              <span>{isSubmitting ? 'Enregistrement en cours...' : 'Lier la carte bancaire'}</span>
             </button>
           </form>
         </>

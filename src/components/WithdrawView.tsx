@@ -53,7 +53,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
     }
   };
 
-  const handleSaveAccount = (e: React.FormEvent) => {
+  const handleSaveAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     if (currentUser.withdrawalAccountName && currentUser.withdrawalAccountNumber) {
       onShowToast('err', "Votre compte bancaire/retrait est verrouillé et ne peut pas être modifié.");
@@ -73,13 +73,13 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
       return;
     }
 
-    const res = saveWithdrawalAccount(bindName, bindPhone, bindPin, bindNetwork, bindCountryCode);
-    if (res.success) {
+    const res = await saveWithdrawalAccount(bindName, bindPhone, bindPin, bindNetwork, bindCountryCode);
+    if (res && res.success) {
       onShowToast('success', "Compte de retrait enregistré avec succès !");
       setShowBindModal(false);
       setBindPin('');
     } else {
-      onShowToast('err', res.error || "Erreur lors de l'enregistrement du compte.");
+      onShowToast('err', res?.error || "Erreur lors de l'enregistrement du compte.");
     }
   };
 
@@ -121,9 +121,37 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
       return;
     }
 
-    const enteredPinHash = btoa(wthPin.trim() + '_aura_sec_salt');
     if (currentUser.withdrawalPinHash) {
-      if (enteredPinHash !== currentUser.withdrawalPinHash) {
+      const cleanEntered = wthPin.trim();
+      let isPinValid = false;
+
+      try {
+        if (currentUser.withdrawalPinHash.startsWith('{') && currentUser.withdrawalPinHash.endsWith('}')) {
+          const parsed = JSON.parse(currentUser.withdrawalPinHash);
+          if (parsed.pin === cleanEntered) isPinValid = true;
+        }
+      } catch (_) {}
+
+      if (!isPinValid) {
+        try {
+          const decoded = atob(currentUser.withdrawalPinHash);
+          if (decoded.startsWith('{') && decoded.endsWith('}')) {
+            const parsed = JSON.parse(decoded);
+            if (parsed.pin === cleanEntered) isPinValid = true;
+          } else if (decoded === cleanEntered + '_aura_sec_salt') {
+            isPinValid = true;
+          }
+        } catch (_) {}
+      }
+
+      if (!isPinValid) {
+        const legacyHash = btoa(cleanEntered + '_aura_sec_salt');
+        if (currentUser.withdrawalPinHash === legacyHash || currentUser.withdrawalPinHash === cleanEntered) {
+          isPinValid = true;
+        }
+      }
+
+      if (!isPinValid) {
         onShowToast('err', "Code PIN incorrect. Veuillez vérifier votre code PIN secret de retrait.");
         return;
       }

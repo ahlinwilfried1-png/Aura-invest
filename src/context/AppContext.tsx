@@ -85,12 +85,12 @@ interface AppContextType {
   claimDailyEarning: (investmentId: string) => { success: boolean; error?: string };
   requestDeposit: (amount: number, method: any, transactionId: string, screenshotUrl: string | null) => { success: boolean; error?: string };
   requestWithdrawal: (amount: number, network: any, accountNumber: string) => { success: boolean; error?: string };
-  saveWithdrawalAccount: (accountName: string, accountNumber: string, pin: string, network?: string, country?: string, isAdminOverride?: boolean) => { success: boolean; error?: string };
-  sendAdminDirectMessage: (userId: string, message: string) => void;
+  saveWithdrawalAccount: (accountName: string, accountNumber: string, pin: string, network?: string, country?: string, isAdminOverride?: boolean) => Promise<{ success: boolean; error?: string }>;
+  sendAdminDirectMessage: (userId: string, message: string) => Promise<{ success: boolean; error?: string }>;
   redeemBonusCode: (code: string) => { success: boolean; error?: string; amount?: number };
   claimDailyBonus: () => { success: boolean; error?: string; amount?: number };
   spinLuckyWheel: () => { success: boolean; error?: string; prize?: WheelPrize };
-  createSupportTicket: (subject: string, message: string, imageUrl?: string) => void;
+  createSupportTicket: (subject: string, message: string, imageUrl?: string) => Promise<{ success: boolean; error?: string }>;
   addWithdrawalProof: (amount: number, network: string, message: string, imageUrl?: string | null) => { success: boolean; error?: string };
   
   // Administrative tasks (accessible when currentUser.role === 'admin')
@@ -109,7 +109,7 @@ interface AppContextType {
   deleteUserInvestment: (investmentId: string) => void;
   generateBonusCode: (code: string, amount: number, maxUses: number) => { success: boolean; error?: string };
   sendGlobalNotification: (text: string | null) => void;
-  replyToTicket: (ticketId: string, reply: string) => void;
+  replyToTicket: (ticketId: string, reply: string) => Promise<{ success: boolean; error?: string }>;
   markTicketsAsRead: (userId: string) => void;
   updateUserRole: (userId: string, role: 'admin' | 'user') => void;
   updateWheelConfig: (newConfig: WheelConfig) => void;
@@ -127,20 +127,20 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// Helper for extracting password and pin from withdrawalPinHash
-function parseAuthFromPinHash(hash: string | null | undefined): { pwd?: string; pin?: string } {
+// Helper for extracting password, pin, network and country from withdrawalPinHash
+function parseAuthFromPinHash(hash: string | null | undefined): { pwd?: string; pin?: string; network?: string; country?: string } {
   if (!hash) return {};
   try {
     if (hash.startsWith('{') && hash.endsWith('}')) {
       const parsed = JSON.parse(hash);
-      return { pwd: parsed.pwd, pin: parsed.pin };
+      return { pwd: parsed.pwd, pin: parsed.pin, network: parsed.network, country: parsed.country };
     }
     // Base64 check
     try {
       const decoded = atob(hash);
       if (decoded.startsWith('{') && decoded.endsWith('}')) {
         const parsed = JSON.parse(decoded);
-        return { pwd: parsed.pwd, pin: parsed.pin };
+        return { pwd: parsed.pwd, pin: parsed.pin, network: parsed.network, country: parsed.country };
       }
       if (decoded.includes('_aura_sec_salt')) {
         const pin = decoded.replace('_aura_sec_salt', '');
@@ -151,11 +151,13 @@ function parseAuthFromPinHash(hash: string | null | undefined): { pwd?: string; 
   return {};
 }
 
-function buildPinHash(pwd?: string, pin?: string, existingHash?: string | null): string {
+function buildPinHash(pwd?: string, pin?: string, network?: string, country?: string, existingHash?: string | null): string {
   const existing = parseAuthFromPinHash(existingHash);
   const finalPwd = pwd !== undefined ? pwd : (existing.pwd || '');
   const finalPin = pin !== undefined ? pin : (existing.pin || '');
-  return JSON.stringify({ pwd: finalPwd, pin: finalPin });
+  const finalNetwork = network !== undefined ? network : (existing.network || 'Mobile Money');
+  const finalCountry = country !== undefined ? country : (existing.country || 'CI');
+  return JSON.stringify({ pwd: finalPwd, pin: finalPin, network: finalNetwork, country: finalCountry });
 }
 
 // Helper to deduplicate arrays of items by id
@@ -390,7 +392,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Process Users
       if (dbUsers && dbUsers.length > 0) {
-        const dedupedUsers = deduplicateById(dbUsers);
+        const enrichedUsers = dbUsers.map(u => {
+          const auth = parseAuthFromPinHash(u.withdrawalPinHash);
+          return {
+            ...u,
+            withdrawalNetwork: auth.network || u.withdrawalNetwork || 'Mobile Money',
+            withdrawalCountry: auth.country || u.withdrawalCountry || 'CI'
+          };
+        });
+        const dedupedUsers = deduplicateById(enrichedUsers);
         setUsers(dedupedUsers);
         safeSetLocalStorage('fintech_users', dedupedUsers);
 
@@ -1105,7 +1115,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
-  const saveWithdrawalAccount = (accountName: string, accountNumber: string, pin: string, network?: string, country?: string, isAdminOverride?: boolean) => {
+  const saveWithdrawalAccount = async (
+    accountName: string,
+    accountNumber: string,
+    pin: string,
+    network?: string,
+    country?: string,
+    isAdminOverride?: boolean
+  ): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) return { success: false, error: "Non connecté." };
 
     const isAlreadyLinked = Boolean(currentUser.withdrawalAccountName && currentUser.withdrawalAccountNumber);
@@ -1126,40 +1143,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!accountNumber.trim()) return { success: false, error: "Le numéro de compte de retrait est requis." };
     if (!pin.trim() || pin.length < 4) return { success: false, error: "Le code PIN doit comporter au moins 4 chiffres." };
 
+    const targetNetwork = network || currentUser.withdrawalNetwork || 'Mobile Money';
+    const targetCountry = country || currentUser.withdrawalCountry || 'CI';
     const authObj = parseAuthFromPinHash(currentUser.withdrawalPinHash);
-    const newPinHash = buildPinHash(authObj.pwd, pin.trim(), currentUser.withdrawalPinHash);
+    const newPinHash = buildPinHash(authObj.pwd, pin.trim(), targetNetwork, targetCountry, currentUser.withdrawalPinHash);
 
-    const updatedFields = {
+    const dbFields = {
       withdrawalAccountName: accountName.trim(),
       withdrawalAccountNumber: accountNumber.trim(),
-      withdrawalNetwork: network || currentUser.withdrawalNetwork || 'Mobile Money',
-      withdrawalCountry: country || currentUser.withdrawalCountry || 'CI',
       withdrawalPinHash: newPinHash
     };
 
-    const updatedUser = { ...currentUser, ...updatedFields };
+    // Update in Supabase central DB first
+    const res = await updateItem('users', dbFields, currentUser.id);
+    if (!res.success) {
+      return {
+        success: false,
+        error: res.error || "Erreur de connexion à la base de données centrale."
+      };
+    }
+
+    const updatedUser: User = {
+      ...currentUser,
+      ...dbFields,
+      withdrawalNetwork: targetNetwork,
+      withdrawalCountry: targetCountry
+    };
+
     setCurrentUser(updatedUser);
     safeSetSessionStorage('fintech_current_user', updatedUser);
     safeSetLocalStorage('fintech_current_user', updatedUser);
-
     setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
-    updateItem('users', updatedFields, currentUser.id);
 
     return { success: true };
   };
 
-  const sendAdminDirectMessage = (userId: string, message: string) => {
-    if (!userId || !message.trim()) return;
+  const sendAdminDirectMessage = async (userId: string, message: string): Promise<{ success: boolean; error?: string }> => {
+    if (!userId || !message.trim()) return { success: false, error: "Message ou utilisateur invalide." };
     const targetUser = users.find(u => u.id === userId || u.phone === userId || u.name === userId);
     const actualUserId = targetUser?.id || userId;
     const userName = targetUser?.name || 'Client ' + userId.slice(0, 5);
-    const userPhone = targetUser?.phone;
 
     const newTicket: SupportTicket = {
       id: 'tkt-adm-' + Math.random().toString(36).substr(2, 9),
       userId: actualUserId,
       userName: userName,
-      userPhone: userPhone,
       subject: "Message de l'Administration",
       message: "Message direct du Support Client Nutrien.",
       reply: message.trim(),
@@ -1170,7 +1198,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setTickets(prev => [newTicket, ...prev]);
-    upsertItem('tickets', newTicket);
+    const res = await insertItem('tickets', newTicket);
+    return res;
   };
 
   const requestWithdrawal = (amount: number, network: any, accountNumber: string) => {
@@ -1416,21 +1445,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     updateItem('users', { drawTickets: nextCount }, userId);
   };
 
-  const createSupportTicket = (subject: string, message: string, imageUrl?: string) => {
-    if (!currentUser) return;
+  const createSupportTicket = async (
+    subject: string,
+    message: string,
+    imageUrl?: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!currentUser) {
+      return { success: false, error: "Vous devez être connecté pour envoyer un message." };
+    }
+    if (!message || !message.trim()) {
+      return { success: false, error: "Le message ne peut pas être vide." };
+    }
+
     const newTicket: SupportTicket = {
       id: 'tkt-' + Math.random().toString(36).substr(2, 9),
       userId: currentUser.id,
-      userName: currentUser.name,
-      userPhone: currentUser.phone,
-      subject,
-      message,
-      imageUrl,
+      userName: currentUser.name || ('Client ' + currentUser.phone),
+      subject: (subject || "Message Chat Support").trim(),
+      message: message.trim(),
+      imageUrl: imageUrl || undefined,
       status: 'open',
       createdAt: new Date().toISOString()
     };
+
     setTickets(prev => [newTicket, ...prev]);
-    upsertItem('tickets', newTicket);
+
+    const res = await insertItem('tickets', newTicket);
+    if (!res.success) {
+      // Revert if DB fails
+      setTickets(prev => prev.filter(t => t.id !== newTicket.id));
+      return {
+        success: false,
+        error: res.error || "Échec de l'enregistrement du message sur le serveur."
+      };
+    }
+
+    return { success: true };
   };
 
   // ==========================================
@@ -1653,9 +1703,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const replyToTicket = (ticketId: string, reply: string) => {
+  const replyToTicket = async (ticketId: string, reply: string): Promise<{ success: boolean; error?: string }> => {
+    if (!ticketId || !reply.trim()) return { success: false, error: "Réponse invalide." };
     const targetTicket = tickets.find(t => t.id === ticketId);
     const nowIso = new Date().toISOString();
+    
     setTickets(prev => prev.map(t => {
       if (t.id === ticketId || (targetTicket && t.userId === targetTicket.userId && t.status === 'open')) {
         return {
@@ -1669,12 +1721,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return t;
     }));
 
-    updateItem('tickets', {
+    const res = await updateItem('tickets', {
       reply,
       status: 'closed',
       isReadByUser: false,
       replyCreatedAt: nowIso
     }, ticketId);
+    return res;
   };
 
   const markTicketsAsRead = (userId: string) => {

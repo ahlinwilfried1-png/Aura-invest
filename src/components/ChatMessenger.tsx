@@ -22,8 +22,8 @@ import { User, SupportTicket } from '../types';
 interface ChatMessengerProps {
   currentUser: User;
   tickets: SupportTicket[];
-  createSupportTicket: (subject: string, message: string, imageUrl?: string) => void;
-  replyToTicket?: (ticketId: string, reply: string) => void;
+  createSupportTicket: (subject: string, message: string, imageUrl?: string) => Promise<{ success: boolean; error?: string }> | void;
+  replyToTicket?: (ticketId: string, reply: string) => Promise<{ success: boolean; error?: string }> | void;
   onShowToast?: (status: 'success' | 'err', text: string) => void;
 }
 
@@ -35,6 +35,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
 }) => {
   const [inputText, setInputText] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
   const [autoReplying, setAutoReplying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -44,7 +45,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
     .filter(t => 
       t.userId === currentUser.id ||
       (currentUser.phone && currentUser.phone !== 'Non renseigné' && t.userPhone === currentUser.phone) ||
-      (currentUser.name && t.userName === currentUser.name)
+      (currentUser.name && t.userName && t.userName.trim().toLowerCase() === currentUser.name.trim().toLowerCase())
     )
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
@@ -76,21 +77,34 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
   };
 
   // Handle message submission
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim() && !selectedImage) return;
+    if ((!inputText.trim() && !selectedImage) || isSending) return;
 
     const messageToSend = inputText.trim() || (selectedImage ? "Image transmise" : "");
     const imageToSend = selectedImage || undefined;
 
-    // Reset local inputs
-    setInputText('');
-    setSelectedImage(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setIsSending(true);
 
-    // Create Support Ticket in App state & DB
-    createSupportTicket("Message Chat Support", messageToSend, imageToSend);
-    if (onShowToast) onShowToast('success', "Message transmis à l'Administration.");
+    try {
+      const res = await createSupportTicket("Message Chat Support", messageToSend, imageToSend);
+
+      if (res && res.success === false) {
+        if (onShowToast) onShowToast('err', res.error || "Erreur lors de l'enregistrement du message sur le serveur.");
+        setIsSending(false);
+        return;
+      }
+
+      // Reset local inputs ONLY after confirmed success
+      setInputText('');
+      setSelectedImage(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (onShowToast) onShowToast('success', "Message envoyé avec succès à l'administration !");
+    } catch (err: any) {
+      if (onShowToast) onShowToast('err', err?.message || "Erreur réseau lors de l'envoi.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   // Format timestamp helper
@@ -359,9 +373,9 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
           {/* Send Button */}
           <button 
             type="submit"
-            disabled={!inputText.trim() && !selectedImage}
+            disabled={(!inputText.trim() && !selectedImage) || isSending}
             className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
-              inputText.trim() || selectedImage
+              (inputText.trim() || selectedImage) && !isSending
                 ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20 scale-100'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed scale-95'
             }`}

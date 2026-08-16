@@ -1,5 +1,57 @@
 import { supabase } from './supabase';
 
+const TABLE_SCHEMAS: Record<string, string[]> = {
+  users: [
+    'id', 'name', 'phone', 'whatsapp', 'country', 'balance', 'dailyEarnings',
+    'totalEarnings', 'vipLevel', 'isBlocked', 'createdAt', 'role', 'referralCode',
+    'referredByCode', 'withdrawalAccountName', 'withdrawalAccountNumber', 'withdrawalPinHash'
+  ],
+  products: [
+    'id', 'name', 'price', 'dailyGain', 'duration', 'totalGain', 'isActive',
+    'image', 'description', 'order', 'badge', 'color'
+  ],
+  investments: [
+    'id', 'userId', 'productId', 'productName', 'price', 'dailyGain',
+    'duration', 'daysRemaining', 'purchaseDate', 'lastClaimDate'
+  ],
+  deposits: [
+    'id', 'userId', 'userName', 'userPhone', 'amount', 'method',
+    'transactionId', 'screenshotUrl', 'status', 'createdAt'
+  ],
+  withdrawals: [
+    'id', 'userId', 'userName', 'userPhone', 'amount', 'receivedAmount',
+    'network', 'accountNumber', 'status', 'createdAt'
+  ],
+  withdrawal_proofs: [
+    'id', 'userId', 'userName', 'userPhone', 'amount', 'network',
+    'message', 'imageUrl', 'createdAt', 'isVerified', 'status'
+  ],
+  tickets: [
+    'id', 'userId', 'userName', 'subject', 'message', 'imageUrl',
+    'status', 'createdAt', 'reply', 'replyCreatedAt', 'isReadByUser'
+  ],
+  commissions: [
+    'id', 'referrerId', 'refereeId', 'refereeName', 'amount', 'level', 'createdAt'
+  ],
+  bonus_codes: [
+    'code', 'amount', 'maxUses', 'usedBy', 'createdAt'
+  ]
+};
+
+export function sanitizeItem<T>(tableName: string, item: T): Partial<T> {
+  if (!item || typeof item !== 'object') return item;
+  const allowedCols = TABLE_SCHEMAS[tableName];
+  if (!allowedCols) return item;
+
+  const sanitized: any = {};
+  for (const col of allowedCols) {
+    if (col in (item as any)) {
+      sanitized[col] = (item as any)[col];
+    }
+  }
+  return sanitized as Partial<T>;
+}
+
 export async function fetchTableData<T>(tableName: string): Promise<T[] | null> {
   try {
     const { data, error } = await supabase.from(tableName).select('*');
@@ -14,31 +66,33 @@ export async function fetchTableData<T>(tableName: string): Promise<T[] | null> 
   }
 }
 
-export async function upsertItem<T>(tableName: string, item: T): Promise<boolean> {
+export async function upsertItem<T>(tableName: string, item: T): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase.from(tableName).upsert(item as any);
+    const cleanItem = sanitizeItem(tableName, item);
+    const { error } = await supabase.from(tableName).upsert(cleanItem as any);
     if (error) {
       console.warn(`[Supabase] Table '${tableName}' upsert error:`, error.message);
-      return false;
+      return { success: false, error: error.message };
     }
-    return true;
-  } catch (err) {
+    return { success: true };
+  } catch (err: any) {
     console.warn(`[Supabase] Error saving to '${tableName}':`, err);
-    return false;
+    return { success: false, error: err?.message || 'Erreur de connexion Supabase' };
   }
 }
 
-export async function insertItem<T>(tableName: string, item: T): Promise<boolean> {
+export async function insertItem<T>(tableName: string, item: T): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase.from(tableName).insert(item as any);
+    const cleanItem = sanitizeItem(tableName, item);
+    const { error } = await supabase.from(tableName).insert(cleanItem as any);
     if (error) {
       console.warn(`[Supabase] Table '${tableName}' insert error:`, error.message);
-      return false;
+      return { success: false, error: error.message };
     }
-    return true;
-  } catch (err) {
+    return { success: true };
+  } catch (err: any) {
     console.warn(`[Supabase] Error inserting to '${tableName}':`, err);
-    return false;
+    return { success: false, error: err?.message || 'Erreur de connexion Supabase' };
   }
 }
 
@@ -47,46 +101,48 @@ export async function updateItem<T>(
   updates: Partial<T>,
   idValue: string,
   idCol: string = 'id'
-): Promise<boolean> {
+): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase.from(tableName).update(updates as any).eq(idCol, idValue);
+    const cleanUpdates = sanitizeItem(tableName, updates);
+    const { error } = await supabase.from(tableName).update(cleanUpdates as any).eq(idCol, idValue);
     if (error) {
       console.warn(`[Supabase] Table '${tableName}' update error:`, error.message);
-      return false;
+      return { success: false, error: error.message };
     }
-    return true;
-  } catch (err) {
+    return { success: true };
+  } catch (err: any) {
     console.warn(`[Supabase] Error updating '${tableName}':`, err);
-    return false;
+    return { success: false, error: err?.message || 'Erreur de connexion Supabase' };
   }
 }
 
-export async function syncTableData<T>(tableName: string, items: T[]): Promise<boolean> {
+export async function syncTableData<T>(tableName: string, items: T[]): Promise<{ success: boolean; error?: string }> {
   try {
-    if (!items || items.length === 0) return true;
-    const { error } = await supabase.from(tableName).upsert(items as any);
+    if (!items || items.length === 0) return { success: true };
+    const cleanItems = items.map(item => sanitizeItem(tableName, item));
+    const { error } = await supabase.from(tableName).upsert(cleanItems as any);
     if (error) {
       console.warn(`[Supabase] Table '${tableName}' sync error:`, error.message);
-      return false;
+      return { success: false, error: error.message };
     }
-    return true;
-  } catch (err) {
+    return { success: true };
+  } catch (err: any) {
     console.warn(`[Supabase] Error syncing to table '${tableName}':`, err);
-    return false;
+    return { success: false, error: err?.message || 'Erreur de connexion Supabase' };
   }
 }
 
-export async function deleteRecord(tableName: string, primaryKeyValue: string, idColName: string = 'id'): Promise<boolean> {
+export async function deleteRecord(tableName: string, primaryKeyValue: string, idColName: string = 'id'): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await supabase.from(tableName).delete().eq(idColName, primaryKeyValue);
     if (error) {
       console.warn(`[Supabase] Table '${tableName}' delete error:`, error.message);
-      return false;
+      return { success: false, error: error.message };
     }
-    return true;
-  } catch (err) {
+    return { success: true };
+  } catch (err: any) {
     console.warn(`[Supabase] Error deleting from table '${tableName}':`, err);
-    return false;
+    return { success: false, error: err?.message || 'Erreur de connexion Supabase' };
   }
 }
 
