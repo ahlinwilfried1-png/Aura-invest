@@ -80,7 +80,7 @@ export const WellnessProductCard: React.FC<WellnessProductCardProps> = ({ onSele
           className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth space-x-3 scrollbar-none pb-0.5"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {wellnessProducts.map((product: WellnessProduct) => {
+          {wellnessProducts.map((product: WellnessProduct, idx: number) => {
             const isAvailable = product.status === 'disponible' && product.quantity > 0;
             const fallbackImage = 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80';
             
@@ -90,7 +90,7 @@ export const WellnessProductCard: React.FC<WellnessProductCardProps> = ({ onSele
 
             return (
               <div 
-                key={product.id}
+                key={`${product.id || 'well'}-${idx}`}
                 onClick={() => {
                   if (onSelectProduct && isAvailable) {
                     onSelectProduct({

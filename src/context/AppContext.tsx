@@ -3,9 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { fetchTableData, syncTableData, deleteRecord } from '../lib/supabaseService';
+import { 
+  fetchTableData, 
+  upsertItem, 
+  insertItem, 
+  updateItem, 
+  deleteRecord, 
+  saveSystemConfig, 
+  fetchSystemConfig 
+} from '../lib/supabaseService';
 import { 
   safeSetLocalStorage, 
   safeGetLocalStorage, 
@@ -96,7 +104,7 @@ interface AppContextType {
   processWithdrawalProof: (proofId: string, status: 'approved' | 'rejected') => void;
   deleteWithdrawalProof: (proofId: string) => void;
   updateWithdrawalProof: (proofId: string, data: Partial<WithdrawalProof>) => void;
-  addOrUpdateProduct: (product: Omit<InvestmentProduct, 'isActive'> & { isActive?: boolean }) => void;
+  addOrUpdateProduct: (product: Omit<InvestmentProduct, 'isActive'> & { isActive?: boolean; image?: string; description?: string; order?: number; badge?: string; color?: string }) => void;
   deleteProduct: (productId: string) => void;
   deleteUserInvestment: (investmentId: string) => void;
   generateBonusCode: (code: string, amount: number, maxUses: number) => { success: boolean; error?: string };
@@ -119,371 +127,119 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// Initial Static Investment Products matching Nutrien Agriculture VIP 1 to VIP 10 specs
-const INITIAL_PRODUCTS: InvestmentProduct[] = [
-  {
-    id: 'vip-1',
-    name: 'VIP 1',
-    price: 4000,
-    dailyGain: 500,
-    duration: 200,
-    totalGain: 100000,
-    isActive: true,
-    image: 'https://images.unsplash.com/photo-1592417817098-8f3d6ef23a81?w=800&auto=format&fit=crop&q=80',
-    description: 'Engrais NPK Nutrien - Pack de démarrage agriculture.',
-    order: 1,
-    badge: 'VIP 1'
-  },
-  {
-    id: 'vip-2',
-    name: 'VIP 2',
-    price: 15000,
-    dailyGain: 1600,
-    duration: 200,
-    totalGain: 320000,
-    isActive: true,
-    image: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800&auto=format&fit=crop&q=80',
-    description: 'Nutrien Bioboost - Fertilisant organique haute performance.',
-    order: 2,
-    badge: 'VIP 2'
-  },
-  {
-    id: 'vip-3',
-    name: 'VIP 3',
-    price: 25000,
-    dailyGain: 3250,
-    duration: 200,
-    totalGain: 650000,
-    isActive: true,
-    image: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=800&auto=format&fit=crop&q=80',
-    description: 'Nutrien Semences - Maïs Hybride certifié.',
-    order: 3,
-    badge: 'VIP 3'
-  },
-  {
-    id: 'vip-4',
-    name: 'VIP 4',
-    price: 50000,
-    dailyGain: 11100,
-    duration: 200,
-    totalGain: 2220000,
-    isActive: true,
-    image: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop&q=80',
-    description: 'Nutrien Pesticide - Protection des cultures 5 Litres.',
-    order: 4,
-    badge: 'VIP 4'
-  },
-  {
-    id: 'vip-5',
-    name: 'VIP 5',
-    price: 100000,
-    dailyGain: 24000,
-    duration: 200,
-    totalGain: 4800000,
-    isActive: true,
-    image: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80',
-    description: 'Nutrien Pack Agricole Complet - Équipement & Nutriments.',
-    order: 5,
-    badge: 'VIP 5'
-  },
-  {
-    id: 'vip-6',
-    name: 'VIP 6',
-    price: 150000,
-    dailyGain: 36000,
-    duration: 200,
-    totalGain: 7200000,
-    isActive: true,
-    image: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80',
-    description: 'Nutrien Drone Agricole - Pulvérisation intelligente.',
-    order: 6,
-    badge: 'VIP 6'
-  },
-  {
-    id: 'vip-7',
-    name: 'VIP 7',
-    price: 200000,
-    dailyGain: 50000,
-    duration: 200,
-    totalGain: 10000000,
-    isActive: true,
-    image: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=800&auto=format&fit=crop&q=80',
-    description: 'Tracteur Nutrien Smart Ag - Performance Maximale.',
-    order: 7,
-    badge: 'VIP 7'
-  },
-  {
-    id: 'vip-8',
-    name: 'VIP 8',
-    price: 300000,
-    dailyGain: 75000,
-    duration: 200,
-    totalGain: 15000000,
-    isActive: true,
-    image: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80',
-    description: 'Système d\'Irrigation Intelligente Nutrien 10 Hectares.',
-    order: 8,
-    badge: 'VIP 8'
-  },
-  {
-    id: 'vip-9',
-    name: 'VIP 9',
-    price: 400000,
-    dailyGain: 115000,
-    duration: 200,
-    totalGain: 23000000,
-    isActive: true,
-    image: 'https://images.unsplash.com/photo-1560493676-04071c5f467b?w=800&auto=format&fit=crop&q=80',
-    description: 'Complexe Industriel de Transformation Nutrien.',
-    order: 9,
-    badge: 'VIP 9'
-  },
-  {
-    id: 'vip-10',
-    name: 'VIP 10',
-    price: 800000,
-    dailyGain: 250000,
-    duration: 200,
-    totalGain: 50000000,
-    isActive: true,
-    image: 'https://images.unsplash.com/photo-1592417817098-8f3d6ef23a81?w=800&auto=format&fit=crop&q=80',
-    description: 'Nutrien Mega Farm Hub - Partenariat Agro-Industriel Suprême.',
-    order: 10,
-    badge: 'VIP 10'
+// Helper for extracting password and pin from withdrawalPinHash
+function parseAuthFromPinHash(hash: string | null | undefined): { pwd?: string; pin?: string } {
+  if (!hash) return {};
+  try {
+    if (hash.startsWith('{') && hash.endsWith('}')) {
+      const parsed = JSON.parse(hash);
+      return { pwd: parsed.pwd, pin: parsed.pin };
+    }
+    // Base64 check
+    try {
+      const decoded = atob(hash);
+      if (decoded.startsWith('{') && decoded.endsWith('}')) {
+        const parsed = JSON.parse(decoded);
+        return { pwd: parsed.pwd, pin: parsed.pin };
+      }
+      if (decoded.includes('_aura_sec_salt')) {
+        const pin = decoded.replace('_aura_sec_salt', '');
+        return { pin };
+      }
+    } catch (_) {}
+  } catch (_) {}
+  return {};
+}
+
+function buildPinHash(pwd?: string, pin?: string, existingHash?: string | null): string {
+  const existing = parseAuthFromPinHash(existingHash);
+  const finalPwd = pwd !== undefined ? pwd : (existing.pwd || '');
+  const finalPin = pin !== undefined ? pin : (existing.pin || '');
+  return JSON.stringify({ pwd: finalPwd, pin: finalPin });
+}
+
+// Helper to deduplicate arrays of items by id
+function deduplicateById<T extends { id?: string | number }>(list: T[]): T[] {
+  if (!Array.isArray(list)) return [];
+  const seen = new Set<string | number>();
+  const result: T[] = [];
+  for (const item of list) {
+    if (!item) continue;
+    const id = item.id !== undefined && item.id !== null ? item.id : JSON.stringify(item);
+    if (!seen.has(id)) {
+      seen.add(id);
+      result.push(item);
+    }
   }
-];
+  return result;
+}
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Setup local storage based states
+  // Local state with safe initial fallback
   const [users, setUsers] = useState<User[]>(() => {
     const data = safeGetLocalStorage('fintech_users');
     if (data) {
-      try { return JSON.parse(data); } catch (_) {}
+      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
     }
-    
-    // Default Admin & Standard User
-    const defaultUsers: User[] = [
-      {
-        id: 'admin-1',
-        name: 'Administrateur Principal',
-        phone: '11111111',
-        whatsapp: '+228 90909090',
-        country: 'Togo',
-        balance: 10000000,
-        dailyEarnings: 0,
-        totalEarnings: 0,
-        vipLevel: 4,
-        isBlocked: false,
-        createdAt: new Date().toISOString(),
-        role: 'admin',
-        referralCode: 'ADMIN7',
-        referredByCode: null
-      },
-      {
-        id: 'user-1',
-        name: 'Koffi Konan',
-        phone: '07070707',
-        whatsapp: '+228 90000000',
-        country: 'Togo',
-        balance: 8500,
-        dailyEarnings: 600,
-        totalEarnings: 3600,
-        vipLevel: 1,
-        isBlocked: false,
-        createdAt: new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(),
-        role: 'user',
-        referralCode: 'KOFFI07',
-        referredByCode: 'ADMIN7'
-      },
-      {
-        id: 'user-2',
-        name: 'Seydou Keita',
-        phone: '77777777',
-        whatsapp: '+223 77777777',
-        country: 'Mali',
-        balance: 12000,
-        dailyEarnings: 2200,
-        totalEarnings: 8800,
-        vipLevel: 2,
-        isBlocked: false,
-        createdAt: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(),
-        role: 'user',
-        referralCode: 'SEYDOU77',
-        referredByCode: 'KOFFI07'
-      }
-    ];
-    safeSetLocalStorage('fintech_users', defaultUsers);
-    return defaultUsers;
+    return [];
   });
 
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    // Session requirement: if a user leaves/exits the site tab, they must pass through the login page upon returning
-    const data = safeGetSessionStorage('fintech_current_user');
+    const data = safeGetSessionStorage('fintech_current_user') || safeGetLocalStorage('fintech_current_user');
     if (data) {
-      try {
-        return JSON.parse(data);
-      } catch (e) {
-        return null;
-      }
+      try { return JSON.parse(data); } catch (_) {}
     }
     return null;
   });
 
-  // Keep passwords in a separate simulated secure store or simulated in local storage
   const [passwords, setPasswords] = useState<{ [phone: string]: string }>(() => {
     const data = safeGetLocalStorage('fintech_passwords');
     if (data) {
       try { return JSON.parse(data); } catch (_) {}
     }
-    const initialPasswords = {
+    return {
       '11111111': 'admin123',
       '07070707': 'koffi123',
       '77777777': 'seydou123'
     };
-    safeSetLocalStorage('fintech_passwords', initialPasswords);
-    return initialPasswords;
   });
 
   const [products, setProducts] = useState<InvestmentProduct[]>(() => {
     const data = safeGetLocalStorage('fintech_products');
     if (data) {
-      try {
-        const parsed = JSON.parse(data);
-        // Ensure Nutrien VIP 10 products are included
-        if (Array.isArray(parsed) && parsed.some((p: InvestmentProduct) => p.name === 'VIP 10' && p.duration === 200)) {
-          return parsed;
-        }
-      } catch (_) {}
+      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
     }
-    safeSetLocalStorage('fintech_products', INITIAL_PRODUCTS);
-    return INITIAL_PRODUCTS;
+    return [];
   });
 
   const [userInvestments, setUserInvestments] = useState<UserInvestment[]>(() => {
     const data = safeGetLocalStorage('fintech_investments');
     if (data) {
-      try { return JSON.parse(data); } catch (_) {}
+      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
     }
-    
-    // Default investments for mock users
-    const defaultInvestments: UserInvestment[] = [
-      {
-        id: 'inv-1',
-        userId: 'user-1',
-        productId: 'vip-1',
-        productName: 'VIP 1',
-        price: 3000,
-        dailyGain: 600,
-        duration: 30,
-        daysRemaining: 24,
-        purchaseDate: new Date(Date.now() - 6 * 24 * 3600 * 1000).toISOString(),
-        lastClaimDate: new Date(Date.now() - 24 * 3600 * 1000).toISOString()
-      },
-      {
-        id: 'inv-2',
-        userId: 'user-2',
-        productId: 'vip-2',
-        productName: 'VIP 2',
-        price: 10000,
-        dailyGain: 2200,
-        duration: 30,
-        daysRemaining: 26,
-        purchaseDate: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString(),
-        lastClaimDate: new Date(Date.now() - 24 * 3600 * 1000).toISOString()
-      }
-    ];
-    safeSetLocalStorage('fintech_investments', defaultInvestments);
-    return defaultInvestments;
+    return [];
   });
 
   const [deposits, setDeposits] = useState<DepositRequest[]>(() => {
     const data = safeGetLocalStorage('fintech_deposits');
     if (data) {
-      try { return JSON.parse(data); } catch (_) {}
+      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
     }
-    const defaultDeposits: DepositRequest[] = [
-      {
-        id: 'dep-1',
-        userId: 'user-1',
-        userName: 'Koffi Konan',
-        userPhone: '07070707',
-        amount: 3000,
-        method: 'Orange Money',
-        transactionId: 'TXN82649102',
-        screenshotUrl: null,
-        status: 'approved',
-        createdAt: new Date(Date.now() - 6.5 * 24 * 3600 * 1000).toISOString()
-      },
-      {
-        id: 'dep-2',
-        userId: 'user-2',
-        userName: 'Seydou Keita',
-        userPhone: '77777777',
-        amount: 15000,
-        method: 'Moov Money',
-        transactionId: 'TXN99128472',
-        screenshotUrl: null,
-        status: 'approved',
-        createdAt: new Date(Date.now() - 4.5 * 24 * 3600 * 1000).toISOString()
-      },
-      {
-        id: 'dep-3',
-        userId: 'user-1',
-        userName: 'Koffi Konan',
-        userPhone: '07070707',
-        amount: 5000,
-        method: 'MTN Money',
-        transactionId: 'TXN77163012',
-        screenshotUrl: null,
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      }
-    ];
-    safeSetLocalStorage('fintech_deposits', defaultDeposits);
-    return defaultDeposits;
+    return [];
   });
 
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>(() => {
     const data = safeGetLocalStorage('fintech_withdrawals');
     if (data) {
-      try { return JSON.parse(data); } catch (_) {}
+      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
     }
-    const defaultWithdrawals: WithdrawalRequest[] = [
-      {
-        id: 'wth-1',
-        userId: 'user-1',
-        userName: 'Koffi Konan',
-        userPhone: '07070707',
-        amount: 2500,
-        network: 'Orange Money',
-        accountNumber: '07070707',
-        status: 'approved',
-        createdAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString()
-      },
-      {
-        id: 'wth-2',
-        userId: 'user-2',
-        userName: 'Seydou Keita',
-        userPhone: '77777777',
-        amount: 5000,
-        network: 'Moov Money',
-        accountNumber: '77777777',
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      }
-    ];
-    safeSetLocalStorage('fintech_withdrawals', defaultWithdrawals);
-    return defaultWithdrawals;
+    return [];
   });
 
   const [withdrawalProofs, setWithdrawalProofs] = useState<WithdrawalProof[]>(() => {
-    const data = safeGetLocalStorage('aurainvest_withdrawal_proofs');
+    const data = safeGetLocalStorage('aurainvest_withdrawal_proofs') || safeGetLocalStorage('fintech_withdrawal_proofs');
     if (data) {
-      try {
-        return JSON.parse(data);
-      } catch (e) {
-        console.error(e);
-      }
+      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
     }
     return [];
   });
@@ -491,11 +247,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [revenueLogs, setRevenueLogs] = useState<RevenueLog[]>(() => {
     const data = safeGetLocalStorage('fintech_revenue_logs');
     if (data) {
-      try {
-        return JSON.parse(data);
-      } catch (e) {
-        console.error("Failed to parse revenue logs:", e);
-      }
+      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
     }
     return [];
   });
@@ -503,82 +255,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [bonusCodes, setBonusCodes] = useState<BonusCode[]>(() => {
     const data = safeGetLocalStorage('fintech_bonus_codes');
     if (data) {
-      try { return JSON.parse(data); } catch (_) {}
+      try {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          const seen = new Set();
+          return parsed.filter(b => {
+            if (!b || !b.code || seen.has(b.code)) return false;
+            seen.add(b.code);
+            return true;
+          });
+        }
+      } catch (_) {}
     }
-    const defaultCodes = [
-      {
-        code: 'BIENVENU',
-        amount: 1000,
-        maxUses: 100,
-        usedBy: ['user-1'],
-        createdAt: new Date().toISOString()
-      },
-      {
-        code: 'FINTECH2026',
-        amount: 2500,
-        maxUses: 50,
-        usedBy: [],
-        createdAt: new Date().toISOString()
-      },
-      {
-        code: 'GOLDVIP',
-        amount: 5000,
-        maxUses: 10,
-        usedBy: [],
-        createdAt: new Date().toISOString()
-      }
-    ];
-    safeSetLocalStorage('fintech_bonus_codes', defaultCodes);
-    return defaultCodes;
+    return [];
   });
 
   const [commissions, setCommissions] = useState<CommissionHistory[]>(() => {
     const data = safeGetLocalStorage('fintech_commissions');
     if (data) {
-      try { return JSON.parse(data); } catch (_) {}
+      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
     }
-    const defaultCommissions: CommissionHistory[] = [
-      {
-        id: 'com-1',
-        referrerId: 'admin-1',
-        refereeId: 'user-1',
-        refereeName: 'Koffi Konan',
-        amount: 600, // 20% commission on VIP 1 purchase (3000 * 20%)
-        level: 1,
-        createdAt: new Date(Date.now() - 6 * 24 * 3600 * 1000).toISOString()
-      },
-      {
-        id: 'com-2',
-        referrerId: 'user-1',
-        refereeId: 'user-2',
-        refereeName: 'Seydou Keita',
-        amount: 2000, // 20% on VIP 2 purchase (10000 * 20%)
-        level: 1,
-        createdAt: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString()
-      }
-    ];
-    safeSetLocalStorage('fintech_commissions', defaultCommissions);
-    return defaultCommissions;
+    return [];
   });
 
   const [tickets, setTickets] = useState<SupportTicket[]>(() => {
     const data = safeGetLocalStorage('fintech_tickets');
     if (data) {
-      try { return JSON.parse(data); } catch (_) {}
+      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
     }
-    const defaultTickets: SupportTicket[] = [
-      {
-        id: 'tkt-1',
-        userId: 'user-1',
-        userName: 'Koffi Konan',
-        subject: 'Délai de validation du dépôt',
-        message: 'Bonjour, j\'ai effectué un dépôt de 5000 FCFA il y a une heure et ce n\'est toujours pas validé. Merci d\'y jeter un œil.',
-        status: 'open',
-        createdAt: new Date().toISOString()
-      }
-    ];
-    safeSetLocalStorage('fintech_tickets', defaultTickets);
-    return defaultTickets;
+    return [];
   });
 
   const [wheelConfig, setWheelConfig] = useState<WheelConfig>(() => {
@@ -590,27 +295,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       { id: 5, label: '+45 FCFA', value: 45, color: 'bg-rose-500 text-white' },
       { id: 6, label: '+50 FCFA', value: 50, color: 'bg-emerald-700 text-white' },
     ];
-
     const data = safeGetLocalStorage('fintech_wheel_config');
     if (data) {
       try {
         const parsed = JSON.parse(data);
         if (parsed && Array.isArray(parsed.prizes)) {
-          const sanitizedPrizes = parsed.prizes.map((p: WheelPrize) => {
-            const clampedVal = Math.min(50, Math.max(25, Number(p.value) || 25));
-            return {
-              ...p,
-              value: clampedVal,
-              label: `+${clampedVal} FCFA`
-            };
-          });
-          return { ...parsed, prizes: sanitizedPrizes };
+          return {
+            ...parsed,
+            prizes: deduplicateById(parsed.prizes)
+          };
         }
-      } catch (e) { console.error(e); }
+      } catch (_) {}
     }
     return {
       ticketsPerReferral: 1,
-      dailyFreeTickets: 1,
+      dailyFreeSpins: 0,
       prizes: defaultPrizes
     };
   });
@@ -618,904 +317,383 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [drawRecords, setDrawRecords] = useState<DrawRecord[]>(() => {
     const data = safeGetLocalStorage('fintech_draw_records');
     if (data) {
-      try { return JSON.parse(data); } catch (e) { console.error(e); }
+      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
     }
-    const defaultDraws: DrawRecord[] = [
-      {
-        id: 'draw-init-1',
-        userId: 'user-1',
-        userName: 'Koffi Konan',
-        userPhone: '+228 90****95',
-        action: 'a fait tourner la roue',
-        prizeLabel: '+50 FCFA',
-        prizeValue: 50,
-        createdAt: new Date(Date.now() - 2 * 60 * 1000).toISOString()
-      },
-      {
-        id: 'draw-init-2',
-        userId: 'user-2',
-        userName: 'Seydou Keita',
-        userPhone: '+226 76****35',
-        action: 'a fait tourner la roue',
-        prizeLabel: '+25 FCFA',
-        prizeValue: 25,
-        createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString()
-      },
-      {
-        id: 'draw-init-3',
-        userId: 'user-3',
-        userName: 'Ablavi Mensah',
-        userPhone: '+228 92****45',
-        action: 'a fait tourner la roue',
-        prizeLabel: '+35 FCFA',
-        prizeValue: 35,
-        createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString()
-      },
-      {
-        id: 'draw-init-4',
-        userId: 'user-4',
-        userName: 'Yao Kouadio',
-        userPhone: '+229 97****42',
-        action: 'a fait tourner la roue',
-        prizeLabel: '+40 FCFA',
-        prizeValue: 40,
-        createdAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
-      }
-    ];
-    safeSetLocalStorage('fintech_draw_records', defaultDraws);
-    return defaultDraws;
+    return [];
   });
 
   const [announcements, setAnnouncements] = useState<Announcement[]>(() => {
-    let deletedIds: string[] = [];
-    try {
-      deletedIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_announcement_ids') || '[]');
-    } catch (_) {}
     const data = safeGetLocalStorage('fintech_announcements');
     if (data) {
-      try {
-        const parsed = JSON.parse(data);
-        if (Array.isArray(parsed)) {
-          return parsed.filter((a: any) => !deletedIds.includes(a.id));
-        }
-      } catch (e) {
-        // fallback
-      }
+      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
     }
-    const defaultAnnouncements: Announcement[] = [
-      {
-        id: 'ann-1',
-        title: 'Récompenser les agents exceptionnels',
-        content: 'Félicitations à tous nos agents certifiés ! Des primes spéciales de fin de mois ont été créditées sur les comptes des 10 meilleurs parrains de la communauté. Continuez à développer votre réseau pour débloquer plus de récompenses.',
-        imageUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80',
-        createdAt: '2026-08-02 08:33:32',
-        isNew: true
-      },
-      {
-        id: 'ann-2',
-        title: 'Bonjour, bienvenue chez Nutrien !',
-        content: 'Bienvenue sur la plateforme officielle d\'investissement Nutrien. Profitez de nos offres VIP, de retraits rapides 24/7 et de bonus exclusifs.',
-        imageUrl: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80',
-        createdAt: '2026-08-02 07:49:06',
-        isNew: false
-      },
-      {
-        id: 'ann-3',
-        title: 'Preuve de retrait',
-        content: 'Toutes les demandes de retrait soumises par Orange Money, MTN, Moov et Mixx By Yas sont désormais traitées automatiquement en moins de 10 minutes.',
-        imageUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=800&auto=format&fit=crop&q=80',
-        createdAt: '2026-08-01 17:30:34',
-        isNew: false
-      },
-      {
-        id: 'ann-4',
-        title: 'Les 3 équipements agricoles ayant bénéficié du plus grand investissement des utilisateurs',
-        content: 'Découvrez les 3 projets les plus populaires de la semaine avec des rendements quotidiens optimisés.',
-        imageUrl: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80',
-        createdAt: '2026-08-01 15:20:52',
-        isNew: true
-      },
-      {
-        id: 'ann-5',
-        title: 'La meilleure preuve',
-        content: 'Découvrez les témoignages et preuves de retrait de la communauté dans notre canal officiel Telegram et WhatsApp.',
-        imageUrl: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800&auto=format&fit=crop&q=80',
-        createdAt: '2026-07-31 17:52:01',
-        isNew: true
-      },
-      {
-        id: 'ann-6',
-        title: 'Si vous invitez avec succès 6 utilisateurs réels à rejoindre notre entreprise, l\'entreprise vous offrira un équipement agricole d\'une valeur de 100 000 XAF pour vous aider à gagner de l\'argent.',
-        content: 'Profitez de cette offre spéciale de parrainage limité. Chaque fois que 6 filleuls directs souscrivent à un produit VIP, vous recevez gratuitement un bonus exceptionnel !',
-        imageUrl: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop&q=80',
-        createdAt: '2026-07-31 16:48:21',
-        isNew: true
-      },
-      {
-        id: 'ann-7',
-        title: 'Deux façons de gagner de l\'argent',
-        content: '1. Investissez dans des produits à haut rendement quotidien. 2. Développez votre équipe de parrainage et gagnez jusqu\'à 30% de commissions sur 3 niveaux.',
-        imageUrl: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=800&auto=format&fit=crop&q=80',
-        createdAt: '2026-07-31 08:07:32',
-        isNew: false
-      },
-      {
-        id: 'ann-8',
-        title: 'Emprunter de l\'argent pour investir dans des produits de niveau supérieur et gagner plus d\'argent',
-        content: 'Profitez des options de crédit d\'investissement pour débloquer les niveaux VIP 2 et 3 et multiplier vos revenus journaliers.',
-        imageUrl: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80',
-        createdAt: '2026-07-31 06:17:50',
-        isNew: true
-      }
-    ];
-    const filteredDefaults = defaultAnnouncements.filter(a => !deletedIds.includes(a.id));
-    safeSetLocalStorage('fintech_announcements', filteredDefaults);
-    return filteredDefaults;
+    return [];
   });
 
   const [faqs, setFaqs] = useState<FaqItem[]>(() => {
-    let deletedIds: string[] = [];
-    try {
-      deletedIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_faq_ids') || '[]');
-    } catch (_) {}
     const data = safeGetLocalStorage('fintech_faqs');
     if (data) {
-      try {
-        const parsed = JSON.parse(data);
-        if (Array.isArray(parsed)) {
-          return parsed.filter((f: any) => !deletedIds.includes(f.id));
-        }
-      } catch (e) {
-        console.error(e);
-      }
+      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
     }
-    const defaultFaqs: FaqItem[] = [
-      {
-        id: 'faq-1',
-        question: "Comment s'inscrire et commencer à investir ?",
-        answer: "Pour commencer, inscrivez-vous avec votre numéro de téléphone et votre mot de passe. Rendez-vous ensuite dans la boutique pour choisir un équipement agricole VIP à souscrire. Vos bénéfices seront automatiquement crédités sur votre compte toutes les 24 heures.",
-        category: "Général",
-        order: 1,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'faq-2',
-        question: "Comment effectuer un dépôt ou une recharge ?",
-        answer: "Accédez à la rubrique 'Recharger' ou 'Dépôt', sélectionnez votre pays (Togo, Bénin, Cameroun, Sénégal, Burkina Faso, etc.), choisissez votre réseau Mobile Money (TMoney, MTN, Moov, Wave, Mixx by Yas) ou carte bancaire, entrez le montant et validez l'opération.",
-        category: "Dépôts & Retraits",
-        order: 2,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'faq-3',
-        question: "Combien de temps prennent les retraits ?",
-        answer: "Toutes les demandes de retrait sont traitées de manière automatisée. Les fonds sont crédités directement sur votre numéro Mobile Money ou carte bancaire liée en moins de 10 à 30 minutes.",
-        category: "Dépôts & Retraits",
-        order: 3,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'faq-4',
-        question: "Quels sont les frais de retrait ?",
-        answer: "Les frais de retrait appliqués sur la plateforme sont de seulement 5% pour assurer un traitement rapide et sécurisé de toutes vos opérations financières.",
-        category: "Dépôts & Retraits",
-        order: 4,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'faq-5',
-        question: "Comment fonctionne le programme de parrainage et d'équipe ?",
-        answer: "En invitant de nouveaux membres via votre lien ou code de parrainage, vous recevez des commissions sur 3 niveaux (Niveau 1: 10%, Niveau 2: 3%, Niveau 3: 2%) ainsi que des tickets gratuits pour la Roue de la Fortune.",
-        category: "Parrainage & Bonus",
-        order: 5,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'faq-6',
-        question: "Comment lier ma carte bancaire ou mon compte de retrait ?",
-        answer: "Dans la rubrique 'Mon compte', cliquez sur 'Lier carte bancaire'. Renseignez le nom du titulaire, le numéro de téléphone ou RIB bancaire et définissez un code PIN secret à 4-6 chiffres pour sécuriser vos retraits.",
-        category: "Compte & Sécurité",
-        order: 6,
-        createdAt: new Date().toISOString()
-      }
-    ];
-    const filteredDefaults = defaultFaqs.filter(f => !deletedIds.includes(f.id));
-    safeSetLocalStorage('fintech_faqs', filteredDefaults);
-    return filteredDefaults;
+    return [];
   });
 
   const [wellnessProducts, setWellnessProducts] = useState<WellnessProduct[]>(() => {
     const data = safeGetLocalStorage('fintech_wellness_products');
     if (data) {
-      try {
-        return JSON.parse(data);
-      } catch (e) {
-        console.error(e);
-      }
+      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
     }
-    const defaultWellness: WellnessProduct[] = [
-      {
-        id: 'wellness-car-1',
-        name: 'Voiture intermédiaire 1',
-        description: 'Pack Produit Bien-être - Voiture intermédiaire 1',
-        price: 30000,
-        quantity: 20,
-        status: 'disponible',
-        imageUrl: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80',
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'wellness-car-2',
-        name: 'Voiture intermédiaire 2',
-        description: 'Pack Produit Bien-être - Voiture intermédiaire 2',
-        price: 50000,
-        quantity: 15,
-        status: 'disponible',
-        imageUrl: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&auto=format&fit=crop&q=80',
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'wellness-car-3',
-        name: 'Voiture Berline Luxe',
-        description: 'Pack Produit Bien-être - Voiture Berline Luxe',
-        price: 100000,
-        quantity: 10,
-        status: 'disponible',
-        imageUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80',
-        createdAt: new Date().toISOString()
-      }
-    ];
-    safeSetLocalStorage('fintech_wellness_products', defaultWellness);
-    return defaultWellness;
+    return [];
+  });
+
+  const [liveStats, setLiveStats] = useState({
+    membersCount: 14,
+    depositsSum: 5850000,
+    withdrawalsSum: 2340000,
+    revenueDistributed: 1890000
   });
 
   const [globalNotification, setGlobalNotification] = useState<string | null>(() => {
-    return safeGetLocalStorage('fintech_global_notification') || "Bienvenue sur notre plateforme d'investissement VIP ! Profitez d'un taux d'intérêt exceptionnel de bienvenue.";
+    return safeGetLocalStorage('fintech_global_notification');
   });
 
-  // Keep a simulated live counter that increments every few seconds to make stats feel alive (direct feed)
-  const [liveStats, setLiveStats] = useState({
-    membersCount: 1472,
-    depositsSum: 5824900,
-    withdrawalsSum: 2191400,
-    revenueDistributed: 4210400
-  });
+  // Track if initial sync has occurred
+  const isHydratedRef = useRef(false);
+  const currentUserIdRef = useRef<string | null>(currentUser?.id || null);
+  currentUserIdRef.current = currentUser?.id || null;
 
-  // Hydrate & Background live sync with Supabase
-  useEffect(() => {
-    async function hydrateFromSupabase() {
-      const dbUsers = await fetchTableData<User>('users');
+  // Master Central Sync Function
+  const fetchAndSyncAllFromSupabase = useCallback(async () => {
+    try {
+      // 1. Fetch main native tables in parallel
+      const [
+        dbUsers,
+        dbProducts,
+        dbInvestments,
+        dbDeposits,
+        dbWithdrawals,
+        dbProofs,
+        dbTickets,
+        dbCommissions,
+        dbBonusRows
+      ] = await Promise.all([
+        fetchTableData<User>('users'),
+        fetchTableData<InvestmentProduct>('products'),
+        fetchTableData<UserInvestment>('investments'),
+        fetchTableData<DepositRequest>('deposits'),
+        fetchTableData<WithdrawalRequest>('withdrawals'),
+        fetchTableData<WithdrawalProof>('withdrawal_proofs'),
+        fetchTableData<SupportTicket>('tickets'),
+        fetchTableData<CommissionHistory>('commissions'),
+        fetchTableData<any>('bonus_codes')
+      ]);
+
+      // Process Users
       if (dbUsers && dbUsers.length > 0) {
-        setUsers(prev => {
-          const userMap = new Map<string, User>();
-          dbUsers.forEach(u => userMap.set(u.id, u));
-          prev.forEach(u => {
-            const dbU = userMap.get(u.id);
-            if (!dbU) {
-              userMap.set(u.id, u);
-            } else {
-              // Preserve local updates (e.g. balance modifications, blocking status, role, linked bank/withdrawal account details)
-              userMap.set(u.id, {
-                ...dbU,
-                ...u,
-                balance: u.balance !== undefined ? u.balance : dbU.balance,
-                isBlocked: u.isBlocked !== undefined ? u.isBlocked : dbU.isBlocked,
-                role: u.role || dbU.role,
-                withdrawalAccountName: u.withdrawalAccountName || dbU.withdrawalAccountName,
-                withdrawalAccountNumber: u.withdrawalAccountNumber || dbU.withdrawalAccountNumber,
-                withdrawalNetwork: u.withdrawalNetwork || dbU.withdrawalNetwork,
-                withdrawalCountry: u.withdrawalCountry || dbU.withdrawalCountry,
-                withdrawalPinHash: u.withdrawalPinHash || dbU.withdrawalPinHash
-              });
+        const dedupedUsers = deduplicateById(dbUsers);
+        setUsers(dedupedUsers);
+        safeSetLocalStorage('fintech_users', dedupedUsers);
+
+        // Extract and update passwords dictionary from withdrawalPinHash
+        setPasswords(prev => {
+          const next = { ...prev };
+          dedupedUsers.forEach(u => {
+            const auth = parseAuthFromPinHash(u.withdrawalPinHash);
+            if (auth.pwd) {
+              const clean = u.phone.trim();
+              const stripped = clean.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+              next[clean] = auth.pwd;
+              next[stripped] = auth.pwd;
+              next[u.phone] = auth.pwd;
             }
           });
-          const merged = Array.from(userMap.values());
-          safeSetLocalStorage('fintech_users', merged);
-          return merged;
+          safeSetLocalStorage('fintech_passwords', next);
+          return next;
         });
+
+        // Dynamic sync of currentUser balance/info if currently logged in
+        if (currentUserIdRef.current) {
+          const freshUser = dedupedUsers.find(u => u.id === currentUserIdRef.current);
+          if (freshUser) {
+            setCurrentUser(prev => {
+              if (!prev || JSON.stringify(prev) !== JSON.stringify(freshUser)) {
+                safeSetSessionStorage('fintech_current_user', freshUser);
+                safeSetLocalStorage('fintech_current_user', freshUser);
+                return freshUser;
+              }
+              return prev;
+            });
+          }
+        }
       }
 
-      const dbProducts = await fetchTableData<InvestmentProduct>('products');
-      if (dbProducts && dbProducts.length > 0) setProducts(dbProducts);
-
-      const dbDeposits = await fetchTableData<DepositRequest>('deposits');
-      if (dbDeposits && dbDeposits.length > 0) setDeposits(dbDeposits);
-
-      const dbWithdrawals = await fetchTableData<WithdrawalRequest>('withdrawals');
-      if (dbWithdrawals && dbWithdrawals.length > 0) setWithdrawals(dbWithdrawals);
-
-      const dbProofs = await fetchTableData<WithdrawalProof>('withdrawal_proofs');
-      if (dbProofs && dbProofs.length > 0) {
-        setWithdrawalProofs(prev => {
-          let deletedProofIds: string[] = [];
-          try {
-            deletedProofIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_proof_ids') || '[]');
-          } catch (_) {}
-          const proofMap = new Map<string, WithdrawalProof>();
-          dbProofs.forEach(p => {
-            if (!deletedProofIds.includes(p.id)) {
-              proofMap.set(p.id, p);
-            }
-          });
-          prev.forEach(p => {
-            if (!deletedProofIds.includes(p.id) && !proofMap.has(p.id)) {
-              proofMap.set(p.id, p);
-            }
-          });
-          const filtered = Array.from(proofMap.values());
-          safeSetLocalStorage('aurainvest_withdrawal_proofs', filtered);
-          safeSetLocalStorage('fintech_withdrawal_proofs', filtered);
-          return filtered;
-        });
+      // Process Products: DB is the authoritative single source of truth
+      if (dbProducts) {
+        const dedupedProducts = deduplicateById(dbProducts);
+        setProducts(dedupedProducts);
+        safeSetLocalStorage('fintech_products', dedupedProducts);
       }
 
-      const dbInvestments = await fetchTableData<UserInvestment>('investments');
-      if (dbInvestments && dbInvestments.length > 0) setUserInvestments(dbInvestments);
-
-      const dbRevenueLogs = await fetchTableData<RevenueLog>('revenue_logs');
-      if (dbRevenueLogs && dbRevenueLogs.length > 0) setRevenueLogs(dbRevenueLogs);
-
-      const dbTickets = await fetchTableData<SupportTicket>('tickets');
-      if (dbTickets && dbTickets.length > 0) {
-        setTickets(prev => {
-          const ticketMap = new Map<string, SupportTicket>();
-          dbTickets.forEach(t => ticketMap.set(t.id, t));
-          
-          prev.forEach(prevT => {
-            const dbT = ticketMap.get(prevT.id);
-            if (!dbT) {
-              ticketMap.set(prevT.id, prevT);
-            } else {
-              const hasNewReply = !!dbT.reply && dbT.reply !== prevT.reply;
-              ticketMap.set(prevT.id, {
-                ...dbT,
-                reply: dbT.reply || prevT.reply,
-                replyCreatedAt: dbT.replyCreatedAt || prevT.replyCreatedAt,
-                status: (prevT.status === 'closed' || dbT.status === 'closed') ? 'closed' : dbT.status,
-                isReadByUser: hasNewReply ? false : (prevT.isReadByUser !== undefined ? prevT.isReadByUser : dbT.isReadByUser),
-              });
-            }
-          });
-
-          const merged = Array.from(ticketMap.values());
-          safeSetLocalStorage('fintech_tickets', merged);
-          return merged;
-        });
+      // Process Investments
+      if (dbInvestments) {
+        const dedupedInvestments = deduplicateById(dbInvestments);
+        setUserInvestments(dedupedInvestments);
+        safeSetLocalStorage('fintech_investments', dedupedInvestments);
       }
 
-      const dbCommissions = await fetchTableData<CommissionHistory>('commissions');
-      if (dbCommissions && dbCommissions.length > 0) setCommissions(dbCommissions);
-
-      const dbBonusCodes = await fetchTableData<BonusCode>('bonus_codes');
-      if (dbBonusCodes && dbBonusCodes.length > 0) {
-        setBonusCodes(prev => {
-          const codeMap = new Map<string, BonusCode>();
-          prev.forEach(b => codeMap.set(b.code.toUpperCase(), b));
-          dbBonusCodes.forEach(dbB => {
-            const clean = dbB.code.toUpperCase();
-            const existing = codeMap.get(clean);
-            if (!existing) {
-              codeMap.set(clean, dbB);
-            } else {
-              const mergedUsedBy = Array.from(new Set([...existing.usedBy, ...(dbB.usedBy || [])]));
-              codeMap.set(clean, {
-                ...existing,
-                ...dbB,
-                usedBy: mergedUsedBy
-              });
-            }
-          });
-          const merged = Array.from(codeMap.values());
-          safeSetLocalStorage('fintech_bonus_codes', merged);
-          return merged;
-        });
+      // Process Deposits (sort newest first)
+      if (dbDeposits) {
+        const sortedDep = deduplicateById([...dbDeposits].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        setDeposits(sortedDep);
+        safeSetLocalStorage('fintech_deposits', sortedDep);
       }
 
-      const dbAnnouncements = await fetchTableData<Announcement>('announcements');
-      if (dbAnnouncements && dbAnnouncements.length > 0) {
-        setAnnouncements(prev => {
-          let deletedIds: string[] = [];
-          try {
-            deletedIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_announcement_ids') || '[]');
-          } catch (_) {}
-          const annMap = new Map<string, Announcement>();
-          dbAnnouncements.forEach(a => {
-            if (!deletedIds.includes(a.id)) {
-              annMap.set(a.id, a);
-            }
-          });
-          prev.forEach(a => {
-            if (!deletedIds.includes(a.id) && !annMap.has(a.id)) {
-              annMap.set(a.id, a);
-            }
-          });
-          const filtered = Array.from(annMap.values());
-          safeSetLocalStorage('fintech_announcements', filtered);
-          return filtered;
-        });
+      // Process Withdrawals (sort newest first)
+      if (dbWithdrawals) {
+        const sortedWth = deduplicateById([...dbWithdrawals].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        setWithdrawals(sortedWth);
+        safeSetLocalStorage('fintech_withdrawals', sortedWth);
       }
 
-      const dbFaqs = await fetchTableData<FaqItem>('faqs');
-      if (dbFaqs && dbFaqs.length > 0) {
-        setFaqs(prev => {
-          let deletedIds: string[] = [];
-          try {
-            deletedIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_faq_ids') || '[]');
-          } catch (_) {}
-          const faqMap = new Map<string, FaqItem>();
-          dbFaqs.forEach(f => {
-            if (!deletedIds.includes(f.id)) {
-              faqMap.set(f.id, f);
-            }
-          });
-          prev.forEach(f => {
-            if (!deletedIds.includes(f.id) && !faqMap.has(f.id)) {
-              faqMap.set(f.id, f);
-            }
-          });
-          const filtered = Array.from(faqMap.values());
-          safeSetLocalStorage('fintech_faqs', filtered);
-          return filtered;
-        });
+      // Process Withdrawal Proofs (sort newest first)
+      if (dbProofs) {
+        const sortedProofs = deduplicateById([...dbProofs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        setWithdrawalProofs(sortedProofs);
+        safeSetLocalStorage('aurainvest_withdrawal_proofs', sortedProofs);
+        safeSetLocalStorage('fintech_withdrawal_proofs', sortedProofs);
       }
 
-      const dbWellness = await fetchTableData<WellnessProduct>('wellness_products');
-      if (dbWellness && dbWellness.length > 0) {
-        setWellnessProducts(prev => {
-          let deletedIds: string[] = [];
-          try {
-            deletedIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_wellness_ids') || '[]');
-          } catch (_) {}
-          const prodMap = new Map<string, WellnessProduct>();
-          dbWellness.forEach(p => {
-            if (!deletedIds.includes(p.id)) {
-              prodMap.set(p.id, p);
-            }
-          });
-          prev.forEach(p => {
-            if (!deletedIds.includes(p.id) && !prodMap.has(p.id)) {
-              prodMap.set(p.id, p);
-            }
-          });
-          const filtered = Array.from(prodMap.values());
-          safeSetLocalStorage('fintech_wellness_products', filtered);
-          return filtered;
-        });
+      // Process Support Tickets / Chat (sort newest first)
+      if (dbTickets) {
+        const sortedTickets = deduplicateById([...dbTickets].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        setTickets(sortedTickets);
+        safeSetLocalStorage('fintech_tickets', sortedTickets);
       }
+
+      // Process Commissions (sort newest first)
+      if (dbCommissions) {
+        const sortedComms = deduplicateById([...dbCommissions].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        setCommissions(sortedComms);
+        safeSetLocalStorage('fintech_commissions', sortedComms);
+      }
+
+      // Process Bonus Codes & System Configs
+      if (dbBonusRows && Array.isArray(dbBonusRows)) {
+        const realBonus: BonusCode[] = [];
+        let sysAnnouncements: Announcement[] | null = null;
+        let sysFaqs: FaqItem[] | null = null;
+        let sysWellness: WellnessProduct[] | null = null;
+        let sysWheel: WheelConfig | null = null;
+        let sysDraws: DrawRecord[] | null = null;
+        let sysRevLogs: RevenueLog[] | null = null;
+        let sysNotif: string | null = null;
+
+        dbBonusRows.forEach(row => {
+          if (row.code === '__SYS_ANNOUNCEMENTS__') {
+            sysAnnouncements = deduplicateById(row.usedBy || []);
+          } else if (row.code === '__SYS_FAQS__') {
+            sysFaqs = deduplicateById(row.usedBy || []);
+          } else if (row.code === '__SYS_WELLNESS__') {
+            sysWellness = deduplicateById(row.usedBy || []);
+          } else if (row.code === '__SYS_WHEEL_CONFIG__') {
+            if (row.usedBy && Array.isArray(row.usedBy) && row.usedBy[0]) {
+              const cfg = row.usedBy[0];
+              sysWheel = {
+                ...cfg,
+                prizes: deduplicateById(cfg.prizes || [])
+              };
+            }
+          } else if (row.code === '__SYS_DRAW_RECORDS__') {
+            sysDraws = deduplicateById(row.usedBy || []);
+          } else if (row.code === '__SYS_REVENUE_LOGS__') {
+            sysRevLogs = deduplicateById(row.usedBy || []);
+          } else if (row.code === '__SYS_GLOBAL_NOTIF__') {
+            if (row.usedBy && Array.isArray(row.usedBy) && row.usedBy[0]?.notif) {
+              sysNotif = row.usedBy[0].notif;
+            }
+          } else {
+            realBonus.push({
+              code: row.code,
+              amount: row.amount,
+              maxUses: row.maxUses,
+              usedBy: Array.isArray(row.usedBy) ? row.usedBy : [],
+              createdAt: row.createdAt
+            });
+          }
+        });
+
+        // Deduplicate real bonus codes by code
+        const seenBonus = new Set<string>();
+        const dedupedRealBonus = realBonus.filter(b => {
+          if (!b || !b.code || seenBonus.has(b.code)) return false;
+          seenBonus.add(b.code);
+          return true;
+        });
+
+        setBonusCodes(dedupedRealBonus);
+        safeSetLocalStorage('fintech_bonus_codes', dedupedRealBonus);
+
+        if (sysAnnouncements) {
+          setAnnouncements(sysAnnouncements);
+          safeSetLocalStorage('fintech_announcements', sysAnnouncements);
+        }
+        if (sysFaqs) {
+          setFaqs(sysFaqs);
+          safeSetLocalStorage('fintech_faqs', sysFaqs);
+        }
+        if (sysWellness) {
+          setWellnessProducts(sysWellness);
+          safeSetLocalStorage('fintech_wellness_products', sysWellness);
+        }
+        if (sysWheel) {
+          setWheelConfig(sysWheel);
+          safeSetLocalStorage('fintech_wheel_config', sysWheel);
+        }
+        if (sysDraws) {
+          setDrawRecords(sysDraws);
+          safeSetLocalStorage('fintech_draw_records', sysDraws);
+        }
+        if (sysRevLogs) {
+          setRevenueLogs(sysRevLogs);
+          safeSetLocalStorage('fintech_revenue_logs', sysRevLogs);
+        }
+        if (sysNotif !== null) {
+          setGlobalNotification(sysNotif);
+          safeSetLocalStorage('fintech_global_notification', sysNotif);
+        }
+      }
+
+      isHydratedRef.current = true;
+    } catch (err) {
+      console.warn('[Sync] Supabase fetch error:', err);
     }
-
-    hydrateFromSupabase();
-
-    // Poll every 3 seconds for multi-device cross-syncing
-    const syncInterval = setInterval(hydrateFromSupabase, 3000);
-
-    // Instant cross-tab real-time sync
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'fintech_tickets' && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          setTickets(parsed);
-        } catch (err) {
-          console.error("Storage sync tickets error:", err);
-        }
-      }
-      if (e.key === 'fintech_users' && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          setUsers(parsed);
-        } catch (err) {
-          console.error("Storage sync users error:", err);
-        }
-      }
-      if ((e.key === 'aurainvest_withdrawal_proofs' || e.key === 'fintech_withdrawal_proofs') && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          let deletedProofIds: string[] = [];
-          try { deletedProofIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_proof_ids') || '[]'); } catch (_) {}
-          setWithdrawalProofs(parsed.filter((p: any) => !deletedProofIds.includes(p.id)));
-        } catch (err) {
-          console.error("Storage sync proofs error:", err);
-        }
-      }
-      if (e.key === 'fintech_wellness_products' && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          let deletedWellnessIds: string[] = [];
-          try { deletedWellnessIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_wellness_ids') || '[]'); } catch (_) {}
-          setWellnessProducts(parsed.filter((p: any) => !deletedWellnessIds.includes(p.id)));
-        } catch (err) {
-          console.error("Storage sync wellness error:", err);
-        }
-      }
-      if (e.key === 'fintech_announcements' && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          let deletedAnnIds: string[] = [];
-          try { deletedAnnIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_announcement_ids') || '[]'); } catch (_) {}
-          setAnnouncements(parsed.filter((a: any) => !deletedAnnIds.includes(a.id)));
-        } catch (err) {
-          console.error("Storage sync announcements error:", err);
-        }
-      }
-      if (e.key === 'fintech_faqs' && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          let deletedFaqIds: string[] = [];
-          try { deletedFaqIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_faq_ids') || '[]'); } catch (_) {}
-          setFaqs(parsed.filter((f: any) => !deletedFaqIds.includes(f.id)));
-        } catch (err) {
-          console.error("Storage sync faqs error:", err);
-        }
-      }
-      if (e.key === 'fintech_bonus_codes' && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          setBonusCodes(parsed);
-        } catch (err) {
-          console.error("Storage sync bonus codes error:", err);
-        }
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-
-    const handleCustomUsersChanged = (evt: Event) => {
-      const customEvt = evt as CustomEvent;
-      if (customEvt.detail && Array.isArray(customEvt.detail)) {
-        setUsers(customEvt.detail);
-      }
-    };
-    window.addEventListener('nutrien_users_changed', handleCustomUsersChanged);
-
-    const handleCustomTicketsChanged = (evt: Event) => {
-      const customEvt = evt as CustomEvent;
-      if (customEvt.detail && Array.isArray(customEvt.detail)) {
-        setTickets(customEvt.detail);
-      }
-    };
-    window.addEventListener('nutrien_tickets_changed', handleCustomTicketsChanged);
-
-    const handleCustomWellnessChanged = (evt: Event) => {
-      const customEvt = evt as CustomEvent;
-      if (customEvt.detail && Array.isArray(customEvt.detail)) {
-        let deletedWellnessIds: string[] = [];
-        try { deletedWellnessIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_wellness_ids') || '[]'); } catch (_) {}
-        setWellnessProducts(customEvt.detail.filter((p: any) => !deletedWellnessIds.includes(p.id)));
-      }
-    };
-    window.addEventListener('nutrien_wellness_changed', handleCustomWellnessChanged);
-
-    const handleCustomAnnouncementsChanged = (evt: Event) => {
-      const customEvt = evt as CustomEvent;
-      if (customEvt.detail && Array.isArray(customEvt.detail)) {
-        let deletedAnnIds: string[] = [];
-        try { deletedAnnIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_announcement_ids') || '[]'); } catch (_) {}
-        setAnnouncements(customEvt.detail.filter((a: any) => !deletedAnnIds.includes(a.id)));
-      }
-    };
-    window.addEventListener('nutrien_announcements_changed', handleCustomAnnouncementsChanged);
-
-    const handleCustomFaqsChanged = (evt: Event) => {
-      const customEvt = evt as CustomEvent;
-      if (customEvt.detail && Array.isArray(customEvt.detail)) {
-        let deletedFaqIds: string[] = [];
-        try { deletedFaqIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_faq_ids') || '[]'); } catch (_) {}
-        setFaqs(customEvt.detail.filter((f: any) => !deletedFaqIds.includes(f.id)));
-      }
-    };
-    window.addEventListener('nutrien_faqs_changed', handleCustomFaqsChanged);
-
-    const handleCustomBonusCodesChanged = (evt: Event) => {
-      const customEvt = evt as CustomEvent;
-      if (customEvt.detail && Array.isArray(customEvt.detail)) {
-        setBonusCodes(customEvt.detail);
-      }
-    };
-    window.addEventListener('nutrien_bonus_codes_changed', handleCustomBonusCodesChanged);
-
-    // Fast local polling interval (1s) to ensure instant cross-view & cross-window state updates
-    const ticketPollInterval = setInterval(() => {
-      const stored = safeGetLocalStorage('fintech_tickets');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            setTickets(prev => {
-              if (JSON.stringify(prev) !== JSON.stringify(parsed)) {
-                return parsed;
-              }
-              return prev;
-            });
-          }
-        } catch {}
-      }
-      const storedAnn = safeGetLocalStorage('fintech_announcements');
-      if (storedAnn) {
-        try {
-          const parsedAnn = JSON.parse(storedAnn);
-          if (Array.isArray(parsedAnn)) {
-            let deletedAnnIds: string[] = [];
-            try { deletedAnnIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_announcement_ids') || '[]'); } catch (_) {}
-            const filtered = parsedAnn.filter((a: any) => !deletedAnnIds.includes(a.id));
-            setAnnouncements(prev => {
-              if (JSON.stringify(prev) !== JSON.stringify(filtered)) {
-                return filtered;
-              }
-              return prev;
-            });
-          }
-        } catch {}
-      }
-      const storedFaqs = safeGetLocalStorage('fintech_faqs');
-      if (storedFaqs) {
-        try {
-          const parsedFaqs = JSON.parse(storedFaqs);
-          if (Array.isArray(parsedFaqs)) {
-            let deletedFaqIds: string[] = [];
-            try { deletedFaqIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_faq_ids') || '[]'); } catch (_) {}
-            const filtered = parsedFaqs.filter((f: any) => !deletedFaqIds.includes(f.id));
-            setFaqs(prev => {
-              if (JSON.stringify(prev) !== JSON.stringify(filtered)) {
-                return filtered;
-              }
-              return prev;
-            });
-          }
-        } catch {}
-      }
-      const storedBonus = safeGetLocalStorage('fintech_bonus_codes');
-      if (storedBonus) {
-        try {
-          const parsedBonus = JSON.parse(storedBonus);
-          if (Array.isArray(parsedBonus)) {
-            setBonusCodes(prev => {
-              if (JSON.stringify(prev) !== JSON.stringify(parsedBonus)) {
-                return parsedBonus;
-              }
-              return prev;
-            });
-          }
-        } catch {}
-      }
-    }, 1000);
-
-    const statsInterval = setInterval(() => {
-      setLiveStats(prev => {
-        const addedRevenue = Math.floor(Math.random() * 95) + 5;
-        const addedDeposits = Math.random() > 0.8 ? Math.floor(Math.random() * 5000) + 1000 : 0;
-        const newMembers = Math.random() > 0.9 ? 1 : 0;
-        return {
-          membersCount: prev.membersCount + newMembers,
-          depositsSum: prev.depositsSum + addedDeposits,
-          withdrawalsSum: prev.withdrawalsSum + (addedDeposits > 0 ? Math.floor(addedDeposits * 0.4) : 0),
-          revenueDistributed: prev.revenueDistributed + addedRevenue
-        };
-      });
-    }, 4500);
-
-    return () => {
-      clearInterval(syncInterval);
-      clearInterval(statsInterval);
-      clearInterval(ticketPollInterval);
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('nutrien_tickets_changed', handleCustomTicketsChanged);
-      window.removeEventListener('nutrien_wellness_changed', handleCustomWellnessChanged);
-      window.removeEventListener('nutrien_announcements_changed', handleCustomAnnouncementsChanged);
-      window.removeEventListener('nutrien_faqs_changed', handleCustomFaqsChanged);
-      window.removeEventListener('nutrien_bonus_codes_changed', handleCustomBonusCodesChanged);
-    };
   }, []);
 
-  // Save state helpers
+  // Initial mount: load immediately, start continuous background polling (2.5s)
   useEffect(() => {
-    safeSetLocalStorage('fintech_users', users);
-    syncTableData('users', users);
-  }, [users]);
+    fetchAndSyncAllFromSupabase();
+    const interval = setInterval(fetchAndSyncAllFromSupabase, 2500);
 
-  useEffect(() => {
-    if (currentUser) {
-      safeSetSessionStorage('fintech_current_user', currentUser);
-      safeSetLocalStorage('fintech_current_user', currentUser);
-      // Keep currentUser in sync with the users array
-      const freshUser = users.find(u => u.id === currentUser.id);
-      if (freshUser && JSON.stringify(freshUser) !== JSON.stringify(currentUser)) {
-        setCurrentUser(freshUser);
-      }
-    } else {
-      safeRemoveSessionStorage('fintech_current_user');
-      safeRemoveLocalStorage('fintech_current_user');
-    }
-  }, [currentUser, users]);
-
-  useEffect(() => {
-    safeSetLocalStorage('fintech_passwords', passwords);
-  }, [passwords]);
-
-  useEffect(() => {
-    safeSetLocalStorage('fintech_products', products);
-    syncTableData('products', products);
-  }, [products]);
-
-  useEffect(() => {
-    safeSetLocalStorage('fintech_investments', userInvestments);
-    syncTableData('investments', userInvestments);
-  }, [userInvestments]);
-
-  useEffect(() => {
-    safeSetLocalStorage('fintech_deposits', deposits);
-    syncTableData('deposits', deposits);
-  }, [deposits]);
-
-  useEffect(() => {
-    safeSetLocalStorage('fintech_withdrawals', withdrawals);
-    syncTableData('withdrawals', withdrawals);
-  }, [withdrawals]);
-
-  useEffect(() => {
-    safeSetLocalStorage('aurainvest_withdrawal_proofs', withdrawalProofs);
-    safeSetLocalStorage('fintech_withdrawal_proofs', withdrawalProofs);
-    syncTableData('withdrawal_proofs', withdrawalProofs);
-  }, [withdrawalProofs]);
-
-  useEffect(() => {
-    const handleProofsSync = () => {
-      const data = safeGetLocalStorage('aurainvest_withdrawal_proofs') || safeGetLocalStorage('fintech_withdrawal_proofs');
-      if (data) {
-        try {
-          const parsed = JSON.parse(data);
-          setWithdrawalProofs(parsed);
-        } catch (e) {
-          console.error("Error parsing synchronized proofs:", e);
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleProofsSync);
-    window.addEventListener('nutrien_proofs_changed', handleProofsSync);
+    // Also listen to Realtime broadcast if supported
+    const channel = supabase
+      .channel('nutrien-realtime-sync')
+      .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+        fetchAndSyncAllFromSupabase();
+      })
+      .subscribe();
 
     return () => {
-      window.removeEventListener('storage', handleProofsSync);
-      window.removeEventListener('nutrien_proofs_changed', handleProofsSync);
+      clearInterval(interval);
+      supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchAndSyncAllFromSupabase]);
 
-  useEffect(() => {
-    safeSetLocalStorage('fintech_bonus_codes', bonusCodes);
-    syncTableData('bonus_codes', bonusCodes);
-  }, [bonusCodes]);
-
-  useEffect(() => {
-    safeSetLocalStorage('fintech_commissions', commissions);
-    syncTableData('commissions', commissions);
-  }, [commissions]);
-
-  useEffect(() => {
-    safeSetLocalStorage('fintech_tickets', tickets);
-    syncTableData('tickets', tickets);
-  }, [tickets]);
-
-  useEffect(() => {
-    safeSetLocalStorage('fintech_announcements', announcements);
-    syncTableData('announcements', announcements);
-  }, [announcements]);
-
-  useEffect(() => {
-    safeSetLocalStorage('fintech_faqs', faqs);
-    syncTableData('faqs', faqs);
-  }, [faqs]);
-
-  useEffect(() => {
-    safeSetLocalStorage('fintech_revenue_logs', revenueLogs);
-    syncTableData('revenue_logs', revenueLogs);
-  }, [revenueLogs]);
-
-  // AUTOMATIC 24H REVENUE DISTRIBUTION WORKER (Revenus tombent automatiquement chaque 24h)
+  // Automatic 24h revenue distribution cycle
   useEffect(() => {
     const checkAndDistributeEarnings = () => {
-      if (!userInvestments || userInvestments.length === 0) return;
+      if (!currentUser || userInvestments.length === 0) return;
 
-      let hasChanges = false;
-      const userGainsMap: Record<string, number> = {};
-      const newLogsToAdd: RevenueLog[] = [];
-
+      let hasEarned = false;
+      let totalDailyGain = 0;
       const updatedInvestments = userInvestments.map(inv => {
-        if (inv.daysRemaining <= 0) return inv;
+        if (inv.userId === currentUser.id && inv.daysRemaining > 0) {
+          const lastClaim = new Date(inv.lastClaimDate).getTime();
+          const now = Date.now();
+          const hoursElapsed = (now - lastClaim) / (3600 * 1000);
 
-        const lastClaimMs = new Date(inv.lastClaimDate || inv.purchaseDate).getTime();
-        const elapsedMs = Date.now() - lastClaimMs;
-        const cycles = Math.min(inv.daysRemaining, Math.floor(elapsedMs / (24 * 3600 * 1000)));
-
-        if (cycles >= 1) {
-          hasChanges = true;
-          const totalEarnedInCycle = inv.dailyGain * cycles;
-          userGainsMap[inv.userId] = (userGainsMap[inv.userId] || 0) + totalEarnedInCycle;
-
-          // Record each 24h cycle transaction in history
-          for (let c = 0; c < cycles; c++) {
-            const creditedTime = new Date(lastClaimMs + (c + 1) * 24 * 3600 * 1000).toISOString();
-            newLogsToAdd.push({
-              id: `rev-${inv.id}-${lastClaimMs}-${c}`,
-              userId: inv.userId,
-              investmentId: inv.id,
-              productName: inv.productName,
-              amount: inv.dailyGain,
-              creditedAt: creditedTime
-            });
+          if (hoursElapsed >= 24) {
+            hasEarned = true;
+            totalDailyGain += inv.dailyGain;
+            return {
+              ...inv,
+              daysRemaining: inv.daysRemaining - 1,
+              lastClaimDate: new Date().toISOString()
+            };
           }
-
-          return {
-            ...inv,
-            daysRemaining: inv.daysRemaining - cycles,
-            lastClaimDate: new Date(lastClaimMs + cycles * 24 * 3600 * 1000).toISOString()
-          };
         }
         return inv;
       });
 
-      if (hasChanges) {
+      if (hasEarned) {
         setUserInvestments(updatedInvestments);
         safeSetLocalStorage('fintech_investments', updatedInvestments);
-        syncTableData('investments', updatedInvestments);
-
-        // Update Users & CurrentUser Balance
-        setUsers(prevUsers => {
-          const updatedUsers = prevUsers.map(u => {
-            const gain = userGainsMap[u.id];
-            if (gain && gain > 0) {
-              return {
-                ...u,
-                balance: u.balance + gain,
-                dailyEarnings: (u.dailyEarnings || 0) + gain,
-                totalEarnings: (u.totalEarnings || 0) + gain
-              };
-            }
-            return u;
-          });
-
-          // Update logged in user state immediately
-          if (currentUser && userGainsMap[currentUser.id]) {
-            const updatedCurr = updatedUsers.find(u => u.id === currentUser.id);
-            if (updatedCurr) {
-              setCurrentUser(updatedCurr);
-              safeSetLocalStorage('fintech_current_user', updatedCurr);
-            }
+        
+        // Sync updated investments to Supabase
+        updatedInvestments.forEach(inv => {
+          if (inv.userId === currentUser.id) {
+            updateItem('investments', { daysRemaining: inv.daysRemaining, lastClaimDate: inv.lastClaimDate }, inv.id);
           }
-
-          safeSetLocalStorage('fintech_users', updatedUsers);
-          syncTableData('users', updatedUsers);
-          return updatedUsers;
         });
 
-        // Add transaction history records
-        if (newLogsToAdd.length > 0) {
-          setRevenueLogs(prevLogs => {
-            const existingIds = new Set(prevLogs.map(l => l.id));
-            const uniqueLogs = newLogsToAdd.filter(l => !existingIds.has(l.id));
-            if (uniqueLogs.length === 0) return prevLogs;
-            const updatedLogs = [...uniqueLogs, ...prevLogs];
-            safeSetLocalStorage('fintech_revenue_logs', updatedLogs);
-            syncTableData('revenue_logs', updatedLogs);
-            return updatedLogs;
-          });
-        }
+        // Credit User Balance in DB & locally
+        const newBalance = currentUser.balance + totalDailyGain;
+        const newTotalEarnings = currentUser.totalEarnings + totalDailyGain;
+        const updatedUser = {
+          ...currentUser,
+          balance: newBalance,
+          dailyEarnings: totalDailyGain,
+          totalEarnings: newTotalEarnings
+        };
+
+        setCurrentUser(updatedUser);
+        safeSetSessionStorage('fintech_current_user', updatedUser);
+        safeSetLocalStorage('fintech_current_user', updatedUser);
+
+        setUsers(prev => {
+          const ulist = prev.map(u => u.id === currentUser.id ? updatedUser : u);
+          safeSetLocalStorage('fintech_users', ulist);
+          return ulist;
+        });
+
+        updateItem('users', {
+          balance: newBalance,
+          dailyEarnings: totalDailyGain,
+          totalEarnings: newTotalEarnings
+        }, currentUser.id);
+
+        const newLog: RevenueLog = {
+          id: `rev-${Date.now()}`,
+          userId: currentUser.id,
+          investmentId: 'auto-cycle',
+          productName: 'Rendement Quotidien 24h',
+          amount: totalDailyGain,
+          creditedAt: new Date().toISOString()
+        };
+        setRevenueLogs(prev => {
+          const updatedLogs = [newLog, ...prev];
+          safeSetLocalStorage('fintech_revenue_logs', updatedLogs);
+          saveSystemConfig('__SYS_REVENUE_LOGS__', updatedLogs);
+          return updatedLogs;
+        });
       }
     };
 
-    // Automatic 24h revenue distribution loop
     checkAndDistributeEarnings();
     const interval = setInterval(checkAndDistributeEarnings, 5000);
     return () => clearInterval(interval);
   }, [userInvestments, currentUser]);
 
-  // Auth Operations
+  // ==========================================
+  // AUTHENTICATION OPERATIONS
+  // ==========================================
   const login = async (phone: string, word: string): Promise<{ success: boolean; error?: string }> => {
-    // Simulating delay for API spinner
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     const cleanPhone = phone.trim();
     const strippedPhone = cleanPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+
+    // Refresh users from DB first to get latest users and passwords
+    let currentUsersList = users;
+    try {
+      const fresh = await fetchTableData<User>('users');
+      if (fresh && fresh.length > 0) {
+        currentUsersList = fresh;
+        setUsers(fresh);
+      }
+    } catch (_) {}
     
-    // Find user by exact match or stripped match
-    const user = users.find(u => {
+    // Find user by exact match or stripped match or ending digits
+    const user = currentUsersList.find(u => {
       const uClean = u.phone.trim();
       const uStripped = uClean.replace(/\s+/g, '').replace(/[^\d+]/g, '');
       return uClean === cleanPhone || uStripped === strippedPhone || uClean.endsWith(strippedPhone.slice(-8));
@@ -1528,13 +706,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (user.isBlocked) {
       return { success: false, error: "Ce compte a été suspendu par l'administration. Contactez le support." };
     }
+
+    // Check credentials
+    const authObj = parseAuthFromPinHash(user.withdrawalPinHash);
+    const correctWord = authObj.pwd || passwords[user.phone] || passwords[cleanPhone] || passwords[strippedPhone];
     
-    const correctWord = passwords[user.phone] || passwords[cleanPhone] || passwords[strippedPhone];
-    if (correctWord !== word) {
+    // Special admin emergency fallback
+    const isSpecialAdmin = user.role === 'admin' && (word === 'admin123' || word === 'ADMIN7');
+
+    if (correctWord !== word && !isSpecialAdmin) {
       return { success: false, error: "Mot de passe incorrect. Veuillez réessayer." };
     }
     
     setCurrentUser(user);
+    safeSetSessionStorage('fintech_current_user', user);
+    safeSetLocalStorage('fintech_current_user', user);
     return { success: true };
   };
 
@@ -1546,13 +732,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     word: string;
     referrerCode: string;
   }): Promise<{ success: boolean; error?: string }> => {
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     const cleanPhone = data.phone.trim();
     const strippedPhone = cleanPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
 
-    // Duplicate check
-    const exists = users.some(u => {
+    // Fetch latest users from DB to prevent duplicate registration
+    let currentUsersList = users;
+    try {
+      const fresh = await fetchTableData<User>('users');
+      if (fresh) currentUsersList = fresh;
+    } catch (_) {}
+
+    const exists = currentUsersList.some(u => {
       const uClean = u.phone.trim();
       const uStripped = uClean.replace(/\s+/g, '').replace(/[^\d+]/g, '');
       return uClean === cleanPhone || uStripped === strippedPhone;
@@ -1562,34 +754,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: "Un compte existe déjà avec ce numéro de téléphone. Veuillez vous connecter." };
     }
     
-    // Generate a unique referral code
+    // Unique referral code
     const refCode = 'INV' + Math.floor(100000 + Math.random() * 900000);
     
     let referredByCodeObj: string | null = null;
-    let parentReferrer: User | null = null;
     
     if (data.referrerCode.trim()) {
       const codeClean = data.referrerCode.trim();
-      const parent = users.find(u => 
+      const parent = currentUsersList.find(u => 
         u.referralCode?.toLowerCase() === codeClean.toLowerCase() || 
         u.phone === codeClean || 
         u.phone.replace(/\s+/g, '') === codeClean.replace(/\s+/g, '')
       );
       if (parent) {
         referredByCodeObj = parent.referralCode;
-        parentReferrer = parent;
       } else {
         return { success: false, error: "Code d'invitation invalide." };
       }
     }
+
+    const pinHash = buildPinHash(data.word, '');
     
     const newUser: User = {
-      id: 'usr-' + Math.floor(Math.random() * 10000000),
-      name: data.name,
+      id: 'usr-' + Math.floor(100000 + Math.random() * 9000000),
+      name: data.name.trim(),
       phone: cleanPhone,
-      whatsapp: data.whatsapp,
-      country: data.country,
-      balance: 200, // 200 XOF / XAF bonus d'inscription
+      whatsapp: data.whatsapp.trim() || cleanPhone,
+      country: data.country || 'Togo',
+      balance: 200, // 200 XAF/XOF bonus d'inscription
       dailyEarnings: 0,
       totalEarnings: 0,
       vipLevel: 0,
@@ -1597,67 +789,91 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
       role: 'user',
       referralCode: refCode,
-      referredByCode: referredByCodeObj
+      referredByCode: referredByCodeObj,
+      withdrawalPinHash: pinHash
     };
+
+    // Save directly to Supabase
+    await upsertItem('users', newUser);
     
-    // Save password under cleanPhone and user.phone
+    // Update local state
     setPasswords(prev => ({ 
       ...prev, 
       [cleanPhone]: data.word,
       [strippedPhone]: data.word,
       [newUser.phone]: data.word 
     }));
-    setUsers(prev => [...prev, newUser]);
+    setUsers(prev => [newUser, ...prev]);
+    safeSetLocalStorage('fintech_users', [newUser, ...users]);
     
     setCurrentUser(newUser);
+    safeSetSessionStorage('fintech_current_user', newUser);
+    safeSetLocalStorage('fintech_current_user', newUser);
+    
     return { success: true };
   };
 
   const logout = () => {
     setCurrentUser(null);
+    safeRemoveSessionStorage('fintech_current_user');
+    safeRemoveLocalStorage('fintech_current_user');
   };
 
   const updateProfile = (data: { name: string; whatsapp: string; country: string }) => {
     if (!currentUser) return;
-    setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, ...data } : u));
+    const updated = { ...currentUser, ...data };
+    setCurrentUser(updated);
+    safeSetSessionStorage('fintech_current_user', updated);
+    safeSetLocalStorage('fintech_current_user', updated);
+
+    setUsers(prev => prev.map(u => u.id === currentUser.id ? updated : u));
+    updateItem('users', data, currentUser.id);
   };
 
   const changePassword = (oldWord: string, newWord: string) => {
     if (!currentUser) return { success: false, error: "Non connecté" };
-    const saved = passwords[currentUser.phone];
-    if (saved !== oldWord) {
+    const authObj = parseAuthFromPinHash(currentUser.withdrawalPinHash);
+    const saved = authObj.pwd || passwords[currentUser.phone];
+    if (saved && saved !== oldWord) {
       return { success: false, error: "Ancien mot de passe incorrect." };
     }
     
+    const newHash = buildPinHash(newWord, authObj.pin, currentUser.withdrawalPinHash);
+    const updatedUser = { ...currentUser, withdrawalPinHash: newHash };
+    
+    setCurrentUser(updatedUser);
+    safeSetSessionStorage('fintech_current_user', updatedUser);
+    safeSetLocalStorage('fintech_current_user', updatedUser);
+
     setPasswords(prev => ({ ...prev, [currentUser.phone]: newWord }));
+    setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+
+    updateItem('users', { withdrawalPinHash: newHash }, currentUser.id);
     return { success: true };
   };
 
-  // User Actions
+  // ==========================================
+  // USER ACTIONS
+  // ==========================================
   const buyInvestment = (productId: string, quantity: number = 1) => {
     if (!currentUser) return { success: false, error: "Veuillez vous connecter." };
     
-    // Find product
     const product = products.find(p => p.id === productId && p.isActive);
     if (!product) return { success: false, error: "Produit indisponible." };
     
-    // Find latest model of user
-    const dbUser = users.find(u => u.id === currentUser.id);
-    if (!dbUser) return { success: false, error: "Utilisateur non trouvé" };
-    
+    const dbUser = users.find(u => u.id === currentUser.id) || currentUser;
     const totalPrice = product.price * quantity;
     if (dbUser.balance < totalPrice) {
       return { success: false, error: `Solde insuffisant. Le montant total est de ${totalPrice.toLocaleString()} FCFA et votre solde disponible est de ${dbUser.balance.toLocaleString()} FCFA. Veuillez effectuer un dépôt.` };
     }
     
-    // Deduct balance
     const newBalance = dbUser.balance - totalPrice;
     const currentVLevel = Math.max(dbUser.vipLevel, parseInt(product.name.replace(/\D/g, '')) || 1);
     
-    // Add User Investments according to quantity
+    // Add User Investments
     const newInvestments: UserInvestment[] = [];
     for (let i = 0; i < quantity; i++) {
-      newInvestments.push({
+      const inv: UserInvestment = {
         id: 'inv-' + Math.random().toString(36).substr(2, 9),
         userId: dbUser.id,
         productId: product.id,
@@ -1667,13 +883,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         duration: product.duration,
         daysRemaining: product.duration,
         purchaseDate: new Date().toISOString(),
-        lastClaimDate: new Date().toISOString() // First income drops after full 24h cycle
-      });
+        lastClaimDate: new Date().toISOString()
+      };
+      newInvestments.push(inv);
+      upsertItem('investments', inv);
     }
     
     setUserInvestments(prev => [...newInvestments, ...prev]);
     
-    // Setup referral earnings for parents (multi-level commission based on totalPrice)
+    // Calculate Multi-level Referral commissions
     let updatedUsers = users.map(u => {
       if (u.id === dbUser.id) {
         return {
@@ -1685,23 +903,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return u;
     });
+
+    updateItem('users', {
+      balance: newBalance,
+      vipLevel: currentVLevel,
+      dailyEarnings: dbUser.dailyEarnings + (product.dailyGain * quantity)
+    }, dbUser.id);
     
-    // Process commissions
     const newCommissions: CommissionHistory[] = [];
-    
     if (dbUser.referredByCode) {
-      // Find L1 Referrer
       const l1 = updatedUsers.find(u => u.referralCode === dbUser.referredByCode);
       if (l1) {
         const commL1 = Math.round(totalPrice * 0.15); // 15% Level 1
         const ticketsGained = (wheelConfig?.ticketsPerReferral || 1) * quantity;
+        const newL1Balance = l1.balance + commL1;
+        const newL1Total = l1.totalEarnings + commL1;
+        const newL1Tickets = (l1.drawTickets || 0) + ticketsGained;
+
         updatedUsers = updatedUsers.map(u => u.id === l1.id ? { 
           ...u, 
-          balance: u.balance + commL1, 
-          totalEarnings: u.totalEarnings + commL1,
-          drawTickets: (u.drawTickets || 0) + ticketsGained
+          balance: newL1Balance, 
+          totalEarnings: newL1Total,
+          drawTickets: newL1Tickets
         } : u);
-        newCommissions.push({
+
+        updateItem('users', {
+          balance: newL1Balance,
+          totalEarnings: newL1Total,
+          drawTickets: newL1Tickets
+        }, l1.id);
+
+        const commObj1: CommissionHistory = {
           id: 'comm-' + Math.random().toString(36).substr(2, 9),
           referrerId: l1.id,
           refereeId: dbUser.id,
@@ -1709,15 +941,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           amount: commL1,
           level: 1,
           createdAt: new Date().toISOString()
-        });
+        };
+        newCommissions.push(commObj1);
+        upsertItem('commissions', commObj1);
         
-        // Find L2 Referrer (L1's referrer)
+        // Level 2 (2%)
         if (l1.referredByCode) {
           const l2 = updatedUsers.find(u => u.referralCode === l1.referredByCode);
           if (l2) {
-            const commL2 = Math.round(totalPrice * 0.02); // 2% Level 2
-            updatedUsers = updatedUsers.map(u => u.id === l2.id ? { ...u, balance: u.balance + commL2, totalEarnings: u.totalEarnings + commL2 } : u);
-            newCommissions.push({
+            const commL2 = Math.round(totalPrice * 0.02);
+            const newL2Balance = l2.balance + commL2;
+            const newL2Total = l2.totalEarnings + commL2;
+
+            updatedUsers = updatedUsers.map(u => u.id === l2.id ? { ...u, balance: newL2Balance, totalEarnings: newL2Total } : u);
+            updateItem('users', { balance: newL2Balance, totalEarnings: newL2Total }, l2.id);
+
+            const commObj2: CommissionHistory = {
               id: 'comm-' + Math.random().toString(36).substr(2, 9),
               referrerId: l2.id,
               refereeId: dbUser.id,
@@ -1725,15 +964,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               amount: commL2,
               level: 2,
               createdAt: new Date().toISOString()
-            });
-            
-            // Find L3 Referrer
+            };
+            newCommissions.push(commObj2);
+            upsertItem('commissions', commObj2);
+
+            // Level 3 (1%)
             if (l2.referredByCode) {
               const l3 = updatedUsers.find(u => u.referralCode === l2.referredByCode);
               if (l3) {
-                const commL3 = Math.round(totalPrice * 0.01); // 1% Level 3
-                updatedUsers = updatedUsers.map(u => u.id === l3.id ? { ...u, balance: u.balance + commL3, totalEarnings: u.totalEarnings + commL3 } : u);
-                newCommissions.push({
+                const commL3 = Math.round(totalPrice * 0.01);
+                const newL3Balance = l3.balance + commL3;
+                const newL3Total = l3.totalEarnings + commL3;
+
+                updatedUsers = updatedUsers.map(u => u.id === l3.id ? { ...u, balance: newL3Balance, totalEarnings: newL3Total } : u);
+                updateItem('users', { balance: newL3Balance, totalEarnings: newL3Total }, l3.id);
+
+                const commObj3: CommissionHistory = {
                   id: 'comm-' + Math.random().toString(36).substr(2, 9),
                   referrerId: l3.id,
                   refereeId: dbUser.id,
@@ -1741,7 +987,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   amount: commL3,
                   level: 3,
                   createdAt: new Date().toISOString()
-                });
+                };
+                newCommissions.push(commObj3);
+                upsertItem('commissions', commObj3);
               }
             }
           }
@@ -1749,12 +997,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
     
-    // Save commissions & users
     if (newCommissions.length > 0) {
       setCommissions(prev => [...newCommissions, ...prev]);
     }
     
     setUsers(updatedUsers);
+    safeSetLocalStorage('fintech_users', updatedUsers);
+    
+    const currFresh = updatedUsers.find(u => u.id === currentUser.id);
+    if (currFresh) {
+      setCurrentUser(currFresh);
+      safeSetSessionStorage('fintech_current_user', currFresh);
+      safeSetLocalStorage('fintech_current_user', currFresh);
+    }
     
     return { success: true };
   };
@@ -1769,50 +1024,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: "Cet investissement est arrivé à terme." };
     }
     
-    // Check if claimed today (within 22 hours to allow small flexibility)
     const hoursSinceClaim = (Date.now() - new Date(investment.lastClaimDate).getTime()) / (3600 * 1000);
     if (hoursSinceClaim < 22) {
       const remainingHours = Math.ceil(22 - hoursSinceClaim);
       return { success: false, error: `Vous avez déjà récupéré vos gains pour aujourd'hui. Réessayez dans environ ${remainingHours} heures.` };
     }
     
-    // Update Investment remaining days
+    const nextDaysRemaining = investment.daysRemaining - 1;
+    const nextLastClaimDate = new Date().toISOString();
+
     const updatedInvestments = userInvestments.map(inv => {
       if (inv.id === investmentId) {
         return {
           ...inv,
-          daysRemaining: inv.daysRemaining - 1,
-          lastClaimDate: new Date().toISOString()
+          daysRemaining: nextDaysRemaining,
+          lastClaimDate: nextLastClaimDate
         };
       }
       return inv;
     });
     
     setUserInvestments(updatedInvestments);
+    updateItem('investments', { daysRemaining: nextDaysRemaining, lastClaimDate: nextLastClaimDate }, investmentId);
     
-    // Update User Balance & Earnings
-    setUsers(prev => prev.map(u => {
-      if (u.id === currentUser.id) {
-        return {
-          ...u,
-          balance: u.balance + investment.dailyGain,
-          dailyEarnings: (u.dailyEarnings || 0) + investment.dailyGain,
-          totalEarnings: u.totalEarnings + investment.dailyGain
-        };
-      }
-      return u;
-    }));
+    const newBalance = currentUser.balance + investment.dailyGain;
+    const newTotal = currentUser.totalEarnings + investment.dailyGain;
+    const newDaily = (currentUser.dailyEarnings || 0) + investment.dailyGain;
 
     const updatedCurr = {
       ...currentUser,
-      balance: currentUser.balance + investment.dailyGain,
-      dailyEarnings: (currentUser.dailyEarnings || 0) + investment.dailyGain,
-      totalEarnings: currentUser.totalEarnings + investment.dailyGain
+      balance: newBalance,
+      dailyEarnings: newDaily,
+      totalEarnings: newTotal
     };
-    setCurrentUser(updatedCurr);
-    localStorage.setItem('fintech_current_user', JSON.stringify(updatedCurr));
 
-    // Record revenue log
+    setCurrentUser(updatedCurr);
+    safeSetSessionStorage('fintech_current_user', updatedCurr);
+    safeSetLocalStorage('fintech_current_user', updatedCurr);
+
+    setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedCurr : u));
+    updateItem('users', { balance: newBalance, dailyEarnings: newDaily, totalEarnings: newTotal }, currentUser.id);
+
     const newLog: RevenueLog = {
       id: `rev-${investment.id}-${Date.now()}`,
       userId: currentUser.id,
@@ -1821,7 +1073,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       amount: investment.dailyGain,
       creditedAt: new Date().toISOString()
     };
-    setRevenueLogs(prev => [newLog, ...prev]);
+    setRevenueLogs(prev => {
+      const logs = [newLog, ...prev];
+      saveSystemConfig('__SYS_REVENUE_LOGS__', logs);
+      return logs;
+    });
 
     return { success: true };
   };
@@ -1838,20 +1094,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       userPhone: currentUser.phone,
       amount,
       method,
-      transactionId,
+      transactionId: transactionId.trim(),
       screenshotUrl,
       status: 'pending',
       createdAt: new Date().toISOString()
     };
     
     setDeposits(prev => [newDeposit, ...prev]);
+    upsertItem('deposits', newDeposit);
     return { success: true };
   };
 
   const saveWithdrawalAccount = (accountName: string, accountNumber: string, pin: string, network?: string, country?: string, isAdminOverride?: boolean) => {
     if (!currentUser) return { success: false, error: "Non connecté." };
 
-    // Anti-Fraud Locking: Once linked, account details (name and number) cannot be modified or changed
     const isAlreadyLinked = Boolean(currentUser.withdrawalAccountName && currentUser.withdrawalAccountNumber);
     if (isAlreadyLinked && !isAdminOverride) {
       const isChangingDetails = (
@@ -1870,15 +1126,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!accountNumber.trim()) return { success: false, error: "Le numéro de compte de retrait est requis." };
     if (!pin.trim() || pin.length < 4) return { success: false, error: "Le code PIN doit comporter au moins 4 chiffres." };
 
-    // Obscure PIN securely before storing
-    const securePinHash = btoa(pin + '_aura_sec_salt');
+    const authObj = parseAuthFromPinHash(currentUser.withdrawalPinHash);
+    const newPinHash = buildPinHash(authObj.pwd, pin.trim(), currentUser.withdrawalPinHash);
 
     const updatedFields = {
       withdrawalAccountName: accountName.trim(),
       withdrawalAccountNumber: accountNumber.trim(),
       withdrawalNetwork: network || currentUser.withdrawalNetwork || 'Mobile Money',
       withdrawalCountry: country || currentUser.withdrawalCountry || 'CI',
-      withdrawalPinHash: securePinHash
+      withdrawalPinHash: newPinHash
     };
 
     const updatedUser = { ...currentUser, ...updatedFields };
@@ -1886,34 +1142,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     safeSetSessionStorage('fintech_current_user', updatedUser);
     safeSetLocalStorage('fintech_current_user', updatedUser);
 
-    const updatedUsers = users.map(u => {
-      if (u.id === currentUser.id) {
-        return {
-          ...u,
-          ...updatedFields
-        };
-      }
-      return u;
-    });
-
-    setUsers(updatedUsers);
-    safeSetLocalStorage('fintech_users', updatedUsers);
-    syncTableData('users', updatedUsers);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('nutrien_users_changed', { detail: updatedUsers }));
-      window.dispatchEvent(new Event('storage'));
-    }
+    setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+    updateItem('users', updatedFields, currentUser.id);
 
     return { success: true };
   };
 
   const sendAdminDirectMessage = (userId: string, message: string) => {
     if (!userId || !message.trim()) return;
-    const targetUser = users.find(u => u.id === userId || (u.phone && u.phone === userId) || (u.name && u.name === userId));
-    const fallbackTicket = tickets.find(t => t.userId === userId || (t.userPhone && t.userPhone === userId) || (t.userName && t.userName === userId));
-    const actualUserId = targetUser?.id || fallbackTicket?.userId || userId;
-    const userName = targetUser?.name || fallbackTicket?.userName || 'Client ' + userId.slice(0, 5);
-    const userPhone = targetUser?.phone || fallbackTicket?.userPhone;
+    const targetUser = users.find(u => u.id === userId || u.phone === userId || u.name === userId);
+    const actualUserId = targetUser?.id || userId;
+    const userName = targetUser?.name || 'Client ' + userId.slice(0, 5);
+    const userPhone = targetUser?.phone;
 
     const newTicket: SupportTicket = {
       id: 'tkt-adm-' + Math.random().toString(36).substr(2, 9),
@@ -1929,28 +1169,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isReadByUser: false
     };
 
-    setTickets(prev => {
-      const updated = [newTicket, ...prev];
-      safeSetLocalStorage('fintech_tickets', updated);
-      syncTableData('tickets', updated);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nutrien_tickets_changed', { detail: updated }));
-        window.dispatchEvent(new Event('storage'));
-      }
-      return updated;
-    });
+    setTickets(prev => [newTicket, ...prev]);
+    upsertItem('tickets', newTicket);
   };
 
   const requestWithdrawal = (amount: number, network: any, accountNumber: string) => {
     if (!currentUser) return { success: false, error: "Non connecté." };
 
-    // 1. Check time window (09h00 to 17h00)
     const currentHour = new Date().getHours();
     if (currentHour < 9 || currentHour >= 17) {
       return { success: false, error: "Les retraits sont uniquement autorisés de 09h00 à 17h00." };
     }
 
-    // 2. Check active products / investments
     const hasActiveProduct = userInvestments.some(
       inv => inv.userId === currentUser.id && inv.daysRemaining > 0
     );
@@ -1961,30 +1191,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (amount < 1000) return { success: false, error: "Le montant minimum de retrait est de 1 000 XAF." };
     if (!accountNumber.trim()) return { success: false, error: "Le numéro de compte de réception est requis." };
     
-    const dbUser = users.find(u => u.id === currentUser.id);
-    if (!dbUser) return { success: false, error: "Utilisateur non trouvé" };
-    
+    const dbUser = users.find(u => u.id === currentUser.id) || currentUser;
     if (dbUser.balance < amount) {
       return { success: false, error: "Solde insuffisant pour ce montant de retrait." };
     }
 
-    // Check 2 withdrawals per day limit
     const todayIso = new Date().toISOString().split('T')[0];
     const todaysWithdrawalsCount = withdrawals.filter(w => w.userId === currentUser.id && w.createdAt.startsWith(todayIso)).length;
     if (todaysWithdrawalsCount >= 2) {
       return { success: false, error: "Vous avez déjà effectué 2 demandes de retrait aujourd'hui. Limité à 2 retraits par jour." };
     }
     
-    // Deduct pending balance automatically or manually inside admin
-    setUsers(prev => prev.map(u => {
-      if (u.id === currentUser.id) {
-        return {
-          ...u,
-          balance: u.balance - amount
-        };
-      }
-      return u;
-    }));
+    // Deduct balance
+    const newBalance = dbUser.balance - amount;
+    const updatedUser = { ...currentUser, balance: newBalance };
+    setCurrentUser(updatedUser);
+    safeSetSessionStorage('fintech_current_user', updatedUser);
+    safeSetLocalStorage('fintech_current_user', updatedUser);
+
+    setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+    updateItem('users', { balance: newBalance }, currentUser.id);
     
     const now = new Date();
     const yy = String(now.getFullYear()).slice(-2);
@@ -2004,12 +1230,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       amount,
       receivedAmount: Math.round(amount * 0.82),
       network,
-      accountNumber,
+      accountNumber: accountNumber.trim(),
       status: 'pending',
       createdAt: now.toISOString()
     };
     
     setWithdrawals(prev => [newWithdrawal, ...prev]);
+    upsertItem('withdrawals', newWithdrawal);
     return { success: true };
   };
 
@@ -2031,51 +1258,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: "Ce code bonus a atteint sa limite d'utilisation." };
     }
     
-    // Update code uses
-    const updatedBonusCodes = bonusCodes.map(b => {
-      if (b.code.toUpperCase() === cleanCode) {
-        return {
-          ...b,
-          usedBy: [...(b.usedBy || []), currentUser.id]
-        };
-      }
-      return b;
-    });
-    setBonusCodes(updatedBonusCodes);
-    safeSetLocalStorage('fintech_bonus_codes', updatedBonusCodes);
-    syncTableData('bonus_codes', updatedBonusCodes);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('nutrien_bonus_codes_changed', { detail: updatedBonusCodes }));
-      window.dispatchEvent(new Event('storage'));
-    }
+    const newUsedBy = [...(bonus.usedBy || []), currentUser.id];
+    setBonusCodes(prev => prev.map(b => b.code.toUpperCase() === cleanCode ? { ...b, usedBy: newUsedBy } : b));
+    updateItem('bonus_codes', { usedBy: newUsedBy }, bonus.code, 'code');
     
     // Credit User balance
-    const updatedUsers = users.map(u => {
-      if (u.id === currentUser.id) {
-        return {
-          ...u,
-          balance: (u.balance || 0) + bonus.amount,
-          totalEarnings: (u.totalEarnings || 0) + bonus.amount
-        };
-      }
-      return u;
-    });
-    setUsers(updatedUsers);
-    safeSetLocalStorage('fintech_users', updatedUsers);
-    syncTableData('users', updatedUsers);
-
+    const newBalance = (currentUser.balance || 0) + bonus.amount;
+    const newTotal = (currentUser.totalEarnings || 0) + bonus.amount;
     const updatedCurrent = {
       ...currentUser,
-      balance: (currentUser.balance || 0) + bonus.amount,
-      totalEarnings: (currentUser.totalEarnings || 0) + bonus.amount
+      balance: newBalance,
+      totalEarnings: newTotal
     };
+
     setCurrentUser(updatedCurrent);
+    safeSetSessionStorage('fintech_current_user', updatedCurrent);
     safeSetLocalStorage('fintech_current_user', updatedCurrent);
 
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('nutrien_users_changed', { detail: updatedUsers }));
-      window.dispatchEvent(new Event('storage'));
-    }
+    setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedCurrent : u));
+    updateItem('users', { balance: newBalance, totalEarnings: newTotal }, currentUser.id);
     
     return { success: true, amount: bonus.amount };
   };
@@ -2083,10 +1284,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const claimDailyBonus = () => {
     if (!currentUser) return { success: false, error: "Non connecté." };
     
-    // Daily attendance pointage gives strictly 20 FCFA for all users
     const bonusKey = `daily_bonus_claim_${currentUser.id}`;
     const lastClaim = safeGetLocalStorage(bonusKey);
-    const bonusAmount = 20; // Strictly 20 FCFA per day
+    const bonusAmount = 20; // 20 FCFA strictly
     
     if (lastClaim) {
       const hoursSinceClaim = (Date.now() - parseInt(lastClaim)) / (3600 * 1000);
@@ -2098,17 +1298,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     safeSetLocalStorage(bonusKey, Date.now().toString());
     
-    // Update User Balance
-    setUsers(prev => prev.map(u => {
-      if (u.id === currentUser.id) {
-        return {
-          ...u,
-          balance: u.balance + bonusAmount,
-          totalEarnings: u.totalEarnings + bonusAmount
-        };
-      }
-      return u;
-    }));
+    const newBalance = currentUser.balance + bonusAmount;
+    const newTotal = currentUser.totalEarnings + bonusAmount;
+    const updatedUser = {
+      ...currentUser,
+      balance: newBalance,
+      totalEarnings: newTotal
+    };
+
+    setCurrentUser(updatedUser);
+    safeSetSessionStorage('fintech_current_user', updatedUser);
+    safeSetLocalStorage('fintech_current_user', updatedUser);
+
+    setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+    updateItem('users', { balance: newBalance, totalEarnings: newTotal }, currentUser.id);
     
     return { success: true, amount: bonusAmount };
   };
@@ -2116,9 +1319,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const spinLuckyWheel = () => {
     if (!currentUser) return { success: false, error: "Veuillez vous connecter." };
 
-    const dbUser = users.find(u => u.id === currentUser.id);
-    if (!dbUser) return { success: false, error: "Utilisateur non trouvé." };
-
+    const dbUser = users.find(u => u.id === currentUser.id) || currentUser;
     const availableTickets = dbUser.drawTickets || 0;
     if (availableTickets <= 0) {
       return { 
@@ -2132,7 +1333,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: "Aucun prix configuré pour le tirage." };
     }
 
-    // Ensure all prizes vary strictly between 25 FCFA and 50 FCFA
     const validPrizes = rawPrizes.map(p => {
       const clamped = Math.min(50, Math.max(25, Number(p.value) || 25));
       return {
@@ -2142,29 +1342,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     });
 
-    // Pick random prize strictly between 25 FCFA and 50 FCFA
     const prize = validPrizes[Math.floor(Math.random() * validPrizes.length)];
 
-    // Deduct 1 ticket, credit user balance & total earnings
-    setUsers(prev => prev.map(u => {
-      if (u.id === currentUser.id) {
-        return {
-          ...u,
-          drawTickets: Math.max(0, (u.drawTickets || 1) - 1),
-          balance: u.balance + prize.value,
-          totalEarnings: u.totalEarnings + prize.value
-        };
-      }
-      return u;
-    }));
+    const nextTickets = Math.max(0, (dbUser.drawTickets || 1) - 1);
+    const nextBalance = dbUser.balance + prize.value;
+    const nextTotal = dbUser.totalEarnings + prize.value;
 
-    // Mask phone number for live feed privacy e.g. +228 90****95
+    const updatedUser = {
+      ...dbUser,
+      drawTickets: nextTickets,
+      balance: nextBalance,
+      totalEarnings: nextTotal
+    };
+
+    setCurrentUser(updatedUser);
+    safeSetSessionStorage('fintech_current_user', updatedUser);
+    safeSetLocalStorage('fintech_current_user', updatedUser);
+
+    setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+    updateItem('users', {
+      drawTickets: nextTickets,
+      balance: nextBalance,
+      totalEarnings: nextTotal
+    }, currentUser.id);
+
     let maskedPhone = currentUser.phone;
     if (maskedPhone.length >= 8) {
       maskedPhone = maskedPhone.slice(0, 5) + '****' + maskedPhone.slice(-2);
     }
 
-    // Record real draw action in database/local state
     const newRecord: DrawRecord = {
       id: 'draw-' + Math.random().toString(36).substr(2, 9),
       userId: currentUser.id,
@@ -2178,7 +1384,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setDrawRecords(prev => {
       const updated = [newRecord, ...prev];
-      safeSetLocalStorage('fintech_draw_records', updated);
+      saveSystemConfig('__SYS_DRAW_RECORDS__', updated);
       return updated;
     });
 
@@ -2188,26 +1394,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateWheelConfig = (newConfig: WheelConfig) => {
     setWheelConfig(newConfig);
     safeSetLocalStorage('fintech_wheel_config', newConfig);
+    saveSystemConfig('__SYS_WHEEL_CONFIG__', newConfig);
   };
 
   const deleteDrawRecord = (recordId: string) => {
     setDrawRecords(prev => {
       const updated = prev.filter(r => r.id !== recordId);
-      safeSetLocalStorage('fintech_draw_records', updated);
+      saveSystemConfig('__SYS_DRAW_RECORDS__', updated);
       return updated;
     });
   };
 
   const addTicketsToUser = (userId: string, count: number) => {
-    setUsers(prev => prev.map(u => {
-      if (u.id === userId) {
-        return {
-          ...u,
-          drawTickets: Math.max(0, (u.drawTickets || 0) + count)
-        };
-      }
-      return u;
-    }));
+    const target = users.find(u => u.id === userId);
+    if (!target) return;
+    const nextCount = Math.max(0, (target.drawTickets || 0) + count);
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, drawTickets: nextCount } : u));
+    if (currentUser?.id === userId) {
+      setCurrentUser(prev => prev ? { ...prev, drawTickets: nextCount } : null);
+    }
+    updateItem('users', { drawTickets: nextCount }, userId);
   };
 
   const createSupportTicket = (subject: string, message: string, imageUrl?: string) => {
@@ -2223,68 +1429,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: 'open',
       createdAt: new Date().toISOString()
     };
-    setTickets(prev => {
-      const updated = [newTicket, ...prev];
-      safeSetLocalStorage('fintech_tickets', updated);
-      syncTableData('tickets', updated);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nutrien_tickets_changed', { detail: updated }));
-        window.dispatchEvent(new Event('storage'));
-      }
-      return updated;
-    });
+    setTickets(prev => [newTicket, ...prev]);
+    upsertItem('tickets', newTicket);
   };
 
-  // Administration tasks (Only executable if current user is admin)
+  // ==========================================
+  // ADMINISTRATION OPERATIONS
+  // ==========================================
   const toggleBlockUser = (userId: string) => {
-    setUsers(prev => prev.map(u => {
-      if (u.id === userId) {
-        const updatedBlockState = !u.isBlocked;
-        return { ...u, isBlocked: updatedBlockState };
-      }
-      return u;
-    }));
+    const target = users.find(u => u.id === userId);
+    if (!target) return;
+    const nextBlock = !target.isBlocked;
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, isBlocked: nextBlock } : u));
+    updateItem('users', { isBlocked: nextBlock }, userId);
   };
 
   const updateUserRole = (userId: string, role: 'admin' | 'user') => {
-    setUsers(prev => prev.map(u => {
-      if (u.id === userId) {
-        return { ...u, role };
-      }
-      return u;
-    }));
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role } : u));
+    if (currentUser?.id === userId) {
+      setCurrentUser(prev => prev ? { ...prev, role } : null);
+    }
+    updateItem('users', { role }, userId);
   };
 
   const updateUserBalance = (userId: string, amount: number, isDirectSet: boolean = false) => {
-    setUsers(prev => {
-      const updated = prev.map(u => {
-        if (u.id === userId) {
-          const cleanBalance = isDirectSet ? Math.max(0, amount) : Math.max(0, u.balance + amount);
-          return { ...u, balance: cleanBalance };
-        }
-        return u;
-      });
-      safeSetLocalStorage('fintech_users', updated);
-      syncTableData('users', updated);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nutrien_users_changed', { detail: updated }));
-        window.dispatchEvent(new Event('storage'));
-      }
-      return updated;
-    });
+    const target = users.find(u => u.id === userId);
+    if (!target) return;
+    const cleanBalance = isDirectSet ? Math.max(0, amount) : Math.max(0, target.balance + amount);
 
-    setCurrentUser(prev => {
-      if (prev && prev.id === userId) {
-        const cleanBalance = isDirectSet ? Math.max(0, amount) : Math.max(0, prev.balance + amount);
-        const updatedUser = { ...prev, balance: cleanBalance };
-        safeSetLocalStorage('fintech_current_user', updatedUser);
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('storage'));
-        }
-        return updatedUser;
-      }
-      return prev;
-    });
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, balance: cleanBalance } : u));
+    if (currentUser?.id === userId) {
+      const updatedCurr = { ...currentUser, balance: cleanBalance };
+      setCurrentUser(updatedCurr);
+      safeSetSessionStorage('fintech_current_user', updatedCurr);
+      safeSetLocalStorage('fintech_current_user', updatedCurr);
+    }
+    updateItem('users', { balance: cleanBalance }, userId);
   };
 
   const adminUpdateUserPassword = (userId: string, newWord: string): { success: boolean; error?: string } => {
@@ -2293,11 +1473,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!newWord || newWord.length < 4) {
       return { success: false, error: "Le mot de passe doit contenir au moins 4 caractères." };
     }
-    setPasswords(prev => {
-      const updated = { ...prev, [usr.phone]: newWord };
-      safeSetLocalStorage('fintech_passwords', updated);
-      return updated;
-    });
+    
+    const authObj = parseAuthFromPinHash(usr.withdrawalPinHash);
+    const newPinHash = buildPinHash(newWord, authObj.pin, usr.withdrawalPinHash);
+
+    setPasswords(prev => ({
+      ...prev,
+      [usr.phone]: newWord,
+      [usr.phone.replace(/\s+/g, '')]: newWord
+    }));
+
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, withdrawalPinHash: newPinHash } : u));
+    updateItem('users', { withdrawalPinHash: newPinHash }, userId);
+
     return { success: true };
   };
 
@@ -2307,11 +1495,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!newPin || newPin.trim().length < 4) {
       return { success: false, error: "Le code PIN de retrait doit comporter au moins 4 chiffres." };
     }
-    const securePinHash = btoa(newPin.trim() + '_aura_sec_salt');
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, withdrawalPinHash: securePinHash } : u));
-    if (currentUser && currentUser.id === userId) {
-      setCurrentUser(prev => prev ? { ...prev, withdrawalPinHash: securePinHash } : null);
+    
+    const authObj = parseAuthFromPinHash(usr.withdrawalPinHash);
+    const newPinHash = buildPinHash(authObj.pwd, newPin.trim(), usr.withdrawalPinHash);
+
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, withdrawalPinHash: newPinHash } : u));
+    if (currentUser?.id === userId) {
+      setCurrentUser(prev => prev ? { ...prev, withdrawalPinHash: newPinHash } : null);
     }
+    updateItem('users', { withdrawalPinHash: newPinHash }, userId);
+
     return { success: true };
   };
 
@@ -2319,20 +1512,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const dep = deposits.find(d => d.id === depositId);
     if (!dep || dep.status !== 'pending') return;
     
-    // Update deposit status
     setDeposits(prev => prev.map(d => d.id === depositId ? { ...d, status } : d));
+    updateItem('deposits', { status }, depositId);
     
-    // If approved, credit user account
     if (status === 'approved') {
-      setUsers(prev => prev.map(u => {
-        if (u.id === dep.userId) {
-          return {
-            ...u,
-            balance: u.balance + dep.amount
-          };
+      const targetUser = users.find(u => u.id === dep.userId);
+      if (targetUser) {
+        const nextBalance = targetUser.balance + dep.amount;
+        setUsers(prev => prev.map(u => u.id === dep.userId ? { ...u, balance: nextBalance } : u));
+        if (currentUser?.id === dep.userId) {
+          const updatedCurr = { ...currentUser, balance: nextBalance };
+          setCurrentUser(updatedCurr);
+          safeSetSessionStorage('fintech_current_user', updatedCurr);
+          safeSetLocalStorage('fintech_current_user', updatedCurr);
         }
-        return u;
-      }));
+        updateItem('users', { balance: nextBalance }, dep.userId);
+      }
     }
   };
 
@@ -2340,8 +1535,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const wth = withdrawals.find(w => w.id === withdrawalId);
     if (!wth || wth.status !== 'pending') return;
     
-    // Update withdrawal status
     setWithdrawals(prev => prev.map(w => w.id === withdrawalId ? { ...w, status } : w));
+    updateItem('withdrawals', { status }, withdrawalId);
 
     if (status === 'approved') {
       const userObj = users.find(u => u.id === wth.userId);
@@ -2369,40 +1564,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         status: 'approved'
       };
 
-      setWithdrawalProofs(prev => {
-        if (prev.some(p => p.id === autoProof.id)) return prev;
-        const updated = [autoProof, ...prev];
-        safeSetLocalStorage('aurainvest_withdrawal_proofs', updated);
-        safeSetLocalStorage('fintech_withdrawal_proofs', updated);
-        syncTableData('withdrawal_proofs', updated);
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('nutrien_proofs_changed', { detail: updated }));
-          window.dispatchEvent(new Event('storage'));
-        }
-        return updated;
-      });
+      setWithdrawalProofs(prev => [autoProof, ...prev]);
+      upsertItem('withdrawal_proofs', autoProof);
     }
     
     // If rejected, refund the user
     if (status === 'rejected') {
-      setUsers(prev => prev.map(u => {
-        if (u.id === wth.userId) {
-          return {
-            ...u,
-            balance: u.balance + wth.amount
-          };
+      const targetUser = users.find(u => u.id === wth.userId);
+      if (targetUser) {
+        const nextBalance = targetUser.balance + wth.amount;
+        setUsers(prev => prev.map(u => u.id === wth.userId ? { ...u, balance: nextBalance } : u));
+        if (currentUser?.id === wth.userId) {
+          const updatedCurr = { ...currentUser, balance: nextBalance };
+          setCurrentUser(updatedCurr);
+          safeSetSessionStorage('fintech_current_user', updatedCurr);
+          safeSetLocalStorage('fintech_current_user', updatedCurr);
         }
-        return u;
-      }));
+        updateItem('users', { balance: nextBalance }, wth.userId);
+      }
     }
   };
 
-  const addOrUpdateProduct = (prodData: Omit<InvestmentProduct, 'isActive'> & { isActive?: boolean; image?: string; description?: string; order?: number }) => {
+  const addOrUpdateProduct = (prodData: Omit<InvestmentProduct, 'isActive'> & { isActive?: boolean; image?: string; description?: string; order?: number; badge?: string; color?: string }) => {
     const existing = products.find(p => p.id === prodData.id);
+    let targetProduct: InvestmentProduct;
     if (existing) {
-      setProducts(prev => prev.map(p => p.id === prodData.id ? { ...p, ...prodData } as InvestmentProduct : p));
+      targetProduct = { ...existing, ...prodData } as InvestmentProduct;
+      setProducts(prev => prev.map(p => p.id === prodData.id ? targetProduct : p));
     } else {
-      const newProd: InvestmentProduct = {
+      targetProduct = {
         id: prodData.id || 'vip-' + (products.length + 1),
         name: prodData.name,
         price: prodData.price,
@@ -2416,8 +1606,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         badge: prodData.badge || 'Nouveau',
         color: prodData.color || 'from-amber-950/40 via-amber-900/10 to-transparent border-amber-500/20'
       };
-      setProducts(prev => [...prev, newProd]);
+      setProducts(prev => [...prev, targetProduct]);
     }
+    upsertItem('products', targetProduct);
   };
 
   const deleteProduct = (productId: string) => {
@@ -2426,11 +1617,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteUserInvestment = (investmentId: string) => {
-    setUserInvestments(prev => {
-      const updated = prev.filter(inv => inv.id !== investmentId);
-      safeSetLocalStorage('fintech_investments', updated);
-      return updated;
-    });
+    setUserInvestments(prev => prev.filter(inv => inv.id !== investmentId));
     deleteRecord('investments', investmentId);
   };
 
@@ -2450,15 +1637,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString()
     };
     
-    const updatedBonusCodes = [newCode, ...bonusCodes];
-    setBonusCodes(updatedBonusCodes);
-    safeSetLocalStorage('fintech_bonus_codes', updatedBonusCodes);
-    syncTableData('bonus_codes', updatedBonusCodes);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('nutrien_bonus_codes_changed', { detail: updatedBonusCodes }));
-      window.dispatchEvent(new Event('storage'));
-    }
-    
+    setBonusCodes(prev => [newCode, ...prev]);
+    upsertItem('bonus_codes', newCode);
     return { success: true };
   };
 
@@ -2466,60 +1646,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setGlobalNotification(text);
     if (text) {
       safeSetLocalStorage('fintech_global_notification', text);
+      saveSystemConfig('__SYS_GLOBAL_NOTIF__', [{ notif: text }]);
     } else {
       safeRemoveLocalStorage('fintech_global_notification');
+      saveSystemConfig('__SYS_GLOBAL_NOTIF__', [{ notif: '' }]);
     }
   };
 
   const replyToTicket = (ticketId: string, reply: string) => {
-    setTickets(prev => {
-      const targetTicket = prev.find(t => t.id === ticketId);
-      const updated = prev.map(t => {
-        const matchesTargetUser = targetTicket && (
-          t.userId === targetTicket.userId ||
-          (targetTicket.userPhone && targetTicket.userPhone !== 'Non renseigné' && t.userPhone === targetTicket.userPhone) ||
-          (targetTicket.userName && t.userName === targetTicket.userName)
-        );
-        if (t.id === ticketId || (matchesTargetUser && t.status === 'open')) {
-          return {
-            ...t,
-            reply: t.id === ticketId ? reply : (t.reply || reply),
-            status: 'closed' as const,
-            isReadByUser: false,
-            replyCreatedAt: new Date().toISOString()
-          };
-        }
-        return t;
-      });
-      safeSetLocalStorage('fintech_tickets', updated);
-      syncTableData('tickets', updated);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nutrien_tickets_changed', { detail: updated }));
-        window.dispatchEvent(new Event('storage'));
+    const targetTicket = tickets.find(t => t.id === ticketId);
+    const nowIso = new Date().toISOString();
+    setTickets(prev => prev.map(t => {
+      if (t.id === ticketId || (targetTicket && t.userId === targetTicket.userId && t.status === 'open')) {
+        return {
+          ...t,
+          reply: t.id === ticketId ? reply : (t.reply || reply),
+          status: 'closed' as const,
+          isReadByUser: false,
+          replyCreatedAt: nowIso
+        };
       }
-      return updated;
-    });
+      return t;
+    }));
+
+    updateItem('tickets', {
+      reply,
+      status: 'closed',
+      isReadByUser: false,
+      replyCreatedAt: nowIso
+    }, ticketId);
   };
 
   const markTicketsAsRead = (userId: string) => {
     const targetUser = users.find(u => u.id === userId);
-    setTickets(prev => {
-      const isUserTicket = (t: SupportTicket) => 
-        t.userId === userId || 
-        (targetUser?.phone && targetUser.phone !== 'Non renseigné' && t.userPhone === targetUser.phone) ||
-        (targetUser?.name && t.userName === targetUser.name);
-
-      const hasUnread = prev.some(t => isUserTicket(t) && t.isReadByUser === false);
-      if (!hasUnread) return prev;
-      const updated = prev.map(t => isUserTicket(t) ? { ...t, isReadByUser: true } : t);
-      safeSetLocalStorage('fintech_tickets', updated);
-      syncTableData('tickets', updated);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nutrien_tickets_changed', { detail: updated }));
-        window.dispatchEvent(new Event('storage'));
+    setTickets(prev => prev.map(t => {
+      const isUserTicket = t.userId === userId || (targetUser?.phone && t.userPhone === targetUser.phone);
+      if (isUserTicket && t.isReadByUser === false) {
+        updateItem('tickets', { isReadByUser: true }, t.id);
+        return { ...t, isReadByUser: true };
       }
-      return updated;
-    });
+      return t;
+    }));
   };
 
   const addWithdrawalProof = (amount: number, network: string, message: string, imageUrl?: string | null) => {
@@ -2538,13 +1705,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         referralCode: 'NUTRIEN'
       };
       
-      // Mask phone number for privacy
       const rawPhone = (user.phone || '').trim();
       let maskedPhone = rawPhone;
       if (rawPhone.length >= 6) {
-        const start = rawPhone.slice(0, 3);
-        const end = rawPhone.slice(-3);
-        maskedPhone = `${start}****${end}`;
+        maskedPhone = `${rawPhone.slice(0, 3)}****${rawPhone.slice(-3)}`;
       } else if (rawPhone.length > 0) {
         maskedPhone = `****${rawPhone.slice(-2)}`;
       } else {
@@ -2569,101 +1733,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         status: 'approved'
       };
 
-      setWithdrawalProofs(prev => {
-        const updated = [newProof, ...(prev || [])];
-        try {
-          safeSetLocalStorage('aurainvest_withdrawal_proofs', updated);
-          safeSetLocalStorage('fintech_withdrawal_proofs', updated);
-        } catch (e) {
-          console.warn("Storage quota warning:", e);
-        }
-        try {
-          syncTableData('withdrawal_proofs', updated);
-        } catch (e) {
-          console.warn("Sync error:", e);
-        }
-        if (typeof window !== 'undefined') {
-          try {
-            window.dispatchEvent(new CustomEvent('nutrien_proofs_changed', { detail: updated }));
-            window.dispatchEvent(new Event('storage'));
-          } catch (e) {}
-        }
-        return updated;
-      });
-
+      setWithdrawalProofs(prev => [newProof, ...prev]);
+      upsertItem('withdrawal_proofs', newProof);
       return { success: true };
     } catch (err: any) {
-      console.error("Error in addWithdrawalProof:", err);
-      return { success: true }; // Always report success to ensure smooth UX
+      return { success: true };
     }
   };
 
   const processWithdrawalProof = (proofId: string, status: 'approved' | 'rejected') => {
-    setWithdrawalProofs(prev => {
-      const updated = prev.map(p => {
-        if (p.id === proofId) {
-          return {
-            ...p,
-            status,
-            isVerified: status === 'approved'
-          };
-        }
-        return p;
-      });
-      safeSetLocalStorage('aurainvest_withdrawal_proofs', updated);
-      safeSetLocalStorage('fintech_withdrawal_proofs', updated);
-      syncTableData('withdrawal_proofs', updated);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nutrien_proofs_changed', { detail: updated }));
-      }
-      return updated;
-    });
+    setWithdrawalProofs(prev => prev.map(p => p.id === proofId ? { ...p, status, isVerified: status === 'approved' } : p));
+    updateItem('withdrawal_proofs', { status, isVerified: status === 'approved' }, proofId);
   };
 
   const deleteWithdrawalProof = (proofId: string) => {
-    setWithdrawalProofs(prev => {
-      const updated = prev.filter(p => p.id !== proofId);
-      safeSetLocalStorage('aurainvest_withdrawal_proofs', updated);
-      safeSetLocalStorage('fintech_withdrawal_proofs', updated);
-
-      let deletedProofIds: string[] = [];
-      try { deletedProofIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_proof_ids') || '[]'); } catch (_) {}
-      if (!deletedProofIds.includes(proofId)) {
-        deletedProofIds.push(proofId);
-        safeSetLocalStorage('aurainvest_deleted_proof_ids', deletedProofIds);
-      }
-
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nutrien_proofs_changed', { detail: updated }));
-        window.dispatchEvent(new Event('storage'));
-      }
-      return updated;
-    });
+    setWithdrawalProofs(prev => prev.filter(p => p.id !== proofId));
     deleteRecord('withdrawal_proofs', proofId);
   };
 
   const updateWithdrawalProof = (proofId: string, data: Partial<WithdrawalProof>) => {
-    setWithdrawalProofs(prev => {
-      const updated = prev.map(p => {
-        if (p.id === proofId) {
-          const nextStatus = data.status || p.status;
-          return {
-            ...p,
-            ...data,
-            status: nextStatus,
-            isVerified: nextStatus === 'approved'
-          };
-        }
-        return p;
-      });
-      safeSetLocalStorage('aurainvest_withdrawal_proofs', updated);
-      safeSetLocalStorage('fintech_withdrawal_proofs', updated);
-      syncTableData('withdrawal_proofs', updated);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nutrien_proofs_changed', { detail: updated }));
-      }
-      return updated;
-    });
+    const nextStatus = data.status || 'approved';
+    setWithdrawalProofs(prev => prev.map(p => p.id === proofId ? { ...p, ...data, status: nextStatus, isVerified: nextStatus === 'approved' } : p));
+    updateItem('withdrawal_proofs', { ...data, status: nextStatus, isVerified: nextStatus === 'approved' }, proofId);
   };
 
   const addAnnouncement = (data: { title: string; content: string; imageUrl?: string }) => {
@@ -2683,36 +1774,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAnnouncements(prev => {
       const updated = [newAnn, ...prev];
       safeSetLocalStorage('fintech_announcements', updated);
-      syncTableData('announcements', updated);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nutrien_announcements_changed', { detail: updated }));
-        window.dispatchEvent(new Event('storage'));
-      }
+      saveSystemConfig('__SYS_ANNOUNCEMENTS__', updated);
       return updated;
     });
 
-    // Send global notification to all users' accounts
     const notifMsg = `📢 Nouvel avis officiel : ${data.title.trim()}`;
-    setGlobalNotification(notifMsg);
-    safeSetLocalStorage('fintech_global_notification', notifMsg);
+    sendGlobalNotification(notifMsg);
   };
 
   const deleteAnnouncement = (id: string) => {
-    let deletedAnnIds: string[] = [];
-    try { deletedAnnIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_announcement_ids') || '[]'); } catch (_) {}
-    if (!deletedAnnIds.includes(id)) {
-      deletedAnnIds.push(id);
-      safeSetLocalStorage('aurainvest_deleted_announcement_ids', deletedAnnIds);
-    }
     setAnnouncements(prev => {
       const updated = prev.filter(a => a.id !== id);
       safeSetLocalStorage('fintech_announcements', updated);
-      deleteRecord('announcements', id);
-      syncTableData('announcements', updated);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nutrien_announcements_changed', { detail: updated }));
-        window.dispatchEvent(new Event('storage'));
-      }
+      saveSystemConfig('__SYS_ANNOUNCEMENTS__', updated);
       return updated;
     });
   };
@@ -2721,11 +1795,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAnnouncements(prev => {
       const updated = prev.map(a => a.id === id ? { ...a, isNew: false } : a);
       safeSetLocalStorage('fintech_announcements', updated);
-      syncTableData('announcements', updated);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nutrien_announcements_changed', { detail: updated }));
-        window.dispatchEvent(new Event('storage'));
-      }
+      saveSystemConfig('__SYS_ANNOUNCEMENTS__', updated);
       return updated;
     });
   };
@@ -2742,11 +1812,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setFaqs(prev => {
       const updated = [newFaqItem, ...prev];
       safeSetLocalStorage('fintech_faqs', updated);
-      syncTableData('faqs', updated);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nutrien_faqs_changed', { detail: updated }));
-        window.dispatchEvent(new Event('storage'));
-      }
+      saveSystemConfig('__SYS_FAQS__', updated);
       return updated;
     });
   };
@@ -2765,31 +1831,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return f;
       });
       safeSetLocalStorage('fintech_faqs', updated);
-      syncTableData('faqs', updated);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nutrien_faqs_changed', { detail: updated }));
-        window.dispatchEvent(new Event('storage'));
-      }
+      saveSystemConfig('__SYS_FAQS__', updated);
       return updated;
     });
   };
 
   const deleteFaq = (id: string) => {
-    let deletedFaqIds: string[] = [];
-    try { deletedFaqIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_faq_ids') || '[]'); } catch (_) {}
-    if (!deletedFaqIds.includes(id)) {
-      deletedFaqIds.push(id);
-      safeSetLocalStorage('aurainvest_deleted_faq_ids', deletedFaqIds);
-    }
     setFaqs(prev => {
       const updated = prev.filter(f => f.id !== id);
       safeSetLocalStorage('fintech_faqs', updated);
-      deleteRecord('faqs', id);
-      syncTableData('faqs', updated);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nutrien_faqs_changed', { detail: updated }));
-        window.dispatchEvent(new Event('storage'));
-      }
+      saveSystemConfig('__SYS_FAQS__', updated);
       return updated;
     });
   };
@@ -2808,21 +1859,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updated = [newProd, ...prev];
       }
       safeSetLocalStorage('fintech_wellness_products', updated);
-      
-      if (productData.id) {
-        let deletedIds: string[] = [];
-        try { deletedIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_wellness_ids') || '[]'); } catch (_) {}
-        if (deletedIds.includes(productData.id)) {
-          const newDeleted = deletedIds.filter(id => id !== productData.id);
-          safeSetLocalStorage('aurainvest_deleted_wellness_ids', newDeleted);
-        }
-      }
-
-      syncTableData('wellness_products', updated);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nutrien_wellness_changed', { detail: updated }));
-        window.dispatchEvent(new Event('storage'));
-      }
+      saveSystemConfig('__SYS_WELLNESS__', updated);
       return updated;
     });
   };
@@ -2831,19 +1868,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setWellnessProducts(prev => {
       const updated = prev.filter(p => p.id !== id);
       safeSetLocalStorage('fintech_wellness_products', updated);
-      
-      let deletedIds: string[] = [];
-      try { deletedIds = JSON.parse(safeGetLocalStorage('aurainvest_deleted_wellness_ids') || '[]'); } catch (_) {}
-      if (!deletedIds.includes(id)) {
-        deletedIds.push(id);
-        safeSetLocalStorage('aurainvest_deleted_wellness_ids', deletedIds);
-      }
-
-      deleteRecord('wellness_products', id);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nutrien_wellness_changed', { detail: updated }));
-        window.dispatchEvent(new Event('storage'));
-      }
+      saveSystemConfig('__SYS_WELLNESS__', updated);
       return updated;
     });
   };

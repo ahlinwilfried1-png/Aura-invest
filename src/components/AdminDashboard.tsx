@@ -2485,9 +2485,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {announcements.map((ann) => (
+                  {announcements.map((ann, idx) => (
                     <div
-                      key={ann.id}
+                      key={`${ann.id || 'ann'}-${idx}`}
                       className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                     >
                       <div className="flex items-start space-x-3 max-w-2xl">
@@ -2840,9 +2840,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {wellnessProducts.map((prod) => (
+                  {wellnessProducts.map((prod, idx) => (
                     <div
-                      key={prod.id}
+                      key={`${prod.id || 'well'}-${idx}`}
                       className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 flex flex-col justify-between space-y-3"
                     >
                       <div className="flex items-start space-x-3">
