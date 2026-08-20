@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { InvestmentProduct, User, DepositRequest, WithdrawalRequest, SupportTicket, FaqItem, RechargeChannel } from '../types';
+import { OFFICIAL_INVESTMENT_PRODUCTS } from '../constants/products';
 import { 
   LayoutDashboard, 
   ArrowUpRight, 
@@ -1835,13 +1836,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   </p>
                 </div>
 
-                <button 
-                  onClick={() => handleOpenProductModal()}
-                  className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center space-x-2 shadow-md shadow-red-600/20 shrink-0"
-                >
-                  <Plus className="w-4 h-4 stroke-[3px]" />
-                  <span>Nouveau Produit</span>
-                </button>
+                <div className="flex items-center space-x-2 shrink-0">
+                  <button 
+                    onClick={() => {
+                      OFFICIAL_INVESTMENT_PRODUCTS.forEach(p => {
+                        addOrUpdateProduct(p);
+                      });
+                      showToast('success', "Les 8 packs VIP officiels ont été synchronisés et enregistrés avec succès dans la base de données !");
+                    }}
+                    type="button"
+                    className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all cursor-pointer flex items-center space-x-1.5 border border-slate-600 shadow-xs"
+                    title="Restaurer et enregistrer les 8 VIP officiels"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Synchroniser VIP Officiels (8 Tiers)</span>
+                  </button>
+
+                  <button 
+                    onClick={() => handleOpenProductModal()}
+                    className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center space-x-2 shadow-md shadow-red-600/20"
+                  >
+                    <Plus className="w-4 h-4 stroke-[3px]" />
+                    <span>Nouveau Produit</span>
+                  </button>
+                </div>
               </div>
 
               {/* Quick Stats bar */}

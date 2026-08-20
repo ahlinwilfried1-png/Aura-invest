@@ -51,7 +51,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
     ...level1Users.map((u) => ({
       user: u,
       level: 1,
-      badgeText: 'Niveau 1 (15%)',
+      badgeText: 'Niveau 1 (20%)',
       badgeClass: 'bg-emerald-100 text-emerald-800',
     })),
     ...level2Users.map((u) => ({
@@ -246,7 +246,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
           {/* NIVEAU 1 */}
           <div className="py-3 px-2 text-center space-y-1 border-b sm:border-b-0 sm:border-r border-slate-200/60">
             <span className="inline-block bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-0.5 rounded-full font-mono">
-              NIVEAU 1 (15%)
+              NIVEAU 1 (20%)
             </span>
             <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono pt-1">
               {level1Users.length}
@@ -351,7 +351,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
           <h3>Comment fonctionnent les commissions ?</h3>
         </div>
         <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-          Chaque fois qu'un utilisateur s'inscrit via votre lien d'affiliation et effectue un rechargement ou souscrit à une offre, la commission est instantanément créditée sur votre solde en FCFA (XOF). Les commissions de Niveau 1 s'élèvent à 15%, celles de Niveau 2 à 2% et celles de Niveau 3 à 1%. Vous pouvez retirer vos gains à tout moment par Mobile Money.
+          Chaque fois qu'un utilisateur s'inscrit via votre lien d'affiliation et effectue un rechargement ou souscrit à une offre, la commission est instantanément créditée sur votre solde en FCFA (XOF). Les commissions de Niveau 1 s'élèvent à 20%, celles de Niveau 2 à 2% et celles de Niveau 3 à 1%. Vous pouvez retirer vos gains à tout moment par Mobile Money.
         </p>
       </div>
 

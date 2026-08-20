@@ -217,24 +217,7 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
               <span>Vos informations personnelles (numéro de téléphone) seront automatiquement masquées.</span>
             </div>
 
-            <div>
-              <label className="block text-[10px] font-bold text-slate-700 mb-0.5">
-                Moyen de paiement / Réseau
-              </label>
-              <select
-                value={networkInput}
-                onChange={(e) => setNetworkInput(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-slate-900 font-bold text-xs outline-none focus:border-slate-900"
-              >
-                <option value="Mobile Money">Mobile Money</option>
-                <option value="Wave">Wave</option>
-                <option value="Orange Money">Orange Money</option>
-                <option value="MTN Mobile Money">MTN Mobile Money</option>
-                <option value="Moov Money">Moov Money</option>
-                <option value="Telecel Cash">Telecel Cash</option>
-              </select>
-            </div>
-
+            {/* Hidden / Preset network default */}
             <div>
               <label className="block text-[10px] font-bold text-slate-700 mb-0.5">
                 Montant du retrait (XOF/FCFA)

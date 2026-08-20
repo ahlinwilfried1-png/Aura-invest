@@ -56,7 +56,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
           </div>
 
           <p className="text-[11px] sm:text-xs text-slate-700 leading-snug font-normal bg-amber-50/90 p-2 rounded-xl border border-amber-200/60">
-            <span className="text-red-500 font-bold">🔻</span> Invitez vos amis à investir et gagnez jusqu'à <strong className="text-amber-900 font-bold">15% - 2% - 1%</strong> de commissions sur les investissements.
+            <span className="text-red-500 font-bold">🔻</span> Invitez vos amis à investir et gagnez jusqu'à <strong className="text-amber-900 font-bold">20% - 2% - 1%</strong> de commissions sur les investissements.
           </p>
 
           <div className="space-y-1.5 text-[11px] font-medium text-slate-800 bg-slate-50 p-2.5 rounded-xl border border-slate-100/80">
@@ -70,7 +70,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             </div>
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">💰</span>
-              <span><strong>Dépôt minimum :</strong> 4 000 FCFA</span>
+              <span><strong>Dépôt minimum :</strong> 2 500 FCFA</span>
             </div>
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">💸</span>

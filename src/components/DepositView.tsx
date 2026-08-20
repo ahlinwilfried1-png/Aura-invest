@@ -31,7 +31,7 @@ export const DepositView: React.FC<DepositViewProps> = ({
   onBack,
   onShowToast
 }) => {
-  const { rechargeChannels } = useApp();
+  const { rechargeChannels, products } = useApp();
 
   // Active channels from central DB
   const activeChannels = rechargeChannels.filter(c => c.isActive);
@@ -45,8 +45,15 @@ export const DepositView: React.FC<DepositViewProps> = ({
     networks: ['TMoney', 'Moov Money (Flooz)']
   };
 
-  // Preset amounts in FCFA
-  const presetAmounts = [4000, 15000, 20000, 30000, 50000, 75000, 100000, 150000];
+  // Preset amounts in FCFA configured according to official VIP products
+  const presetAmounts = React.useMemo(() => {
+    const dynamicPrices = (products || [])
+      .filter(p => p.isActive !== false && p.price >= 1000)
+      .map(p => p.price);
+    const defaults = [2500, 6000, 15000, 32000, 70000, 250000, 500000, 1000000];
+    const combined = Array.from(new Set([...dynamicPrices, ...defaults])).sort((a, b) => a - b);
+    return combined.slice(0, 8);
+  }, [products]);
 
   // States
   const [selectedChannelId, setSelectedChannelId] = useState<string>(
@@ -67,14 +74,35 @@ export const DepositView: React.FC<DepositViewProps> = ({
   const selectedChannel = activeChannels.find(c => c.id === selectedChannelId) || activeChannels[0];
 
   const [phone, setPhone] = useState<string>(currentUser.phone || '');
-  const [depAmount, setDepAmount] = useState<number>(4000);
-  const [customAmountStr, setCustomAmountStr] = useState<string>('4000');
+  const [depAmount, setDepAmount] = useState<number>(2500);
+  const [customAmountStr, setCustomAmountStr] = useState<string>('2500');
   const [txRef, setTxRef] = useState<string>('');
   const [copiedNumber, setCopiedNumber] = useState<boolean>(false);
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
   const [latestTxId, setLatestTxId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Strict Validation Calculation
+  const missingFields = React.useMemo(() => {
+    const missing: string[] = [];
+    if (!selectedChannelId || !selectedChannel) {
+      missing.push("Canal de paiement");
+    }
+    if (!depAmount || depAmount < 1000) {
+      missing.push("Montant valide (min. 1 000 FCFA)");
+    }
+    const cleanPhone = phone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+    if (!cleanPhone || cleanPhone.length < 6) {
+      missing.push("Numéro de téléphone émetteur");
+    }
+    if (!txRef.trim() || txRef.trim().length < 3) {
+      missing.push("ID / Référence de la transaction SMS");
+    }
+    return missing;
+  }, [selectedChannelId, selectedChannel, depAmount, phone, txRef]);
+
+  const isFormValid = missingFields.length === 0;
 
   const handleSelectPreset = (amount: number) => {
     setDepAmount(amount);
@@ -100,17 +128,8 @@ export const DepositView: React.FC<DepositViewProps> = ({
 
   const handleOpenConfirm = (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanPhone = phone.trim();
-    if (!cleanPhone || cleanPhone.length < 6) {
-      onShowToast('err', "Veuillez renseigner votre numéro de téléphone.");
-      return;
-    }
-    if (!depAmount || depAmount < 1000) {
-      onShowToast('err', "Le montant minimum de recharge est de 1 000 FCFA.");
-      return;
-    }
-    if (!selectedChannel) {
-      onShowToast('err', "Veuillez sélectionner un canal de recharge.");
+    if (!isFormValid) {
+      onShowToast('err', `Champs manquants obligatoires : ${missingFields.join(', ')}`);
       return;
     }
     setShowConfirmModal(true);
@@ -118,9 +137,13 @@ export const DepositView: React.FC<DepositViewProps> = ({
 
   const handleExecuteDeposit = () => {
     if (isSubmitting) return;
+    if (!isFormValid) {
+      onShowToast('err', `Veuillez remplir tous les champs obligatoires : ${missingFields.join(', ')}`);
+      return;
+    }
     setIsSubmitting(true);
 
-    const generatedRef = txRef.trim() || `DEP-${Date.now().toString().slice(-6)}`;
+    const generatedRef = txRef.trim();
     setLatestTxId(generatedRef);
 
     const methodName = selectedChannel ? `${selectedChannel.name}` : 'Mobile Money Togo';
@@ -325,8 +348,9 @@ export const DepositView: React.FC<DepositViewProps> = ({
           <div className="space-y-2.5 text-xs">
             {/* Numéro de téléphone de l'utilisateur */}
             <div>
-              <label className="text-[10px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">
-                Votre numéro de téléphone (Émetteur)
+              <label className="text-[10px] font-bold text-slate-700 block mb-1 uppercase tracking-wider flex items-center justify-between">
+                <span>Votre numéro de téléphone (Émetteur)</span>
+                <span className="text-red-500 font-bold text-[9px]">* Obligatoire</span>
               </label>
               <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus-within:border-amber-500 transition-colors">
                 <span className="text-xs font-bold font-mono text-amber-600 mr-2 shrink-0">{currentCountry.prefix}</span>
@@ -337,15 +361,16 @@ export const DepositView: React.FC<DepositViewProps> = ({
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="Ex: 90 12 34 56"
                   className="w-full bg-transparent outline-none font-bold text-slate-900 text-xs sm:text-sm font-mono"
+                  required
                 />
               </div>
             </div>
 
             {/* Référence ou ID de transaction SMS */}
             <div>
-              <label className="text-[10px] font-bold text-slate-400 block mb-1 uppercase tracking-wider flex items-center justify-between">
-                <span>ID / Référence de la transaction SMS (Optionnel)</span>
-                <span className="text-slate-400 text-[9px]">Reçu par SMS après transfert</span>
+              <label className="text-[10px] font-bold text-slate-700 block mb-1 uppercase tracking-wider flex items-center justify-between">
+                <span>ID / Référence de la transaction SMS</span>
+                <span className="text-red-500 font-bold text-[9px]">* Obligatoire</span>
               </label>
               <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus-within:border-amber-500 transition-colors">
                 <FileText className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
@@ -355,22 +380,44 @@ export const DepositView: React.FC<DepositViewProps> = ({
                   onChange={(e) => setTxRef(e.target.value)}
                   placeholder="Ex: TX-987654321 ou réf SMS TMoney / Moov"
                   className="w-full bg-transparent outline-none font-semibold text-slate-900 text-xs font-mono"
+                  required
                 />
               </div>
+              <span className="text-slate-400 text-[9px] block mt-0.5">Saisissez l'ID ou code reçu par SMS après votre transfert Mobile Money.</span>
             </div>
           </div>
         </div>
 
         {/* CADRE SOUMETTRE LA RECHARGE */}
         <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs space-y-2.5">
+          {!isFormValid && (
+            <div className="bg-amber-50 border border-amber-300 rounded-xl p-2.5 text-xs text-amber-900 flex items-start space-x-2">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-[11px]">Champs obligatoires à compléter :</p>
+                <p className="text-[10px] text-amber-800">{missingFields.join(' • ')}</p>
+              </div>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={handleOpenConfirm}
-            className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-sm uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center space-x-2 text-center"
+            disabled={!isFormValid}
+            className={`w-full py-3.5 px-4 font-black text-sm uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 text-center ${
+              isFormValid
+                ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-400 text-slate-950 cursor-pointer shadow-amber-500/20 active:scale-[0.99]'
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+            }`}
             id="btn-soumettre-recharge"
           >
-            <Lock className="w-4 h-4 text-slate-950 shrink-0" />
-            <span>Valider la recharge ({depAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA)</span>
+            <Lock className="w-4 h-4 shrink-0" />
+            <span>
+              {isFormValid 
+                ? `Valider la recharge (${depAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA)`
+                : `Complétez le formulaire (${missingFields.length} champ${missingFields.length > 1 ? 's' : ''} restant${missingFields.length > 1 ? 's' : ''})`
+              }
+            </span>
           </button>
         </div>
 

@@ -41,6 +41,7 @@ import {
   FaqItem,
   RechargeChannel
 } from '../types';
+import { OFFICIAL_INVESTMENT_PRODUCTS } from '../constants/products';
 
 interface AppContextType {
   users: User[];
@@ -214,9 +215,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [products, setProducts] = useState<InvestmentProduct[]>(() => {
     const data = safeGetLocalStorage('fintech_products');
     if (data) {
-      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
+      try {
+        const parsed = deduplicateById<InvestmentProduct>(JSON.parse(data));
+        if (parsed.length > 0) return parsed;
+      } catch (_) {}
     }
-    return [];
+    return OFFICIAL_INVESTMENT_PRODUCTS;
   });
 
   const [userInvestments, setUserInvestments] = useState<UserInvestment[]>(() => {
@@ -474,10 +478,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       // Process Products: DB is the authoritative single source of truth
-      if (dbProducts) {
+      if (dbProducts && dbProducts.length > 0) {
         const dedupedProducts = deduplicateById(dbProducts);
         setProducts(dedupedProducts);
         safeSetLocalStorage('fintech_products', dedupedProducts);
+      } else {
+        // Seed official investment products to DB and state
+        setProducts(OFFICIAL_INVESTMENT_PRODUCTS);
+        safeSetLocalStorage('fintech_products', OFFICIAL_INVESTMENT_PRODUCTS);
+        OFFICIAL_INVESTMENT_PRODUCTS.forEach(p => {
+          upsertItem('products', p);
+        });
       }
 
       // Process Investments
@@ -974,7 +985,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (dbUser.referredByCode) {
       const l1 = updatedUsers.find(u => u.referralCode === dbUser.referredByCode);
       if (l1) {
-        const commL1 = Math.round(totalPrice * 0.15); // 15% Level 1
+        const commL1 = Math.round(totalPrice * 0.20); // 20% Level 1
         const ticketsGained = (wheelConfig?.ticketsPerReferral || 1) * quantity;
         const newL1Balance = l1.balance + commL1;
         const newL1Total = l1.totalEarnings + commL1;
@@ -1143,9 +1154,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const requestDeposit = (amount: number, method: any, transactionId: string, screenshotUrl: string | null) => {
-    if (!currentUser) return { success: false, error: "Non connecté." };
-    if (amount <= 0) return { success: false, error: "Montant invalide." };
-    if (!transactionId.trim()) return { success: false, error: "Le numéro de transaction est obligatoire." };
+    if (!currentUser) return { success: false, error: "Non connecté. Veuillez vous connecter." };
+    if (!amount || isNaN(amount) || amount < 1000) {
+      return { success: false, error: "Le montant minimum de recharge est de 1 000 FCFA." };
+    }
+    if (!method || (typeof method === 'string' && !method.trim())) {
+      return { success: false, error: "Veuillez sélectionner un moyen / canal de paiement." };
+    }
+    if (!transactionId || !transactionId.trim() || transactionId.trim().length < 3) {
+      return { success: false, error: "Le numéro / ID de transaction SMS est obligatoire." };
+    }
+    const cleanUserPhone = (currentUser.phone || '').trim();
+    if (!cleanUserPhone || cleanUserPhone.length < 6) {
+      return { success: false, error: "Numéro de téléphone utilisateur manquant ou invalide." };
+    }
     
     const newDeposit: DepositRequest = {
       id: 'dep-' + Math.random().toString(36).substr(2, 9),
@@ -1153,7 +1175,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       userName: currentUser.name,
       userPhone: currentUser.phone,
       amount,
-      method,
+      method: typeof method === 'string' ? method.trim() : (method?.name || 'Mobile Money'),
       transactionId: transactionId.trim(),
       screenshotUrl,
       status: 'pending',

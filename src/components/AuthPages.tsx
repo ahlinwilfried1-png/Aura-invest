@@ -406,16 +406,9 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
 
                 {/* 4. Code d'invitation */}
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-semibold text-slate-800">
-                      Code d'invitation
-                    </label>
-                    {isReferralFromUrl && (
-                      <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md">
-                        Appliqué automatiquement
-                      </span>
-                    )}
-                  </div>
+                  <label className="block text-xs font-semibold text-slate-800">
+                    Code d'invitation
+                  </label>
 
                   <div className="flex items-center bg-[#f4f5f8] rounded-2xl px-3.5 py-3 border border-transparent focus-within:border-emerald-500 focus-within:bg-white transition-all">
                     <input

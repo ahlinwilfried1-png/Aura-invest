@@ -1,0 +1,116 @@
+import { InvestmentProduct } from '../types';
+
+export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
+  {
+    id: 'vip-1-pro',
+    name: 'VIP Niveau 1 (Pro)',
+    price: 2500,
+    dailyGain: 168,
+    duration: 365,
+    totalGain: 61320, // 168 * 365
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack de démarrage agricole Pro - Rendement quotidien garanti sur 365 jours.',
+    order: 1,
+    badge: 'Populaire',
+    color: 'from-amber-950/40 via-amber-900/10 to-transparent border-amber-500/20'
+  },
+  {
+    id: 'vip-2-elite',
+    name: 'VIP Niveau 2 (Elite)',
+    price: 6000,
+    dailyGain: 360,
+    duration: 365,
+    totalGain: 131400, // 360 * 365
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1592417817098-8f3d6ef23a81?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack Elite Nutrition végétale & Fertilisant bio à haut rendement.',
+    order: 2,
+    badge: 'Recommandé',
+    color: 'from-emerald-950/40 via-emerald-900/10 to-transparent border-emerald-500/20'
+  },
+  {
+    id: 'vip-3-premium',
+    name: 'VIP Niveau 3 (Premium)',
+    price: 15000,
+    dailyGain: 744,
+    duration: 365,
+    totalGain: 271560, // 744 * 365
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack Premium Semences sélectionnées & technologie agro-alimentaire.',
+    order: 3,
+    badge: 'Rentable',
+    color: 'from-blue-950/40 via-blue-900/10 to-transparent border-blue-500/20'
+  },
+  {
+    id: 'vip-4-platinum',
+    name: 'VIP Niveau 4 (Platinum)',
+    price: 32000,
+    dailyGain: 1584,
+    duration: 365,
+    totalGain: 578160, // 1584 * 365
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack Platinum Distribution régionale & Agro-équipement motorisé.',
+    order: 4,
+    badge: 'Haute Performance',
+    color: 'from-purple-950/40 via-purple-900/10 to-transparent border-purple-500/20'
+  },
+  {
+    id: 'vip-6-or',
+    name: 'VIP Niveau 6 (Or)',
+    price: 70000,
+    dailyGain: 3840,
+    duration: 365,
+    totalGain: 1401600, // 3840 * 365
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack Or Chaîne logistique globale & Valorisation agro-industrielle.',
+    order: 5,
+    badge: 'Investisseur Or',
+    color: 'from-amber-950/40 via-yellow-900/10 to-transparent border-yellow-500/30'
+  },
+  {
+    id: 'vip-7-saphir',
+    name: 'VIP Niveau 7 (Saphir)',
+    price: 250000,
+    dailyGain: 13800,
+    duration: 365,
+    totalGain: 5037000, // 13800 * 365
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack Saphir Agro-industrie & Transformation industrielle à grande échelle.',
+    order: 6,
+    badge: 'Privilège Saphir',
+    color: 'from-sky-950/40 via-cyan-900/10 to-transparent border-cyan-500/30'
+  },
+  {
+    id: 'vip-partenaire-bronze',
+    name: 'VIP Partenaire (Bronze)',
+    price: 500000,
+    dailyGain: 28800,
+    duration: 365,
+    totalGain: 10512000, // 28800 * 365
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80',
+    description: 'Partenariat Stratégique Bronze - Hub logistique Afrique de l\'Ouest.',
+    order: 7,
+    badge: 'Partenaire Bronze',
+    color: 'from-orange-950/40 via-amber-900/10 to-transparent border-orange-500/30'
+  },
+  {
+    id: 'vip-partenaire-argent',
+    name: 'VIP Partenaire (Argent)',
+    price: 1000000,
+    dailyGain: 60000,
+    duration: 365,
+    totalGain: 21900000, // 60000 * 365
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop&q=80',
+    description: 'Partenariat Stratégique Argent - Franchise agro-financière exclusive.',
+    order: 8,
+    badge: 'Partenaire Argent',
+    color: 'from-slate-950/40 via-slate-800/10 to-transparent border-slate-400/40'
+  }
+];
