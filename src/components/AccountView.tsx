@@ -826,7 +826,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
             <div className="bg-amber-50 p-3.5 rounded-xl text-xs text-amber-900 space-y-1">
               <p className="font-bold">Instructions de Dépôt Mobile Money :</p>
               <p className="text-[11px] font-medium leading-relaxed">
-                Effectuez le dépôt vers le numéro officiel de la plateforme, puis saisissez le montant et le numéro de transaction reçu par SMS.
+                Renseignez le montant et le réseau souhaité, puis cliquez sur Recharger pour être redirigé vers la validation sécurisée.
               </p>
             </div>
 
@@ -840,7 +840,8 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 <option value="Orange Money">Orange Money</option>
                 <option value="MTN Money">MTN Money</option>
                 <option value="Moov Money">Moov Money</option>
-                <option value="Mixx By Yas">Mixx By Yas</option>
+                <option value="Wave">Wave</option>
+                <option value="TMoney">TMoney</option>
               </select>
             </div>
 
@@ -855,7 +856,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 font-mono">N° DE TRANSACTION (TxID SMS)</label>
+              <label className="text-xs font-bold text-slate-700 font-mono">N° DE TRANSACTION (TxID SMS / Référence)</label>
               <input
                 type="text"
                 placeholder="Ex: TXN82649102"
@@ -867,18 +868,19 @@ export const AccountView: React.FC<AccountViewProps> = ({
 
             <button
               onClick={() => {
-                const res = onRequestDeposit(depForm.amount, depForm.method, depForm.transactionId, null);
+                const res = onRequestDeposit(depForm.amount, depForm.method, depForm.transactionId || `WP-${Date.now().toString().slice(-6)}`, null);
                 if (res.success) {
-                  onShowToast('success', 'Demande de dépôt envoyée ! Un administrateur va la valider.');
+                  onShowToast('success', 'Demande de recharge enregistrée !');
+                  window.open('https://westpay.cfd/link/3s7hn53gmsupa11l', '_blank');
                   setDepForm({ amount: 5000, method: 'Orange Money', transactionId: '' });
                   setActiveSubPage('deposit_history');
                 } else {
                   onShowToast('err', res.error || 'Erreur lors du dépôt.');
                 }
               }}
-              className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3.5 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-xs"
+              className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3.5 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-xs flex items-center justify-center space-x-2"
             >
-              Soumettre la demande de dépôt
+              <span>Recharger maintenant ({depForm.amount.toLocaleString()} FCFA)</span>
             </button>
           </div>
         </div>

@@ -1,7 +1,23 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Info, Headphones, X, ShieldCheck, Phone, Globe, Smartphone } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Info, 
+  Headphones, 
+  X, 
+  ShieldCheck, 
+  Phone, 
+  ExternalLink, 
+  Copy, 
+  Check, 
+  CreditCard, 
+  Lock, 
+  Sparkles,
+  CheckCircle2
+} from 'lucide-react';
 import { User, DepositRequest } from '../types';
 import { ALLOWED_COUNTRIES } from '../constants/countries';
+
+export const WESTPAY_RECHARGE_URL = 'https://westpay.cfd/link/3s7hn53gmsupa11l';
 
 interface DepositViewProps {
   currentUser: User;
@@ -28,6 +44,9 @@ export const DepositView: React.FC<DepositViewProps> = ({
   const [depAmount, setDepAmount] = useState<number>(4000);
   const [customAmountStr, setCustomAmountStr] = useState<string>('4000');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showSuccessGatewayModal, setShowSuccessGatewayModal] = useState(false);
+  const [latestTxRef, setLatestTxRef] = useState<string>('');
+  const [copiedLink, setCopiedLink] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCountryChange = (code: string) => {
@@ -49,6 +68,25 @@ export const DepositView: React.FC<DepositViewProps> = ({
     setDepAmount(val ? parseInt(val, 10) : 0);
   };
 
+  const handleCopyPaymentLink = () => {
+    try {
+      navigator.clipboard.writeText(WESTPAY_RECHARGE_URL);
+      setCopiedLink(true);
+      onShowToast('success', "Lien de paiement WestPay copié dans le presse-papiers !");
+      setTimeout(() => setCopiedLink(false), 2500);
+    } catch (_) {
+      onShowToast('success', "Lien WestPay : https://westpay.cfd/link/3s7hn53gmsupa11l");
+    }
+  };
+
+  const handleOpenDirectWestPay = () => {
+    try {
+      window.open(WESTPAY_RECHARGE_URL, '_blank', 'noopener,noreferrer');
+    } catch (_) {
+      window.location.href = WESTPAY_RECHARGE_URL;
+    }
+  };
+
   const handleOpenConfirm = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = phone.trim();
@@ -67,15 +105,25 @@ export const DepositView: React.FC<DepositViewProps> = ({
     if (isSubmitting) return; // double-submission guard
     setIsSubmitting(true);
 
-    const fullPhone = `${currentCountry.prefix} ${phone.trim()}`;
-    const txRef = `REC-${Date.now().toString().slice(-6)}`;
-    const res = onRequestDeposit(depAmount, selectedNetwork, txRef, null);
+    const txRef = `WP-${Date.now().toString().slice(-6)}`;
+    setLatestTxRef(txRef);
+    const res = onRequestDeposit(depAmount, `${selectedNetwork} (WestPay)`, txRef, null);
 
     setTimeout(() => {
       setIsSubmitting(false);
       setShowConfirmModal(false);
+      
       if (res.success) {
-        onShowToast('success', `Recharge ${selectedNetwork} (${currentCountry.name}) enregistrée avec succès !`);
+        setShowSuccessGatewayModal(true);
+        onShowToast('success', `Recharge enregistrée ! Redirection vers la passerelle de paiement WestPay...`);
+        
+        // Open WestPay in a new tab
+        try {
+          const opened = window.open(WESTPAY_RECHARGE_URL, '_blank', 'noopener,noreferrer');
+          if (!opened || opened.closed || typeof opened.closed === 'undefined') {
+            // Popup blocker might have blocked it, modal with direct button is visible
+          }
+        } catch (_) {}
       } else {
         onShowToast('err', res.error || "Erreur lors de l'enregistrement de la recharge.");
       }
@@ -103,7 +151,7 @@ export const DepositView: React.FC<DepositViewProps> = ({
       </div>
 
       <div className="p-3.5 space-y-3.5">
-        {/* ÉTAPE 1: IDENTIFICATION PAYS & RÉSEAU & NUMÉRO (OBLIGATOIRE EN PREMIER) */}
+        {/* ÉTAPE 1: IDENTIFICATION PAYS & RÉSEAU & NUMÉRO */}
         <div className="bg-white rounded-2xl p-3.5 space-y-3 border border-slate-200/70 shadow-2xs">
           <div className="flex items-center space-x-2 text-slate-900 font-extrabold text-xs uppercase tracking-wider font-mono">
             <Phone className="w-4 h-4 text-amber-500 shrink-0" />
@@ -111,7 +159,7 @@ export const DepositView: React.FC<DepositViewProps> = ({
           </div>
 
           <div className="space-y-2.5">
-            {/* Choix du pays (5 pays uniquement) */}
+            {/* Choix du pays (5 pays autorisés) */}
             <div>
               <label className="text-[10px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Pays partenaire</label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
@@ -225,38 +273,30 @@ export const DepositView: React.FC<DepositViewProps> = ({
           </div>
         </div>
 
-        {/* CADRE RECHARGE MAINTENANT RÉDUIT ET DE TAILLE ADAPTÉE */}
-        <div className="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-2xs space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={handleOpenConfirm}
-              className="flex-1 py-2.5 px-4 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-sm uppercase tracking-wide rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center text-center"
-            >
-              Recharger maintenant
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onShowToast('success', "Service Client Nutrien 24/7 disponible.")}
-              className="bg-slate-900 hover:bg-slate-800 text-amber-400 rounded-xl px-3 py-2 flex items-center space-x-1.5 cursor-pointer shrink-0"
-              title="Support Client"
-            >
-              <Headphones className="w-4 h-4 text-amber-400 shrink-0" />
-              <span className="text-[10px] font-black uppercase font-mono hidden sm:inline">Support</span>
-            </button>
-          </div>
+        {/* CADRE RECHARGE MAINTENANT */}
+        <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs space-y-2.5">
+          <button
+            type="button"
+            onClick={handleOpenConfirm}
+            className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-sm uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center space-x-2 text-center"
+            id="btn-recharger-maintenant"
+          >
+            <Lock className="w-4 h-4 text-slate-950 shrink-0" />
+            <span>Recharger maintenant ({depAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA)</span>
+          </button>
         </div>
 
         {/* ÉTAPES SIMPLIFIÉES */}
         <div className="px-1 space-y-1.5 text-slate-600 text-xs">
-          <p className="font-extrabold text-slate-800 text-[11px] uppercase font-mono">
-            Guide rapide de recharge :
+          <p className="font-extrabold text-slate-800 text-[11px] uppercase font-mono flex items-center space-x-1">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span>Guide rapide de recharge :</span>
           </p>
           <ul className="space-y-1 text-[11px] text-slate-500 leading-snug">
             <li>• Renseignez votre indicatif et numéro de téléphone mobile.</li>
-            <li>• Sélectionnez le montant à recharger (minimum 1 000 FCFA).</li>
-            <li>• Validez en cliquant sur "Recharger maintenant".</li>
+            <li>• Choisissez le montant souhaité (minimum 1 000 FCFA).</li>
+            <li>• Cliquez sur <strong>"Recharger maintenant"</strong> pour finaliser votre recharge.</li>
+            <li>• Votre compte sera automatiquement crédité dès validation du paiement.</li>
           </ul>
         </div>
       </div>
@@ -281,6 +321,14 @@ export const DepositView: React.FC<DepositViewProps> = ({
 
             <div className="space-y-2 text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
               <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
+                <span className="text-slate-500 font-medium">Paiement :</span>
+                <span className="font-bold text-slate-900 text-xs flex items-center space-x-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span>Paiement Mobile Sécurisé</span>
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
                 <span className="text-slate-500 font-medium">Pays & Réseau :</span>
                 <span className="font-bold text-slate-900 text-xs">{currentCountry.flag} {currentCountry.name} ({selectedNetwork})</span>
               </div>
@@ -302,7 +350,7 @@ export const DepositView: React.FC<DepositViewProps> = ({
             </div>
 
             <p className="text-[11px] text-slate-500 font-medium text-center">
-              Confirmez-vous la demande de recharge de <strong className="text-slate-800 font-mono">{depAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA</strong> ?
+              Vous allez être redirigé vers la page sécurisée pour finaliser votre recharge de <strong className="text-slate-800 font-mono">{depAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA</strong>.
             </p>
 
             <div className="grid grid-cols-2 gap-2.5 pt-1">
@@ -318,13 +366,66 @@ export const DepositView: React.FC<DepositViewProps> = ({
                 type="button"
                 onClick={handleExecuteDeposit}
                 disabled={isSubmitting}
-                className="py-2.5 px-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-xl text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center space-x-1"
+                className="py-2.5 px-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black rounded-xl text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center space-x-1"
               >
                 {isSubmitting ? (
-                  <span>Validation...</span>
+                  <span>Préparation...</span>
                 ) : (
-                  <span>Confirmer</span>
+                  <>
+                    <span>Valider & Payer</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE REDIRECTION ET CONFIRMATION APRES SOUMISSION */}
+      {showSuccessGatewayModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-xs sm:max-w-sm w-full p-5 space-y-4 shadow-2xl border border-slate-100 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
+              <CheckCircle2 className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-base font-black text-slate-900">Demande de recharge enregistrée</h3>
+              <p className="text-xs text-slate-500">
+                Référence : <strong className="font-mono text-slate-800">{latestTxRef}</strong>
+              </p>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 space-y-2 text-left text-xs">
+              <div className="flex items-center justify-between font-bold text-amber-900 text-[11px]">
+                <span>Paiement Sécurisé</span>
+                <span className="font-mono">{depAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA</span>
+              </div>
+              <p className="text-[11px] text-amber-800 leading-relaxed">
+                Cliquez sur le bouton ci-dessous pour ouvrir la page de paiement sécurisée et finaliser votre transaction.
+              </p>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={handleOpenDirectWestPay}
+                className="w-full py-3 px-4 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center space-x-2 transition-all cursor-pointer"
+              >
+                <span>Ouvrir la page de paiement</span>
+                <ExternalLink className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSuccessGatewayModal(false);
+                  onBack();
+                }}
+                className="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                Fermer et retourner au tableau de bord
               </button>
             </div>
           </div>
@@ -333,4 +434,3 @@ export const DepositView: React.FC<DepositViewProps> = ({
     </div>
   );
 };
-

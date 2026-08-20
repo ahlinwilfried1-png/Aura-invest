@@ -1142,6 +1142,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 </div>
               </div>
 
+              {/* Passerelle de paiement WestPay active */}
+              <div className="bg-slate-900/90 border border-slate-700 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="flex items-center space-x-2 min-w-0">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-amber-400 block">Lien Passerelle Recharge Actif (WestPay) :</span>
+                    <span className="text-xs font-mono text-slate-300 truncate block">https://westpay.cfd/link/3s7hn53gmsupa11l</span>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText('https://westpay.cfd/link/3s7hn53gmsupa11l');
+                      showToast('success', 'Lien WestPay copié !');
+                    }}
+                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Copier le lien
+                  </button>
+                  <a
+                    href="https://westpay.cfd/link/3s7hn53gmsupa11l"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-black transition-colors"
+                  >
+                    Tester le lien ↗
+                  </a>
+                </div>
+              </div>
+
               {/* Filter Tabs & Search Bar */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                 <div className="flex space-x-1.5 bg-slate-900 p-1 rounded-xl w-full sm:w-auto">

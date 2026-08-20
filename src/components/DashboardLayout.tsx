@@ -271,7 +271,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     }
     const res = requestDeposit(depAmount, depMethod, depTxId, depScreenshot);
     if (res.success) {
-      showToast('success', "Demande de recharge soumise ! Validation en cours par notre équipe.");
+      showToast('success', "Demande de recharge enregistrée ! Redirection vers la passerelle WestPay...");
+      window.open('https://westpay.cfd/link/3s7hn53gmsupa11l', '_blank');
       setDepositModalOpen(false);
       setDepTxId('');
       setDepScreenshot(null);
@@ -819,9 +820,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
               <button 
                 type="submit"
-                className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md flex items-center justify-center space-x-1.5"
               >
-                Soumettre la Recharge ({depAmount.toLocaleString()} FCFA)
+                <span>Recharger maintenant ({depAmount.toLocaleString()} FCFA)</span>
               </button>
             </form>
           </div>
