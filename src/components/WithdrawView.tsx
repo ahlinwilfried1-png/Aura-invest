@@ -30,7 +30,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
   const [showBindModal, setShowBindModal] = useState<boolean>(false);
 
   // Form states for account binding
-  const defaultCountryCode = currentUser.withdrawalCountry || 'CI';
+  const defaultCountryCode = currentUser.withdrawalCountry || 'TG';
   const [bindCountryCode, setBindCountryCode] = useState<string>(defaultCountryCode);
   
   const currentBindCountry = ALLOWED_COUNTRIES.find(c => c.code === bindCountryCode) || ALLOWED_COUNTRIES[0];
@@ -235,7 +235,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
                     <span>{currentUser.withdrawalAccountName || currentUser.name}</span>
                     {currentUser.withdrawalCountry && (
                       <span className="text-xs bg-amber-950/15 px-1.5 py-0.5 rounded font-mono font-bold">
-                        {ALLOWED_COUNTRIES.find(c => c.code === currentUser.withdrawalCountry)?.flag || '🇨🇮'}
+                        {ALLOWED_COUNTRIES.find(c => c.code === currentUser.withdrawalCountry)?.flag || '🇹🇬'}
                       </span>
                     )}
                   </div>

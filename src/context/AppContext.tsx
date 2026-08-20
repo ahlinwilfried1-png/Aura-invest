@@ -12,7 +12,8 @@ import {
   updateItem, 
   deleteRecord, 
   saveSystemConfig, 
-  fetchSystemConfig 
+  fetchSystemConfig,
+  deleteSystemConfig 
 } from '../lib/supabaseService';
 import { 
   safeSetLocalStorage, 
@@ -38,7 +39,7 @@ import {
   Announcement,
   RevenueLog,
   FaqItem,
-  WellnessProduct
+  RechargeChannel
 } from '../types';
 
 interface AppContextType {
@@ -57,7 +58,7 @@ interface AppContextType {
   wheelConfig: WheelConfig;
   announcements: Announcement[];
   faqs: FaqItem[];
-  wellnessProducts: WellnessProduct[];
+  rechargeChannels: RechargeChannel[];
   liveStats: {
     membersCount: number;
     depositsSum: number;
@@ -121,8 +122,12 @@ interface AppContextType {
   addFaq: (question: string, answer: string, category?: string) => void;
   updateFaq: (id: string, question: string, answer: string, category?: string) => void;
   deleteFaq: (id: string) => void;
-  addOrUpdateWellnessProduct: (product: Omit<WellnessProduct, 'id'> & { id?: string }) => void;
-  deleteWellnessProduct: (id: string) => void;
+  
+  // Recharge channels management
+  addRechargeChannel: (data: { name: string; accountNumber: string; accountHolder?: string; instructions?: string; isActive?: boolean }) => Promise<{ success: boolean; error?: string }>;
+  updateRechargeChannel: (id: string, data: Partial<RechargeChannel>) => Promise<{ success: boolean; error?: string }>;
+  deleteRechargeChannel: (id: string) => Promise<{ success: boolean; error?: string }>;
+  toggleRechargeChannel: (id: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -155,8 +160,8 @@ function buildPinHash(pwd?: string, pin?: string, network?: string, country?: st
   const existing = parseAuthFromPinHash(existingHash);
   const finalPwd = pwd !== undefined ? pwd : (existing.pwd || '');
   const finalPin = pin !== undefined ? pin : (existing.pin || '');
-  const finalNetwork = network !== undefined ? network : (existing.network || 'Mobile Money');
-  const finalCountry = country !== undefined ? country : (existing.country || 'CI');
+  const finalNetwork = network !== undefined ? network : (existing.network || 'TMoney');
+  const finalCountry = country !== undefined ? country : (existing.country || 'TG');
   return JSON.stringify({ pwd: finalPwd, pin: finalPin, network: finalNetwork, country: finalCountry });
 }
 
@@ -340,12 +345,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return [];
   });
 
-  const [wellnessProducts, setWellnessProducts] = useState<WellnessProduct[]>(() => {
-    const data = safeGetLocalStorage('fintech_wellness_products');
-    if (data) {
-      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
+  // Ensure any legacy wellness storage is purged immediately
+  useEffect(() => {
+    safeRemoveLocalStorage('fintech_wellness_products');
+  }, []);
+
+  const [rechargeChannels, setRechargeChannels] = useState<RechargeChannel[]>(() => {
+    const data = safeGetLocalStorage('fintech_recharge_channels');
+    if (data !== null && data !== undefined) {
+      try {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          return deduplicateById(parsed);
+        }
+      } catch (_) {}
     }
-    return [];
+    return [
+      {
+        id: 'rc-tmoney',
+        name: 'TMoney (Togocom)',
+        accountNumber: '+228 90 00 00 00',
+        accountHolder: 'Service Recharge Nutrien',
+        instructions: 'Effectuez le transfert vers ce numéro TMoney puis saisissez la référence de transaction.',
+        isActive: true,
+        order: 1,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'rc-moov',
+        name: 'Moov Money (Flooz)',
+        accountNumber: '+228 99 00 00 00',
+        accountHolder: 'Service Recharge Nutrien',
+        instructions: 'Effectuez le transfert vers ce numéro Moov Money Flooz puis saisissez la référence de transaction.',
+        isActive: true,
+        order: 2,
+        createdAt: new Date().toISOString()
+      }
+    ];
   });
 
   const [liveStats, setLiveStats] = useState({
@@ -396,8 +432,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const auth = parseAuthFromPinHash(u.withdrawalPinHash);
           return {
             ...u,
-            withdrawalNetwork: auth.network || u.withdrawalNetwork || 'Mobile Money',
-            withdrawalCountry: auth.country || u.withdrawalCountry || 'CI'
+            withdrawalNetwork: auth.network || u.withdrawalNetwork || 'TMoney',
+            withdrawalCountry: auth.country || u.withdrawalCountry || 'TG'
           };
         });
         const dedupedUsers = deduplicateById(enrichedUsers);
@@ -492,10 +528,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const realBonus: BonusCode[] = [];
         let sysAnnouncements: Announcement[] | null = null;
         let sysFaqs: FaqItem[] | null = null;
-        let sysWellness: WellnessProduct[] | null = null;
         let sysWheel: WheelConfig | null = null;
         let sysDraws: DrawRecord[] | null = null;
         let sysRevLogs: RevenueLog[] | null = null;
+        let sysRechargeChannels: RechargeChannel[] | null = null;
         let sysNotif: string | null = null;
 
         dbBonusRows.forEach(row => {
@@ -504,7 +540,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           } else if (row.code === '__SYS_FAQS__') {
             sysFaqs = deduplicateById(row.usedBy || []);
           } else if (row.code === '__SYS_WELLNESS__') {
-            sysWellness = deduplicateById(row.usedBy || []);
+            // Actively eradicate legacy wellness key from database
+            deleteSystemConfig('__SYS_WELLNESS__');
+          } else if (row.code === '__SYS_RECHARGE_CHANNELS__') {
+            if (Array.isArray(row.usedBy)) {
+              sysRechargeChannels = deduplicateById(row.usedBy);
+            } else if (typeof row.usedBy === 'string') {
+              try {
+                const parsed = JSON.parse(row.usedBy);
+                sysRechargeChannels = Array.isArray(parsed) ? deduplicateById(parsed) : [];
+              } catch (_) {
+                sysRechargeChannels = [];
+              }
+            } else {
+              sysRechargeChannels = [];
+            }
           } else if (row.code === '__SYS_WHEEL_CONFIG__') {
             if (row.usedBy && Array.isArray(row.usedBy) && row.usedBy[0]) {
               const cfg = row.usedBy[0];
@@ -551,9 +601,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setFaqs(sysFaqs);
           safeSetLocalStorage('fintech_faqs', sysFaqs);
         }
-        if (sysWellness) {
-          setWellnessProducts(sysWellness);
-          safeSetLocalStorage('fintech_wellness_products', sysWellness);
+        if (sysRechargeChannels !== null) {
+          setRechargeChannels(sysRechargeChannels);
+          safeSetLocalStorage('fintech_recharge_channels', sysRechargeChannels);
         }
         if (sysWheel) {
           setWheelConfig(sysWheel);
@@ -1143,8 +1193,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!accountNumber.trim()) return { success: false, error: "Le numéro de compte de retrait est requis." };
     if (!pin.trim() || pin.length < 4) return { success: false, error: "Le code PIN doit comporter au moins 4 chiffres." };
 
-    const targetNetwork = network || currentUser.withdrawalNetwork || 'Mobile Money';
-    const targetCountry = country || currentUser.withdrawalCountry || 'CI';
+    const targetNetwork = network || currentUser.withdrawalNetwork || 'TMoney';
+    const targetCountry = country || currentUser.withdrawalCountry || 'TG';
     const authObj = parseAuthFromPinHash(currentUser.withdrawalPinHash);
     const newPinHash = buildPinHash(authObj.pwd, pin.trim(), targetNetwork, targetCountry, currentUser.withdrawalPinHash);
 
@@ -1651,7 +1701,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         totalGain: prodData.totalGain,
         isActive: prodData.isActive ?? true,
         image: prodData.image || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80',
-        description: prodData.description || 'Produit de bien-être et vitalité.',
+        description: prodData.description || 'Offre d\'investissement rentable.',
         order: prodData.order ?? (products.length + 1),
         badge: prodData.badge || 'Nouveau',
         color: prodData.color || 'from-amber-950/40 via-amber-900/10 to-transparent border-amber-500/20'
@@ -1898,32 +1948,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const addOrUpdateWellnessProduct = (productData: Omit<WellnessProduct, 'id'> & { id?: string }) => {
-    setWellnessProducts(prev => {
-      let updated: WellnessProduct[];
-      if (productData.id) {
-        updated = prev.map(p => p.id === productData.id ? { ...p, ...productData, id: productData.id } as WellnessProduct : p);
-      } else {
-        const newProd: WellnessProduct = {
-          ...productData,
-          id: `wellness-${Date.now()}`,
-          createdAt: new Date().toISOString()
-        };
-        updated = [newProd, ...prev];
-      }
-      safeSetLocalStorage('fintech_wellness_products', updated);
-      saveSystemConfig('__SYS_WELLNESS__', updated);
-      return updated;
-    });
+  // Recharge Channels CRUD methods
+  const addRechargeChannel = async (data: {
+    name: string;
+    accountNumber: string;
+    accountHolder?: string;
+    instructions?: string;
+    isActive?: boolean;
+  }): Promise<{ success: boolean; error?: string }> => {
+    const newChannel: RechargeChannel = {
+      id: `rc-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      name: data.name.trim(),
+      accountNumber: data.accountNumber.trim(),
+      accountHolder: data.accountHolder?.trim() || '',
+      instructions: data.instructions?.trim() || '',
+      isActive: data.isActive !== undefined ? data.isActive : true,
+      order: rechargeChannels.length + 1,
+      createdAt: new Date().toISOString()
+    };
+    const updated = [...rechargeChannels, newChannel];
+    setRechargeChannels(updated);
+    safeSetLocalStorage('fintech_recharge_channels', updated);
+    const res = await saveSystemConfig('__SYS_RECHARGE_CHANNELS__', updated);
+    return res;
   };
 
-  const deleteWellnessProduct = (id: string) => {
-    setWellnessProducts(prev => {
-      const updated = prev.filter(p => p.id !== id);
-      safeSetLocalStorage('fintech_wellness_products', updated);
-      saveSystemConfig('__SYS_WELLNESS__', updated);
-      return updated;
+  const updateRechargeChannel = async (id: string, data: Partial<RechargeChannel>): Promise<{ success: boolean; error?: string }> => {
+    const updated = rechargeChannels.map(ch => {
+      if (ch.id === id) {
+        return {
+          ...ch,
+          ...data,
+          name: data.name !== undefined ? data.name.trim() : ch.name,
+          accountNumber: data.accountNumber !== undefined ? data.accountNumber.trim() : ch.accountNumber,
+          accountHolder: data.accountHolder !== undefined ? data.accountHolder.trim() : ch.accountHolder,
+          instructions: data.instructions !== undefined ? data.instructions.trim() : ch.instructions,
+          isActive: data.isActive !== undefined ? data.isActive : ch.isActive
+        };
+      }
+      return ch;
     });
+    setRechargeChannels(updated);
+    safeSetLocalStorage('fintech_recharge_channels', updated);
+    const res = await saveSystemConfig('__SYS_RECHARGE_CHANNELS__', updated);
+    return res;
+  };
+
+  const deleteRechargeChannel = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    const updated = rechargeChannels.filter(ch => ch.id !== id);
+    setRechargeChannels(updated);
+    safeSetLocalStorage('fintech_recharge_channels', updated);
+    const res = await saveSystemConfig('__SYS_RECHARGE_CHANNELS__', updated);
+    return res;
+  };
+
+  const toggleRechargeChannel = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    const updated = rechargeChannels.map(ch => ch.id === id ? { ...ch, isActive: !ch.isActive } : ch);
+    setRechargeChannels(updated);
+    safeSetLocalStorage('fintech_recharge_channels', updated);
+    const res = await saveSystemConfig('__SYS_RECHARGE_CHANNELS__', updated);
+    return res;
   };
 
   return (
@@ -1943,7 +2027,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       wheelConfig,
       announcements,
       faqs,
-      wellnessProducts,
+      rechargeChannels,
       liveStats,
       globalNotification,
       
@@ -1992,8 +2076,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addFaq,
       updateFaq,
       deleteFaq,
-      addOrUpdateWellnessProduct,
-      deleteWellnessProduct
+      addRechargeChannel,
+      updateRechargeChannel,
+      deleteRechargeChannel,
+      toggleRechargeChannel
     }}>
       {children}
     </AppContext.Provider>

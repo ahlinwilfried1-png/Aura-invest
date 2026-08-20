@@ -75,7 +75,6 @@ import { ProductDetailView } from './ProductDetailView';
 import { ProofOfWithdrawalView } from './ProofOfWithdrawalView';
 import { LinkBankCardView } from './LinkBankCardView';
 import { LuckyWheel } from './LuckyWheel';
-import { WellnessProductCard } from './WellnessProductCard';
 import { ServiceClientView } from './ServiceClientView';
 
 interface DashboardLayoutProps {
@@ -438,11 +437,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     hasUnreadAnnouncements={hasUnreadAnnouncements}
                     unreadAnnouncementsCount={totalUnreadAnnouncements}
                     unreadChatCount={unreadChatCount}
-                  />
-
-                  {/* 3.5. SECTION PRODUIT DE BIEN-ÊTRE */}
-                  <WellnessProductCard 
-                    onSelectProduct={(product) => setSelectedProductDetail(product)} 
                   />
 
                   {/* 4. TOUS LES PRODUITS EN DISPOSITION VERTICALE */}

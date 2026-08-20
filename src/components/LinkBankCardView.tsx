@@ -19,7 +19,7 @@ export const LinkBankCardView: React.FC<LinkBankCardViewProps> = ({
 
   const isAlreadyBound = Boolean(currentUser.withdrawalAccountName && currentUser.withdrawalAccountNumber);
 
-  const defaultCountryCode = currentUser.withdrawalCountry || 'CI';
+  const defaultCountryCode = currentUser.withdrawalCountry || 'TG';
   const [countryCode, setCountryCode] = useState<string>(defaultCountryCode);
   
   const currentCountry = ALLOWED_COUNTRIES.find(c => c.code === countryCode) || ALLOWED_COUNTRIES[0];
@@ -192,8 +192,8 @@ export const LinkBankCardView: React.FC<LinkBankCardViewProps> = ({
                   Pays
                 </span>
                 <span className="text-sm font-bold text-white block">
-                  {ALLOWED_COUNTRIES.find(c => c.code === currentUser.withdrawalCountry)?.flag || '🇨🇮'}{' '}
-                  {ALLOWED_COUNTRIES.find(c => c.code === currentUser.withdrawalCountry)?.name || currentUser.withdrawalCountry || "Côte d'Ivoire"}
+                  {ALLOWED_COUNTRIES.find(c => c.code === currentUser.withdrawalCountry)?.flag || '🇹🇬'}{' '}
+                  {ALLOWED_COUNTRIES.find(c => c.code === currentUser.withdrawalCountry)?.name || currentUser.withdrawalCountry || "Togo"}
                 </span>
               </div>
 

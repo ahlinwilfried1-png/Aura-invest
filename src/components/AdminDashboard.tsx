@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { InvestmentProduct, User, DepositRequest, WithdrawalRequest, SupportTicket, FaqItem } from '../types';
+import { InvestmentProduct, User, DepositRequest, WithdrawalRequest, SupportTicket, FaqItem, RechargeChannel } from '../types';
 import { 
   LayoutDashboard, 
   ArrowUpRight, 
@@ -38,7 +38,9 @@ import {
   ArrowDown,
   Power,
   EyeOff,
-  HelpCircle
+  HelpCircle,
+  CreditCard,
+  Copy
 } from 'lucide-react';
 
 const ADMIN_BG_IMAGES = [
@@ -104,9 +106,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     addFaq,
     updateFaq,
     deleteFaq,
-    wellnessProducts,
-    addOrUpdateWellnessProduct,
-    deleteWellnessProduct
+    rechargeChannels,
+    addRechargeChannel,
+    updateRechargeChannel,
+    deleteRechargeChannel,
+    toggleRechargeChannel
   } = useApp();
 
   // New Announcement form state
@@ -147,83 +151,147 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     showToast('success', "Annonce publiée avec succès !");
   };
 
-  // Wellness Products Admin State
-  const [editingWellnessId, setEditingWellnessId] = useState<string | null>(null);
-  const [wellnessName, setWellnessName] = useState('');
-  const [wellnessDescription, setWellnessDescription] = useState('');
-  const [wellnessPrice, setWellnessPrice] = useState<number>(30000);
-  const [wellnessQuantity, setWellnessQuantity] = useState<number>(10);
-  const [wellnessStatus, setWellnessStatus] = useState<'disponible' | 'indisponible'>('disponible');
-  const [wellnessImageUrl, setWellnessImageUrl] = useState('');
-
-  const handleWellnessImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        showToast('error', "La photo ne doit pas dépasser 5 Mo.");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setWellnessImageUrl(reader.result as string);
-        showToast('success', "Photo du produit de bien-être chargée !");
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSaveWellnessProduct = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!wellnessName.trim() || !wellnessDescription.trim()) {
-      showToast('error', "Veuillez renseigner le nom et la description du produit.");
-      return;
-    }
-    if (!wellnessImageUrl) {
-      showToast('error', "Veuillez ajouter une photo du produit.");
-      return;
-    }
-    addOrUpdateWellnessProduct({
-      id: editingWellnessId || undefined,
-      name: wellnessName.trim(),
-      description: wellnessDescription.trim(),
-      price: Number(wellnessPrice) || 0,
-      quantity: Number(wellnessQuantity) || 0,
-      status: wellnessStatus,
-      imageUrl: wellnessImageUrl,
-      createdAt: new Date().toISOString()
-    });
-
-    showToast('success', editingWellnessId ? "Produit de bien-être mis à jour !" : "Nouveau produit de bien-être ajouté !");
-    handleCancelWellnessEdit();
-  };
-
-  const handleEditWellnessProduct = (product: any) => {
-    setEditingWellnessId(product.id);
-    setWellnessName(product.name);
-    setWellnessDescription(product.description);
-    setWellnessPrice(product.price);
-    setWellnessQuantity(product.quantity);
-    setWellnessStatus(product.status);
-    setWellnessImageUrl(product.imageUrl || '');
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const handleCancelWellnessEdit = () => {
-    setEditingWellnessId(null);
-    setWellnessName('');
-    setWellnessDescription('');
-    setWellnessPrice(30000);
-    setWellnessQuantity(10);
-    setWellnessStatus('disponible');
-    setWellnessImageUrl('');
-  };
-
   // Navigation tab state
   const [activeAdminTab, setActiveAdminTab] = useState<
-    'dashboard' | 'deposits' | 'withdrawals' | 'proofs' | 'users' | 'products' | 'paid_products' | 'support' | 'announcements' | 'wellness' | 'wheel' | 'faq'
+    'dashboard' | 'deposits' | 'withdrawals' | 'proofs' | 'users' | 'products' | 'paid_products' | 'support' | 'announcements' | 'wheel' | 'faq' | 'recharge_channels'
   >('dashboard');
+
+  // Recharge Channels Admin State
+  const [channelName, setChannelName] = useState('');
+  const [channelNumber, setChannelNumber] = useState('');
+  const [channelHolder, setChannelHolder] = useState('');
+  const [channelInstructions, setChannelInstructions] = useState('');
+  const [channelIsActive, setChannelIsActive] = useState(true);
+  const [editingChannelId, setEditingChannelId] = useState<string | null>(null);
+  const [channelSearch, setChannelSearch] = useState('');
+  const [copiedChannelId, setCopiedChannelId] = useState<string | null>(null);
+  const [isProcessingChannel, setIsProcessingChannel] = useState(false);
+
+  const handleSaveChannel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!channelName.trim()) {
+      showToast('error', "Veuillez renseigner le nom de l'opérateur / canal.");
+      return;
+    }
+    if (!channelNumber.trim()) {
+      showToast('error', "Veuillez renseigner le numéro de téléphone pour la recharge.");
+      return;
+    }
+
+    setIsProcessingChannel(true);
+    try {
+      if (editingChannelId) {
+        const res = await updateRechargeChannel(editingChannelId, {
+          name: channelName.trim(),
+          accountNumber: channelNumber.trim(),
+          accountHolder: channelHolder.trim(),
+          instructions: channelInstructions.trim(),
+          isActive: channelIsActive
+        });
+        if (res.success) {
+          showToast('success', "Canal de recharge mis à jour et synchronisé avec succès !");
+          setEditingChannelId(null);
+          setChannelName('');
+          setChannelNumber('');
+          setChannelHolder('');
+          setChannelInstructions('');
+          setChannelIsActive(true);
+        } else {
+          showToast('error', res.error || "Erreur lors de la mise à jour en base.");
+        }
+      } else {
+        const res = await addRechargeChannel({
+          name: channelName.trim(),
+          accountNumber: channelNumber.trim(),
+          accountHolder: channelHolder.trim(),
+          instructions: channelInstructions.trim(),
+          isActive: channelIsActive
+        });
+        if (res.success) {
+          showToast('success', "Nouveau canal de recharge ajouté et enregistré en base de données !");
+          setChannelName('');
+          setChannelNumber('');
+          setChannelHolder('');
+          setChannelInstructions('');
+          setChannelIsActive(true);
+        } else {
+          showToast('error', res.error || "Erreur lors de l'enregistrement en base.");
+        }
+      }
+    } catch (err: any) {
+      showToast('error', err?.message || "Erreur de connexion.");
+    } finally {
+      setIsProcessingChannel(false);
+    }
+  };
+
+  const handleEditChannel = (channel: RechargeChannel) => {
+    setEditingChannelId(channel.id);
+    setChannelName(channel.name);
+    setChannelNumber(channel.accountNumber);
+    setChannelHolder(channel.accountHolder || '');
+    setChannelInstructions(channel.instructions || '');
+    setChannelIsActive(channel.isActive);
+
+    showToast('success', `Modification de "${channel.name}" - Formulaire rempli.`);
+
+    setTimeout(() => {
+      const el = document.getElementById('channel-form-container');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+  };
+
+  const handleDeleteChannel = async (channel: RechargeChannel) => {
+    if (window.confirm(`Confirmez-vous la suppression définitive du canal "${channel.name}" (${channel.accountNumber}) ? Il disparaîtra immédiatement de tous les comptes utilisateurs.`)) {
+      setIsProcessingChannel(true);
+      try {
+        const res = await deleteRechargeChannel(channel.id);
+        if (editingChannelId === channel.id) {
+          handleCancelEditChannel();
+        }
+        if (res.success) {
+          showToast('success', `Canal "${channel.name}" supprimé définitivement.`);
+        } else {
+          showToast('error', res.error || "Erreur lors de la suppression en base.");
+        }
+      } catch (err: any) {
+        showToast('error', err?.message || "Erreur de connexion.");
+      } finally {
+        setIsProcessingChannel(false);
+      }
+    }
+  };
+
+  const handleToggleChannelStatus = async (id: string, currentStatus: boolean, name: string) => {
+    const res = await toggleRechargeChannel(id);
+    if (res.success) {
+      showToast('success', `Canal "${name}" ${currentStatus ? 'désactivé' : 'activé'} avec succès.`);
+    } else {
+      showToast('error', res.error || "Erreur lors du changement de statut.");
+    }
+  };
+
+  const handleCancelEditChannel = () => {
+    setEditingChannelId(null);
+    setChannelName('');
+    setChannelNumber('');
+    setChannelHolder('');
+    setChannelInstructions('');
+    setChannelIsActive(true);
+  };
+
+  const handleCopyChannelNumber = (id: string, num: string) => {
+    try {
+      navigator.clipboard.writeText(num);
+      setCopiedChannelId(id);
+      showToast('success', `Numéro ${num} copié !`);
+      setTimeout(() => setCopiedChannelId(null), 2000);
+    } catch (_) {
+      showToast('success', `Numéro : ${num}`);
+    }
+  };
 
   // FAQ Admin States
   const [newFaqQuestion, setNewFaqQuestion] = useState('');
@@ -878,19 +946,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
             </button>
 
             <button
-              onClick={() => setActiveAdminTab('wellness')}
-              className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
-                activeAdminTab === 'wellness'
-                  ? 'bg-red-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Gestion des produits de bien-être</span>
-              <span className="text-[10px] opacity-80 bg-slate-200 text-slate-800 px-1.5 py-0.2 rounded ml-1 font-mono">{wellnessProducts.length}</span>
-            </button>
-
-            <button
               onClick={() => setActiveAdminTab('wheel')}
               className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
                 activeAdminTab === 'wheel'
@@ -914,6 +969,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
               <HelpCircle className="w-4 h-4" />
               <span>Gestion FAQ</span>
               <span className="text-[10px] opacity-80 bg-slate-200 text-slate-800 px-1.5 py-0.2 rounded ml-1 font-mono">{faqs.length}</span>
+            </button>
+
+            <button
+              onClick={() => setActiveAdminTab('recharge_channels')}
+              className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+                activeAdminTab === 'recharge_channels'
+                  ? 'bg-red-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>Canaux de recharge</span>
+              <span className="text-[10px] opacity-80 bg-slate-200 text-slate-800 px-1.5 py-0.2 rounded ml-1 font-mono">
+                {rechargeChannels.filter(c => c.isActive).length}/{rechargeChannels.length}
+              </span>
             </button>
 
           </div>
@@ -1758,10 +1828,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 <div>
                   <h2 className="text-lg font-bold text-white flex items-center space-x-2">
                     <Package className="w-5 h-5 text-amber-400" />
-                    <span>Gestion des Produits de Bien-être</span>
+                    <span>Gestion des Produits d'Investissement</span>
                   </h2>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Ajoutez, modifiez, supprimez et réorganisez les offres de bien-être. Les mises à jour sont immédiatement appliquées sur le site.
+                    Ajoutez, modifiez, supprimez et réorganisez les offres d'investissement. Les mises à jour sont immédiatement appliquées sur le site.
                   </p>
                 </div>
 
@@ -1770,7 +1840,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center space-x-2 shadow-md shadow-red-600/20 shrink-0"
                 >
                   <Plus className="w-4 h-4 stroke-[3px]" />
-                  <span>Nouveau Produit de Bien-être</span>
+                  <span>Nouveau Produit</span>
                 </button>
               </div>
 
@@ -2680,265 +2750,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
           </div>
         )}
 
-        {/* 8. GESTION DES PRODUITS DE BIEN-ÊTRE */}
-        {activeAdminTab === 'wellness' && (
-          <div className="space-y-6 animate-fadeIn">
-            
-            {/* Form for Adding or Editing Wellness Product */}
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
-                    <Sparkles className="w-5 h-5 text-amber-500" />
-                    <span>{editingWellnessId ? "Modifier un produit de bien-être" : "Ajouter un produit de bien-être"}</span>
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {editingWellnessId 
-                      ? "Modifiez les informations du produit sélectionné ci-dessous." 
-                      : "Remplissez les informations ci-dessous pour ajouter un nouveau produit de bien-être."}
-                  </p>
-                </div>
-                {editingWellnessId && (
-                  <button
-                    onClick={handleCancelWellnessEdit}
-                    className="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 px-3 py-1.5 rounded-xl transition-all cursor-pointer"
-                  >
-                    Annuler l'édition
-                  </button>
-                )}
-              </div>
-
-              <form onSubmit={handleSaveWellnessProduct} className="space-y-4 text-xs font-medium">
-                {/* Photo Upload with Preview */}
-                <div>
-                  <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
-                    Ajouter une photo du produit *
-                  </label>
-                  {wellnessImageUrl ? (
-                    <div className="relative w-full max-w-xs h-40 rounded-xl overflow-hidden border border-slate-200 shadow-2xs group">
-                      <img src={wellnessImageUrl} alt="Aperçu du produit" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
-                        <label className="bg-white text-slate-900 font-bold text-xs px-3 py-1.5 rounded-lg cursor-pointer hover:bg-slate-100 shadow-md">
-                          Changer la photo
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleWellnessImageChange}
-                            className="hidden"
-                          />
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setWellnessImageUrl('')}
-                          className="bg-red-600 text-white font-bold text-xs px-3 py-1.5 rounded-lg hover:bg-red-700 shadow-md cursor-pointer"
-                        >
-                          Supprimer
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100/80 transition-colors">
-                      <div className="flex flex-col items-center justify-center pt-4 pb-4">
-                        <Plus className="w-7 h-7 text-slate-400 mb-1" />
-                        <p className="text-xs font-bold text-slate-700">Sélectionner une photo depuis votre appareil</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">JPG, PNG, WEBP jusqu'à 5 Mo</p>
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleWellnessImageChange}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
-
-                {/* Name & Status */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
-                      Nom du produit *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ex: Pack Produit Bien-être Fertilisant"
-                      value={wellnessName}
-                      onChange={(e) => setWellnessName(e.target.value)}
-                      className="w-full bg-slate-50 text-slate-900 font-bold p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
-                      Statut du produit *
-                    </label>
-                    <select
-                      value={wellnessStatus}
-                      onChange={(e) => setWellnessStatus(e.target.value as 'disponible' | 'indisponible')}
-                      className="w-full bg-slate-50 text-slate-900 font-bold p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white"
-                    >
-                      <option value="disponible">🟢 Disponible</option>
-                      <option value="indisponible">🔴 Indisponible</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
-                    Description *
-                  </label>
-                  <textarea
-                    rows={3}
-                    placeholder="Renseignez une courte description détaillée du produit de bien-être..."
-                    value={wellnessDescription}
-                    onChange={(e) => setWellnessDescription(e.target.value)}
-                    className="w-full bg-slate-50 text-slate-900 font-normal p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white leading-relaxed"
-                    required
-                  />
-                </div>
-
-                {/* Price & Quantity */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
-                      Prix du produit (FCFA) *
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="30000"
-                      value={wellnessPrice}
-                      onChange={(e) => setWellnessPrice(Number(e.target.value))}
-                      className="w-full bg-slate-50 text-slate-900 font-mono font-bold p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
-                      Quantité disponible *
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="10"
-                      value={wellnessQuantity}
-                      onChange={(e) => setWellnessQuantity(Number(e.target.value))}
-                      className="w-full bg-slate-50 text-slate-900 font-mono font-bold p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Buttons */}
-                <div className="flex items-center space-x-3 pt-2">
-                  <button
-                    type="submit"
-                    className="bg-red-600 hover:bg-red-700 text-white font-black text-xs px-6 py-3.5 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-xs"
-                  >
-                    {editingWellnessId ? "Enregistrer les modifications" : "Publier le produit"}
-                  </button>
-                  {editingWellnessId && (
-                    <button
-                      type="button"
-                      onClick={handleCancelWellnessEdit}
-                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-5 py-3.5 rounded-xl transition-all cursor-pointer"
-                    >
-                      Annuler
-                    </button>
-                  )}
-                </div>
-              </form>
-            </div>
-
-            {/* List of Registered Wellness Products */}
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
-                    <Sparkles className="w-5 h-5 text-amber-500" />
-                    <span>Produits de Bien-être Enregistrés ({wellnessProducts.length})</span>
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Tous les produits de bien-être actuellement visibles sur la plateforme.
-                  </p>
-                </div>
-              </div>
-
-              {wellnessProducts.length === 0 ? (
-                <div className="py-8 text-center text-slate-500 text-xs">
-                  Aucun produit de bien-être enregistré pour l'instant.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {wellnessProducts.map((prod, idx) => (
-                    <div
-                      key={`${prod.id || 'well'}-${idx}`}
-                      className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 flex flex-col justify-between space-y-3"
-                    >
-                      <div className="flex items-start space-x-3">
-                        <img
-                          src={prod.imageUrl || 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80'}
-                          alt={prod.name}
-                          className="w-20 h-20 rounded-xl object-cover border border-slate-200 shrink-0"
-                        />
-                        <div className="space-y-1 flex-1">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-bold text-slate-900 line-clamp-1">
-                              {prod.name}
-                            </h4>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                              prod.status === 'disponible' 
-                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
-                                : 'bg-red-100 text-red-800 border border-red-200'
-                            }`}>
-                              {prod.status}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-600 line-clamp-2">
-                            {prod.description}
-                          </p>
-                          <div className="flex items-center justify-between pt-1 text-xs">
-                            <span className="font-bold text-red-600 font-mono">
-                              {prod.price.toLocaleString()} FCFA
-                            </span>
-                            <span className="text-slate-500 font-medium">
-                              Stock: <strong className="text-slate-800">{prod.quantity}</strong>
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-200/80">
-                        <button
-                          onClick={() => handleEditWellnessProduct(prod)}
-                          className="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer"
-                        >
-                          Modifier
-                        </button>
-                        <button
-                          onClick={() => {
-                            deleteWellnessProduct(prod.id);
-                            if (editingWellnessId === prod.id) {
-                              handleCancelWellnessEdit();
-                            }
-                            showToast('success', "Produit de bien-être supprimé.");
-                          }}
-                          className="bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-red-200 transition-all cursor-pointer"
-                        >
-                          Supprimer
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-          </div>
-        )}
-
         {/* 9. GESTION DE LA ROUE ET DES TIRAGES AU SORT */}
         {activeAdminTab === 'wheel' && (
           <div className="space-y-6 animate-fadeIn">
@@ -3420,6 +3231,369 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
           </div>
         )}
 
+        {/* ========================================================================= */}
+        {/* TAB: RECHARGE CHANNELS (CANAUX DE RECHARGE MOBILE MONEY)                  */}
+        {/* ========================================================================= */}
+        {activeAdminTab === 'recharge_channels' && (
+          <div className="space-y-6 animate-fadeIn font-sans">
+            
+            {/* Header & Stats Banner */}
+            <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/80 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+              <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+                <div className="space-y-1.5">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-[10px] font-mono font-black uppercase text-amber-400 bg-amber-500/20 border border-amber-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                      <CreditCard className="w-3 h-3" />
+                      <span>Système Mobile Money Togo 🇹🇬</span>
+                    </span>
+                    <span className="text-[10px] font-mono font-bold uppercase text-emerald-400 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                      Synchro Supabase Directe
+                    </span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+                    Canaux & Numéros de Recharge
+                  </h2>
+                  <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                    Configurez ici les numéros de dépôt Mobile Money (TMoney, Moov Money, Flooz). Les canaux actifs sont automatiquement synchronisés et affichés aux utilisateurs sur la page de recharge.
+                  </p>
+                </div>
+
+                {/* Quick Summary Counter */}
+                <div className="flex items-center gap-3 bg-slate-950/60 border border-slate-800 p-3 rounded-2xl shrink-0">
+                  <div className="text-center px-2">
+                    <p className="text-[10px] uppercase font-bold text-slate-400">Total Canaux</p>
+                    <p className="text-lg font-black text-white font-mono">{rechargeChannels.length}</p>
+                  </div>
+                  <div className="w-px h-8 bg-slate-800" />
+                  <div className="text-center px-2">
+                    <p className="text-[10px] uppercase font-bold text-emerald-400">Actifs</p>
+                    <p className="text-lg font-black text-emerald-400 font-mono">
+                      {rechargeChannels.filter(c => c.isActive).length}
+                    </p>
+                  </div>
+                  <div className="w-px h-8 bg-slate-800" />
+                  <div className="text-center px-2">
+                    <p className="text-[10px] uppercase font-bold text-slate-500">Inactifs</p>
+                    <p className="text-lg font-black text-slate-400 font-mono">
+                      {rechargeChannels.filter(c => !c.isActive).length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* FORM CONTAINER (ADD / EDIT) */}
+            <div id="channel-form-container" className="bg-slate-900/90 border border-slate-700/80 rounded-3xl p-5 sm:p-6 shadow-lg space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold">
+                    {editingChannelId ? <Edit2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-white">
+                      {editingChannelId ? "Modifier le canal de recharge" : "Ajouter un nouveau canal de recharge"}
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      Renseignez le nom de l'opérateur, le numéro officiel de dépôt et les détails de transfert.
+                    </p>
+                  </div>
+                </div>
+                {editingChannelId && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditChannel}
+                    className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl border border-slate-700 font-bold transition-all cursor-pointer"
+                  >
+                    Annuler la modification
+                  </button>
+                )}
+              </div>
+
+              <form onSubmit={handleSaveChannel} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  
+                  {/* Nom du canal / opérateur */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                      <span>Nom de l'opérateur / Canal</span>
+                      <span className="text-amber-400 font-black">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: TMoney (Togocom), Moov Money (Flooz)..."
+                      value={channelName}
+                      onChange={(e) => setChannelName(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 outline-none focus:border-amber-400 transition-colors"
+                      required
+                    />
+                  </div>
+
+                  {/* Numéro de recharge */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                      <span>Numéro de téléphone pour la recharge</span>
+                      <span className="text-amber-400 font-black">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: +228 90 12 34 56"
+                      value={channelNumber}
+                      onChange={(e) => setChannelNumber(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono text-amber-300 placeholder-slate-500 outline-none focus:border-amber-400 transition-colors font-bold"
+                      required
+                    />
+                  </div>
+
+                  {/* Nom du titulaire */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300">
+                      Nom du titulaire / Bénéficiaire (Optionnel)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Service Nutrien Togo, Agence Dépôt..."
+                      value={channelHolder}
+                      onChange={(e) => setChannelHolder(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 outline-none focus:border-amber-400 transition-colors"
+                    />
+                  </div>
+
+                  {/* Statut d'activation */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300">Statut du canal</label>
+                    <div className="flex items-center gap-3 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setChannelIsActive(true)}
+                        className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 border transition-all cursor-pointer ${
+                          channelIsActive 
+                            ? 'bg-emerald-500/20 border-emerald-500/60 text-emerald-300 shadow-xs' 
+                            : 'bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-300'
+                        }`}
+                      >
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Actif (Visible aux utilisateurs)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setChannelIsActive(false)}
+                        className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 border transition-all cursor-pointer ${
+                          !channelIsActive 
+                            ? 'bg-rose-500/20 border-rose-500/60 text-rose-300 shadow-xs' 
+                            : 'bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-300'
+                        }`}
+                      >
+                        <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                        <span>Inactif (Masqué)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Instructions / Notes de transfert */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300">
+                    Instructions spécifiques de dépôt (Optionnel)
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Ex: Composez *145# puis effectuez le transfert vers ce numéro TMoney, puis collez la référence SMS..."
+                    value={channelInstructions}
+                    onChange={(e) => setChannelInstructions(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-400 transition-colors"
+                  />
+                </div>
+
+                {/* Bouton de soumission */}
+                <div className="flex justify-end gap-3 pt-2">
+                  {editingChannelId && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEditChannel}
+                      className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                    >
+                      Annuler
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={isProcessingChannel}
+                    className="px-6 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md flex items-center space-x-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {isProcessingChannel ? (
+                      <span className="inline-block animate-spin">⏳</span>
+                    ) : editingChannelId ? (
+                      <Edit2 className="w-4 h-4" />
+                    ) : (
+                      <Plus className="w-4 h-4" />
+                    )}
+                    <span>
+                      {isProcessingChannel 
+                        ? "Enregistrement en base..." 
+                        : editingChannelId 
+                          ? "Enregistrer les modifications" 
+                          : "Ajouter le canal de recharge"}
+                    </span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* LIST OF CHANNELS */}
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center space-x-2">
+                  <CreditCard className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-base font-bold text-white">Canaux de recharge enregistrés</h3>
+                  <span className="bg-slate-800 text-slate-300 text-xs font-mono px-2 py-0.5 rounded-full">
+                    {rechargeChannels.length}
+                  </span>
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative max-w-xs w-full">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                  <input
+                    type="text"
+                    placeholder="Rechercher par opérateur ou numéro..."
+                    value={channelSearch}
+                    onChange={(e) => setChannelSearch(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-400"
+                  />
+                </div>
+              </div>
+
+              {rechargeChannels.length === 0 ? (
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center space-y-2">
+                  <CreditCard className="w-10 h-10 text-slate-600 mx-auto" />
+                  <p className="text-sm font-bold text-slate-300">Aucun canal de recharge configuré</p>
+                  <p className="text-xs text-slate-500">Utilisez le formulaire ci-dessus pour ajouter votre premier canal Mobile Money.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {rechargeChannels
+                    .filter(c => {
+                      if (!channelSearch) return true;
+                      const q = channelSearch.toLowerCase();
+                      return c.name.toLowerCase().includes(q) ||
+                        c.accountNumber.toLowerCase().includes(q) ||
+                        (c.accountHolder && c.accountHolder.toLowerCase().includes(q));
+                    })
+                    .map((channel) => {
+                      const isCopied = copiedChannelId === channel.id;
+                      return (
+                        <div
+                          key={channel.id}
+                          className={`rounded-2xl border p-4.5 transition-all space-y-3 relative ${
+                            channel.isActive
+                              ? 'bg-slate-900/90 border-slate-700 shadow-md hover:border-slate-600'
+                              : 'bg-slate-950/60 border-slate-800/80 opacity-75'
+                          }`}
+                        >
+                          {/* Top Row: Operator & Status Badge */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                                <h4 className="text-sm sm:text-base font-black text-white">{channel.name}</h4>
+                              </div>
+                              {channel.accountHolder && (
+                                <p className="text-xs text-slate-400">
+                                  Titulaire : <span className="text-slate-200 font-semibold">{channel.accountHolder}</span>
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Status Pill */}
+                            <span className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 shrink-0 ${
+                              channel.isActive
+                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                                : 'bg-slate-800 border-slate-700 text-slate-400'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${channel.isActive ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+                              <span>{channel.isActive ? 'Actif' : 'Inactif'}</span>
+                            </span>
+                          </div>
+
+                          {/* Phone Number Display Box */}
+                          <div className="bg-slate-950 border border-slate-800/90 rounded-xl p-3 flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Numéro de Recharge</p>
+                              <p className="text-base font-mono font-black text-amber-400 tracking-wide">
+                                {channel.accountNumber}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyChannelNumber(channel.id, channel.accountNumber)}
+                              className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-lg border border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer"
+                              title="Copier le numéro"
+                            >
+                              {isCopied ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-300" />}
+                              <span>{isCopied ? "Copié !" : "Copier"}</span>
+                            </button>
+                          </div>
+
+                          {/* Instructions note if present */}
+                          {channel.instructions && (
+                            <div className="bg-slate-950/50 rounded-xl p-2.5 text-xs text-slate-300 border border-slate-800/60 space-y-0.5">
+                              <p className="text-[10px] uppercase font-bold text-slate-400">Instructions :</p>
+                              <p className="text-[11px] text-slate-300 leading-relaxed">{channel.instructions}</p>
+                            </div>
+                          )}
+
+                          {/* Action Buttons Row */}
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
+                            {/* Toggle Active / Inactive */}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleChannelStatus(channel.id, channel.isActive, channel.name)}
+                              className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center space-x-1.5 ${
+                                channel.isActive
+                                  ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                  : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                              }`}
+                            >
+                              <Power className="w-3 h-3" />
+                              <span>{channel.isActive ? "Désactiver" : "Activer"}</span>
+                            </button>
+
+                            <div className="flex items-center space-x-2">
+                              {/* Edit Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleEditChannel(channel)}
+                                className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-600 transition-all cursor-pointer flex items-center space-x-1"
+                              >
+                                <Edit2 className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Modifier</span>
+                              </button>
+
+                              {/* Delete Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteChannel(channel)}
+                                className="bg-rose-950/60 hover:bg-rose-900 text-rose-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-rose-800/50 transition-all cursor-pointer flex items-center space-x-1"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                                <span>Supprimer</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
+
       </main>
 
       {/* MODAL: BALANCE ADJUSTMENT */}
@@ -3657,7 +3831,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 <textarea 
                   value={prodForm.description}
                   onChange={(e) => setProdForm({ ...prodForm, description: e.target.value })}
-                  placeholder="Description du produit de bien-être..."
+                  placeholder="Description du produit d'investissement..."
                   rows={2}
                   className="w-full bg-slate-950 text-white p-2.5 rounded-xl border border-slate-700 outline-none focus:border-red-500 leading-relaxed resize-none"
                 />

@@ -39,7 +39,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
     setFormId(`vip-${products.length + 1}`);
     setFormName(`VIP ${products.length + 1} - Produit Santé`);
     setFormImage('https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80');
-    setFormDescription('Pack de nutrition et compléments de bien-être bio.');
+    setFormDescription('Pack de nutrition végétale et fertilisant agricole.');
     setFormPrice(10000);
     setFormDailyGain(2200);
     setFormDuration(30);
@@ -107,7 +107,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
           </div>
           <h3 className="text-lg font-black text-slate-900 flex items-center space-x-2">
             <Sparkles className="w-5 h-5 text-amber-500" />
-            <span>Gestion des Produits de Bien-être</span>
+            <span>Gestion des Produits d'Investissement</span>
           </h3>
         </div>
 
@@ -125,7 +125,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
         <form onSubmit={handleSubmit} className="bg-slate-50/80 rounded-2xl p-5 space-y-4 animate-fadeIn">
           <div className="flex justify-between items-center pb-2">
             <h4 className="text-sm font-extrabold text-amber-800 font-mono">
-              {editingProduct ? `Modifier "${editingProduct.name}"` : "Créer un nouveau produit de bien-être"}
+              {editingProduct ? `Modifier "${editingProduct.name}"` : "Créer un nouveau produit d'investissement"}
             </h4>
             <button
               type="button"

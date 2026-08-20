@@ -146,7 +146,7 @@ export async function deleteRecord(tableName: string, primaryKeyValue: string, i
   }
 }
 
-export async function saveSystemConfig<T>(configKey: string, value: T): Promise<boolean> {
+export async function saveSystemConfig<T>(configKey: string, value: T): Promise<{ success: boolean; error?: string }> {
   try {
     const payload = Array.isArray(value) ? value : [value];
     const { error } = await supabase.from('bonus_codes').upsert({
@@ -158,12 +158,26 @@ export async function saveSystemConfig<T>(configKey: string, value: T): Promise<
     });
     if (error) {
       console.warn(`[Supabase] Save system config '${configKey}' error:`, error.message);
-      return false;
+      return { success: false, error: error.message };
     }
-    return true;
-  } catch (err) {
+    return { success: true };
+  } catch (err: any) {
     console.warn(`[Supabase] Error saving system config '${configKey}':`, err);
-    return false;
+    return { success: false, error: err?.message || 'Erreur de connexion Supabase' };
+  }
+}
+
+export async function deleteSystemConfig(configKey: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase.from('bonus_codes').delete().eq('code', configKey);
+    if (error) {
+      console.warn(`[Supabase] Delete system config '${configKey}' error:`, error.message);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err: any) {
+    console.warn(`[Supabase] Error deleting system config '${configKey}':`, err);
+    return { success: false, error: err?.message || 'Erreur de connexion Supabase' };
   }
 }
 

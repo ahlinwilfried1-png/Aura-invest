@@ -94,7 +94,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             </div>
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">📍</span>
-              <span><strong>Pays concernés :</strong> Côte d'Ivoire 🇨🇮, Togo 🇹🇬, Bénin 🇧🇯, Cameroun 🇨🇲, Burkina Faso 🇧🇫</span>
+              <span><strong>Pays concerné :</strong> Togo 🇹🇬 (Mobile Money TMoney & Flooz)</span>
             </div>
           </div>
         </div>

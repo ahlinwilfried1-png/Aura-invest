@@ -89,10 +89,21 @@ export interface DepositRequest {
   userName: string;
   userPhone: string;
   amount: number;
-  method: 'Mixx By Yas' | 'Moov Money' | 'MTN Money' | 'Orange Money';
+  method: string;
   transactionId: string;
   screenshotUrl: string | null; // Base64 or mock image url
   status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+}
+
+export interface RechargeChannel {
+  id: string;
+  name: string; // Nom du canal/opérateur (ex: TMoney, Moov Money Togo, Flooz)
+  accountNumber: string; // Numéro de recharge
+  accountHolder?: string; // Nom du titulaire (optionnel)
+  instructions?: string; // Instructions spécifiques (optionnel)
+  isActive: boolean; // Actif / Inactif
+  order?: number;
   createdAt: string;
 }
 
@@ -180,17 +191,6 @@ export interface FaqItem {
   answer: string;
   category?: string;
   order?: number;
-  createdAt: string;
-}
-
-export interface WellnessProduct {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  quantity: number;
-  status: 'disponible' | 'indisponible';
-  imageUrl?: string | null;
   createdAt: string;
 }
 
