@@ -124,39 +124,17 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
       {/* 1. CHAT HEADER / SUPPORT BAR */}
       <div className="sticky top-0 bg-white/95 backdrop-blur-md px-4 py-3 border-b border-slate-200/80 flex items-center justify-between z-20 shadow-2xs">
         <div className="flex items-center space-x-3">
-          <div className="relative">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-slate-950 font-black shadow-md shadow-amber-500/20">
-              <TrendingUp className="w-5 h-5 stroke-[2.5px]" />
-            </div>
-            {/* Green Online Pulse Indicator */}
-            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center">
-              <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
-            </span>
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-slate-950 font-black shadow-md shadow-amber-500/20">
+            <TrendingUp className="w-5 h-5 stroke-[2.5px]" />
           </div>
 
           <div>
-            <div className="flex items-center space-x-2">
-              <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
-                Service Client <span className="text-amber-700">Nutrien</span>
-              </h3>
-              <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full font-mono uppercase tracking-wider">
-                En ligne
-              </span>
-            </div>
+            <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
+              Service Client <span className="text-amber-700">Nutrien</span>
+            </h3>
             <p className="text-[11px] text-slate-500 font-medium">Assistance instantanée VIP • Réponse en 5 min</p>
           </div>
         </div>
-
-        {/* WhatsApp Button */}
-        <a 
-          href="https://wa.me/22501010101" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-xs px-3.5 py-2 rounded-xl shadow-md flex items-center space-x-1.5 transition-all hover:scale-102 cursor-pointer"
-        >
-          <MessageCircle className="w-4 h-4 fill-white" />
-          <span className="hidden sm:inline-block">WhatsApp VIP</span>
-        </a>
       </div>
 
       {/* 2. CONVERSATION CANVAS AREA */}
