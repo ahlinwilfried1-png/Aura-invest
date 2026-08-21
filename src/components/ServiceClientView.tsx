@@ -10,9 +10,9 @@ interface ServiceClientViewProps {
 
 export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
   onBack,
-  telegramUrl = "https://t.me/tamashi_official",
-  whatsappServiceUrl = "https://wa.me/22501010101",
-  whatsappChannelUrl = "https://whatsapp.com/channel/0029Vb8YR5RInlqVFq9AOa33"
+  telegramUrl = "https://chat.whatsapp.com/KN9xX4ACK5iI2lcbIeSjOq?s=cl&p=i&mlu=4&amv=1",
+  whatsappServiceUrl = "https://chat.whatsapp.com/KN9xX4ACK5iI2lcbIeSjOq?s=cl&p=i&mlu=4&amv=1",
+  whatsappChannelUrl = "https://chat.whatsapp.com/KN9xX4ACK5iI2lcbIeSjOq?s=cl&p=i&mlu=4&amv=1"
 }) => {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 pb-20 font-sans animate-fadeIn">

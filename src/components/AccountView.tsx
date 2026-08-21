@@ -628,7 +628,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
             </div>
 
             <a
-              href="https://whatsapp.com/channel/0029Vb8YR5RInlqVFq9AOa33"
+              href="https://chat.whatsapp.com/KN9xX4ACK5iI2lcbIeSjOq?s=cl&p=i&mlu=4&amv=1"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full bg-white hover:bg-emerald-50 active:scale-[0.99] text-emerald-800 font-extrabold text-xs py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-xs"

@@ -9,7 +9,7 @@ interface UserGuideModalProps {
 export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
-  const whatsappChannelUrl = "https://whatsapp.com/channel/0029Vb8YR5RInlqVFq9AOa33";
+  const whatsappChannelUrl = "https://chat.whatsapp.com/KN9xX4ACK5iI2lcbIeSjOq?s=cl&p=i&mlu=4&amv=1";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 bg-slate-900/75 backdrop-blur-xs animate-fadeIn">

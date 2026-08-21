@@ -37,7 +37,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col relative overflow-hidden font-sans">
       {/* Floating WhatsApp Sticky Action */}
       <a 
-        href="https://whatsapp.com/channel/0029Vb8YR5RInlqVFq9AOa33" 
+        href="https://chat.whatsapp.com/KN9xX4ACK5iI2lcbIeSjOq?s=cl&p=i&mlu=4&amv=1" 
         target="_blank" 
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 z-50 bg-[#25D366] hover:bg-[#20ba5a] text-white p-4 rounded-full shadow-xl shadow-green-500/20 flex items-center justify-center transition-transform hover:scale-110 group cursor-pointer"

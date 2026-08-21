@@ -188,7 +188,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
           </div>
 
           <a
-            href="https://whatsapp.com/channel/0029Vb8YR5RInlqVFq9AOa33"
+            href="https://chat.whatsapp.com/KN9xX4ACK5iI2lcbIeSjOq?s=cl&p=i&mlu=4&amv=1"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full sm:w-auto bg-[#25D366] hover:bg-[#20ba5a] active:scale-[0.98] text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-1.5 shrink-0 shadow-xs"
@@ -489,7 +489,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
         </div>
 
         <a
-          href="https://whatsapp.com/channel/0029Vb8YR5RInlqVFq9AOa33"
+          href="https://chat.whatsapp.com/KN9xX4ACK5iI2lcbIeSjOq?s=cl&p=i&mlu=4&amv=1"
           target="_blank"
           rel="noopener noreferrer"
           className="w-full bg-white hover:bg-emerald-50 active:scale-[0.99] text-emerald-800 font-extrabold text-xs sm:text-sm py-3.5 rounded-2xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-xs"
