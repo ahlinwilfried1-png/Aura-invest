@@ -59,7 +59,6 @@ import {
 import { RecentRechargesTicker } from './RecentRechargesTicker';
 import { MainWalletCard } from './MainWalletCard';
 import { QuickOperationsGrid } from './QuickOperationsGrid';
-import { CertificateModal } from './CertificateModal';
 import { ChatMessenger } from './ChatMessenger';
 import { AnnouncementsModal } from './AnnouncementsModal';
 import { UserGuideModal } from './UserGuideModal';
@@ -69,7 +68,6 @@ import { OrdersView } from './OrdersView';
 import { AccountView } from './AccountView';
 import { DepositView } from './DepositView';
 import { WithdrawView } from './WithdrawView';
-import { CertificateView } from './CertificateView';
 import { AnnouncementsView } from './AnnouncementsView';
 import { ProductDetailView } from './ProductDetailView';
 import { ProofOfWithdrawalView } from './ProofOfWithdrawalView';
@@ -171,7 +169,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const totalUnreadAnnouncements = unreadAnnouncementsCount;
 
   // Navigation State (Req: Accueil, Commande, Équipe, Chat, Mon compte + full-page operations)
-  const [activeTab, setActiveTab] = useState<'home' | 'orders' | 'team' | 'chat' | 'profile' | 'deposit' | 'withdraw' | 'certificate' | 'announcements' | 'link_card' | 'proofs' | 'service_client'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'orders' | 'team' | 'chat' | 'profile' | 'deposit' | 'withdraw' | 'announcements' | 'link_card' | 'proofs' | 'service_client'>('home');
 
   const navigateToHome = () => {
     setSelectedProductDetail(null);
@@ -191,7 +189,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [feedbackToast, setFeedbackToast] = useState<{ status: 'success' | 'err'; text: string } | null>(null);
   const [depositModalOpen, setDepositModalOpen] = useState(false);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
-  const [certificatModalOpen, setCertificatModalOpen] = useState(false);
   const [annoncesModalOpen, setAnnoncesModalOpen] = useState(false);
   const [guideModalOpen, setGuideModalOpen] = useState(true);
 
@@ -422,7 +419,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   <QuickOperationsGrid
                     onRecharger={() => setActiveTab('deposit')}
                     onRetirer={() => setActiveTab('withdraw')}
-                    onCertificat={() => setActiveTab('certificate')}
                     onPointage={() => {
                       const res = claimDailyBonus();
                       if (res.success) {
@@ -606,15 +602,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 onBack={navigateToHome}
                 onShowToast={showToast}
                 onOpenLinkCard={() => setActiveTab('link_card')}
-              />
-            )}
-
-            {/* FULL-PAGE VIEW 3: CERTIFICAT & PREUVES DE RETRAIT (PAGE TOUT ENTIÈRE) */}
-            {activeTab === 'certificate' && (
-              <CertificateView
-                currentUser={currentUser}
-                onBack={navigateToHome}
-                onShowToast={showToast}
               />
             )}
 
@@ -896,12 +883,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </div>
         </div>
       )}
-
-      {/* 3. CERTIFICATE MODAL */}
-      <CertificateModal 
-        isOpen={certificatModalOpen} 
-        onClose={() => setCertificatModalOpen(false)} 
-      />
 
       {/* 4. ANNOUNCEMENTS MODAL */}
       <AnnouncementsModal 

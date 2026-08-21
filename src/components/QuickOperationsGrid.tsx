@@ -1,10 +1,9 @@
 import React from 'react';
-import { CreditCard, ArrowUpRight, Award, Calendar, Bell } from 'lucide-react';
+import { CreditCard, ArrowUpRight, Calendar, Bell } from 'lucide-react';
 
 interface QuickOperationsGridProps {
   onRecharger: () => void;
   onRetirer: () => void;
-  onCertificat: () => void;
   onPointage: () => void;
   onAnnonces: () => void;
   onGuide?: () => void;
@@ -17,7 +16,6 @@ interface QuickOperationsGridProps {
 export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
   onRecharger,
   onRetirer,
-  onCertificat,
   onPointage,
   onAnnonces,
   hasUnreadAnnouncements,
@@ -37,13 +35,6 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
       icon: ArrowUpRight,
       color: 'bg-slate-900 text-amber-400 shadow-slate-900/20',
       action: onRetirer
-    },
-    {
-      id: 'certificat',
-      label: 'Certificat',
-      icon: Award,
-      color: 'bg-indigo-600 text-white shadow-indigo-600/20',
-      action: onCertificat
     },
     {
       id: 'pointage',
@@ -76,7 +67,7 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
       </div>
 
       {/* Grid of operations */}
-      <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
+      <div className="grid grid-cols-4 gap-2 sm:gap-3">
         {operations.map((op) => {
           const Icon = op.icon;
           const displayCount = op.unreadCount || 0;
@@ -84,10 +75,10 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
             <button
               key={op.id}
               onClick={op.action}
-              className="flex flex-col items-center justify-center space-y-1.5 p-1 sm:p-2 bg-transparent border-0 shadow-none active:scale-95 transition-all cursor-pointer group min-w-0"
+              className="flex flex-col items-center justify-center space-y-1.5 p-1.5 sm:p-2.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:border-amber-400 hover:shadow-sm active:scale-95 transition-all cursor-pointer group min-w-0"
             >
               <div
-                className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl ${op.color} flex items-center justify-center group-hover:scale-110 transition-all shadow-xs shrink-0 relative`}
+                className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl ${op.color} flex items-center justify-center group-hover:scale-105 transition-all shadow-xs shrink-0 relative`}
               >
                 <Icon className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.25]" />
                 {displayCount > 0 ? (

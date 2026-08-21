@@ -13,7 +13,12 @@ import {
   deleteRecord, 
   saveSystemConfig, 
   fetchSystemConfig,
-  deleteSystemConfig 
+  deleteSystemConfig,
+  adminProcessDeposit,
+  adminProcessWithdrawal,
+  adminUpdateUserBalance,
+  adminUpdateUserRole,
+  adminUpdateUserBlock
 } from '../lib/supabaseService';
 import { 
   safeSetLocalStorage, 
@@ -1563,7 +1568,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!target) return;
     const nextBlock = !target.isBlocked;
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, isBlocked: nextBlock } : u));
-    updateItem('users', { isBlocked: nextBlock }, userId);
+    adminUpdateUserBlock(userId, nextBlock);
   };
 
   const updateUserRole = (userId: string, role: 'admin' | 'user') => {
@@ -1571,7 +1576,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (currentUser?.id === userId) {
       setCurrentUser(prev => prev ? { ...prev, role } : null);
     }
-    updateItem('users', { role }, userId);
+    adminUpdateUserRole(userId, role);
   };
 
   const updateUserBalance = (userId: string, amount: number, isDirectSet: boolean = false) => {
@@ -1586,6 +1591,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       safeSetSessionStorage('fintech_current_user', updatedCurr);
       safeSetLocalStorage('fintech_current_user', updatedCurr);
     }
+    adminUpdateUserBalance(userId, isDirectSet ? cleanBalance : amount, isDirectSet);
     updateItem('users', { balance: cleanBalance }, userId);
   };
 
@@ -1635,7 +1641,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!dep || dep.status !== 'pending') return;
     
     setDeposits(prev => prev.map(d => d.id === depositId ? { ...d, status } : d));
-    updateItem('deposits', { status }, depositId);
+    adminProcessDeposit(depositId, status);
     
     if (status === 'approved') {
       const targetUser = users.find(u => u.id === dep.userId);
@@ -1648,7 +1654,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           safeSetSessionStorage('fintech_current_user', updatedCurr);
           safeSetLocalStorage('fintech_current_user', updatedCurr);
         }
-        updateItem('users', { balance: nextBalance }, dep.userId);
       }
     }
   };
@@ -1658,7 +1663,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!wth || wth.status !== 'pending') return;
     
     setWithdrawals(prev => prev.map(w => w.id === withdrawalId ? { ...w, status } : w));
-    updateItem('withdrawals', { status }, withdrawalId);
+    adminProcessWithdrawal(withdrawalId, status);
 
     if (status === 'approved') {
       const userObj = users.find(u => u.id === wth.userId);
@@ -1702,7 +1707,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           safeSetSessionStorage('fintech_current_user', updatedCurr);
           safeSetLocalStorage('fintech_current_user', updatedCurr);
         }
-        updateItem('users', { balance: nextBalance }, wth.userId);
       }
     }
   };

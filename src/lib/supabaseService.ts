@@ -198,3 +198,103 @@ export async function fetchSystemConfig<T>(configKey: string, fallbackValue: T):
     return fallbackValue;
   }
 }
+
+
+export async function adminProcessDeposit(
+  depositId: string,
+  status: 'approved' | 'rejected'
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch('/api/admin/deposits/process', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ depositId, status })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data;
+    }
+  } catch (_) {}
+
+  // Fallback to direct client update
+  return updateItem('deposits', { status }, depositId);
+}
+
+export async function adminProcessWithdrawal(
+  withdrawalId: string,
+  status: 'approved' | 'rejected'
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch('/api/admin/withdrawals/process', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ withdrawalId, status })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data;
+    }
+  } catch (_) {}
+
+  // Fallback to direct client update
+  return updateItem('withdrawals', { status }, withdrawalId);
+}
+
+export async function adminUpdateUserBalance(
+  userId: string,
+  amount: number,
+  isDirectSet: boolean = false
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch('/api/admin/users/balance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, amount, isDirectSet })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data;
+    }
+  } catch (_) {}
+
+  return { success: true };
+}
+
+export async function adminUpdateUserRole(
+  userId: string,
+  role: 'admin' | 'user'
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch('/api/admin/users/role', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, role })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data;
+    }
+  } catch (_) {}
+
+  return updateItem('users', { role }, userId);
+}
+
+export async function adminUpdateUserBlock(
+  userId: string,
+  isBlocked: boolean
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch('/api/admin/users/block', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, isBlocked })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data;
+    }
+  } catch (_) {}
+
+  return updateItem('users', { isBlocked }, userId);
+}
+

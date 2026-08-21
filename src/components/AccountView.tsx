@@ -67,7 +67,7 @@ interface AccountViewProps {
   onLogout: () => void;
   onShowToast: (type: 'success' | 'err' | 'info', message: string) => void;
   onBuyProduct?: (product: InvestmentProduct) => void;
-  onOpenTab?: (tab: 'deposit' | 'withdraw' | 'certificate' | 'announcements' | 'chat') => void;
+  onOpenTab?: (tab: 'deposit' | 'withdraw' | 'announcements' | 'chat') => void;
   onToggleAdmin?: () => void;
 }
 
