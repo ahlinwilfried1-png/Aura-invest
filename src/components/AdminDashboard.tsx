@@ -111,8 +111,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     addRechargeChannel,
     updateRechargeChannel,
     deleteRechargeChannel,
-    toggleRechargeChannel
+    toggleRechargeChannel,
+    refreshData
   } = useApp();
+
+  const [isRefreshingUsers, setIsRefreshingUsers] = useState(false);
+
+  const handleRefreshUsers = async () => {
+    setIsRefreshingUsers(true);
+    try {
+      await refreshData();
+      showToast('success', "Base de données centrale Supabase synchronisée !");
+    } catch (err: any) {
+      showToast('error', "Erreur de synchronisation.");
+    } finally {
+      setIsRefreshingUsers(false);
+    }
+  };
 
   // New Announcement form state
   const [newAnnTitle, setNewAnnTitle] = useState('');
@@ -1705,8 +1720,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                     <Users className="w-5 h-5 text-blue-400" />
                     <span>Gestion des Utilisateurs ({users.length})</span>
                   </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">Consultez, modifiez les soldes et gérez les accès des comptes utilisateurs.</p>
+                  <p className="text-xs text-slate-400 mt-0.5">Consultez, modifiez les soldes et gérez les accès des comptes utilisateurs en temps réel.</p>
                 </div>
+
+                <button
+                  onClick={handleRefreshUsers}
+                  disabled={isRefreshingUsers}
+                  className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer disabled:opacity-50"
+                  title="Forcer la synchronisation avec la base centrale Supabase"
+                >
+                  <RotateCw className={`w-3.5 h-3.5 ${isRefreshingUsers ? 'animate-spin text-blue-400' : ''}`} />
+                  <span>{isRefreshingUsers ? 'Actualisation...' : 'Actualiser la liste'}</span>
+                </button>
               </div>
 
               {/* Filter Tabs & Search */}

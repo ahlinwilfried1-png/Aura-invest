@@ -7,6 +7,8 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { supabase } from '../lib/supabase';
 import { 
   fetchTableData, 
+  fetchAllTablesMaster,
+  registerUserInDatabase,
   upsertItem, 
   insertItem, 
   updateItem, 
@@ -130,6 +132,9 @@ interface AppContextType {
   updateFaq: (id: string, question: string, answer: string, category?: string) => void;
   deleteFaq: (id: string) => void;
   
+  // Refresh / Sync
+  refreshData: () => Promise<void>;
+
   // Recharge channels management
   addRechargeChannel: (data: { name: string; countryCode?: string; accountNumber: string; accountHolder?: string; instructions?: string; isActive?: boolean }) => Promise<{ success: boolean; error?: string }>;
   updateRechargeChannel: (id: string, data: Partial<RechargeChannel>) => Promise<{ success: boolean; error?: string }>;
@@ -517,28 +522,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Master Central Sync Function
   const fetchAndSyncAllFromSupabase = useCallback(async () => {
     try {
-      // 1. Fetch main native tables in parallel
-      const [
-        dbUsers,
-        dbProducts,
-        dbInvestments,
-        dbDeposits,
-        dbWithdrawals,
-        dbProofs,
-        dbTickets,
-        dbCommissions,
-        dbBonusRows
-      ] = await Promise.all([
-        fetchTableData<User>('users'),
-        fetchTableData<InvestmentProduct>('products'),
-        fetchTableData<UserInvestment>('investments'),
-        fetchTableData<DepositRequest>('deposits'),
-        fetchTableData<WithdrawalRequest>('withdrawals'),
-        fetchTableData<WithdrawalProof>('withdrawal_proofs'),
-        fetchTableData<SupportTicket>('tickets'),
-        fetchTableData<CommissionHistory>('commissions'),
-        fetchTableData<any>('bonus_codes')
-      ]);
+      // 1. Fetch main native tables - Try unified master endpoint first (100% authoritative via Service Role)
+      let dbUsers: User[] | null = null;
+      let dbProducts: InvestmentProduct[] | null = null;
+      let dbInvestments: UserInvestment[] | null = null;
+      let dbDeposits: DepositRequest[] | null = null;
+      let dbWithdrawals: WithdrawalRequest[] | null = null;
+      let dbProofs: WithdrawalProof[] | null = null;
+      let dbTickets: SupportTicket[] | null = null;
+      let dbCommissions: CommissionHistory[] | null = null;
+      let dbBonusRows: any[] | null = null;
+
+      const master = await fetchAllTablesMaster();
+      if (master) {
+        dbUsers = master.users || [];
+        dbProducts = master.products || [];
+        dbInvestments = master.investments || [];
+        dbDeposits = master.deposits || [];
+        dbWithdrawals = master.withdrawals || [];
+        dbProofs = master.withdrawal_proofs || [];
+        dbTickets = master.tickets || [];
+        dbCommissions = master.commissions || [];
+        dbBonusRows = master.bonus_codes || [];
+      } else {
+        const [
+          u, p, i, d, w, pr, t, c, b
+        ] = await Promise.all([
+          fetchTableData<User>('users'),
+          fetchTableData<InvestmentProduct>('products'),
+          fetchTableData<UserInvestment>('investments'),
+          fetchTableData<DepositRequest>('deposits'),
+          fetchTableData<WithdrawalRequest>('withdrawals'),
+          fetchTableData<WithdrawalProof>('withdrawal_proofs'),
+          fetchTableData<SupportTicket>('tickets'),
+          fetchTableData<CommissionHistory>('commissions'),
+          fetchTableData<any>('bonus_codes')
+        ]);
+        dbUsers = u;
+        dbProducts = p;
+        dbInvestments = i;
+        dbDeposits = d;
+        dbWithdrawals = w;
+        dbProofs = pr;
+        dbTickets = t;
+        dbCommissions = c;
+        dbBonusRows = b;
+      }
 
       // Process Users
       if (dbUsers && dbUsers.length > 0) {
@@ -975,8 +1004,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       withdrawalPinHash: pinHash
     };
 
-    // Save directly to Supabase
-    await upsertItem('users', newUser);
+    // Save directly to central Supabase (Server-side Service Role endpoint for 100% cross-device reliability)
+    const regResult = await registerUserInDatabase(newUser);
+    if (!regResult.success && regResult.error) {
+      return { success: false, error: regResult.error };
+    }
     
     // Update local state
     setPasswords(prev => ({ 
@@ -991,6 +1023,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser(newUser);
     safeSetSessionStorage('fintech_current_user', newUser);
     safeSetLocalStorage('fintech_current_user', newUser);
+
+    // Trigger central sync
+    setTimeout(() => {
+      fetchAndSyncAllFromSupabase();
+    }, 200);
     
     return { success: true };
   };
@@ -2278,7 +2315,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addRechargeChannel,
       updateRechargeChannel,
       deleteRechargeChannel,
-      toggleRechargeChannel
+      toggleRechargeChannel,
+      refreshData: fetchAndSyncAllFromSupabase
     }}>
       {children}
     </AppContext.Provider>

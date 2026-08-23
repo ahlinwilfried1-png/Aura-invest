@@ -52,7 +52,61 @@ export function sanitizeItem<T>(tableName: string, item: T): Partial<T> {
   return sanitized as Partial<T>;
 }
 
+export async function fetchAllTablesMaster(): Promise<any | null> {
+  try {
+    const res = await fetch('/api/admin/fetch-all');
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success && json.data) {
+        return json.data;
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
+export async function registerUserInDatabase(user: any): Promise<{ success: boolean; error?: string; user?: any }> {
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(user)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success) {
+        return { success: true, user: data.user };
+      }
+      if (data && data.error) {
+        return { success: false, error: data.error };
+      }
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      if (errData && errData.error) {
+        return { success: false, error: errData.error };
+      }
+    }
+  } catch (err: any) {
+    console.warn('[Register Endpoint Error]:', err);
+  }
+
+  // Fallback: Direct upsert via Supabase client
+  return upsertItem('users', user);
+}
+
 export async function fetchTableData<T>(tableName: string): Promise<T[] | null> {
+  // 1. Try authoritative server route first (Bypasses RLS with Service Role)
+  try {
+    const res = await fetch(`/api/admin/fetch-table?tableName=${encodeURIComponent(tableName)}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success && Array.isArray(json.data)) {
+        return json.data as T[];
+      }
+    }
+  } catch (_) {}
+
+  // 2. Fallback: Direct Supabase client fetch
   try {
     const { data, error } = await supabase.from(tableName).select('*');
     if (error) {

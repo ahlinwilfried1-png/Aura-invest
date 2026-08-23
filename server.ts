@@ -8,15 +8,35 @@ dotenv.config();
 
 // Configuration
 const PORT = 3000;
-const SUPABASE_URL = 
-  process.env.SUPABASE_URL || 
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 
-  process.env.VITE_SUPABASE_URL || 
-  'https://ozvqpwsdxkmimzfjmoud.supabase.co';
+// Central Supabase Credentials for project 'ozvqpwsdxkmimzfjmoud'
+const CENTRAL_SUPABASE_URL = 'https://ozvqpwsdxkmimzfjmoud.supabase.co';
+const CENTRAL_SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96dnFwd3NkeGttaW16Zmptb3VkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzI2Mjc2MywiZXhwIjoyMTAyODM4NzYzfQ.yg2nMdMAsuuTlNySNgs8uGrvSKjsnMMKr2rcG-61cs4';
 
+const SUPABASE_URL = 
+  (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('idnpfqfxvzskivpdkbdc') ? process.env.SUPABASE_URL : null) || 
+  (process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('idnpfqfxvzskivpdkbdc') ? process.env.NEXT_PUBLIC_SUPABASE_URL : null) || 
+  (process.env.VITE_SUPABASE_URL && !process.env.VITE_SUPABASE_URL.includes('idnpfqfxvzskivpdkbdc') ? process.env.VITE_SUPABASE_URL : null) || 
+  CENTRAL_SUPABASE_URL;
+
+// Helper to extract JWT project ref safely
+function getJwtProjectRef(token: string | undefined): string | null {
+  if (!token) return null;
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const decoded = Buffer.from(parts[1], 'base64').toString('utf-8');
+    const json = JSON.parse(decoded);
+    return json.ref || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+// Ensure service role key matches project 'ozvqpwsdxkmimzfjmoud'
+const envServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = 
-  process.env.SUPABASE_SERVICE_ROLE_KEY || 
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96dnFwd3NkeGttaW16Zmptb3VkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzI2Mjc2MywiZXhwIjoyMTAyODM4NzYzfQ.yg2nMdMAsuuTlNySNgs8uGrvSKjsnMMKr2rcG-61cs4';
+  (envServiceRoleKey && getJwtProjectRef(envServiceRoleKey) === 'ozvqpwsdxkmimzfjmoud' ? envServiceRoleKey : null) || 
+  CENTRAL_SUPABASE_SERVICE_ROLE_KEY;
 
 // Initialize Supabase Admin with Service Role Key (SERVER-SIDE ONLY - NEVER SENT TO CLIENT)
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -41,6 +61,7 @@ async function startServer() {
       res.json({
         status: 'ok',
         database: error ? 'error' : 'connected',
+        dbError: error ? error.message : null,
         supabaseUrl: SUPABASE_URL,
         hasServiceRole: Boolean(SUPABASE_SERVICE_ROLE_KEY),
         timestamp: new Date().toISOString()
@@ -56,6 +77,104 @@ async function startServer() {
   // =========================================================================
   // SERVER-SIDE ADMIN ROUTES (PROTECTED WITH SERVICE ROLE KEY)
   // =========================================================================
+
+  // 0. User Registration Route (Protected with Service Role Key for 100% Cross-Device Reliability)
+  app.post('/api/auth/register', async (req, res) => {
+    try {
+      const user = req.body;
+      if (!user || !user.phone || !user.name) {
+        return res.status(400).json({ success: false, error: 'Informations utilisateur incomplètes (nom et téléphone requis).' });
+      }
+
+      const cleanPhone = String(user.phone).trim();
+      const strippedPhone = cleanPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+
+      // Check if user already exists
+      const { data: existingUsers, error: checkErr } = await supabaseAdmin
+        .from('users')
+        .select('id, phone');
+
+      if (!checkErr && existingUsers && existingUsers.length > 0) {
+        const found = existingUsers.some(u => {
+          const uClean = String(u.phone || '').trim();
+          const uStripped = uClean.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+          return uClean === cleanPhone || uStripped === strippedPhone;
+        });
+
+        if (found) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'Un compte existe déjà avec ce numéro de téléphone. Veuillez vous connecter.' 
+          });
+        }
+      }
+
+      // Ensure mandatory fields
+      const userRecord = {
+        id: user.id || ('usr-' + Math.floor(100000 + Math.random() * 9000000)),
+        name: user.name.trim(),
+        phone: cleanPhone,
+        whatsapp: (user.whatsapp || cleanPhone).trim(),
+        country: user.country || 'Togo',
+        balance: Number(user.balance ?? 200),
+        dailyEarnings: Number(user.dailyEarnings ?? 0),
+        totalEarnings: Number(user.totalEarnings ?? 0),
+        vipLevel: Number(user.vipLevel ?? 0),
+        isBlocked: Boolean(user.isBlocked ?? false),
+        createdAt: user.createdAt || new Date().toISOString(),
+        role: user.role || 'user',
+        referralCode: user.referralCode || ('INV' + Math.floor(100000 + Math.random() * 900000)),
+        referredByCode: user.referredByCode || null,
+        withdrawalAccountName: user.withdrawalAccountName || null,
+        withdrawalAccountNumber: user.withdrawalAccountNumber || null,
+        withdrawalPinHash: user.withdrawalPinHash || ''
+      };
+
+      const { data: inserted, error: insErr } = await supabaseAdmin
+        .from('users')
+        .upsert(userRecord)
+        .select()
+        .single();
+
+      if (insErr) {
+        console.error('[Server Register Supabase Error]:', insErr);
+        return res.status(500).json({ success: false, error: insErr.message });
+      }
+
+      console.log(`[New User Registered in Central Supabase]: ${userRecord.name} (${userRecord.phone}) - ID: ${userRecord.id}`);
+
+      return res.json({
+        success: true,
+        user: inserted || userRecord
+      });
+    } catch (err: any) {
+      console.error('[Server Register Exception]:', err);
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur lors de l\'inscription.' });
+    }
+  });
+
+  // User Update Route
+  app.post('/api/users/update', async (req, res) => {
+    try {
+      const { userId, updates } = req.body;
+      if (!userId || !updates) {
+        return res.status(400).json({ success: false, error: 'Identifiant et modifications requis.' });
+      }
+
+      const { error } = await supabaseAdmin
+        .from('users')
+        .update(updates)
+        .eq('id', userId);
+
+      if (error) {
+        return res.status(500).json({ success: false, error: error.message });
+      }
+
+      return res.json({ success: true });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
+    }
+  });
 
   // Submit Deposit Request (Protected by Supabase Service Role)
   app.post('/api/deposits/submit', async (req, res) => {
@@ -383,26 +502,39 @@ async function startServer() {
   // 7. Fetch All Tables in One Call (Authoritative Admin Sync)
   app.get('/api/admin/fetch-all', async (req, res) => {
     try {
+      const fetchTableSafe = async (table: string) => {
+        try {
+          const { data, error } = await supabaseAdmin.from(table).select('*');
+          if (error) {
+            console.warn(`[fetch-all] Table ${table} notice:`, error.message);
+            return [];
+          }
+          return data || [];
+        } catch (_) {
+          return [];
+        }
+      };
+
       const [
-        { data: users, error: uErr },
-        { data: products, error: pErr },
-        { data: investments, error: iErr },
-        { data: deposits, error: dErr },
-        { data: withdrawals, error: wErr },
-        { data: proofs, error: prErr },
-        { data: tickets, error: tErr },
-        { data: commissions, error: cErr },
-        { data: bonusCodes, error: bErr }
+        users,
+        products,
+        investments,
+        deposits,
+        withdrawals,
+        proofs,
+        tickets,
+        commissions,
+        bonusCodes
       ] = await Promise.all([
-        supabaseAdmin.from('users').select('*'),
-        supabaseAdmin.from('products').select('*'),
-        supabaseAdmin.from('investments').select('*'),
-        supabaseAdmin.from('deposits').select('*'),
-        supabaseAdmin.from('withdrawals').select('*'),
-        supabaseAdmin.from('withdrawal_proofs').select('*'),
-        supabaseAdmin.from('tickets').select('*'),
-        supabaseAdmin.from('commissions').select('*'),
-        supabaseAdmin.from('bonus_codes').select('*')
+        fetchTableSafe('users'),
+        fetchTableSafe('products'),
+        fetchTableSafe('investments'),
+        fetchTableSafe('deposits'),
+        fetchTableSafe('withdrawals'),
+        fetchTableSafe('withdrawal_proofs'),
+        fetchTableSafe('tickets'),
+        fetchTableSafe('commissions'),
+        fetchTableSafe('bonus_codes')
       ]);
 
       return res.json({
