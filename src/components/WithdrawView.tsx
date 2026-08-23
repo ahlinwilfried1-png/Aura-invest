@@ -30,7 +30,13 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
   const [showBindModal, setShowBindModal] = useState<boolean>(false);
 
   // Form states for account binding
-  const defaultCountryCode = currentUser.withdrawalCountry || 'TG';
+  const defaultCountryCode = currentUser.withdrawalCountry || (
+    currentUser.country?.toLowerCase().includes('cameroun') || 
+    currentUser.country?.toLowerCase().includes('cm') ||
+    currentUser.phone?.startsWith('+237')
+      ? 'CM' 
+      : 'TG'
+  );
   const [bindCountryCode, setBindCountryCode] = useState<string>(defaultCountryCode);
   
   const currentBindCountry = ALLOWED_COUNTRIES.find(c => c.code === bindCountryCode) || ALLOWED_COUNTRIES[0];

@@ -346,9 +346,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   };
 
   const userActiveInvestments = userInvestments.filter(inv => inv.userId === currentUser.id);
-  const userDeposits = deposits.filter(d => d.userId === currentUser.id);
-  const userWithdrawals = withdrawals.filter(w => w.userId === currentUser.id);
-  const userTickets = tickets.filter(t => t.userId === currentUser.id);
+  const userDeposits = deposits.filter(d => d.userId === currentUser.id || (currentUser.phone && d.userPhone === currentUser.phone));
+  const userWithdrawals = withdrawals.filter(w => w.userId === currentUser.id || (currentUser.phone && w.userPhone === currentUser.phone));
+  const userTickets = tickets.filter(t => t.userId === currentUser.id || (currentUser.phone && t.userPhone === currentUser.phone));
 
   // Active products list sorted by order
   const activeProducts = products

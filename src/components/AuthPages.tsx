@@ -313,7 +313,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                       >
                         {COUNTRIES.map(c => (
                           <option key={c.code} value={c.prefix}>
-                            {c.prefix} ({c.name})
+                            {c.flag} {c.prefix} ({c.name})
                           </option>
                         ))}
                       </select>
@@ -519,7 +519,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                       >
                         {COUNTRIES.map(c => (
                           <option key={c.code} value={c.prefix}>
-                            {c.prefix} ({c.name})
+                            {c.flag} {c.prefix} ({c.name})
                           </option>
                         ))}
                       </select>
@@ -672,7 +672,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                       >
                         {COUNTRIES.map(c => (
                           <option key={c.code} value={c.prefix}>
-                            {c.prefix} ({c.name})
+                            {c.flag} {c.prefix} ({c.name})
                           </option>
                         ))}
                       </select>

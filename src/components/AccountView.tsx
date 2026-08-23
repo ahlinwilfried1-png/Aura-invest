@@ -5,6 +5,7 @@ import { LuckyWheel } from './LuckyWheel';
 import { LinkBankCardView } from './LinkBankCardView';
 import { FaqView } from './FaqView';
 import { useApp } from '../context/AppContext';
+import { ALLOWED_COUNTRIES } from '../constants/countries';
 import { 
   User, 
   DepositRequest, 
@@ -193,14 +194,27 @@ export const AccountView: React.FC<AccountViewProps> = ({
   const [ticketMessage, setTicketMessage] = useState('');
 
   // User filter lists
-  const myDeposits = deposits.filter((d) => d.userId === currentUser.id);
-  const myWithdrawals = withdrawals.filter((w) => w.userId === currentUser.id);
+  const myDeposits = deposits.filter((d) => 
+    d.userId === currentUser.id || 
+    (currentUser.phone && currentUser.phone !== 'Non renseigné' && d.userPhone === currentUser.phone)
+  );
+  const myWithdrawals = withdrawals.filter((w) => 
+    w.userId === currentUser.id || 
+    (currentUser.phone && currentUser.phone !== 'Non renseigné' && w.userPhone === currentUser.phone)
+  );
   const myInvestments = userInvestments.filter((i) => i.userId === currentUser.id);
   const myTickets = tickets.filter((t) => 
     t.userId === currentUser.id ||
     (currentUser.phone && currentUser.phone !== 'Non renseigné' && t.userPhone === currentUser.phone) ||
     (currentUser.name && t.userName === currentUser.name)
   );
+
+  const userCountry = ALLOWED_COUNTRIES.find(c => 
+    c.name.toLowerCase() === (currentUser.country || '').toLowerCase() || 
+    c.code.toLowerCase() === (currentUser.country || '').toLowerCase() ||
+    (currentUser.phone && currentUser.phone.startsWith(c.prefix)) ||
+    c.code === currentUser.withdrawalCountry
+  ) || (currentUser.country?.toLowerCase().includes('cameroun') ? ALLOWED_COUNTRIES[1] : ALLOWED_COUNTRIES[0]);
 
   // Render Sub-Page Header with Back Button
   const renderHeader = (title: string) => (
@@ -227,13 +241,23 @@ export const AccountView: React.FC<AccountViewProps> = ({
           <div 
             className="py-3 px-1 relative overflow-hidden space-y-4 text-slate-900"
           >
-            {/* Nutrien Ag Badge */}
+            {/* Nutrien Ag Badge & User Info */}
             <div className="flex items-center justify-between pb-1">
               <div className="flex items-center space-x-2.5">
                 <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
                   <Wallet className="w-4 h-4" />
                 </div>
-                <h3 className="text-base sm:text-lg font-black text-slate-900">Mon portefeuille</h3>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900">Mon portefeuille</h3>
+                  <div className="text-[11px] text-slate-500 font-medium flex items-center space-x-1.5">
+                    <span>{currentUser.phone}</span>
+                    <span>•</span>
+                    <span className="font-bold text-slate-700 flex items-center space-x-1">
+                      <span>{userCountry.flag}</span>
+                      <span>{userCountry.name}</span>
+                    </span>
+                  </div>
+                </div>
               </div>
               <div className="bg-emerald-50 px-2.5 py-1 rounded-full flex items-center space-x-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />

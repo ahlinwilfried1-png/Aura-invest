@@ -98,7 +98,8 @@ export interface DepositRequest {
 
 export interface RechargeChannel {
   id: string;
-  name: string; // Nom du canal/opérateur (ex: TMoney, Moov Money Togo, Flooz)
+  name: string; // Nom du canal/opérateur (ex: TMoney, Moov Money, MTN Mobile Money, Orange Money)
+  countryCode?: 'TG' | 'CM' | string; // Code pays (TG pour Togo, CM pour Cameroun)
   accountNumber: string; // Numéro de recharge
   accountHolder?: string; // Nom du titulaire (optionnel)
   instructions?: string; // Instructions spécifiques (optionnel)

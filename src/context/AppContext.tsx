@@ -14,6 +14,7 @@ import {
   saveSystemConfig, 
   fetchSystemConfig,
   deleteSystemConfig,
+  submitDepositRequest,
   adminProcessDeposit,
   adminProcessWithdrawal,
   adminUpdateUserBalance,
@@ -106,7 +107,7 @@ interface AppContextType {
   updateUserBalance: (userId: string, amount: number, isDirectSet?: boolean) => void;
   adminUpdateUserPassword: (userId: string, newWord: string) => { success: boolean; error?: string };
   adminUpdateUserPin: (userId: string, newPin: string) => { success: boolean; error?: string };
-  processDeposit: (depositId: string, status: 'approved' | 'rejected') => void;
+  processDeposit: (depositId: string, status: 'approved' | 'rejected') => Promise<{ success: boolean; error?: string; alreadyApproved?: boolean; newBalance?: number }>;
   processWithdrawal: (withdrawalId: string, status: 'approved' | 'rejected') => void;
   processWithdrawalProof: (proofId: string, status: 'approved' | 'rejected') => void;
   deleteWithdrawalProof: (proofId: string) => void;
@@ -130,7 +131,7 @@ interface AppContextType {
   deleteFaq: (id: string) => void;
   
   // Recharge channels management
-  addRechargeChannel: (data: { name: string; accountNumber: string; accountHolder?: string; instructions?: string; isActive?: boolean }) => Promise<{ success: boolean; error?: string }>;
+  addRechargeChannel: (data: { name: string; countryCode?: string; accountNumber: string; accountHolder?: string; instructions?: string; isActive?: boolean }) => Promise<{ success: boolean; error?: string }>;
   updateRechargeChannel: (id: string, data: Partial<RechargeChannel>) => Promise<{ success: boolean; error?: string }>;
   deleteRechargeChannel: (id: string) => Promise<{ success: boolean; error?: string }>;
   toggleRechargeChannel: (id: string) => Promise<{ success: boolean; error?: string }>;
@@ -359,13 +360,93 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     safeRemoveLocalStorage('fintech_wellness_products');
   }, []);
 
+  // Ensure recharge channels have proper country codes and defaults for Togo & Cameroun
+  const normalizeRechargeChannels = (list: RechargeChannel[]): RechargeChannel[] => {
+    const normalized = list.map(c => {
+      let countryCode = c.countryCode;
+      if (!countryCode) {
+        if (
+          c.accountNumber?.startsWith('+237') ||
+          c.name?.toLowerCase().includes('cameroun') ||
+          c.name?.toLowerCase().includes('orange money') ||
+          c.name?.toLowerCase().includes('mtn')
+        ) {
+          countryCode = 'CM';
+        } else {
+          countryCode = 'TG';
+        }
+      }
+      return { ...c, countryCode };
+    });
+
+    const hasTG = normalized.some(c => c.countryCode === 'TG');
+    const hasCM = normalized.some(c => c.countryCode === 'CM');
+    const result = [...normalized];
+
+    if (!hasTG) {
+      result.push(
+        {
+          id: 'rc-tmoney',
+          name: 'TMoney (Togocom)',
+          countryCode: 'TG',
+          accountNumber: '+228 90 00 00 00',
+          accountHolder: 'Service Recharge Nutrien Togo',
+          instructions: 'Effectuez le transfert vers ce numéro TMoney puis saisissez la référence de transaction.',
+          isActive: true,
+          order: 1,
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 'rc-moov',
+          name: 'Moov Money (Flooz)',
+          countryCode: 'TG',
+          accountNumber: '+228 99 00 00 00',
+          accountHolder: 'Service Recharge Nutrien Togo',
+          instructions: 'Effectuez le transfert vers ce numéro Moov Money Flooz puis saisissez la référence de transaction.',
+          isActive: true,
+          order: 2,
+          createdAt: new Date().toISOString()
+        }
+      );
+    }
+
+    if (!hasCM) {
+      result.push(
+        {
+          id: 'rc-cm-mtn',
+          name: 'MTN Mobile Money (MoMo Cameroun)',
+          countryCode: 'CM',
+          accountNumber: '+237 670 00 00 00',
+          accountHolder: 'Service Recharge Nutrien Cameroun',
+          instructions: 'Effectuez le transfert vers ce numéro MTN MoMo puis saisissez l\'ID de transaction.',
+          isActive: true,
+          order: 3,
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 'rc-cm-orange',
+          name: 'Orange Money (OM Cameroun)',
+          countryCode: 'CM',
+          accountNumber: '+237 690 00 00 00',
+          accountHolder: 'Service Recharge Nutrien Cameroun',
+          instructions: 'Effectuez le transfert vers ce numéro Orange Money puis saisissez l\'ID de transaction.',
+          isActive: true,
+          order: 4,
+          createdAt: new Date().toISOString()
+        }
+      );
+    }
+
+    return deduplicateById(result);
+  };
+
   const [rechargeChannels, setRechargeChannels] = useState<RechargeChannel[]>(() => {
     const data = safeGetLocalStorage('fintech_recharge_channels');
     if (data !== null && data !== undefined) {
       try {
         const parsed = JSON.parse(data);
-        if (Array.isArray(parsed)) {
-          return deduplicateById(parsed);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return normalizeRechargeChannels(deduplicateById(parsed));
         }
       } catch (_) {}
     }
@@ -373,8 +454,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       {
         id: 'rc-tmoney',
         name: 'TMoney (Togocom)',
+        countryCode: 'TG',
         accountNumber: '+228 90 00 00 00',
-        accountHolder: 'Service Recharge Nutrien',
+        accountHolder: 'Service Recharge Nutrien Togo',
         instructions: 'Effectuez le transfert vers ce numéro TMoney puis saisissez la référence de transaction.',
         isActive: true,
         order: 1,
@@ -383,11 +465,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       {
         id: 'rc-moov',
         name: 'Moov Money (Flooz)',
+        countryCode: 'TG',
         accountNumber: '+228 99 00 00 00',
-        accountHolder: 'Service Recharge Nutrien',
+        accountHolder: 'Service Recharge Nutrien Togo',
         instructions: 'Effectuez le transfert vers ce numéro Moov Money Flooz puis saisissez la référence de transaction.',
         isActive: true,
         order: 2,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'rc-cm-mtn',
+        name: 'MTN Mobile Money (MoMo Cameroun)',
+        countryCode: 'CM',
+        accountNumber: '+237 670 00 00 00',
+        accountHolder: 'Service Recharge Nutrien Cameroun',
+        instructions: 'Effectuez le transfert vers ce numéro MTN MoMo puis saisissez l\'ID de transaction.',
+        isActive: true,
+        order: 3,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'rc-cm-orange',
+        name: 'Orange Money (OM Cameroun)',
+        countryCode: 'CM',
+        accountNumber: '+237 690 00 00 00',
+        accountHolder: 'Service Recharge Nutrien Cameroun',
+        instructions: 'Effectuez le transfert vers ce numéro Orange Money puis saisissez l\'ID de transaction.',
+        isActive: true,
+        order: 4,
         createdAt: new Date().toISOString()
       }
     ];
@@ -618,8 +723,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           safeSetLocalStorage('fintech_faqs', sysFaqs);
         }
         if (sysRechargeChannels !== null) {
-          setRechargeChannels(sysRechargeChannels);
-          safeSetLocalStorage('fintech_recharge_channels', sysRechargeChannels);
+          const normalizedSysChannels = normalizeRechargeChannels(sysRechargeChannels);
+          setRechargeChannels(normalizedSysChannels);
+          safeSetLocalStorage('fintech_recharge_channels', normalizedSysChannels);
         }
         if (sysWheel) {
           setWheelConfig(sysWheel);
@@ -1187,8 +1293,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString()
     };
     
-    setDeposits(prev => [newDeposit, ...prev]);
-    upsertItem('deposits', newDeposit);
+    setDeposits(prev => {
+      const updated = [newDeposit, ...prev];
+      safeSetLocalStorage('fintech_deposits', updated);
+      return updated;
+    });
+    submitDepositRequest(newDeposit);
     return { success: true };
   };
 
@@ -1636,25 +1746,76 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
-  const processDeposit = (depositId: string, status: 'approved' | 'rejected') => {
+  const processDeposit = async (
+    depositId: string, 
+    status: 'approved' | 'rejected'
+  ): Promise<{ success: boolean; error?: string; alreadyApproved?: boolean; newBalance?: number }> => {
     const dep = deposits.find(d => d.id === depositId);
-    if (!dep || dep.status !== 'pending') return;
+    if (!dep) {
+      return { success: false, error: "Dépôt introuvable." };
+    }
     
-    setDeposits(prev => prev.map(d => d.id === depositId ? { ...d, status } : d));
-    adminProcessDeposit(depositId, status);
-    
-    if (status === 'approved') {
-      const targetUser = users.find(u => u.id === dep.userId);
-      if (targetUser) {
-        const nextBalance = targetUser.balance + dep.amount;
-        setUsers(prev => prev.map(u => u.id === dep.userId ? { ...u, balance: nextBalance } : u));
-        if (currentUser?.id === dep.userId) {
-          const updatedCurr = { ...currentUser, balance: nextBalance };
-          setCurrentUser(updatedCurr);
-          safeSetSessionStorage('fintech_current_user', updatedCurr);
-          safeSetLocalStorage('fintech_current_user', updatedCurr);
-        }
+    // Idempotency: Prevent double approval
+    if (dep.status === 'approved') {
+      return { success: true, alreadyApproved: true, error: "Ce dépôt a déjà été approuvé et crédité." };
+    }
+
+    if (dep.status !== 'pending') {
+      return { success: false, error: `Le dépôt est déjà au statut ${dep.status}.` };
+    }
+
+    // 1. Optimistic Local State & Storage update
+    const updatedDeposits = deposits.map(d => d.id === depositId ? { ...d, status } : d);
+    setDeposits(updatedDeposits);
+    safeSetLocalStorage('fintech_deposits', updatedDeposits);
+
+    let nextBalance: number | null = null;
+    const targetUser = users.find(u => u.id === dep.userId || (dep.userPhone && u.phone === dep.userPhone));
+
+    if (status === 'approved' && targetUser) {
+      nextBalance = Number(targetUser.balance || 0) + Number(dep.amount || 0);
+      const updatedUsers = users.map(u => (u.id === targetUser.id || (dep.userPhone && u.phone === dep.userPhone)) ? { ...u, balance: nextBalance! } : u);
+      setUsers(updatedUsers);
+      safeSetLocalStorage('fintech_users', updatedUsers);
+
+      if (currentUser?.id === targetUser.id || (dep.userPhone && currentUser?.phone === dep.userPhone)) {
+        const updatedCurr = { ...currentUser, balance: nextBalance };
+        setCurrentUser(updatedCurr);
+        safeSetSessionStorage('fintech_current_user', updatedCurr);
+        safeSetLocalStorage('fintech_current_user', updatedCurr);
       }
+    }
+
+    // 2. Authoritative Server-side call (Service Role + Database Idempotency Lock)
+    const serverResult = await adminProcessDeposit(depositId, status, dep);
+
+    // 3. Fallback database backup update
+    if (serverResult && serverResult.success) {
+      if (status === 'approved' && targetUser && nextBalance !== null) {
+        updateItem('users', { balance: serverResult.newBalance ?? nextBalance }, targetUser.id);
+      }
+      // Trigger background sync with DB
+      setTimeout(() => {
+        fetchAndSyncAllFromSupabase();
+      }, 300);
+
+      return {
+        success: true,
+        alreadyApproved: serverResult.alreadyApproved,
+        newBalance: serverResult.newBalance ?? (nextBalance || undefined)
+      };
+    } else {
+      // In case server route failed, apply client-side DB update
+      if (status === 'approved' && targetUser && nextBalance !== null) {
+        await updateItem('users', { balance: nextBalance }, targetUser.id);
+        await updateItem('deposits', { status: 'approved' }, depositId);
+      } else {
+        await updateItem('deposits', { status }, depositId);
+      }
+      setTimeout(() => {
+        fetchAndSyncAllFromSupabase();
+      }, 300);
+      return { success: true };
     }
   };
 
@@ -1977,14 +2138,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Recharge Channels CRUD methods
   const addRechargeChannel = async (data: {
     name: string;
+    countryCode?: string;
     accountNumber: string;
     accountHolder?: string;
     instructions?: string;
     isActive?: boolean;
   }): Promise<{ success: boolean; error?: string }> => {
+    const finalCountryCode = data.countryCode || (
+      data.accountNumber?.startsWith('+237') ||
+      data.name?.toLowerCase().includes('cameroun') ||
+      data.name?.toLowerCase().includes('orange money') ||
+      data.name?.toLowerCase().includes('mtn')
+        ? 'CM'
+        : 'TG'
+    );
+
     const newChannel: RechargeChannel = {
       id: `rc-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       name: data.name.trim(),
+      countryCode: finalCountryCode,
       accountNumber: data.accountNumber.trim(),
       accountHolder: data.accountHolder?.trim() || '',
       instructions: data.instructions?.trim() || '',
@@ -2006,6 +2178,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...ch,
           ...data,
           name: data.name !== undefined ? data.name.trim() : ch.name,
+          countryCode: data.countryCode !== undefined ? data.countryCode : ch.countryCode,
           accountNumber: data.accountNumber !== undefined ? data.accountNumber.trim() : ch.accountNumber,
           accountHolder: data.accountHolder !== undefined ? data.accountHolder.trim() : ch.accountHolder,
           instructions: data.instructions !== undefined ? data.instructions.trim() : ch.instructions,

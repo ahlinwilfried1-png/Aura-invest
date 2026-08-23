@@ -200,15 +200,35 @@ export async function fetchSystemConfig<T>(configKey: string, fallbackValue: T):
 }
 
 
+export async function submitDepositRequest(
+  depositData: any
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch('/api/deposits/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(depositData)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success) return { success: true };
+    }
+  } catch (_) {}
+
+  // Fallback to direct client upsert
+  return upsertItem('deposits', depositData);
+}
+
 export async function adminProcessDeposit(
   depositId: string,
-  status: 'approved' | 'rejected'
-): Promise<{ success: boolean; error?: string }> {
+  status: 'approved' | 'rejected',
+  fallbackDepositData?: any
+): Promise<{ success: boolean; error?: string; message?: string; alreadyApproved?: boolean; newBalance?: number }> {
   try {
     const res = await fetch('/api/admin/deposits/process', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ depositId, status })
+      body: JSON.stringify({ depositId, status, fallbackDepositData })
     });
     if (res.ok) {
       const data = await res.json();

@@ -19,16 +19,22 @@ export const LinkBankCardView: React.FC<LinkBankCardViewProps> = ({
 
   const isAlreadyBound = Boolean(currentUser.withdrawalAccountName && currentUser.withdrawalAccountNumber);
 
-  const defaultCountryCode = currentUser.withdrawalCountry || 'TG';
+  const defaultCountryCode = currentUser.withdrawalCountry || (
+    currentUser.country?.toLowerCase().includes('cameroun') || 
+    currentUser.country?.toLowerCase().includes('cm') ||
+    currentUser.phone?.startsWith('+237')
+      ? 'CM' 
+      : 'TG'
+  );
   const [countryCode, setCountryCode] = useState<string>(defaultCountryCode);
   
   const currentCountry = ALLOWED_COUNTRIES.find(c => c.code === countryCode) || ALLOWED_COUNTRIES[0];
   
   // Networks & Card options
   const PAYMENT_NETWORKS = [
+    ...currentCountry.networks,
     'Carte Visa / Mastercard',
-    'Virement Bancaire (RIB)',
-    ...currentCountry.networks
+    'Virement Bancaire (RIB)'
   ];
 
   const [network, setNetwork] = useState<string>(

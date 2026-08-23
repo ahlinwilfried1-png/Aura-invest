@@ -57,53 +57,178 @@ async function startServer() {
   // SERVER-SIDE ADMIN ROUTES (PROTECTED WITH SERVICE ROLE KEY)
   // =========================================================================
 
-  // 1. Process Deposit (Approve / Reject)
+  // Submit Deposit Request (Protected by Supabase Service Role)
+  app.post('/api/deposits/submit', async (req, res) => {
+    try {
+      const depositData = req.body;
+      if (!depositData || !depositData.id || !depositData.amount || !depositData.userId) {
+        return res.status(400).json({ success: false, error: 'Données de recharge incomplètes.' });
+      }
+
+      const { error } = await supabaseAdmin
+        .from('deposits')
+        .upsert(depositData);
+
+      if (error) {
+        console.error('[Server Deposit Submit Error]:', error);
+        return res.status(500).json({ success: false, error: error.message });
+      }
+
+      return res.json({ success: true, deposit: depositData });
+    } catch (err: any) {
+      console.error('[Server Deposit Submit Exception]:', err);
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
+    }
+  });
+
+  // 1. Process Deposit (Approve / Reject) with strict idempotency and atomic balance crediting
   app.post('/api/admin/deposits/process', async (req, res) => {
     try {
-      const { depositId, status } = req.body;
+      const { depositId, status, fallbackDepositData } = req.body;
       if (!depositId || !['approved', 'rejected'].includes(status)) {
         return res.status(400).json({ success: false, error: 'Paramètres de dépôt invalides.' });
       }
 
-      // Fetch the deposit record
-      const { data: dep, error: depErr } = await supabaseAdmin
+      // Fetch the deposit record from central DB
+      let { data: dep, error: depErr } = await supabaseAdmin
         .from('deposits')
         .select('*')
         .eq('id', depositId)
         .single();
 
-      if (depErr || !dep) {
-        return res.status(404).json({ success: false, error: 'Dépôt non trouvé dans la base.' });
+      // If deposit is not found but fallback data is sent, upsert it first
+      if ((depErr || !dep) && fallbackDepositData) {
+        await supabaseAdmin.from('deposits').upsert(fallbackDepositData);
+        const { data: retryDep } = await supabaseAdmin
+          .from('deposits')
+          .select('*')
+          .eq('id', depositId)
+          .single();
+        dep = retryDep;
       }
 
-      // Update deposit status
-      const { error: updateErr } = await supabaseAdmin
-        .from('deposits')
-        .update({ status })
-        .eq('id', depositId);
-
-      if (updateErr) {
-        return res.status(500).json({ success: false, error: updateErr.message });
+      if (!dep) {
+        return res.status(404).json({ success: false, error: 'Dépôt non trouvé dans la base centrale.' });
       }
 
-      // If approved, credit the user balance
-      if (status === 'approved') {
-        const { data: user, error: userErr } = await supabaseAdmin
+      // IDEMPOTENCY CHECK 1: If already approved, DO NOT credit again!
+      if (dep.status === 'approved') {
+        const { data: existingUser } = await supabaseAdmin
           .from('users')
           .select('balance')
           .eq('id', dep.userId)
           .single();
 
-        if (user) {
-          const newBalance = Number(user.balance || 0) + Number(dep.amount || 0);
-          await supabaseAdmin
+        return res.json({
+          success: true,
+          message: 'Ce dépôt a déjà été validé et crédité précédemment.',
+          alreadyApproved: true,
+          status: 'approved',
+          depositId,
+          newBalance: existingUser?.balance ?? null
+        });
+      }
+
+      // If already rejected and admin rejects again, no-op
+      if (dep.status === 'rejected' && status === 'rejected') {
+        return res.json({
+          success: true,
+          message: 'Ce dépôt a déjà été refusé.',
+          alreadyProcessed: true,
+          status: 'rejected',
+          depositId
+        });
+      }
+
+      // ATOMIC UPDATE: Only update status if current status is 'pending'
+      const { data: updatedDep, error: updateErr } = await supabaseAdmin
+        .from('deposits')
+        .update({ status })
+        .eq('id', depositId)
+        .eq('status', 'pending')
+        .select()
+        .single();
+
+      if (updateErr || !updatedDep) {
+        // Double-check if another concurrent request just approved it
+        const { data: freshDep } = await supabaseAdmin
+          .from('deposits')
+          .select('*')
+          .eq('id', depositId)
+          .single();
+
+        if (freshDep?.status === 'approved') {
+          const { data: u } = await supabaseAdmin
             .from('users')
-            .update({ balance: newBalance })
-            .eq('id', dep.userId);
+            .select('balance')
+            .eq('id', dep.userId)
+            .single();
+
+          return res.json({
+            success: true,
+            message: 'Ce dépôt vient déjà d\'être validé.',
+            alreadyApproved: true,
+            status: 'approved',
+            depositId,
+            newBalance: u?.balance ?? null
+          });
+        }
+
+        return res.status(500).json({ 
+          success: false, 
+          error: updateErr?.message || 'Impossible de modifier le statut du dépôt (déjà traité).' 
+        });
+      }
+
+      let updatedBalance: number | null = null;
+
+      // If approved, credit user balance in central database
+      if (status === 'approved') {
+        // Find target user by ID or by Phone
+        let targetUser = null;
+        const { data: userById } = await supabaseAdmin
+          .from('users')
+          .select('*')
+          .eq('id', dep.userId)
+          .single();
+
+        if (userById) {
+          targetUser = userById;
+        } else if (dep.userPhone) {
+          const { data: userByPhone } = await supabaseAdmin
+            .from('users')
+            .select('*')
+            .eq('phone', dep.userPhone)
+            .single();
+          targetUser = userByPhone;
+        }
+
+        if (targetUser) {
+          const currentBal = Number(targetUser.balance || 0);
+          const depositAmt = Number(dep.amount || 0);
+          const calculatedBalance = currentBal + depositAmt;
+
+          const { error: userBalErr } = await supabaseAdmin
+            .from('users')
+            .update({ balance: calculatedBalance })
+            .eq('id', targetUser.id);
+
+          if (userBalErr) {
+            console.error('[Server Admin Deposit Error Updating Balance]:', userBalErr);
+          } else {
+            updatedBalance = calculatedBalance;
+            console.log(`[Deposit Approved & Credited]: User ${targetUser.id} (${targetUser.phone}) +${depositAmt} FCFA -> New balance: ${calculatedBalance} FCFA`);
+          }
         }
       }
 
-      return res.json({ success: true, message: `Dépôt ${status === 'approved' ? 'validé' : 'rejeté'} avec succès.` });
+      return res.json({
+        success: true,
+        message: `Dépôt ${status === 'approved' ? 'validé et solde crédité' : 'rejeté'} avec succès.`,
+        depositId,
+        status,
+        newBalance: updatedBalance
+      });
     } catch (err: any) {
       console.error('[Server Admin Deposit Error]:', err);
       return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });

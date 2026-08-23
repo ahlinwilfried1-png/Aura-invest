@@ -13,6 +13,13 @@ export const ALLOWED_COUNTRIES: AllowedCountry[] = [
     name: 'Togo',
     flag: '🇹🇬',
     networks: ['TMoney', 'Moov Money']
+  },
+  {
+    code: 'CM',
+    prefix: '+237',
+    name: 'Cameroun',
+    flag: '🇨🇲',
+    networks: ['MTN Mobile Money', 'Orange Money']
   }
 ];
 

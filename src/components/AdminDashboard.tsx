@@ -158,6 +158,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   >('dashboard');
 
   // Recharge Channels Admin State
+  const [channelCountryCode, setChannelCountryCode] = useState<'TG' | 'CM'>('CM');
+  const [adminChannelCountryFilter, setAdminChannelCountryFilter] = useState<'ALL' | 'TG' | 'CM'>('ALL');
   const [channelName, setChannelName] = useState('');
   const [channelNumber, setChannelNumber] = useState('');
   const [channelHolder, setChannelHolder] = useState('');
@@ -184,13 +186,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
       if (editingChannelId) {
         const res = await updateRechargeChannel(editingChannelId, {
           name: channelName.trim(),
+          countryCode: channelCountryCode,
           accountNumber: channelNumber.trim(),
           accountHolder: channelHolder.trim(),
           instructions: channelInstructions.trim(),
           isActive: channelIsActive
         });
         if (res.success) {
-          showToast('success', "Canal de recharge mis à jour et synchronisé avec succès !");
+          showToast('success', `Canal (${channelCountryCode === 'CM' ? '🇨🇲 Cameroun' : '🇹🇬 Togo'}) mis à jour et synchronisé avec succès !`);
           setEditingChannelId(null);
           setChannelName('');
           setChannelNumber('');
@@ -203,13 +206,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
       } else {
         const res = await addRechargeChannel({
           name: channelName.trim(),
+          countryCode: channelCountryCode,
           accountNumber: channelNumber.trim(),
           accountHolder: channelHolder.trim(),
           instructions: channelInstructions.trim(),
           isActive: channelIsActive
         });
         if (res.success) {
-          showToast('success', "Nouveau canal de recharge ajouté et enregistré en base de données !");
+          showToast('success', `Nouveau canal (${channelCountryCode === 'CM' ? '🇨🇲 Cameroun' : '🇹🇬 Togo'}) ajouté et enregistré en base de données !`);
           setChannelName('');
           setChannelNumber('');
           setChannelHolder('');
@@ -227,14 +231,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   };
 
   const handleEditChannel = (channel: RechargeChannel) => {
+    const cCode = (channel.countryCode === 'CM' || channel.countryCode === 'TG') 
+      ? channel.countryCode 
+      : (channel.accountNumber.startsWith('+237') || channel.name.toLowerCase().includes('cameroun') || channel.name.toLowerCase().includes('orange') ? 'CM' : 'TG');
+    
     setEditingChannelId(channel.id);
+    setChannelCountryCode(cCode);
     setChannelName(channel.name);
     setChannelNumber(channel.accountNumber);
     setChannelHolder(channel.accountHolder || '');
     setChannelInstructions(channel.instructions || '');
     setChannelIsActive(channel.isActive);
 
-    showToast('success', `Modification de "${channel.name}" - Formulaire rempli.`);
+    showToast('success', `Modification de "${channel.name}" (${cCode === 'CM' ? '🇨🇲 Cameroun' : '🇹🇬 Togo'}) - Formulaire rempli.`);
 
     setTimeout(() => {
       const el = document.getElementById('channel-form-container');
@@ -281,6 +290,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     setChannelHolder('');
     setChannelInstructions('');
     setChannelIsActive(true);
+  };
+
+  // Deposit Processing Async State & Handlers
+  const [processingDepositIds, setProcessingDepositIds] = useState<Record<string, boolean>>({});
+
+  const handleApproveDeposit = async (depId: string) => {
+    if (processingDepositIds[depId]) return;
+    setProcessingDepositIds(prev => ({ ...prev, [depId]: true }));
+    try {
+      const res = await processDeposit(depId, 'approved');
+      if (res && res.success) {
+        if (res.alreadyApproved) {
+          showToast('success', "Ce dépôt a déjà été validé.");
+        } else {
+          showToast('success', "Dépôt approuvé ! Le montant a été crédité sur le compte utilisateur et enregistré en base centrale.");
+        }
+      } else {
+        showToast('error', res?.error || "Erreur lors de la validation du dépôt.");
+      }
+    } catch (err: any) {
+      showToast('error', err?.message || "Erreur de traitement.");
+    } finally {
+      setProcessingDepositIds(prev => ({ ...prev, [depId]: false }));
+    }
+  };
+
+  const handleRejectDeposit = async (depId: string) => {
+    if (processingDepositIds[depId]) return;
+    setProcessingDepositIds(prev => ({ ...prev, [depId]: true }));
+    try {
+      const res = await processDeposit(depId, 'rejected');
+      if (res && res.success) {
+        showToast('error', "Demande de dépôt refusée.");
+      } else {
+        showToast('error', res?.error || "Erreur lors du rejet.");
+      }
+    } catch (err: any) {
+      showToast('error', err?.message || "Erreur de traitement.");
+    } finally {
+      setProcessingDepositIds(prev => ({ ...prev, [depId]: false }));
+    }
   };
 
   const handleCopyChannelNumber = (id: string, num: string) => {
@@ -1128,13 +1178,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                         <div className="flex items-center space-x-2">
                           <span className="font-bold text-emerald-400 text-sm font-mono">{dep.amount.toLocaleString()} FCFA</span>
                           <button 
-                            onClick={() => {
-                              processDeposit(dep.id, 'approved');
-                              showToast('success', "Dépôt approuvé ! Solde crédité.");
-                            }}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-2.5 py-1 rounded-lg cursor-pointer"
+                            onClick={() => handleApproveDeposit(dep.id)}
+                            disabled={Boolean(processingDepositIds[dep.id])}
+                            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-[11px] px-2.5 py-1 rounded-lg cursor-pointer transition-all flex items-center space-x-1"
                           >
-                            Valider
+                            {processingDepositIds[dep.id] ? (
+                              <span>Validation...</span>
+                            ) : (
+                              <span>Valider</span>
+                            )}
                           </button>
                         </div>
                       </div>
@@ -1326,22 +1378,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                         {dep.status === 'pending' ? (
                           <div className="flex space-x-2">
                             <button 
-                              onClick={() => {
-                                processDeposit(dep.id, 'approved');
-                                showToast('success', "Dépôt approuvé avec succès !");
-                              }}
-                              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+                              onClick={() => handleApproveDeposit(dep.id)}
+                              disabled={Boolean(processingDepositIds[dep.id])}
+                              className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs flex items-center space-x-1.5"
                             >
-                              Valider
+                              {processingDepositIds[dep.id] ? (
+                                <span>Traitement...</span>
+                              ) : (
+                                <span>Valider</span>
+                              )}
                             </button>
                             <button 
-                              onClick={() => {
-                                processDeposit(dep.id, 'rejected');
-                                showToast('error', "Dépôt refusé.");
-                              }}
-                              className="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 font-bold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer"
+                              onClick={() => handleRejectDeposit(dep.id)}
+                              disabled={Boolean(processingDepositIds[dep.id])}
+                              className="bg-red-500/20 hover:bg-red-500/30 disabled:opacity-50 text-red-300 border border-red-500/30 font-bold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer flex items-center space-x-1.5"
                             >
-                              Refuser
+                              <span>Refuser</span>
                             </button>
                           </div>
                         ) : (
@@ -3250,52 +3302,58 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
         )}
 
         {/* ========================================================================= */}
-        {/* TAB: RECHARGE CHANNELS (CANAUX DE RECHARGE MOBILE MONEY)                  */}
+        {/* TAB: RECHARGE CHANNELS (GESTION SÉPARÉE TOGO 🇹🇬 ET CAMEROUN 🇨🇲)          */}
         {/* ========================================================================= */}
         {activeAdminTab === 'recharge_channels' && (
           <div className="space-y-6 animate-fadeIn font-sans">
             
             {/* Header & Stats Banner */}
-            <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/80 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-700/80 rounded-3xl p-6 shadow-xl relative overflow-hidden">
               <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
               
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
                 <div className="space-y-1.5">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[10px] font-mono font-black uppercase text-amber-400 bg-amber-500/20 border border-amber-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
                       <CreditCard className="w-3 h-3" />
-                      <span>Système Mobile Money Togo 🇹🇬</span>
+                      <span>Gestion Multi-Pays (Cameroun 🇨🇲 & Togo 🇹🇬)</span>
                     </span>
                     <span className="text-[10px] font-mono font-bold uppercase text-emerald-400 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                      Synchro Supabase Directe
+                      Base Centrale Synchronisée
                     </span>
                   </div>
                   <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                    Canaux & Numéros de Recharge
+                    Canaux & Réseaux de Recharge Officiels
                   </h2>
                   <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-                    Configurez ici les numéros de dépôt Mobile Money (TMoney, Moov Money, Flooz). Les canaux actifs sont automatiquement synchronisés et affichés aux utilisateurs sur la page de recharge.
+                    Configurez et gérez séparément les réseaux de paiement pour le <strong>Cameroun 🇨🇲</strong> (MTN MoMo, Orange Money) et le <strong>Togo 🇹🇬</strong> (TMoney, Moov Flooz). Chaque utilisateur ne voit que les canaux de son pays.
                   </p>
                 </div>
 
                 {/* Quick Summary Counter */}
-                <div className="flex items-center gap-3 bg-slate-950/60 border border-slate-800 p-3 rounded-2xl shrink-0">
+                <div className="flex items-center gap-2.5 bg-slate-950/70 border border-slate-800 p-2.5 rounded-2xl shrink-0">
                   <div className="text-center px-2">
-                    <p className="text-[10px] uppercase font-bold text-slate-400">Total Canaux</p>
-                    <p className="text-lg font-black text-white font-mono">{rechargeChannels.length}</p>
-                  </div>
-                  <div className="w-px h-8 bg-slate-800" />
-                  <div className="text-center px-2">
-                    <p className="text-[10px] uppercase font-bold text-emerald-400">Actifs</p>
-                    <p className="text-lg font-black text-emerald-400 font-mono">
-                      {rechargeChannels.filter(c => c.isActive).length}
+                    <p className="text-[9px] uppercase font-bold text-emerald-400 flex items-center justify-center gap-1">
+                      <span>🇨🇲 Cameroun</span>
+                    </p>
+                    <p className="text-base font-black text-white font-mono">
+                      {rechargeChannels.filter(c => (c.countryCode === 'CM' || (!c.countryCode && (c.accountNumber?.startsWith('+237') || c.name?.toLowerCase().includes('cameroun') || c.name?.toLowerCase().includes('orange'))))).length}
                     </p>
                   </div>
-                  <div className="w-px h-8 bg-slate-800" />
+                  <div className="w-px h-7 bg-slate-800" />
                   <div className="text-center px-2">
-                    <p className="text-[10px] uppercase font-bold text-slate-500">Inactifs</p>
-                    <p className="text-lg font-black text-slate-400 font-mono">
-                      {rechargeChannels.filter(c => !c.isActive).length}
+                    <p className="text-[9px] uppercase font-bold text-amber-400 flex items-center justify-center gap-1">
+                      <span>🇹🇬 Togo</span>
+                    </p>
+                    <p className="text-base font-black text-white font-mono">
+                      {rechargeChannels.filter(c => (c.countryCode === 'TG' || (!c.countryCode && !c.accountNumber?.startsWith('+237') && !c.name?.toLowerCase().includes('cameroun') && !c.name?.toLowerCase().includes('orange')))).length}
+                    </p>
+                  </div>
+                  <div className="w-px h-7 bg-slate-800" />
+                  <div className="text-center px-2">
+                    <p className="text-[9px] uppercase font-bold text-slate-400">Total</p>
+                    <p className="text-base font-black text-emerald-400 font-mono">
+                      {rechargeChannels.length}
                     </p>
                   </div>
                 </div>
@@ -3304,17 +3362,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
 
             {/* FORM CONTAINER (ADD / EDIT) */}
             <div id="channel-form-container" className="bg-slate-900/90 border border-slate-700/80 rounded-3xl p-5 sm:p-6 shadow-lg space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center space-x-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-2">
+                <div className="flex items-center space-x-2.5">
                   <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold">
                     {editingChannelId ? <Edit2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                   </div>
                   <div>
-                    <h3 className="text-sm sm:text-base font-bold text-white">
-                      {editingChannelId ? "Modifier le canal de recharge" : "Ajouter un nouveau canal de recharge"}
+                    <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                      <span>{editingChannelId ? "Modifier le canal de recharge" : "Ajouter un nouveau canal de recharge"}</span>
+                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border ${
+                        channelCountryCode === 'CM' 
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
+                          : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      }`}>
+                        {channelCountryCode === 'CM' ? '🇨🇲 Cameroun (+237)' : '🇹🇬 Togo (+228)'}
+                      </span>
                     </h3>
                     <p className="text-[11px] text-slate-400">
-                      Renseignez le nom de l'opérateur, le numéro officiel de dépôt et les détails de transfert.
+                      Renseignez l'opérateur, le pays concerné, le numéro officiel de dépôt et les instructions.
                     </p>
                   </div>
                 </div>
@@ -3322,7 +3387,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   <button
                     type="button"
                     onClick={handleCancelEditChannel}
-                    className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl border border-slate-700 font-bold transition-all cursor-pointer"
+                    className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl border border-slate-700 font-bold transition-all cursor-pointer self-start sm:self-auto"
                   >
                     Annuler la modification
                   </button>
@@ -3330,6 +3395,112 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
               </div>
 
               <form onSubmit={handleSaveChannel} className="space-y-4">
+                
+                {/* Choix du pays pour le canal */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    <span>Pays de destination du canal</span>
+                    <span className="text-amber-400 font-black">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChannelCountryCode('CM');
+                        if (!channelName || channelName.includes('TMoney') || channelName.includes('Moov')) {
+                          setChannelName('MTN Mobile Money (MoMo)');
+                        }
+                        if (!channelNumber || channelNumber.startsWith('+228')) {
+                          setChannelNumber('+237 ');
+                        }
+                      }}
+                      className={`py-3 px-4 rounded-2xl border text-xs font-black transition-all flex items-center justify-center space-x-2 cursor-pointer ${
+                        channelCountryCode === 'CM'
+                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 ring-2 ring-emerald-500/30 shadow-sm'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <span className="text-lg">🇨🇲</span>
+                      <span>Cameroun (+237)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChannelCountryCode('TG');
+                        if (!channelName || channelName.includes('MTN') || channelName.includes('Orange')) {
+                          setChannelName('TMoney (Togocom)');
+                        }
+                        if (!channelNumber || channelNumber.startsWith('+237')) {
+                          setChannelNumber('+228 ');
+                        }
+                      }}
+                      className={`py-3 px-4 rounded-2xl border text-xs font-black transition-all flex items-center justify-center space-x-2 cursor-pointer ${
+                        channelCountryCode === 'TG'
+                          ? 'bg-amber-500/20 border-amber-500 text-amber-300 ring-2 ring-amber-500/30 shadow-sm'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <span className="text-lg">🇹🇬</span>
+                      <span>Togo (+228)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Modèles rapides de réseaux */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Raccourcis opérateurs {channelCountryCode === 'CM' ? 'Cameroun 🇨🇲' : 'Togo 🇹🇬'} :</span>
+                  <div className="flex flex-wrap gap-2">
+                    {channelCountryCode === 'CM' ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setChannelName('MTN Mobile Money (MoMo Cameroun)');
+                            setChannelInstructions('Effectuez le transfert vers ce numéro MTN MoMo puis saisissez l\'ID de transaction.');
+                          }}
+                          className="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-700 text-amber-300 text-xs font-bold rounded-lg cursor-pointer transition-colors"
+                        >
+                          + MTN Mobile Money (MoMo)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setChannelName('Orange Money (OM Cameroun)');
+                            setChannelInstructions('Effectuez le transfert vers ce numéro Orange Money puis saisissez l\'ID de transaction.');
+                          }}
+                          className="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-700 text-amber-300 text-xs font-bold rounded-lg cursor-pointer transition-colors"
+                        >
+                          + Orange Money (OM)
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setChannelName('TMoney (Togocom)');
+                            setChannelInstructions('Effectuez le transfert vers ce numéro TMoney puis saisissez la référence de transaction.');
+                          }}
+                          className="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-700 text-amber-300 text-xs font-bold rounded-lg cursor-pointer transition-colors"
+                        >
+                          + TMoney (Togocom)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setChannelName('Moov Money (Flooz)');
+                            setChannelInstructions('Effectuez le transfert vers ce numéro Moov Money Flooz puis saisissez la référence de transaction.');
+                          }}
+                          className="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-700 text-amber-300 text-xs font-bold rounded-lg cursor-pointer transition-colors"
+                        >
+                          + Moov Money (Flooz)
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   
                   {/* Nom du canal / opérateur */}
@@ -3340,7 +3511,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                     </label>
                     <input
                       type="text"
-                      placeholder="Ex: TMoney (Togocom), Moov Money (Flooz)..."
+                      placeholder={channelCountryCode === 'CM' ? "Ex: MTN Mobile Money, Orange Money..." : "Ex: TMoney (Togocom), Moov Money (Flooz)..."}
                       value={channelName}
                       onChange={(e) => setChannelName(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 outline-none focus:border-amber-400 transition-colors"
@@ -3351,12 +3522,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   {/* Numéro de recharge */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                      <span>Numéro de téléphone pour la recharge</span>
+                      <span>Numéro officiel de dépôt</span>
                       <span className="text-amber-400 font-black">*</span>
                     </label>
                     <input
                       type="text"
-                      placeholder="Ex: +228 90 12 34 56"
+                      placeholder={channelCountryCode === 'CM' ? "Ex: +237 670 12 34 56" : "Ex: +228 90 12 34 56"}
                       value={channelNumber}
                       onChange={(e) => setChannelNumber(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono text-amber-300 placeholder-slate-500 outline-none focus:border-amber-400 transition-colors font-bold"
@@ -3371,7 +3542,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                     </label>
                     <input
                       type="text"
-                      placeholder="Ex: Service Nutrien Togo, Agence Dépôt..."
+                      placeholder={channelCountryCode === 'CM' ? "Ex: Service Nutrien Cameroun, Agence Dépôt..." : "Ex: Service Nutrien Togo, Agence Dépôt..."}
                       value={channelHolder}
                       onChange={(e) => setChannelHolder(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 outline-none focus:border-amber-400 transition-colors"
@@ -3392,7 +3563,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                         }`}
                       >
                         <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Actif (Visible aux utilisateurs)</span>
+                        <span>Actif (Visible)</span>
                       </button>
 
                       <button
@@ -3419,7 +3590,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="Ex: Composez *145# puis effectuez le transfert vers ce numéro TMoney, puis collez la référence SMS..."
+                    placeholder={channelCountryCode === 'CM' ? "Ex: Composez *126# ou *150# pour transférer vers ce numéro, puis collez l'ID de transaction reçu..." : "Ex: Composez *145# ou *155# pour transférer vers ce numéro, puis collez la référence SMS..."}
                     value={channelInstructions}
                     onChange={(e) => setChannelInstructions(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-400 transition-colors"
@@ -3453,8 +3624,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                       {isProcessingChannel 
                         ? "Enregistrement en base..." 
                         : editingChannelId 
-                          ? "Enregistrer les modifications" 
-                          : "Ajouter le canal de recharge"}
+                          ? `Enregistrer pour ${channelCountryCode === 'CM' ? '🇨🇲 Cameroun' : '🇹🇬 Togo'}` 
+                          : `Ajouter pour ${channelCountryCode === 'CM' ? '🇨🇲 Cameroun' : '🇹🇬 Togo'}`}
                     </span>
                   </button>
                 </div>
@@ -3467,21 +3638,63 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 <div className="flex items-center space-x-2">
                   <CreditCard className="w-4 h-4 text-amber-400" />
                   <h3 className="text-base font-bold text-white">Canaux de recharge enregistrés</h3>
-                  <span className="bg-slate-800 text-slate-300 text-xs font-mono px-2 py-0.5 rounded-full">
-                    {rechargeChannels.length}
-                  </span>
                 </div>
 
-                {/* Search Bar */}
-                <div className="relative max-w-xs w-full">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
-                  <input
-                    type="text"
-                    placeholder="Rechercher par opérateur ou numéro..."
-                    value={channelSearch}
-                    onChange={(e) => setChannelSearch(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-400"
-                  />
+                {/* Country Filter Buttons & Search Bar */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setAdminChannelCountryFilter('ALL')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        adminChannelCountryFilter === 'ALL'
+                          ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Tous ({rechargeChannels.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAdminChannelCountryFilter('CM')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center space-x-1 ${
+                        adminChannelCountryFilter === 'CM'
+                          ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                          : 'text-slate-400 hover:text-emerald-300'
+                      }`}
+                    >
+                      <span>🇨🇲 Cameroun</span>
+                      <span className="text-[10px] font-mono opacity-80">
+                        ({rechargeChannels.filter(c => c.countryCode === 'CM' || (!c.countryCode && (c.accountNumber?.startsWith('+237') || c.name?.toLowerCase().includes('cameroun') || c.name?.toLowerCase().includes('orange')))).length})
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAdminChannelCountryFilter('TG')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center space-x-1 ${
+                        adminChannelCountryFilter === 'TG'
+                          ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                          : 'text-slate-400 hover:text-amber-300'
+                      }`}
+                    >
+                      <span>🇹🇬 Togo</span>
+                      <span className="text-[10px] font-mono opacity-80">
+                        ({rechargeChannels.filter(c => c.countryCode === 'TG' || (!c.countryCode && !c.accountNumber?.startsWith('+237') && !c.name?.toLowerCase().includes('cameroun') && !c.name?.toLowerCase().includes('orange'))).length})
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Search Bar */}
+                  <div className="relative w-full sm:w-56">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type="text"
+                      placeholder="Rechercher..."
+                      value={channelSearch}
+                      onChange={(e) => setChannelSearch(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-400"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -3495,6 +3708,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {rechargeChannels
                     .filter(c => {
+                      const cCode = c.countryCode || (c.accountNumber?.startsWith('+237') || c.name?.toLowerCase().includes('cameroun') || c.name?.toLowerCase().includes('orange') ? 'CM' : 'TG');
+                      if (adminChannelCountryFilter !== 'ALL' && cCode !== adminChannelCountryFilter) {
+                        return false;
+                      }
                       if (!channelSearch) return true;
                       const q = channelSearch.toLowerCase();
                       return c.name.toLowerCase().includes(q) ||
@@ -3503,27 +3720,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                     })
                     .map((channel) => {
                       const isCopied = copiedChannelId === channel.id;
+                      const cCode = channel.countryCode || (channel.accountNumber?.startsWith('+237') || channel.name?.toLowerCase().includes('cameroun') || channel.name?.toLowerCase().includes('orange') ? 'CM' : 'TG');
+                      const isCameroon = cCode === 'CM';
+
                       return (
                         <div
                           key={channel.id}
                           className={`rounded-2xl border p-4.5 transition-all space-y-3 relative ${
                             channel.isActive
-                              ? 'bg-slate-900/90 border-slate-700 shadow-md hover:border-slate-600'
+                              ? isCameroon 
+                                ? 'bg-slate-900/90 border-emerald-500/40 shadow-md hover:border-emerald-500/70'
+                                : 'bg-slate-900/90 border-amber-500/40 shadow-md hover:border-amber-500/70'
                               : 'bg-slate-950/60 border-slate-800/80 opacity-75'
                           }`}
                         >
-                          {/* Top Row: Operator & Status Badge */}
+                          {/* Top Row: Operator & Country & Status Badge */}
                           <div className="flex items-start justify-between gap-2">
-                            <div className="space-y-0.5">
+                            <div className="space-y-1">
                               <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                                <span className={`text-base leading-none`}>
+                                  {isCameroon ? '🇨🇲' : '🇹🇬'}
+                                </span>
                                 <h4 className="text-sm sm:text-base font-black text-white">{channel.name}</h4>
                               </div>
-                              {channel.accountHolder && (
-                                <p className="text-xs text-slate-400">
-                                  Titulaire : <span className="text-slate-200 font-semibold">{channel.accountHolder}</span>
-                                </p>
-                              )}
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                  isCameroon 
+                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
+                                    : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                }`}>
+                                  {isCameroon ? 'Cameroun (+237)' : 'Togo (+228)'}
+                                </span>
+                                {channel.accountHolder && (
+                                  <span className="text-slate-400 text-[11px]">
+                                    Titulaire : <strong className="text-slate-200">{channel.accountHolder}</strong>
+                                  </span>
+                                )}
+                              </div>
                             </div>
 
                             {/* Status Pill */}
@@ -3541,7 +3774,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                           <div className="bg-slate-950 border border-slate-800/90 rounded-xl p-3 flex items-center justify-between">
                             <div className="space-y-0.5">
                               <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Numéro de Recharge</p>
-                              <p className="text-base font-mono font-black text-amber-400 tracking-wide">
+                              <p className={`text-base font-mono font-black tracking-wide ${isCameroon ? 'text-emerald-400' : 'text-amber-400'}`}>
                                 {channel.accountNumber}
                               </p>
                             </div>

@@ -33,17 +33,32 @@ export const DepositView: React.FC<DepositViewProps> = ({
 }) => {
   const { rechargeChannels, products } = useApp();
 
-  // Active channels from central DB
-  const activeChannels = rechargeChannels.filter(c => c.isActive);
-  
-  // Default country is Togo 🇹🇬
-  const currentCountry = ALLOWED_COUNTRIES[0] || {
-    name: 'Togo',
-    code: 'TG',
-    prefix: '+228',
-    flag: '🇹🇬',
-    networks: ['TMoney', 'Moov Money (Flooz)']
-  };
+  // Detect user's country or fallback
+  const userCountry = ALLOWED_COUNTRIES.find(c => 
+    c.name.toLowerCase() === (currentUser.country || '').toLowerCase() || 
+    c.code.toLowerCase() === (currentUser.country || '').toLowerCase() ||
+    (currentUser.phone && currentUser.phone.startsWith(c.prefix)) ||
+    c.code === currentUser.withdrawalCountry
+  ) || ALLOWED_COUNTRIES[0];
+
+  const [selectedCountryCode, setSelectedCountryCode] = useState<string>(userCountry.code);
+  const currentCountry = ALLOWED_COUNTRIES.find(c => c.code === selectedCountryCode) || userCountry;
+
+  // Active channels filtered strictly by selected country
+  const activeChannels = React.useMemo(() => {
+    return rechargeChannels.filter(c => {
+      if (!c.isActive) return false;
+      const chCountry = c.countryCode || (
+        c.accountNumber?.startsWith('+237') ||
+        c.name?.toLowerCase().includes('cameroun') ||
+        c.name?.toLowerCase().includes('orange money') ||
+        c.name?.toLowerCase().includes('mtn')
+          ? 'CM'
+          : 'TG'
+      );
+      return chCountry === currentCountry.code;
+    });
+  }, [rechargeChannels, currentCountry.code]);
 
   // Preset amounts in FCFA configured according to official VIP products
   const presetAmounts = React.useMemo(() => {
@@ -60,7 +75,7 @@ export const DepositView: React.FC<DepositViewProps> = ({
     activeChannels.length > 0 ? activeChannels[0].id : ''
   );
 
-  // Sync selectedChannelId when activeChannels list updates from central DB
+  // Sync selectedChannelId when activeChannels list updates from central DB or country switch
   useEffect(() => {
     if (activeChannels.length > 0) {
       if (!selectedChannelId || !activeChannels.some(c => c.id === selectedChannelId)) {
@@ -69,7 +84,7 @@ export const DepositView: React.FC<DepositViewProps> = ({
     } else {
       setSelectedChannelId('');
     }
-  }, [activeChannels, selectedChannelId]);
+  }, [activeChannels, selectedChannelId, currentCountry.code]);
 
   const selectedChannel = activeChannels.find(c => c.id === selectedChannelId) || activeChannels[0];
 
@@ -177,7 +192,7 @@ export const DepositView: React.FC<DepositViewProps> = ({
 
         <h1 className="text-sm sm:text-base font-black text-slate-900 tracking-tight text-center flex items-center gap-1.5">
           <span>Recharger mon compte</span>
-          <span className="text-base">🇹🇬</span>
+          <span className="text-base">{currentCountry.flag}</span>
         </h1>
 
         <div className="w-12" />
@@ -185,18 +200,42 @@ export const DepositView: React.FC<DepositViewProps> = ({
 
       <div className="p-3.5 space-y-3.5">
         
-        {/* BANDEAU PAYS : TOGO 🇹🇬 */}
-        <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-900 rounded-2xl p-3 text-white border border-emerald-800/40 shadow-xs flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
-            <span className="text-2xl">🇹🇬</span>
-            <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold">Zone de paiement</p>
-              <h2 className="text-xs sm:text-sm font-black text-white">Togo (Mobile Money TMoney & Moov Flooz)</h2>
+        {/* BANDEAU PAYS : TOGO 🇹🇬 / CAMEROUN 🇨🇲 */}
+        <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-900 rounded-2xl p-3.5 text-white border border-emerald-800/40 shadow-xs space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2.5">
+              <span className="text-2xl">{currentCountry.flag}</span>
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold">Zone de paiement</p>
+                <h2 className="text-xs sm:text-sm font-black text-white">{currentCountry.name} ({currentCountry.networks.join(' & ')})</h2>
+              </div>
+            </div>
+            <span className="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+              {currentCountry.prefix}
+            </span>
+          </div>
+
+          {/* Quick country switcher */}
+          <div className="flex items-center space-x-2 pt-1 border-t border-slate-800/80">
+            <span className="text-[10px] font-bold text-slate-400">Changer de pays :</span>
+            <div className="flex items-center space-x-1.5">
+              {ALLOWED_COUNTRIES.map((c) => (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => setSelectedCountryCode(c.code)}
+                  className={`px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all flex items-center space-x-1 cursor-pointer border ${
+                    currentCountry.code === c.code
+                      ? 'bg-emerald-500/30 text-emerald-300 border-emerald-400 font-black shadow-xs'
+                      : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:text-white'
+                  }`}
+                >
+                  <span>{c.flag}</span>
+                  <span>{c.name}</span>
+                </button>
+              ))}
             </div>
           </div>
-          <span className="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-            +228
-          </span>
         </div>
 
         {/* ÉTAPE 1: CHOISIR LE CANAL DE RECHARGE CONFIGURE PAR L'ADMIN */}
@@ -378,12 +417,12 @@ export const DepositView: React.FC<DepositViewProps> = ({
                   type="text"
                   value={txRef}
                   onChange={(e) => setTxRef(e.target.value)}
-                  placeholder="Ex: TX-987654321 ou réf SMS TMoney / Moov"
+                  placeholder={currentCountry.code === 'CM' ? "Ex: MP240101.1234.A12345 ou réf SMS Orange/MTN" : "Ex: TX-987654321 ou réf SMS TMoney / Moov"}
                   className="w-full bg-transparent outline-none font-semibold text-slate-900 text-xs font-mono"
                   required
                 />
               </div>
-              <span className="text-slate-400 text-[9px] block mt-0.5">Saisissez l'ID ou code reçu par SMS après votre transfert Mobile Money.</span>
+              <span className="text-slate-400 text-[9px] block mt-0.5">Saisissez l'ID ou code reçu par SMS après votre transfert Mobile Money {currentCountry.name}.</span>
             </div>
           </div>
         </div>
@@ -430,15 +469,15 @@ export const DepositView: React.FC<DepositViewProps> = ({
           <ul className="space-y-1.5 text-[11px] text-slate-500 leading-snug bg-white rounded-xl p-3 border border-slate-200/60">
             <li className="flex items-start space-x-1.5">
               <span className="w-4 h-4 rounded-full bg-amber-100 text-amber-800 font-black flex items-center justify-center text-[10px] shrink-0">1</span>
-              <span>Copiez le numéro officiel de recharge affiché ci-dessus ({selectedChannel?.name || 'Mobile Money'}).</span>
+              <span>Copiez le numéro officiel de recharge affiché ci-dessus ({selectedChannel?.name || `Mobile Money ${currentCountry.name}`}).</span>
             </li>
             <li className="flex items-start space-x-1.5">
               <span className="w-4 h-4 rounded-full bg-amber-100 text-amber-800 font-black flex items-center justify-center text-[10px] shrink-0">2</span>
-              <span>Effectuez le transfert depuis votre téléphone (TMoney ou Moov Money Flooz) vers ce numéro.</span>
+              <span>Effectuez le transfert depuis votre compte Mobile Money ({currentCountry.networks.join(' ou ')}) vers ce numéro.</span>
             </li>
             <li className="flex items-start space-x-1.5">
               <span className="w-4 h-4 rounded-full bg-amber-100 text-amber-800 font-black flex items-center justify-center text-[10px] shrink-0">3</span>
-              <span>Cliquez sur <strong>"Valider la recharge"</strong>. Votre solde sera crédité dès confirmation de la transaction.</span>
+              <span>Collez la référence SMS puis cliquez sur <strong>"Valider la recharge"</strong>. Votre solde sera crédité dès validation.</span>
             </li>
           </ul>
         </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowLeft, User, Phone, MapPin, CreditCard, ShieldCheck, CheckCircle2, Copy, Send, Sparkles } from 'lucide-react';
+import { ArrowLeft, User, Phone, MapPin, CreditCard, ShieldCheck, CheckCircle2, Copy, Send, Sparkles, Globe } from 'lucide-react';
 import { User as UserType } from '../types';
+import { ALLOWED_COUNTRIES } from '../constants/countries';
 
 interface InformationFillViewProps {
   currentUser: UserType;
@@ -19,7 +20,7 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
     name: currentUser.name || '',
     phone: currentUser.phone || '',
     whatsapp: currentUser.whatsapp || '',
-    country: currentUser.country || '',
+    country: currentUser.country || (currentUser.phone?.startsWith('+237') ? 'Cameroun' : 'Togo'),
     paymentNetwork: 'Orange Money',
     paymentAccount: currentUser.phone || '',
     idNumber: '',
@@ -176,20 +177,24 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
           </div>
         </div>
 
-        {/* Ville / Pays */}
+        {/* Pays */}
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-700 flex items-center space-x-1">
-            <MapPin className="w-3.5 h-3.5 text-slate-500" />
-            <span>Ville / Localité de résidence *</span>
+            <Globe className="w-3.5 h-3.5 text-slate-500" />
+            <span>Pays de résidence *</span>
           </label>
-          <input
-            type="text"
+          <select
             required
             value={formData.country}
             onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-            placeholder="Ex: Abidjan, Yopougon"
             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-900 outline-none focus:border-slate-900 transition-colors"
-          />
+          >
+            {ALLOWED_COUNTRIES.map(c => (
+              <option key={c.code} value={c.name}>
+                {c.flag} {c.name} ({c.prefix})
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Payment Network & Account */}
