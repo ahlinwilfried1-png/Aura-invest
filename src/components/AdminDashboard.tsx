@@ -695,10 +695,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
       userStatusFilter === 'all' || 
       (userStatusFilter === 'active' && !u.isBlocked) || 
       (userStatusFilter === 'blocked' && u.isBlocked);
+    const query = userSearch.toLowerCase().trim();
+    const isCam = (u.country && (u.country.toLowerCase().includes('cam') || u.country.toUpperCase() === 'CM')) || u.phone?.startsWith('+237');
+    const countryLabel = isCam ? 'cameroun' : 'togo';
     const matchesSearch = 
-      u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.phone.includes(userSearch) ||
-      (u.referralCode && u.referralCode.toLowerCase().includes(userSearch.toLowerCase()));
+      !query ||
+      u.name.toLowerCase().includes(query) ||
+      u.phone.includes(query) ||
+      countryLabel.includes(query) ||
+      (u.country && u.country.toLowerCase().includes(query)) ||
+      (u.referralCode && u.referralCode.toLowerCase().includes(query));
     return matchesStatus && matchesSearch;
   });
 
@@ -1797,7 +1803,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                         <div className="text-xs text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1 font-medium">
                           <span>WhatsApp: <strong className="text-slate-200">{usr.whatsapp}</strong></span>
                           <span>Code Parrain: <strong className="text-amber-300 font-mono font-bold">{usr.referralCode}</strong></span>
-                          <span>Pays: <strong className="text-slate-200">{usr.country}</strong></span>
+                          <span className="flex items-center space-x-1">
+                            <span>Pays:</span>
+                            <span className={`inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[11px] font-bold ${
+                              (usr.country?.toLowerCase().includes('cam') || usr.country === 'CM' || usr.phone?.startsWith('+237'))
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            }`}>
+                              <span>{(usr.country?.toLowerCase().includes('cam') || usr.country === 'CM' || usr.phone?.startsWith('+237')) ? '🇨🇲 Cameroun' : '🇹🇬 Togo'}</span>
+                            </span>
+                          </span>
                         </div>
                       </div>
 
@@ -4337,7 +4352,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800">
                 <span className="text-slate-400">Pays:</span>
-                <span className="text-white font-bold">{selectedUserDetails.country}</span>
+                <span className="text-white font-bold">
+                  {(selectedUserDetails.country?.toLowerCase().includes('cam') || selectedUserDetails.country === 'CM' || selectedUserDetails.phone?.startsWith('+237')) ? '🇨🇲 Cameroun' : '🇹🇬 Togo'}
+                </span>
               </div>
               <div className="flex justify-between items-center py-1 border-b border-slate-800">
                 <span className="text-slate-400">Compte de Retrait:</span>

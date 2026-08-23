@@ -31,6 +31,7 @@ import {
   safeGetSessionStorage, 
   safeRemoveSessionStorage 
 } from '../lib/storage';
+import { normalizePhoneNumber } from '../lib/phoneUtils';
 import { 
   User, 
   InvestmentProduct, 
@@ -890,7 +891,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const login = async (phone: string, word: string): Promise<{ success: boolean; error?: string }> => {
     await new Promise(resolve => setTimeout(resolve, 300));
     
-    const cleanPhone = phone.trim();
+    const cleanPhone = normalizePhoneNumber(phone);
+    const rawDigits = cleanPhone.replace(/\D/g, '');
     const strippedPhone = cleanPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
 
     // Refresh users from DB first to get latest users and passwords
@@ -905,9 +907,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     // Find user by exact match or stripped match or ending digits
     const user = currentUsersList.find(u => {
-      const uClean = u.phone.trim();
-      const uStripped = uClean.replace(/\s+/g, '').replace(/[^\d+]/g, '');
-      return uClean === cleanPhone || uStripped === strippedPhone || uClean.endsWith(strippedPhone.slice(-8));
+      const uClean = normalizePhoneNumber(u.phone);
+      const uDigits = uClean.replace(/\D/g, '');
+      const directClean = u.phone.trim();
+      return (
+        directClean === cleanPhone || 
+        uClean === cleanPhone || 
+        uDigits === rawDigits || 
+        (rawDigits.length >= 8 && uDigits.endsWith(rawDigits.slice(-8))) ||
+        (uDigits.length >= 8 && rawDigits.endsWith(uDigits.slice(-8)))
+      );
     });
     
     if (!user) {
@@ -920,7 +929,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Check credentials
     const authObj = parseAuthFromPinHash(user.withdrawalPinHash);
-    const correctWord = authObj.pwd || passwords[user.phone] || passwords[cleanPhone] || passwords[strippedPhone];
+    const correctWord = authObj.pwd || passwords[user.phone] || passwords[cleanPhone] || passwords[strippedPhone] || (rawDigits ? passwords[rawDigits] : undefined);
     
     // Special admin emergency fallback
     const isSpecialAdmin = user.role === 'admin' && (word === 'admin123' || word === 'ADMIN7');
@@ -945,7 +954,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }): Promise<{ success: boolean; error?: string }> => {
     await new Promise(resolve => setTimeout(resolve, 300));
     
-    const cleanPhone = data.phone.trim();
+    const isCameroon = Boolean(
+      (data.country && (data.country.toLowerCase().includes('cam') || data.country.toUpperCase() === 'CM')) ||
+      data.phone?.startsWith('+237') ||
+      data.phone?.startsWith('237')
+    );
+    const finalCountry = isCameroon ? 'Cameroun' : (data.country || 'Togo');
+    const cleanPhone = normalizePhoneNumber(data.phone, isCameroon ? '+237' : '+228');
+    const rawDigits = cleanPhone.replace(/\D/g, '');
     const strippedPhone = cleanPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
 
     // Fetch latest users from DB to prevent duplicate registration
@@ -956,9 +972,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (_) {}
 
     const exists = currentUsersList.some(u => {
-      const uClean = u.phone.trim();
-      const uStripped = uClean.replace(/\s+/g, '').replace(/[^\d+]/g, '');
-      return uClean === cleanPhone || uStripped === strippedPhone;
+      const uClean = normalizePhoneNumber(u.phone);
+      const uDigits = uClean.replace(/\D/g, '');
+      return uClean === cleanPhone || (rawDigits.length >= 8 && uDigits === rawDigits);
     });
 
     if (exists) {
@@ -969,29 +985,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const refCode = 'INV' + Math.floor(100000 + Math.random() * 900000);
     
     let referredByCodeObj: string | null = null;
-    
-    if (data.referrerCode.trim()) {
+    if (data.referrerCode && data.referrerCode.trim()) {
       const codeClean = data.referrerCode.trim();
+      const codeDigits = codeClean.replace(/\D/g, '');
       const parent = currentUsersList.find(u => 
         u.referralCode?.toLowerCase() === codeClean.toLowerCase() || 
         u.phone === codeClean || 
-        u.phone.replace(/\s+/g, '') === codeClean.replace(/\s+/g, '')
+        u.phone.replace(/\s+/g, '') === codeClean.replace(/\s+/g, '') ||
+        (codeDigits.length >= 8 && u.phone.replace(/\D/g, '').endsWith(codeDigits.slice(-8)))
       );
       if (parent) {
         referredByCodeObj = parent.referralCode;
+      } else if (codeClean.toUpperCase() === 'ADMIN' || codeClean.toUpperCase() === 'ADMIN01' || codeClean === '97194059') {
+        referredByCodeObj = 'ADMIN01';
       } else {
         return { success: false, error: "Code d'invitation invalide." };
       }
     }
 
-    const pinHash = buildPinHash(data.word, '');
+    const defaultNetwork = isCameroon ? 'MTN Mobile Money' : 'TMoney';
+    const defaultCountryCode = isCameroon ? 'CM' : 'TG';
+    const pinHash = buildPinHash(data.word, '', defaultNetwork, defaultCountryCode);
     
     const newUser: User = {
       id: 'usr-' + Math.floor(100000 + Math.random() * 9000000),
-      name: data.name.trim(),
+      name: (data.name && data.name.trim()) ? data.name.trim() : `Membre ${rawDigits.slice(-4)}`,
       phone: cleanPhone,
-      whatsapp: data.whatsapp.trim() || cleanPhone,
-      country: data.country || 'Togo',
+      whatsapp: data.whatsapp ? normalizePhoneNumber(data.whatsapp, isCameroon ? '+237' : '+228') : cleanPhone,
+      country: finalCountry,
       balance: 200, // 200 XAF/XOF bonus d'inscription
       dailyEarnings: 0,
       totalEarnings: 0,
@@ -1001,7 +1022,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       role: 'user',
       referralCode: refCode,
       referredByCode: referredByCodeObj,
-      withdrawalPinHash: pinHash
+      withdrawalPinHash: pinHash,
+      withdrawalNetwork: defaultNetwork,
+      withdrawalCountry: defaultCountryCode
     };
 
     // Save directly to central Supabase (Server-side Service Role endpoint for 100% cross-device reliability)

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { ALLOWED_COUNTRIES } from '../constants/countries';
 import nutrienAgTractorImg from '../assets/nutrien_ag_solutions_tractor.svg';
+import { normalizePhoneNumber } from '../lib/phoneUtils';
 
 import { 
   safeGetLocalStorage, 
@@ -131,8 +132,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
     setLoading(true);
 
     try {
-      const cleanInput = loginPhone.trim();
-      const fullPhone = cleanInput.startsWith('+') ? cleanInput : `${countryPrefix}${cleanInput}`;
+      const fullPhone = normalizePhoneNumber(loginPhone, countryPrefix);
       const res = await authActions.login(fullPhone, loginPassword);
 
       if (res.success) {
@@ -172,14 +172,16 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
 
     setLoading(true);
     try {
-      const fullPhone = cleanPhone.startsWith('+') ? cleanPhone : `${countryPrefix}${cleanPhone}`;
-      const defaultName = `Membre ${cleanPhone.slice(-4)}`;
+      const fullPhone = normalizePhoneNumber(cleanPhone, countryPrefix);
+      const rawDigits = fullPhone.replace(/\D/g, '');
+      const defaultName = `Membre ${rawDigits.slice(-4)}`;
+      const selectedCountryName = countryName || (countryPrefix === '+237' ? 'Cameroun' : 'Togo');
 
       const res = await authActions.register({
         name: defaultName,
         phone: fullPhone,
         whatsapp: fullPhone,
-        country: countryName,
+        country: selectedCountryName,
         word: regPassword,
         referrerCode: regReferrer.trim()
       });

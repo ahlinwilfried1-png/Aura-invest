@@ -82,12 +82,33 @@ async function startServer() {
   app.post('/api/auth/register', async (req, res) => {
     try {
       const user = req.body;
-      if (!user || !user.phone || !user.name) {
-        return res.status(400).json({ success: false, error: 'Informations utilisateur incomplètes (nom et téléphone requis).' });
+      if (!user || !user.phone) {
+        return res.status(400).json({ success: false, error: 'Informations utilisateur incomplètes (numéro de téléphone requis).' });
       }
 
-      const cleanPhone = String(user.phone).trim();
-      const strippedPhone = cleanPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+      const isCameroon = Boolean(
+        (user.country && (user.country.toLowerCase().includes('cam') || user.country.toUpperCase() === 'CM')) ||
+        String(user.phone).startsWith('+237') ||
+        String(user.phone).startsWith('237')
+      );
+      const finalCountry = isCameroon ? 'Cameroun' : (user.country || 'Togo');
+
+      // Sanitize and format phone number consistently
+      let rawPhone = String(user.phone).trim().replace(/[\s\-\(\)\.]/g, '');
+      if (!rawPhone.startsWith('+')) {
+        if (rawPhone.startsWith('00')) {
+          rawPhone = '+' + rawPhone.substring(2);
+        } else if (rawPhone.startsWith('237') && rawPhone.length >= 11) {
+          rawPhone = '+' + rawPhone;
+        } else if (rawPhone.startsWith('228') && rawPhone.length >= 10) {
+          rawPhone = '+' + rawPhone;
+        } else {
+          if (rawPhone.startsWith('0')) rawPhone = rawPhone.substring(1);
+          rawPhone = (isCameroon ? '+237' : '+228') + rawPhone;
+        }
+      }
+      const cleanPhone = rawPhone;
+      const strippedDigits = cleanPhone.replace(/\D/g, '');
 
       // Check if user already exists
       const { data: existingUsers, error: checkErr } = await supabaseAdmin
@@ -96,9 +117,9 @@ async function startServer() {
 
       if (!checkErr && existingUsers && existingUsers.length > 0) {
         const found = existingUsers.some(u => {
-          const uClean = String(u.phone || '').trim();
-          const uStripped = uClean.replace(/\s+/g, '').replace(/[^\d+]/g, '');
-          return uClean === cleanPhone || uStripped === strippedPhone;
+          const uClean = String(u.phone || '').trim().replace(/[\s\-\(\)\.]/g, '');
+          const uDigits = uClean.replace(/\D/g, '');
+          return uClean === cleanPhone || (strippedDigits.length >= 8 && uDigits === strippedDigits);
         });
 
         if (found) {
@@ -112,10 +133,10 @@ async function startServer() {
       // Ensure mandatory fields
       const userRecord = {
         id: user.id || ('usr-' + Math.floor(100000 + Math.random() * 9000000)),
-        name: user.name.trim(),
+        name: (user.name && user.name.trim()) ? user.name.trim() : (`Membre ${strippedDigits.slice(-4)}`),
         phone: cleanPhone,
-        whatsapp: (user.whatsapp || cleanPhone).trim(),
-        country: user.country || 'Togo',
+        whatsapp: user.whatsapp ? String(user.whatsapp).trim() : cleanPhone,
+        country: finalCountry,
         balance: Number(user.balance ?? 200),
         dailyEarnings: Number(user.dailyEarnings ?? 0),
         totalEarnings: Number(user.totalEarnings ?? 0),
