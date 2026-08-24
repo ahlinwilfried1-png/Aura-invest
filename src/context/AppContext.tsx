@@ -520,6 +520,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const isHydratedRef = useRef(false);
   const currentUserIdRef = useRef<string | null>(currentUser?.id || null);
   currentUserIdRef.current = currentUser?.id || null;
+  const currentUserRef = useRef<User | null>(currentUser);
+  currentUserRef.current = currentUser;
 
   // Master Central Sync Function
   const fetchAndSyncAllFromSupabase = useCallback(async () => {
@@ -605,8 +607,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
 
         // Dynamic sync of currentUser balance/info if currently logged in
-        if (currentUserIdRef.current) {
-          const freshUser = dedupedUsers.find(u => u.id === currentUserIdRef.current);
+        if (currentUserRef.current) {
+          const currentId = currentUserRef.current.id;
+          const currentPhoneClean = (currentUserRef.current.phone || '').replace(/\s+/g, '').replace(/[^\d+]/g, '');
+          const freshUser = dedupedUsers.find(u => 
+            u.id === currentId || 
+            (currentPhoneClean && u.phone && u.phone.replace(/\s+/g, '').replace(/[^\d+]/g, '') === currentPhoneClean)
+          );
           if (freshUser) {
             setCurrentUser(prev => {
               if (!prev || JSON.stringify(prev) !== JSON.stringify(freshUser)) {

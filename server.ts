@@ -400,22 +400,36 @@ async function startServer() {
       // If approved, credit user balance in central database
       if (status === 'approved') {
         // Find target user by ID or by Phone
-        let targetUser = null;
-        const { data: userById } = await supabaseAdmin
-          .from('users')
-          .select('*')
-          .eq('id', dep.userId)
-          .single();
+        let targetUser: any = null;
+        if (dep.userId) {
+          const { data: userById } = await supabaseAdmin
+            .from('users')
+            .select('*')
+            .eq('id', dep.userId)
+            .single();
+          if (userById) targetUser = userById;
+        }
 
-        if (userById) {
-          targetUser = userById;
-        } else if (dep.userPhone) {
+        if (!targetUser && dep.userPhone) {
           const { data: userByPhone } = await supabaseAdmin
             .from('users')
             .select('*')
             .eq('phone', dep.userPhone)
             .single();
-          targetUser = userByPhone;
+          if (userByPhone) targetUser = userByPhone;
+        }
+
+        // Fallback: match without phone formatting
+        if (!targetUser && dep.userPhone) {
+          const cleanPhone = dep.userPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+          const { data: allUsers } = await supabaseAdmin.from('users').select('*');
+          if (allUsers) {
+            targetUser = allUsers.find((u: any) => 
+              u.id === dep.userId || 
+              u.phone === dep.userPhone || 
+              (u.phone && u.phone.replace(/\s+/g, '').replace(/[^\d+]/g, '') === cleanPhone)
+            );
+          }
         }
 
         if (targetUser) {
@@ -434,6 +448,8 @@ async function startServer() {
             updatedBalance = calculatedBalance;
             console.log(`[Deposit Approved & Credited]: User ${targetUser.id} (${targetUser.phone}) +${depositAmt} FCFA -> New balance: ${calculatedBalance} FCFA`);
           }
+        } else {
+          console.warn('[Deposit Approval]: Target user not found for deposit', dep);
         }
       }
 
@@ -510,14 +526,38 @@ async function startServer() {
         return res.status(400).json({ success: false, error: 'ID utilisateur ou montant manquant.' });
       }
 
-      const { data: user, error: userErr } = await supabaseAdmin
+      // 1. Try finding by ID
+      let { data: user, error: userErr } = await supabaseAdmin
         .from('users')
-        .select('balance')
+        .select('*')
         .eq('id', userId)
         .single();
 
+      // 2. Try finding by Phone
       if (userErr || !user) {
-        return res.status(404).json({ success: false, error: 'Utilisateur non trouvé.' });
+        const { data: userByPhone } = await supabaseAdmin
+          .from('users')
+          .select('*')
+          .eq('phone', userId)
+          .single();
+        if (userByPhone) user = userByPhone;
+      }
+
+      // 3. Try finding by cleaned phone or in full list
+      if (!user) {
+        const cleanId = String(userId).replace(/\s+/g, '').replace(/[^\d+]/g, '');
+        const { data: allUsers } = await supabaseAdmin.from('users').select('*');
+        if (allUsers) {
+          user = allUsers.find((u: any) => 
+            u.id === userId || 
+            u.phone === userId || 
+            (u.phone && u.phone.replace(/\s+/g, '').replace(/[^\d+]/g, '') === cleanId)
+          );
+        }
+      }
+
+      if (!user) {
+        return res.status(404).json({ success: false, error: 'Utilisateur non trouvé dans la base centrale.' });
       }
 
       const cleanBalance = isDirectSet ? Math.max(0, amount) : Math.max(0, Number(user.balance || 0) + amount);
@@ -525,13 +565,15 @@ async function startServer() {
       const { error: updateErr } = await supabaseAdmin
         .from('users')
         .update({ balance: cleanBalance })
-        .eq('id', userId);
+        .eq('id', user.id);
 
       if (updateErr) {
         return res.status(500).json({ success: false, error: updateErr.message });
       }
 
-      return res.json({ success: true, newBalance: cleanBalance });
+      console.log(`[Admin Balance Updated]: User ${user.id} (${user.name} - ${user.phone}) -> New balance: ${cleanBalance} FCFA (isDirectSet: ${isDirectSet})`);
+
+      return res.json({ success: true, newBalance: cleanBalance, userId: user.id });
     } catch (err: any) {
       console.error('[Server Admin Balance Error]:', err);
       return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
