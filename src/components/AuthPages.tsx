@@ -187,10 +187,10 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
       });
 
       if (res.success) {
-        setSuccessMsg("Inscription réussie ! Redirection vers votre espace...");
+        setSuccessMsg("Inscription réussie ! Redirection immédiate...");
         setTimeout(() => {
           onSuccess();
-        }, 800);
+        }, 300);
       } else {
         setErrorMsg(res.error || "Une erreur est survenue lors de l'inscription.");
       }

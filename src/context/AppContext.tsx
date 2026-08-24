@@ -9,6 +9,7 @@ import {
   fetchTableData, 
   fetchAllTablesMaster,
   registerUserInDatabase,
+  loginUserInDatabase,
   upsertItem, 
   insertItem, 
   updateItem, 
@@ -889,24 +890,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // AUTHENTICATION OPERATIONS
   // ==========================================
   const login = async (phone: string, word: string): Promise<{ success: boolean; error?: string }> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
     const cleanPhone = normalizePhoneNumber(phone);
     const rawDigits = cleanPhone.replace(/\D/g, '');
     const strippedPhone = cleanPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
 
-    // Refresh users from DB first to get latest users and passwords
-    let currentUsersList = users;
+    // 1. First attempt authoritative fast server login endpoint
     try {
-      const fresh = await fetchTableData<User>('users');
-      if (fresh && fresh.length > 0) {
-        currentUsersList = fresh;
-        setUsers(fresh);
+      const serverAuth = await loginUserInDatabase(cleanPhone, word);
+      if (serverAuth && serverAuth.success && serverAuth.user) {
+        const user = serverAuth.user;
+        const auth = parseAuthFromPinHash(user.withdrawalPinHash);
+        const enrichedUser: User = {
+          ...user,
+          withdrawalNetwork: auth.network || user.withdrawalNetwork || (user.country?.toLowerCase().includes('cam') ? 'MTN Mobile Money' : 'TMoney'),
+          withdrawalCountry: auth.country || user.withdrawalCountry || (user.country?.toLowerCase().includes('cam') ? 'CM' : 'TG')
+        };
+
+        setCurrentUser(enrichedUser);
+        safeSetSessionStorage('fintech_current_user', enrichedUser);
+        safeSetLocalStorage('fintech_current_user', enrichedUser);
+
+        // Update local memory and cache
+        setUsers(prev => {
+          const filtered = prev.filter(u => u.id !== enrichedUser.id);
+          const next = [enrichedUser, ...filtered];
+          safeSetLocalStorage('fintech_users', next);
+          return next;
+        });
+
+        setPasswords(prev => {
+          const next = {
+            ...prev,
+            [cleanPhone]: word,
+            [strippedPhone]: word,
+            [enrichedUser.phone]: word
+          };
+          if (rawDigits) next[rawDigits] = word;
+          safeSetLocalStorage('fintech_passwords', next);
+          return next;
+        });
+
+        // Trigger lightweight non-blocking background sync
+        setTimeout(() => {
+          fetchAndSyncAllFromSupabase();
+        }, 100);
+
+        return { success: true };
+      } else if (serverAuth && serverAuth.error && !serverAuth.error.includes("Impossible de joindre")) {
+        // Explicit rejection from server (wrong password, user not found, blocked)
+        return { success: false, error: serverAuth.error };
       }
     } catch (_) {}
-    
-    // Find user by exact match or stripped match or ending digits
-    const user = currentUsersList.find(u => {
+
+    // 2. Offline / Local fallback
+    const user = users.find(u => {
       const uClean = normalizePhoneNumber(u.phone);
       const uDigits = uClean.replace(/\D/g, '');
       const directClean = u.phone.trim();
@@ -952,8 +989,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     word: string;
     referrerCode: string;
   }): Promise<{ success: boolean; error?: string }> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
     const isCameroon = Boolean(
       (data.country && (data.country.toLowerCase().includes('cam') || data.country.toUpperCase() === 'CM')) ||
       data.phone?.startsWith('+237') ||
@@ -964,31 +999,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const rawDigits = cleanPhone.replace(/\D/g, '');
     const strippedPhone = cleanPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
 
-    // Fetch latest users from DB to prevent duplicate registration
-    let currentUsersList = users;
-    try {
-      const fresh = await fetchTableData<User>('users');
-      if (fresh) currentUsersList = fresh;
-    } catch (_) {}
-
-    const exists = currentUsersList.some(u => {
-      const uClean = normalizePhoneNumber(u.phone);
-      const uDigits = uClean.replace(/\D/g, '');
-      return uClean === cleanPhone || (rawDigits.length >= 8 && uDigits === rawDigits);
-    });
-
-    if (exists) {
-      return { success: false, error: "Un compte existe déjà avec ce numéro de téléphone. Veuillez vous connecter." };
-    }
-    
-    // Unique referral code
+    // Referral code validation
     const refCode = 'INV' + Math.floor(100000 + Math.random() * 900000);
-    
     let referredByCodeObj: string | null = null;
     if (data.referrerCode && data.referrerCode.trim()) {
       const codeClean = data.referrerCode.trim();
       const codeDigits = codeClean.replace(/\D/g, '');
-      const parent = currentUsersList.find(u => 
+      const parent = users.find(u => 
         u.referralCode?.toLowerCase() === codeClean.toLowerCase() || 
         u.phone === codeClean || 
         u.phone.replace(/\s+/g, '') === codeClean.replace(/\s+/g, '') ||
@@ -999,7 +1016,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } else if (codeClean.toUpperCase() === 'ADMIN' || codeClean.toUpperCase() === 'ADMIN01' || codeClean === '97194059') {
         referredByCodeObj = 'ADMIN01';
       } else {
-        return { success: false, error: "Code d'invitation invalide." };
+        // If not in local cache, let's treat valid alphanumeric referral code or default to code
+        referredByCodeObj = codeClean.toUpperCase();
       }
     }
 
@@ -1029,28 +1047,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Save directly to central Supabase (Server-side Service Role endpoint for 100% cross-device reliability)
     const regResult = await registerUserInDatabase(newUser);
-    if (!regResult.success && regResult.error) {
-      return { success: false, error: regResult.error };
+    if (!regResult.success) {
+      return { success: false, error: regResult.error || "Erreur lors de l'enregistrement du compte." };
     }
+
+    const savedUser: User = regResult.user ? {
+      ...newUser,
+      ...regResult.user,
+      withdrawalNetwork: defaultNetwork,
+      withdrawalCountry: defaultCountryCode
+    } : newUser;
     
-    // Update local state
+    // Update local state and credentials
     setPasswords(prev => ({ 
       ...prev, 
       [cleanPhone]: data.word,
       [strippedPhone]: data.word,
-      [newUser.phone]: data.word 
+      [savedUser.phone]: data.word,
+      ...(rawDigits ? { [rawDigits]: data.word } : {})
     }));
-    setUsers(prev => [newUser, ...prev]);
-    safeSetLocalStorage('fintech_users', [newUser, ...users]);
+    setUsers(prev => [savedUser, ...prev.filter(u => u.id !== savedUser.id)]);
+    safeSetLocalStorage('fintech_users', [savedUser, ...users.filter(u => u.id !== savedUser.id)]);
     
-    setCurrentUser(newUser);
-    safeSetSessionStorage('fintech_current_user', newUser);
-    safeSetLocalStorage('fintech_current_user', newUser);
+    setCurrentUser(savedUser);
+    safeSetSessionStorage('fintech_current_user', savedUser);
+    safeSetLocalStorage('fintech_current_user', savedUser);
 
-    // Trigger central sync
+    // Non-blocking background sync
     setTimeout(() => {
       fetchAndSyncAllFromSupabase();
-    }, 200);
+    }, 150);
     
     return { success: true };
   };

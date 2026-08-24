@@ -65,6 +65,33 @@ export async function fetchAllTablesMaster(): Promise<any | null> {
   return null;
 }
 
+export async function loginUserInDatabase(phone: string, password: string): Promise<{ success: boolean; error?: string; user?: any }> {
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success) {
+        return { success: true, user: data.user };
+      }
+      if (data && data.error) {
+        return { success: false, error: data.error };
+      }
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      if (errData && errData.error) {
+        return { success: false, error: errData.error };
+      }
+    }
+  } catch (err: any) {
+    console.warn('[Login Endpoint Error]:', err);
+  }
+  return { success: false, error: "Impossible de joindre le serveur d'authentification." };
+}
+
 export async function registerUserInDatabase(user: any): Promise<{ success: boolean; error?: string; user?: any }> {
   try {
     const res = await fetch('/api/auth/register', {
