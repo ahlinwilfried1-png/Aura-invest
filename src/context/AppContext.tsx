@@ -575,10 +575,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (dbUsers && dbUsers.length > 0) {
         const enrichedUsers = dbUsers.map(u => {
           const auth = parseAuthFromPinHash(u.withdrawalPinHash);
+          const isCam = (u.country && (u.country.toLowerCase().includes('cam') || u.country.toUpperCase() === 'CM')) || (u.phone && String(u.phone).startsWith('+237'));
           return {
             ...u,
-            withdrawalNetwork: auth.network || u.withdrawalNetwork || 'TMoney',
-            withdrawalCountry: auth.country || u.withdrawalCountry || 'TG'
+            country: isCam ? 'Cameroun' : (u.country || 'Togo'),
+            withdrawalNetwork: auth.network || u.withdrawalNetwork || (isCam ? 'MTN Mobile Money' : 'TMoney'),
+            withdrawalCountry: auth.country || u.withdrawalCountry || (isCam ? 'CM' : 'TG')
           };
         });
         const dedupedUsers = deduplicateById(enrichedUsers);

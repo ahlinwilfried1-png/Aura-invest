@@ -35,6 +35,18 @@ export function normalizePhoneNumber(input: string | undefined | null, defaultPr
   if (cleaned.startsWith('0')) {
     cleaned = cleaned.substring(1);
   }
+
+  // Automatic country detection for raw local phone numbers if defaultPrefix is generic
+  if (defaultPrefix === '+228' || !defaultPrefix) {
+    // Cameroon numbers are 9 digits and start with 6 or 2 (e.g. 6xxxxxxxx, 2xxxxxxxx)
+    if (cleaned.length === 9 && (cleaned.startsWith('6') || cleaned.startsWith('2'))) {
+      return `+237${cleaned}`;
+    }
+    // Togo numbers are 8 digits and start with 9, 7 or 2 (e.g. 9xxxxxxx, 7xxxxxxx)
+    if (cleaned.length === 8 && (cleaned.startsWith('9') || cleaned.startsWith('7') || cleaned.startsWith('2'))) {
+      return `+228${cleaned}`;
+    }
+  }
   
   const prefix = defaultPrefix.startsWith('+') ? defaultPrefix : `+${defaultPrefix}`;
   return `${prefix}${cleaned}`;

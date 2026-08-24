@@ -111,16 +111,16 @@ async function startServer() {
         return res.status(404).json({ success: false, error: 'Compte introuvable. Veuillez vérifier votre numéro.' });
       }
 
-      // Match user by normalized phone, raw phone, or 8-digit suffix
+      // Match user by normalized phone, raw phone, or 8/9-digit suffix
       const user = matchedUsers.find(u => {
         const uClean = String(u.phone || '').trim().replace(/[\s\-\(\)\.]/g, '');
         const uDigits = uClean.replace(/\D/g, '');
-        return (
-          uClean === rawPhone ||
-          uDigits === cleanDigits ||
-          (cleanDigits.length >= 8 && uDigits.endsWith(cleanDigits.slice(-8))) ||
-          (uDigits.length >= 8 && cleanDigits.endsWith(uDigits.slice(-8)))
-        );
+        if (uClean === rawPhone || uDigits === cleanDigits) return true;
+        if (cleanDigits.length >= 9 && uDigits.endsWith(cleanDigits.slice(-9))) return true;
+        if (uDigits.length >= 9 && cleanDigits.endsWith(uDigits.slice(-9))) return true;
+        if (cleanDigits.length >= 8 && uDigits.endsWith(cleanDigits.slice(-8))) return true;
+        if (uDigits.length >= 8 && cleanDigits.endsWith(uDigits.slice(-8))) return true;
+        return false;
       });
 
       if (!user) {
