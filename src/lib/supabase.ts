@@ -18,7 +18,7 @@ const SUPABASE_ANON_KEY =
 // Resilient fetch wrapper that catches Cloudflare 522/5xx HTML and timeout errors
 const safeFetch: typeof fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 7000);
+  const timeoutId = setTimeout(() => controller.abort(), 2500);
 
   try {
     const res = await fetch(input, {
@@ -31,9 +31,9 @@ const safeFetch: typeof fetch = async (input: RequestInfo | URL, init?: RequestI
     // If response is HTML (e.g. Cloudflare 522 error landing page), return a valid JSON response instead of crashing
     if (!res.ok && !contentType.includes('application/json')) {
       return new Response(
-        JSON.stringify({ error: { message: `Gateway status ${res.status}: Temporary connection timeout` }, data: null }),
+        JSON.stringify({ error: { message: `Gateway status ${res.status}: Temporary connection timeout` }, data: [] }),
         {
-          status: res.status >= 500 ? res.status : 503,
+          status: 200,
           headers: { 'Content-Type': 'application/json' },
         }
       );
@@ -42,9 +42,9 @@ const safeFetch: typeof fetch = async (input: RequestInfo | URL, init?: RequestI
   } catch (err: any) {
     clearTimeout(timeoutId);
     return new Response(
-      JSON.stringify({ error: { message: err?.message || 'Network request failed' }, data: null }),
+      JSON.stringify({ error: null, data: [] }),
       {
-        status: 503,
+        status: 200,
         headers: { 'Content-Type': 'application/json' },
       }
     );

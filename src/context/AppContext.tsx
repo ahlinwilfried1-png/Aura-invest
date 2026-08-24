@@ -802,12 +802,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     fetchAndSyncAllFromSupabase();
     
-    // Poll every 6 seconds when document is visible
+    // Safe periodic background sync (12 seconds)
     const interval = setInterval(() => {
       if (typeof document === 'undefined' || !document.hidden) {
         fetchAndSyncAllFromSupabase();
       }
-    }, 6000);
+    }, 12000);
 
     const onVisibilityOrFocus = () => {
       if (typeof document !== 'undefined' && !document.hidden) {
@@ -818,26 +818,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     window.addEventListener('visibilitychange', onVisibilityOrFocus);
     window.addEventListener('focus', onVisibilityOrFocus);
 
-    // Also listen to Realtime broadcast if supported
-    let channel: any = null;
-    try {
-      channel = supabase
-        .channel('nutrien-realtime-sync')
-        .on('postgres_changes', { event: '*', schema: 'public' }, () => {
-          fetchAndSyncAllFromSupabase();
-        })
-        .subscribe();
-    } catch (_) {}
-
     return () => {
       clearInterval(interval);
       window.removeEventListener('visibilitychange', onVisibilityOrFocus);
       window.removeEventListener('focus', onVisibilityOrFocus);
-      if (channel) {
-        try {
-          supabase.removeChannel(channel);
-        } catch (_) {}
-      }
     };
   }, [fetchAndSyncAllFromSupabase]);
 
