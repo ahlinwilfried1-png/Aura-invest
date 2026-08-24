@@ -135,7 +135,7 @@ interface AppContextType {
   deleteFaq: (id: string) => void;
   
   // Refresh / Sync
-  refreshData: () => Promise<void>;
+  refreshData: (force?: boolean) => Promise<void>;
 
   // Recharge channels management
   addRechargeChannel: (data: { name: string; countryCode?: string; accountNumber: string; accountHolder?: string; instructions?: string; isActive?: boolean }) => Promise<{ success: boolean; error?: string }>;
@@ -525,7 +525,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   currentUserRef.current = currentUser;
 
   // Master Central Sync Function
-  const fetchAndSyncAllFromSupabase = useCallback(async () => {
+  const fetchAndSyncAllFromSupabase = useCallback(async (force: boolean = false) => {
     // Prevent overlapping concurrent sync calls
     if (isSyncingRef.current) return;
     isSyncingRef.current = true;
@@ -542,7 +542,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       let dbCommissions: CommissionHistory[] | null = null;
       let dbBonusRows: any[] | null = null;
 
-      const master = await fetchAllTablesMaster();
+      const master = await fetchAllTablesMaster(force);
       if (master) {
         dbUsers = master.users || [];
         dbProducts = master.products || [];
@@ -2405,7 +2405,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateRechargeChannel,
       deleteRechargeChannel,
       toggleRechargeChannel,
-      refreshData: fetchAndSyncAllFromSupabase
+      refreshData: (force: boolean = true) => fetchAndSyncAllFromSupabase(force)
     }}>
       {children}
     </AppContext.Provider>

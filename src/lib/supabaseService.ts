@@ -85,9 +85,10 @@ async function resilientFetch(url: string, options: RequestInit = {}, timeoutMs:
   }
 }
 
-export async function fetchAllTablesMaster(): Promise<any | null> {
+export async function fetchAllTablesMaster(force: boolean = false): Promise<any | null> {
   try {
-    const res = await resilientFetch('/api/admin/fetch-all', {}, 8000);
+    const url = force ? '/api/admin/fetch-all?force=true' : '/api/admin/fetch-all';
+    const res = await resilientFetch(url, {}, 8000);
     if (res.ok && res.isJson && res.data && res.data.success && res.data.data) {
       return res.data.data;
     }
@@ -152,7 +153,7 @@ export async function fetchTableData<T>(tableName: string): Promise<T[] | null> 
 
   // 2. Fallback: Direct Supabase client fetch with timeout
   try {
-    const queryPromise = supabase.from(tableName).select('*');
+    const queryPromise = supabase.from(tableName).select('*').limit(10000);
     const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) => 
       setTimeout(() => resolve({ data: null, error: { message: 'Timeout' } }), 5000)
     );
@@ -169,8 +170,22 @@ export async function fetchTableData<T>(tableName: string): Promise<T[] | null> 
 }
 
 export async function upsertItem<T>(tableName: string, item: T): Promise<{ success: boolean; error?: string }> {
+  const cleanItem = sanitizeItem(tableName, item);
+  
+  // 1. Try authoritative Service Role execute endpoint
   try {
-    const cleanItem = sanitizeItem(tableName, item);
+    const res = await resilientFetch('/api/admin/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'upsert', tableName, item: cleanItem })
+    }, 6000);
+    if (res.ok && res.isJson && res.data && res.data.success) {
+      return { success: true };
+    }
+  } catch (_) {}
+
+  // 2. Fallback: Direct client upsert
+  try {
     const queryPromise = supabase.from(tableName).upsert(cleanItem as any);
     const timeoutPromise = new Promise<{ error: any }>((resolve) => 
       setTimeout(() => resolve({ error: { message: 'Timeout' } }), 6000)
@@ -188,8 +203,22 @@ export async function upsertItem<T>(tableName: string, item: T): Promise<{ succe
 }
 
 export async function insertItem<T>(tableName: string, item: T): Promise<{ success: boolean; error?: string }> {
+  const cleanItem = sanitizeItem(tableName, item);
+
+  // 1. Try authoritative Service Role execute endpoint
   try {
-    const cleanItem = sanitizeItem(tableName, item);
+    const res = await resilientFetch('/api/admin/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'upsert', tableName, item: cleanItem })
+    }, 6000);
+    if (res.ok && res.isJson && res.data && res.data.success) {
+      return { success: true };
+    }
+  } catch (_) {}
+
+  // 2. Fallback: Direct client insert
+  try {
     const { error } = await supabase.from(tableName).insert(cleanItem as any);
     if (error) {
       console.warn(`[Supabase] Table '${tableName}' insert error:`, error.message);
@@ -208,8 +237,22 @@ export async function updateItem<T>(
   idValue: string,
   idCol: string = 'id'
 ): Promise<{ success: boolean; error?: string }> {
+  const cleanUpdates = sanitizeItem(tableName, updates);
+
+  // 1. Try authoritative Service Role execute endpoint
   try {
-    const cleanUpdates = sanitizeItem(tableName, updates);
+    const res = await resilientFetch('/api/admin/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update', tableName, updates: cleanUpdates, idValue, idCol })
+    }, 6000);
+    if (res.ok && res.isJson && res.data && res.data.success) {
+      return { success: true };
+    }
+  } catch (_) {}
+
+  // 2. Fallback: Direct client update
+  try {
     const { error } = await supabase.from(tableName).update(cleanUpdates as any).eq(idCol, idValue);
     if (error) {
       console.warn(`[Supabase] Table '${tableName}' update error:`, error.message);
@@ -223,9 +266,23 @@ export async function updateItem<T>(
 }
 
 export async function syncTableData<T>(tableName: string, items: T[]): Promise<{ success: boolean; error?: string }> {
+  if (!items || items.length === 0) return { success: true };
+  const cleanItems = items.map(item => sanitizeItem(tableName, item));
+
+  // 1. Try authoritative Service Role execute endpoint
   try {
-    if (!items || items.length === 0) return { success: true };
-    const cleanItems = items.map(item => sanitizeItem(tableName, item));
+    const res = await resilientFetch('/api/admin/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'sync', tableName, items: cleanItems })
+    }, 8000);
+    if (res.ok && res.isJson && res.data && res.data.success) {
+      return { success: true };
+    }
+  } catch (_) {}
+
+  // 2. Fallback: Direct client sync
+  try {
     const { error } = await supabase.from(tableName).upsert(cleanItems as any);
     if (error) {
       console.warn(`[Supabase] Table '${tableName}' sync error:`, error.message);
@@ -239,6 +296,19 @@ export async function syncTableData<T>(tableName: string, items: T[]): Promise<{
 }
 
 export async function deleteRecord(tableName: string, primaryKeyValue: string, idColName: string = 'id'): Promise<{ success: boolean; error?: string }> {
+  // 1. Try authoritative Service Role execute endpoint
+  try {
+    const res = await resilientFetch('/api/admin/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', tableName, idValue: primaryKeyValue, idCol: idColName })
+    }, 6000);
+    if (res.ok && res.isJson && res.data && res.data.success) {
+      return { success: true };
+    }
+  } catch (_) {}
+
+  // 2. Fallback: Direct client delete
   try {
     const { error } = await supabase.from(tableName).delete().eq(idColName, primaryKeyValue);
     if (error) {
@@ -253,38 +323,20 @@ export async function deleteRecord(tableName: string, primaryKeyValue: string, i
 }
 
 export async function saveSystemConfig<T>(configKey: string, value: T): Promise<{ success: boolean; error?: string }> {
-  try {
-    const payload = Array.isArray(value) ? value : [value];
-    const { error } = await supabase.from('bonus_codes').upsert({
-      code: configKey,
-      amount: 0,
-      maxUses: 0,
-      usedBy: payload as any,
-      createdAt: new Date().toISOString()
-    });
-    if (error) {
-      console.warn(`[Supabase] Save system config '${configKey}' error:`, error.message);
-      return { success: false, error: error.message };
-    }
-    return { success: true };
-  } catch (err: any) {
-    console.warn(`[Supabase] Error saving system config '${configKey}':`, err);
-    return { success: false, error: err?.message || 'Erreur de connexion Supabase' };
-  }
+  const payload = Array.isArray(value) ? value : [value];
+  const item = {
+    code: configKey,
+    amount: 0,
+    maxUses: 0,
+    usedBy: payload as any,
+    createdAt: new Date().toISOString()
+  };
+
+  return upsertItem('bonus_codes', item);
 }
 
 export async function deleteSystemConfig(configKey: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    const { error } = await supabase.from('bonus_codes').delete().eq('code', configKey);
-    if (error) {
-      console.warn(`[Supabase] Delete system config '${configKey}' error:`, error.message);
-      return { success: false, error: error.message };
-    }
-    return { success: true };
-  } catch (err: any) {
-    console.warn(`[Supabase] Error deleting system config '${configKey}':`, err);
-    return { success: false, error: err?.message || 'Erreur de connexion Supabase' };
-  }
+  return deleteRecord('bonus_codes', configKey, 'code');
 }
 
 export async function fetchSystemConfig<T>(configKey: string, fallbackValue: T): Promise<T> {

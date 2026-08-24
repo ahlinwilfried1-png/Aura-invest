@@ -15,6 +15,54 @@ const SUPABASE_ANON_KEY =
   (env.VITE_SUPABASE_ANON_KEY && !env.VITE_SUPABASE_ANON_KEY.includes('idnpfqfxvzskivpdkbdc') ? env.VITE_SUPABASE_ANON_KEY : null) || 
   CENTRAL_SUPABASE_ANON_KEY;
 
-// Public Supabase client for client-side user operations
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Resilient fetch wrapper that catches Cloudflare 522/5xx HTML and timeout errors
+const safeFetch: typeof fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 7000);
+
+  try {
+    const res = await fetch(input, {
+      ...init,
+      signal: init?.signal || controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    const contentType = res.headers.get('content-type') || '';
+    // If response is HTML (e.g. Cloudflare 522 error landing page), return a valid JSON response instead of crashing
+    if (!res.ok && !contentType.includes('application/json')) {
+      return new Response(
+        JSON.stringify({ error: { message: `Gateway status ${res.status}: Temporary connection timeout` }, data: null }),
+        {
+          status: res.status >= 500 ? res.status : 503,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+    return res;
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    return new Response(
+      JSON.stringify({ error: { message: err?.message || 'Network request failed' }, data: null }),
+      {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+};
+
+// Public Supabase client for client-side user operations with safe fetch and controlled realtime
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+  global: {
+    fetch: safeFetch,
+  },
+  realtime: {
+    timeout: 8000,
+  }
+});
+
 

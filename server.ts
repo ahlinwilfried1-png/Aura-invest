@@ -757,8 +757,9 @@ async function startServer() {
   // 7. Fetch All Tables in One Call (Authoritative Admin Sync with Protection)
   app.get('/api/admin/fetch-all', async (req, res) => {
     try {
+      const isForce = req.query.force === 'true' || req.query.refresh === '1';
       const now = Date.now();
-      if (lastFetchAllData && (now - lastFetchAllTime < CACHE_TTL_MS)) {
+      if (!isForce && lastFetchAllData && (now - lastFetchAllTime < CACHE_TTL_MS)) {
         return res.json({
           success: true,
           data: lastFetchAllData,
@@ -769,7 +770,10 @@ async function startServer() {
       const fetchTableSafe = async (table: string) => {
         try {
           const queryPromise = (async () => {
-            const { data, error } = await supabaseAdmin.from(table).select('*');
+            const { data, error } = await supabaseAdmin
+              .from(table)
+              .select('*')
+              .limit(10000);
             if (error) {
               console.warn(`[fetch-all] Table ${table} notice:`, error.message);
               return [];
@@ -777,7 +781,7 @@ async function startServer() {
             return data || [];
           })();
 
-          return await withDbTimeout(queryPromise, 4500, []);
+          return await withDbTimeout(queryPromise, 6000, []);
         } catch (_) {
           return [];
         }
@@ -817,11 +821,9 @@ async function startServer() {
         bonus_codes: bonusCodes || []
       };
 
-      // Only update cache if at least one table returned data
-      if (users.length > 0 || products.length > 0) {
-        lastFetchAllData = resultData;
-        lastFetchAllTime = Date.now();
-      }
+      // Update cache
+      lastFetchAllData = resultData;
+      lastFetchAllTime = Date.now();
 
       return res.json({
         success: true,
