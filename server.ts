@@ -90,38 +90,145 @@ async function startServer() {
     return null;
   }
 
-  // 0. User Login Route (High performance direct lookup & authentication)
+  // Country and phone parsing helper
+  function extractPhoneDetails(input: string | undefined | null, countryHint?: string): {
+    isCameroon: boolean;
+    cleanPhone: string;
+    nationalDigits: string;
+    allDigits: string;
+    candidates: string[];
+  } {
+    if (!input) {
+      return {
+        isCameroon: false,
+        cleanPhone: '',
+        nationalDigits: '',
+        allDigits: '',
+        candidates: []
+      };
+    }
+
+    const raw = String(input).trim();
+    const allDigits = raw.replace(/\D/g, '');
+    
+    const isCameroon = Boolean(
+      (countryHint && (countryHint.toLowerCase().includes('cam') || countryHint.toUpperCase() === 'CM' || countryHint.includes('237'))) ||
+      raw.startsWith('+237') ||
+      allDigits.startsWith('237') ||
+      (allDigits.length === 9 && (allDigits.startsWith('6') || allDigits.startsWith('2') || allDigits.startsWith('3')))
+    );
+
+    let nationalDigits = '';
+    let cleanPhone = '';
+
+    if (isCameroon) {
+      if (allDigits.startsWith('237') && allDigits.length >= 11) {
+        nationalDigits = allDigits.substring(3);
+      } else if (allDigits.length >= 9) {
+        nationalDigits = allDigits.slice(-9);
+      } else {
+        nationalDigits = allDigits;
+      }
+      cleanPhone = `+237${nationalDigits}`;
+    } else {
+      // Togo
+      if (allDigits.startsWith('228') && allDigits.length >= 10) {
+        nationalDigits = allDigits.substring(3);
+      } else if (allDigits.length >= 8) {
+        nationalDigits = allDigits.slice(-8);
+      } else {
+        nationalDigits = allDigits;
+      }
+      cleanPhone = `+228${nationalDigits}`;
+    }
+
+    const candidatesSet = new Set<string>();
+    candidatesSet.add(cleanPhone);
+    candidatesSet.add(cleanPhone.replace('+', ''));
+    if (nationalDigits) {
+      candidatesSet.add(nationalDigits);
+      candidatesSet.add(`0${nationalDigits}`);
+      if (isCameroon) {
+        candidatesSet.add(`+237 ${nationalDigits}`);
+        candidatesSet.add(`+237 ${nationalDigits.slice(0, 1)} ${nationalDigits.slice(1, 3)} ${nationalDigits.slice(3, 5)} ${nationalDigits.slice(5, 7)} ${nationalDigits.slice(7)}`);
+        candidatesSet.add(`237${nationalDigits}`);
+      } else {
+        candidatesSet.add(`+228 ${nationalDigits}`);
+        candidatesSet.add(`+228 ${nationalDigits.slice(0, 2)} ${nationalDigits.slice(2, 4)} ${nationalDigits.slice(4, 6)} ${nationalDigits.slice(6)}`);
+        candidatesSet.add(`228${nationalDigits}`);
+      }
+    }
+
+    return {
+      isCameroon,
+      cleanPhone,
+      nationalDigits,
+      allDigits,
+      candidates: Array.from(candidatesSet)
+    };
+  }
+
+  // 0. User Login Route (High performance country-aware direct lookup & authentication)
   app.post('/api/auth/login', async (req, res) => {
     try {
-      const { phone, password } = req.body;
+      const { phone, password, country } = req.body;
       if (!phone || !password) {
         return res.status(400).json({ success: false, error: 'Numéro de téléphone et mot de passe requis.' });
       }
 
-      // Normalize phone number
-      let rawPhone = String(phone).trim().replace(/[\s\-\(\)\.]/g, '');
-      const cleanDigits = rawPhone.replace(/\D/g, '');
+      const phoneInfo = extractPhoneDetails(phone, country);
+      let user: any = null;
 
-      // Query database for all users to match against phone variations
-      const { data: matchedUsers, error: userErr } = await supabaseAdmin
-        .from('users')
-        .select('*');
+      // 1. Direct indexed candidate lookup (Ultra-fast, ~10ms)
+      if (phoneInfo.candidates.length > 0) {
+        const { data: candidatesMatch, error: candErr } = await supabaseAdmin
+          .from('users')
+          .select('*')
+          .in('phone', phoneInfo.candidates);
 
-      if (userErr || !matchedUsers || matchedUsers.length === 0) {
-        return res.status(404).json({ success: false, error: 'Compte introuvable. Veuillez vérifier votre numéro.' });
+        if (!candErr && candidatesMatch && candidatesMatch.length > 0) {
+          user = candidatesMatch[0];
+        }
       }
 
-      // Match user by normalized phone, raw phone, or 8/9-digit suffix
-      const user = matchedUsers.find(u => {
-        const uClean = String(u.phone || '').trim().replace(/[\s\-\(\)\.]/g, '');
-        const uDigits = uClean.replace(/\D/g, '');
-        if (uClean === rawPhone || uDigits === cleanDigits) return true;
-        if (cleanDigits.length >= 9 && uDigits.endsWith(cleanDigits.slice(-9))) return true;
-        if (uDigits.length >= 9 && cleanDigits.endsWith(uDigits.slice(-9))) return true;
-        if (cleanDigits.length >= 8 && uDigits.endsWith(cleanDigits.slice(-8))) return true;
-        if (uDigits.length >= 8 && cleanDigits.endsWith(uDigits.slice(-8))) return true;
-        return false;
-      });
+      // 2. If no direct match, query by national digits suffix matching specific country length
+      if (!user && phoneInfo.nationalDigits) {
+        const { data: likeMatches, error: likeErr } = await supabaseAdmin
+          .from('users')
+          .select('*')
+          .ilike('phone', `%${phoneInfo.nationalDigits}%`);
+
+        if (!likeErr && likeMatches && likeMatches.length > 0) {
+          // Exact country-aware match (9 digits for Cameroon, 8 digits for Togo)
+          user = likeMatches.find(u => {
+            const uInfo = extractPhoneDetails(u.phone, u.country);
+            if (phoneInfo.isCameroon && uInfo.isCameroon) {
+              return uInfo.nationalDigits === phoneInfo.nationalDigits;
+            }
+            if (!phoneInfo.isCameroon && !uInfo.isCameroon) {
+              return uInfo.nationalDigits === phoneInfo.nationalDigits;
+            }
+            return uInfo.cleanPhone === phoneInfo.cleanPhone || u.phone === phoneInfo.cleanPhone;
+          });
+        }
+      }
+
+      // 3. Fallback: Full table scan only if not found previously
+      if (!user) {
+        const { data: allUsers } = await supabaseAdmin.from('users').select('*');
+        if (allUsers && allUsers.length > 0) {
+          user = allUsers.find(u => {
+            const uInfo = extractPhoneDetails(u.phone, u.country);
+            if (phoneInfo.isCameroon && uInfo.isCameroon) {
+              return uInfo.nationalDigits === phoneInfo.nationalDigits;
+            }
+            if (!phoneInfo.isCameroon && !uInfo.isCameroon) {
+              return uInfo.nationalDigits === phoneInfo.nationalDigits;
+            }
+            return uInfo.cleanPhone === phoneInfo.cleanPhone || u.phone === phoneInfo.cleanPhone;
+          });
+        }
+      }
 
       if (!user) {
         return res.status(404).json({ success: false, error: 'Compte introuvable. Veuillez vérifier votre numéro ou vous inscrire.' });
@@ -161,43 +268,18 @@ async function startServer() {
         return res.status(400).json({ success: false, error: 'Informations utilisateur incomplètes (numéro de téléphone requis).' });
       }
 
-      const isCameroon = Boolean(
-        (user.country && (user.country.toLowerCase().includes('cam') || user.country.toUpperCase() === 'CM')) ||
-        String(user.phone).startsWith('+237') ||
-        String(user.phone).startsWith('237')
-      );
-      const finalCountry = isCameroon ? 'Cameroun' : (user.country || 'Togo');
+      const phoneInfo = extractPhoneDetails(user.phone, user.country);
+      const finalCountry = phoneInfo.isCameroon ? 'Cameroun' : (user.country || 'Togo');
+      const cleanPhone = phoneInfo.cleanPhone;
 
-      // Sanitize and format phone number consistently
-      let rawPhone = String(user.phone).trim().replace(/[\s\-\(\)\.]/g, '');
-      if (!rawPhone.startsWith('+')) {
-        if (rawPhone.startsWith('00')) {
-          rawPhone = '+' + rawPhone.substring(2);
-        } else if (rawPhone.startsWith('237') && rawPhone.length >= 11) {
-          rawPhone = '+' + rawPhone;
-        } else if (rawPhone.startsWith('228') && rawPhone.length >= 10) {
-          rawPhone = '+' + rawPhone;
-        } else {
-          if (rawPhone.startsWith('0')) rawPhone = rawPhone.substring(1);
-          rawPhone = (isCameroon ? '+237' : '+228') + rawPhone;
-        }
-      }
-      const cleanPhone = rawPhone;
-      const strippedDigits = cleanPhone.replace(/\D/g, '');
+      // 1. Fast duplicate check via indexed lookup
+      if (phoneInfo.candidates.length > 0) {
+        const { data: existingCandidates, error: checkErr } = await supabaseAdmin
+          .from('users')
+          .select('id, phone, name')
+          .in('phone', phoneInfo.candidates);
 
-      // Check if user already exists
-      const { data: existingUsers, error: checkErr } = await supabaseAdmin
-        .from('users')
-        .select('id, phone');
-
-      if (!checkErr && existingUsers && existingUsers.length > 0) {
-        const found = existingUsers.some(u => {
-          const uClean = String(u.phone || '').trim().replace(/[\s\-\(\)\.]/g, '');
-          const uDigits = uClean.replace(/\D/g, '');
-          return uClean === cleanPhone || (strippedDigits.length >= 8 && uDigits === strippedDigits);
-        });
-
-        if (found) {
+        if (!checkErr && existingCandidates && existingCandidates.length > 0) {
           return res.status(400).json({ 
             success: false, 
             error: 'Un compte existe déjà avec ce numéro de téléphone. Veuillez vous connecter.' 
@@ -205,12 +287,33 @@ async function startServer() {
         }
       }
 
+      // 2. Exact country-aware duplicate check
+      if (phoneInfo.nationalDigits) {
+        const { data: existingLike } = await supabaseAdmin
+          .from('users')
+          .select('id, phone, country')
+          .ilike('phone', `%${phoneInfo.nationalDigits}%`);
+
+        if (existingLike && existingLike.length > 0) {
+          const exactDuplicate = existingLike.some(u => {
+            const uInfo = extractPhoneDetails(u.phone, u.country);
+            return (uInfo.isCameroon === phoneInfo.isCameroon) && (uInfo.nationalDigits === phoneInfo.nationalDigits);
+          });
+          if (exactDuplicate) {
+            return res.status(400).json({ 
+              success: false, 
+              error: 'Un compte existe déjà avec ce numéro de téléphone. Veuillez vous connecter.' 
+            });
+          }
+        }
+      }
+
       // Ensure mandatory fields
       const userRecord = {
         id: user.id || ('usr-' + Math.floor(100000 + Math.random() * 9000000)),
-        name: (user.name && user.name.trim()) ? user.name.trim() : (`Membre ${strippedDigits.slice(-4)}`),
+        name: (user.name && user.name.trim()) ? user.name.trim() : (`Membre ${phoneInfo.nationalDigits.slice(-4)}`),
         phone: cleanPhone,
-        whatsapp: user.whatsapp ? String(user.whatsapp).trim() : cleanPhone,
+        whatsapp: user.whatsapp ? extractPhoneDetails(user.whatsapp, user.country).cleanPhone : cleanPhone,
         country: finalCountry,
         balance: Number(user.balance ?? 200),
         dailyEarnings: Number(user.dailyEarnings ?? 0),
@@ -637,17 +740,44 @@ async function startServer() {
     }
   });
 
-  // 7. Fetch All Tables in One Call (Authoritative Admin Sync)
+  // Cache for master fetch-all to prevent database hammer
+  let lastFetchAllData: any = null;
+  let lastFetchAllTime = 0;
+  const CACHE_TTL_MS = 2000;
+
+  // DB Timeout helper
+  async function withDbTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+    let timer: NodeJS.Timeout;
+    const timeoutPromise = new Promise<T>((resolve) => {
+      timer = setTimeout(() => resolve(fallback), ms);
+    });
+    return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+  }
+
+  // 7. Fetch All Tables in One Call (Authoritative Admin Sync with Protection)
   app.get('/api/admin/fetch-all', async (req, res) => {
     try {
+      const now = Date.now();
+      if (lastFetchAllData && (now - lastFetchAllTime < CACHE_TTL_MS)) {
+        return res.json({
+          success: true,
+          data: lastFetchAllData,
+          cached: true
+        });
+      }
+
       const fetchTableSafe = async (table: string) => {
         try {
-          const { data, error } = await supabaseAdmin.from(table).select('*');
-          if (error) {
-            console.warn(`[fetch-all] Table ${table} notice:`, error.message);
-            return [];
-          }
-          return data || [];
+          const queryPromise = (async () => {
+            const { data, error } = await supabaseAdmin.from(table).select('*');
+            if (error) {
+              console.warn(`[fetch-all] Table ${table} notice:`, error.message);
+              return [];
+            }
+            return data || [];
+          })();
+
+          return await withDbTimeout(queryPromise, 4500, []);
         } catch (_) {
           return [];
         }
@@ -675,22 +805,33 @@ async function startServer() {
         fetchTableSafe('bonus_codes')
       ]);
 
+      const resultData = {
+        users: users || [],
+        products: products || [],
+        investments: investments || [],
+        deposits: deposits || [],
+        withdrawals: withdrawals || [],
+        withdrawal_proofs: proofs || [],
+        tickets: tickets || [],
+        commissions: commissions || [],
+        bonus_codes: bonusCodes || []
+      };
+
+      // Only update cache if at least one table returned data
+      if (users.length > 0 || products.length > 0) {
+        lastFetchAllData = resultData;
+        lastFetchAllTime = Date.now();
+      }
+
       return res.json({
         success: true,
-        data: {
-          users: users || [],
-          products: products || [],
-          investments: investments || [],
-          deposits: deposits || [],
-          withdrawals: withdrawals || [],
-          withdrawal_proofs: proofs || [],
-          tickets: tickets || [],
-          commissions: commissions || [],
-          bonus_codes: bonusCodes || []
-        }
+        data: resultData
       });
     } catch (err: any) {
       console.error('[Server Admin Fetch All Error]:', err);
+      if (lastFetchAllData) {
+        return res.json({ success: true, data: lastFetchAllData, fallback: true });
+      }
       return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
     }
   });

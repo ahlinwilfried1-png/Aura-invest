@@ -28,7 +28,7 @@ interface AuthPagesProps {
   onBackToLanding?: () => void;
   onSuccess: () => void;
   authActions: {
-    login: (phone: string, word: string) => Promise<{ success: boolean; error?: string }>;
+    login: (phone: string, word: string, country?: string) => Promise<{ success: boolean; error?: string }>;
     register: (data: {
       name: string;
       phone: string;
@@ -133,7 +133,8 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
 
     try {
       const fullPhone = normalizePhoneNumber(loginPhone, countryPrefix);
-      const res = await authActions.login(fullPhone, loginPassword);
+      const selectedCountryName = countryName || (countryPrefix === '+237' ? 'Cameroun' : 'Togo');
+      const res = await authActions.login(fullPhone, loginPassword, selectedCountryName);
 
       if (res.success) {
         onSuccess();

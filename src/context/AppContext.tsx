@@ -32,7 +32,7 @@ import {
   safeGetSessionStorage, 
   safeRemoveSessionStorage 
 } from '../lib/storage';
-import { normalizePhoneNumber } from '../lib/phoneUtils';
+import { normalizePhoneNumber, extractPhoneDetails } from '../lib/phoneUtils';
 import { 
   User, 
   InvestmentProduct, 
@@ -79,7 +79,7 @@ interface AppContextType {
   globalNotification: string | null;
   
   // Auth actions
-  login: (phone: string, word: string) => Promise<{ success: boolean; error?: string }>;
+  login: (phone: string, word: string, country?: string) => Promise<{ success: boolean; error?: string }>;
   register: (data: {
     name: string;
     phone: string;
@@ -518,6 +518,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Track if initial sync has occurred
   const isHydratedRef = useRef(false);
+  const isSyncingRef = useRef(false);
   const currentUserIdRef = useRef<string | null>(currentUser?.id || null);
   currentUserIdRef.current = currentUser?.id || null;
   const currentUserRef = useRef<User | null>(currentUser);
@@ -525,6 +526,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Master Central Sync Function
   const fetchAndSyncAllFromSupabase = useCallback(async () => {
+    // Prevent overlapping concurrent sync calls
+    if (isSyncingRef.current) return;
+    isSyncingRef.current = true;
+
     try {
       // 1. Fetch main native tables - Try unified master endpoint first (100% authoritative via Service Role)
       let dbUsers: User[] | null = null;
@@ -788,25 +793,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isHydratedRef.current = true;
     } catch (err) {
       console.warn('[Sync] Supabase fetch error:', err);
+    } finally {
+      isSyncingRef.current = false;
     }
   }, []);
 
-  // Initial mount: load immediately, start continuous background polling (2.5s)
+  // Initial mount: load immediately, start continuous background polling (6s)
   useEffect(() => {
     fetchAndSyncAllFromSupabase();
-    const interval = setInterval(fetchAndSyncAllFromSupabase, 2500);
+    
+    // Poll every 6 seconds when document is visible
+    const interval = setInterval(() => {
+      if (typeof document === 'undefined' || !document.hidden) {
+        fetchAndSyncAllFromSupabase();
+      }
+    }, 6000);
+
+    const onVisibilityOrFocus = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        fetchAndSyncAllFromSupabase();
+      }
+    };
+
+    window.addEventListener('visibilitychange', onVisibilityOrFocus);
+    window.addEventListener('focus', onVisibilityOrFocus);
 
     // Also listen to Realtime broadcast if supported
-    const channel = supabase
-      .channel('nutrien-realtime-sync')
-      .on('postgres_changes', { event: '*', schema: 'public' }, () => {
-        fetchAndSyncAllFromSupabase();
-      })
-      .subscribe();
+    let channel: any = null;
+    try {
+      channel = supabase
+        .channel('nutrien-realtime-sync')
+        .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+          fetchAndSyncAllFromSupabase();
+        })
+        .subscribe();
+    } catch (_) {}
 
     return () => {
       clearInterval(interval);
-      supabase.removeChannel(channel);
+      window.removeEventListener('visibilitychange', onVisibilityOrFocus);
+      window.removeEventListener('focus', onVisibilityOrFocus);
+      if (channel) {
+        try {
+          supabase.removeChannel(channel);
+        } catch (_) {}
+      }
     };
   }, [fetchAndSyncAllFromSupabase]);
 
@@ -898,21 +929,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ==========================================
   // AUTHENTICATION OPERATIONS
   // ==========================================
-  const login = async (phone: string, word: string): Promise<{ success: boolean; error?: string }> => {
-    const cleanPhone = normalizePhoneNumber(phone);
-    const rawDigits = cleanPhone.replace(/\D/g, '');
+  const login = async (phone: string, word: string, country?: string): Promise<{ success: boolean; error?: string }> => {
+    const phoneInfo = extractPhoneDetails(phone, country);
+    const cleanPhone = phoneInfo.cleanPhone;
+    const rawDigits = phoneInfo.allDigits;
+    const nationalDigits = phoneInfo.nationalDigits;
     const strippedPhone = cleanPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
 
     // 1. First attempt authoritative fast server login endpoint
     try {
-      const serverAuth = await loginUserInDatabase(cleanPhone, word);
+      const serverAuth = await loginUserInDatabase(cleanPhone, word, country || (phoneInfo.isCameroon ? 'Cameroun' : 'Togo'));
       if (serverAuth && serverAuth.success && serverAuth.user) {
         const user = serverAuth.user;
         const auth = parseAuthFromPinHash(user.withdrawalPinHash);
+        const isCam = Boolean((user.country && (user.country.toLowerCase().includes('cam') || user.country.toUpperCase() === 'CM')) || user.phone?.startsWith('+237'));
         const enrichedUser: User = {
           ...user,
-          withdrawalNetwork: auth.network || user.withdrawalNetwork || (user.country?.toLowerCase().includes('cam') ? 'MTN Mobile Money' : 'TMoney'),
-          withdrawalCountry: auth.country || user.withdrawalCountry || (user.country?.toLowerCase().includes('cam') ? 'CM' : 'TG')
+          withdrawalNetwork: auth.network || user.withdrawalNetwork || (isCam ? 'MTN Mobile Money' : 'TMoney'),
+          withdrawalCountry: auth.country || user.withdrawalCountry || (isCam ? 'CM' : 'TG')
         };
 
         setCurrentUser(enrichedUser);
@@ -935,6 +969,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             [enrichedUser.phone]: word
           };
           if (rawDigits) next[rawDigits] = word;
+          if (nationalDigits) next[nationalDigits] = word;
           safeSetLocalStorage('fintech_passwords', next);
           return next;
         });
@@ -951,18 +986,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     } catch (_) {}
 
-    // 2. Offline / Local fallback
+    // 2. Offline / Local fallback with accurate country matching
     const user = users.find(u => {
-      const uClean = normalizePhoneNumber(u.phone);
-      const uDigits = uClean.replace(/\D/g, '');
-      const directClean = u.phone.trim();
-      return (
-        directClean === cleanPhone || 
-        uClean === cleanPhone || 
-        uDigits === rawDigits || 
-        (rawDigits.length >= 8 && uDigits.endsWith(rawDigits.slice(-8))) ||
-        (uDigits.length >= 8 && rawDigits.endsWith(uDigits.slice(-8)))
-      );
+      const uInfo = extractPhoneDetails(u.phone, u.country);
+      if (phoneInfo.isCameroon && uInfo.isCameroon) {
+        return uInfo.nationalDigits === phoneInfo.nationalDigits;
+      }
+      if (!phoneInfo.isCameroon && !uInfo.isCameroon) {
+        return uInfo.nationalDigits === phoneInfo.nationalDigits;
+      }
+      return uInfo.cleanPhone === cleanPhone || u.phone === cleanPhone || u.phone.replace(/\s+/g, '') === cleanPhone;
     });
     
     if (!user) {
@@ -998,14 +1031,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     word: string;
     referrerCode: string;
   }): Promise<{ success: boolean; error?: string }> => {
-    const isCameroon = Boolean(
-      (data.country && (data.country.toLowerCase().includes('cam') || data.country.toUpperCase() === 'CM')) ||
-      data.phone?.startsWith('+237') ||
-      data.phone?.startsWith('237')
-    );
+    const phoneInfo = extractPhoneDetails(data.phone, data.country);
+    const isCameroon = phoneInfo.isCameroon;
     const finalCountry = isCameroon ? 'Cameroun' : (data.country || 'Togo');
-    const cleanPhone = normalizePhoneNumber(data.phone, isCameroon ? '+237' : '+228');
-    const rawDigits = cleanPhone.replace(/\D/g, '');
+    const cleanPhone = phoneInfo.cleanPhone;
+    const rawDigits = phoneInfo.allDigits;
+    const nationalDigits = phoneInfo.nationalDigits;
     const strippedPhone = cleanPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
 
     // Referral code validation
@@ -1018,14 +1049,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         u.referralCode?.toLowerCase() === codeClean.toLowerCase() || 
         u.phone === codeClean || 
         u.phone.replace(/\s+/g, '') === codeClean.replace(/\s+/g, '') ||
-        (codeDigits.length >= 8 && u.phone.replace(/\D/g, '').endsWith(codeDigits.slice(-8)))
+        (codeDigits.length >= 8 && u.phone.replace(/\D/g, '').endsWith(codeDigits))
       );
       if (parent) {
         referredByCodeObj = parent.referralCode;
       } else if (codeClean.toUpperCase() === 'ADMIN' || codeClean.toUpperCase() === 'ADMIN01' || codeClean === '97194059') {
         referredByCodeObj = 'ADMIN01';
       } else {
-        // If not in local cache, let's treat valid alphanumeric referral code or default to code
         referredByCodeObj = codeClean.toUpperCase();
       }
     }
@@ -1036,9 +1066,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     const newUser: User = {
       id: 'usr-' + Math.floor(100000 + Math.random() * 9000000),
-      name: (data.name && data.name.trim()) ? data.name.trim() : `Membre ${rawDigits.slice(-4)}`,
+      name: (data.name && data.name.trim()) ? data.name.trim() : `Membre ${nationalDigits.slice(-4)}`,
       phone: cleanPhone,
-      whatsapp: data.whatsapp ? normalizePhoneNumber(data.whatsapp, isCameroon ? '+237' : '+228') : cleanPhone,
+      whatsapp: data.whatsapp ? extractPhoneDetails(data.whatsapp, data.country).cleanPhone : cleanPhone,
       country: finalCountry,
       balance: 200, // 200 XAF/XOF bonus d'inscription
       dailyEarnings: 0,
@@ -1073,7 +1103,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       [cleanPhone]: data.word,
       [strippedPhone]: data.word,
       [savedUser.phone]: data.word,
-      ...(rawDigits ? { [rawDigits]: data.word } : {})
+      ...(rawDigits ? { [rawDigits]: data.word } : {}),
+      ...(nationalDigits ? { [nationalDigits]: data.word } : {})
     }));
     setUsers(prev => [savedUser, ...prev.filter(u => u.id !== savedUser.id)]);
     safeSetLocalStorage('fintech_users', [savedUser, ...users.filter(u => u.id !== savedUser.id)]);

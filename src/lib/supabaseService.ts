@@ -52,65 +52,85 @@ export function sanitizeItem<T>(tableName: string, item: T): Partial<T> {
   return sanitized as Partial<T>;
 }
 
+// Resilient fetch helper with timeout and content-type verification
+async function resilientFetch(url: string, options: RequestInit = {}, timeoutMs: number = 6000): Promise<{ ok: boolean; status: number; data: any; isJson: boolean }> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    const contentType = res.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+
+    if (isJson) {
+      try {
+        const data = await res.json();
+        return { ok: res.ok, status: res.status, data, isJson: true };
+      } catch (_) {
+        return { ok: false, status: res.status, data: null, isJson: false };
+      }
+    } else {
+      // Returned HTML or text (e.g. Cloudflare 522 error page)
+      const text = await res.text().catch(() => '');
+      return { ok: false, status: res.status, data: text, isJson: false };
+    }
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    return { ok: false, status: 0, data: null, isJson: false };
+  }
+}
+
 export async function fetchAllTablesMaster(): Promise<any | null> {
   try {
-    const res = await fetch('/api/admin/fetch-all');
-    if (res.ok) {
-      const json = await res.json();
-      if (json && json.success && json.data) {
-        return json.data;
-      }
+    const res = await resilientFetch('/api/admin/fetch-all', {}, 8000);
+    if (res.ok && res.isJson && res.data && res.data.success && res.data.data) {
+      return res.data.data;
     }
   } catch (_) {}
   return null;
 }
 
-export async function loginUserInDatabase(phone: string, password: string): Promise<{ success: boolean; error?: string; user?: any }> {
+export async function loginUserInDatabase(phone: string, password: string, country?: string): Promise<{ success: boolean; error?: string; user?: any }> {
   try {
-    const res = await fetch('/api/auth/login', {
+    const res = await resilientFetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, password })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.success) {
-        return { success: true, user: data.user };
+      body: JSON.stringify({ phone, password, country })
+    }, 8000);
+
+    if (res.isJson && res.data) {
+      if (res.data.success && res.data.user) {
+        return { success: true, user: res.data.user };
       }
-      if (data && data.error) {
-        return { success: false, error: data.error };
-      }
-    } else {
-      const errData = await res.json().catch(() => ({}));
-      if (errData && errData.error) {
-        return { success: false, error: errData.error };
+      if (res.data.error) {
+        return { success: false, error: res.data.error };
       }
     }
   } catch (err: any) {
     console.warn('[Login Endpoint Error]:', err);
   }
-  return { success: false, error: "Impossible de joindre le serveur d'authentification." };
+  return { success: false, error: "Impossible de joindre le serveur d'authentification pour le moment." };
 }
 
 export async function registerUserInDatabase(user: any): Promise<{ success: boolean; error?: string; user?: any }> {
   try {
-    const res = await fetch('/api/auth/register', {
+    const res = await resilientFetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(user)
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.success) {
-        return { success: true, user: data.user };
+    }, 8000);
+
+    if (res.isJson && res.data) {
+      if (res.data.success && res.data.user) {
+        return { success: true, user: res.data.user };
       }
-      if (data && data.error) {
-        return { success: false, error: data.error };
-      }
-    } else {
-      const errData = await res.json().catch(() => ({}));
-      if (errData && errData.error) {
-        return { success: false, error: errData.error };
+      if (res.data.error) {
+        return { success: false, error: res.data.error };
       }
     }
   } catch (err: any) {
@@ -124,20 +144,21 @@ export async function registerUserInDatabase(user: any): Promise<{ success: bool
 export async function fetchTableData<T>(tableName: string): Promise<T[] | null> {
   // 1. Try authoritative server route first (Bypasses RLS with Service Role)
   try {
-    const res = await fetch(`/api/admin/fetch-table?tableName=${encodeURIComponent(tableName)}`);
-    if (res.ok) {
-      const json = await res.json();
-      if (json && json.success && Array.isArray(json.data)) {
-        return json.data as T[];
-      }
+    const res = await resilientFetch(`/api/admin/fetch-table?tableName=${encodeURIComponent(tableName)}`, {}, 6000);
+    if (res.ok && res.isJson && res.data && res.data.success && Array.isArray(res.data.data)) {
+      return res.data.data as T[];
     }
   } catch (_) {}
 
-  // 2. Fallback: Direct Supabase client fetch
+  // 2. Fallback: Direct Supabase client fetch with timeout
   try {
-    const { data, error } = await supabase.from(tableName).select('*');
+    const queryPromise = supabase.from(tableName).select('*');
+    const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) => 
+      setTimeout(() => resolve({ data: null, error: { message: 'Timeout' } }), 5000)
+    );
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
     if (error) {
-      console.warn(`[Supabase] Table '${tableName}' fetch error:`, error.message);
+      console.warn(`[Supabase] Table '${tableName}' fetch notice:`, error.message);
       return null;
     }
     return data as T[];
@@ -150,7 +171,11 @@ export async function fetchTableData<T>(tableName: string): Promise<T[] | null> 
 export async function upsertItem<T>(tableName: string, item: T): Promise<{ success: boolean; error?: string }> {
   try {
     const cleanItem = sanitizeItem(tableName, item);
-    const { error } = await supabase.from(tableName).upsert(cleanItem as any);
+    const queryPromise = supabase.from(tableName).upsert(cleanItem as any);
+    const timeoutPromise = new Promise<{ error: any }>((resolve) => 
+      setTimeout(() => resolve({ error: { message: 'Timeout' } }), 6000)
+    );
+    const { error } = await Promise.race([queryPromise, timeoutPromise]);
     if (error) {
       console.warn(`[Supabase] Table '${tableName}' upsert error:`, error.message);
       return { success: false, error: error.message };
@@ -285,15 +310,12 @@ export async function submitDepositRequest(
   depositData: any
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch('/api/deposits/submit', {
+    const res = await resilientFetch('/api/deposits/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(depositData)
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.success) return { success: true };
-    }
+    }, 6000);
+    if (res.ok && res.isJson && res.data && res.data.success) return { success: true };
   } catch (_) {}
 
   // Fallback to direct client upsert
@@ -306,14 +328,13 @@ export async function adminProcessDeposit(
   fallbackDepositData?: any
 ): Promise<{ success: boolean; error?: string; message?: string; alreadyApproved?: boolean; newBalance?: number }> {
   try {
-    const res = await fetch('/api/admin/deposits/process', {
+    const res = await resilientFetch('/api/admin/deposits/process', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ depositId, status, fallbackDepositData })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data;
+    }, 8000);
+    if (res.isJson && res.data) {
+      return res.data;
     }
   } catch (_) {}
 
@@ -326,14 +347,13 @@ export async function adminProcessWithdrawal(
   status: 'approved' | 'rejected'
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch('/api/admin/withdrawals/process', {
+    const res = await resilientFetch('/api/admin/withdrawals/process', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ withdrawalId, status })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data;
+    }, 8000);
+    if (res.isJson && res.data) {
+      return res.data;
     }
   } catch (_) {}
 
@@ -347,14 +367,13 @@ export async function adminUpdateUserBalance(
   isDirectSet: boolean = false
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch('/api/admin/users/balance', {
+    const res = await resilientFetch('/api/admin/users/balance', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, amount, isDirectSet })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data;
+    }, 8000);
+    if (res.isJson && res.data) {
+      return res.data;
     }
   } catch (_) {}
 
@@ -366,14 +385,13 @@ export async function adminUpdateUserRole(
   role: 'admin' | 'user'
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch('/api/admin/users/role', {
+    const res = await resilientFetch('/api/admin/users/role', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, role })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data;
+    }, 8000);
+    if (res.isJson && res.data) {
+      return res.data;
     }
   } catch (_) {}
 
@@ -385,14 +403,13 @@ export async function adminUpdateUserBlock(
   isBlocked: boolean
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch('/api/admin/users/block', {
+    const res = await resilientFetch('/api/admin/users/block', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, isBlocked })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data;
+    }, 8000);
+    if (res.isJson && res.data) {
+      return res.data;
     }
   } catch (_) {}
 
