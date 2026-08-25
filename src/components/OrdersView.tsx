@@ -20,8 +20,9 @@ interface OrdersViewProps {
   onShowToast: (type: 'success' | 'err' | 'info', message: string) => void;
 }
 
-const formatAmount = (num: number): string => {
-  return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+const formatAmount = (num: number | undefined | null): string => {
+  const n = Number(num) || 0;
+  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 };
 
 export const OrdersView: React.FC<OrdersViewProps> = ({

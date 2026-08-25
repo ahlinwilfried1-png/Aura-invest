@@ -162,7 +162,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
     const res = onRedeemBonusCode(cleanCode);
 
     if (res.success) {
-      const amountStr = res.amount ? ` +${res.amount.toLocaleString('en-US')} FCFA` : '';
+      const amountStr = res.amount ? ` +${(Number(res.amount) || 0).toLocaleString('fr-FR')} FCFA` : '';
       setBonusFeedback({
         type: 'success',
         message: `Félicitations ! Le code « ${cleanCode} » est valide.${amountStr} ont été crédités sur votre portefeuille.`
@@ -904,7 +904,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
               }}
               className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3.5 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-xs flex items-center justify-center space-x-2"
             >
-              <span>Recharger maintenant ({depForm.amount.toLocaleString()} FCFA)</span>
+              <span>Recharger maintenant ({(Number(depForm.amount) || 0).toLocaleString('fr-FR')} FCFA)</span>
             </button>
           </div>
         </div>
@@ -958,7 +958,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-slate-900 outline-none"
               />
               <span className="text-[10px] text-slate-500 block font-mono pt-0.5">
-                Solde actuel : {currentUser.balance.toLocaleString()} FCFA
+                Solde actuel : {(Number(currentUser.balance) || 0).toLocaleString('fr-FR')} FCFA
               </span>
             </div>
 
@@ -1003,7 +1003,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
 
                     <div className="text-right space-y-1">
                       <span className="font-black text-amber-600 font-mono text-sm block">
-                        +{dep.amount.toLocaleString()} FCFA
+                        +{(Number(dep.amount) || 0).toLocaleString('fr-FR')} FCFA
                       </span>
                       <span
                         className={`inline-block text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase font-mono border ${
@@ -1060,7 +1060,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                       <span className="text-[10px] font-bold text-amber-700 uppercase font-mono">{prod.badge || 'PRODUIT VIP'}</span>
                       <h4 className="text-sm font-black text-slate-900 truncate">{prod.name}</h4>
                       <p className="text-xs text-slate-500">
-                        Prix : <strong className="text-red-600 font-mono">{prod.price.toLocaleString()} FCFA</strong> • Gain : <strong className="text-emerald-600 font-mono">+{prod.dailyGain.toLocaleString()} FCFA/j</strong>
+                        Prix : <strong className="text-red-600 font-mono">{(Number(prod.price) || 0).toLocaleString('fr-FR')} FCFA</strong> • Gain : <strong className="text-emerald-600 font-mono">+{(Number(prod.dailyGain) || 0).toLocaleString('fr-FR')} FCFA/j</strong>
                       </p>
                     </div>
                   </div>

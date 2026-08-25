@@ -3,11 +3,11 @@ import { InvestmentProduct } from '../types';
 export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
   {
     id: 'vip-1-pro',
-    name: 'VIP Niveau 1 (Pro)',
+    name: 'VIP NIVEAU 1 (Pro)',
     price: 2500,
     dailyGain: 168,
     duration: 365,
-    totalGain: 61320, // 168 * 365
+    totalGain: 61320,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80',
     description: 'Pack de démarrage agricole Pro - Rendement quotidien garanti sur 365 jours.',
@@ -17,11 +17,11 @@ export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
   },
   {
     id: 'vip-2-elite',
-    name: 'VIP Niveau 2 (Elite)',
+    name: 'VIP NIVEAU 2 (Elite)',
     price: 6000,
     dailyGain: 360,
     duration: 365,
-    totalGain: 131400, // 360 * 365
+    totalGain: 131400,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1592417817098-8f3d6ef23a81?w=800&auto=format&fit=crop&q=80',
     description: 'Pack Elite Nutrition végétale & Fertilisant bio à haut rendement.',
@@ -31,11 +31,11 @@ export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
   },
   {
     id: 'vip-3-premium',
-    name: 'VIP Niveau 3 (Premium)',
+    name: 'VIP NIVEAU 3 (Premium)',
     price: 15000,
     dailyGain: 744,
     duration: 365,
-    totalGain: 271560, // 744 * 365
+    totalGain: 271560,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80',
     description: 'Pack Premium Semences sélectionnées & technologie agro-alimentaire.',
@@ -45,11 +45,11 @@ export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
   },
   {
     id: 'vip-4-platinum',
-    name: 'VIP Niveau 4 (Platinum)',
+    name: 'VIP NIVEAU 4 (Platinum)',
     price: 32000,
     dailyGain: 1584,
     duration: 365,
-    totalGain: 578160, // 1584 * 365
+    totalGain: 578160,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80',
     description: 'Pack Platinum Distribution régionale & Agro-équipement motorisé.',
@@ -59,11 +59,11 @@ export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
   },
   {
     id: 'vip-6-or',
-    name: 'VIP Niveau 6 (Or)',
+    name: 'VIP NIVEAU 6 (Or)',
     price: 70000,
     dailyGain: 3840,
     duration: 365,
-    totalGain: 1401600, // 3840 * 365
+    totalGain: 1401600,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800&auto=format&fit=crop&q=80',
     description: 'Pack Or Chaîne logistique globale & Valorisation agro-industrielle.',
@@ -73,11 +73,11 @@ export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
   },
   {
     id: 'vip-7-saphir',
-    name: 'VIP Niveau 7 (Saphir)',
+    name: 'VIP NIVEAU 7 (Saphir)',
     price: 250000,
     dailyGain: 13800,
     duration: 365,
-    totalGain: 5037000, // 13800 * 365
+    totalGain: 5037000,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=800&auto=format&fit=crop&q=80',
     description: 'Pack Saphir Agro-industrie & Transformation industrielle à grande échelle.',
@@ -87,11 +87,11 @@ export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
   },
   {
     id: 'vip-partenaire-bronze',
-    name: 'VIP Partenaire (Bronze)',
+    name: 'VIP PARTENAIRE (Bronze)',
     price: 500000,
     dailyGain: 28800,
     duration: 365,
-    totalGain: 10512000, // 28800 * 365
+    totalGain: 10512000,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80',
     description: 'Partenariat Stratégique Bronze - Hub logistique Afrique de l\'Ouest.',
@@ -101,11 +101,11 @@ export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
   },
   {
     id: 'vip-partenaire-argent',
-    name: 'VIP Partenaire (Argent)',
+    name: 'VIP PARTENAIRE (Argent)',
     price: 1000000,
     dailyGain: 60000,
     duration: 365,
-    totalGain: 21900000, // 60000 * 365
+    totalGain: 22198650,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop&q=80',
     description: 'Partenariat Stratégique Argent - Franchise agro-financière exclusive.',

@@ -41,7 +41,8 @@ import {
   EyeOff,
   HelpCircle,
   CreditCard,
-  Copy
+  Copy,
+  RefreshCw
 } from 'lucide-react';
 
 const ADMIN_BG_IMAGES = [
@@ -89,6 +90,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     toggleBlockUser,
     updateUserRole,
     addOrUpdateProduct,
+    resetToOfficialProducts,
     deleteProduct,
     deleteUserInvestment,
     sendGlobalNotification,
@@ -861,6 +863,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
           </div>
 
           <div className="flex items-center space-x-2">
+            {/* Direct Central Database Sync Button */}
+            <button
+              onClick={handleRefreshUsers}
+              disabled={isRefreshingUsers}
+              className="bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
+              title="Synchroniser toutes les tables et données depuis Supabase & le serveur"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${isRefreshingUsers ? 'animate-spin' : ''}`} />
+              <span className="text-[11px] font-extrabold uppercase font-mono tracking-tight">
+                {isRefreshingUsers ? 'Synchronisation...' : 'Synchroniser'}
+              </span>
+            </button>
+
             {/* Background Image Switcher Badge */}
             <button 
               onClick={() => setBgIndex((prev) => (prev + 1) % ADMIN_BG_IMAGES.length)}
@@ -1159,7 +1174,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   <Wallet className="w-4 h-4 text-purple-600" />
                 </div>
                 <div className="text-lg sm:text-xl font-black font-mono text-purple-800 mt-1">
-                  {users.reduce((acc, u) => acc + u.balance, 0).toLocaleString()} FCFA
+                  {(Number(users.reduce((acc, u) => acc + (Number(u.balance) || 0), 0)) || 0).toLocaleString('fr-FR')} FCFA
                 </div>
                 <div className="text-[10px] text-slate-500 font-medium">Comptes clients</div>
               </div>
@@ -1197,7 +1212,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <span className="font-bold text-emerald-400 text-sm font-mono">{dep.amount.toLocaleString()} FCFA</span>
+                          <span className="font-bold text-emerald-400 text-sm font-mono">+{(Number(dep.amount) || 0).toLocaleString('fr-FR')} FCFA</span>
                           <button 
                             onClick={() => handleApproveDeposit(dep.id)}
                             disabled={Boolean(processingDepositIds[dep.id])}
@@ -1244,7 +1259,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <span className="font-bold text-red-400 text-sm font-mono">-{wth.amount.toLocaleString()} FCFA</span>
+                          <span className="font-bold text-red-400 text-sm font-mono">-{(Number(wth.amount) || 0).toLocaleString('fr-FR')} FCFA</span>
                           <button 
                             onClick={() => {
                               processWithdrawal(wth.id, 'approved');
@@ -1282,7 +1297,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 </div>
 
                 <div className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl">
-                  Total Validé : {approvedDepositsSum.toLocaleString()} FCFA
+                  Total Validé : {(Number(approvedDepositsSum) || 0).toLocaleString('fr-FR')} FCFA
                 </div>
               </div>
 
@@ -1392,7 +1407,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                       <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-4">
                         <div className="text-right">
                           <div className="font-mono font-bold text-emerald-400 text-base sm:text-lg">
-                            +{dep.amount.toLocaleString()} FCFA
+                            +{(Number(dep.amount) || 0).toLocaleString('fr-FR')} FCFA
                           </div>
                         </div>
 
@@ -1452,7 +1467,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 </div>
 
                 <div className="text-xs font-mono font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-xl">
-                  Total Payé : {approvedWithdrawalsSum.toLocaleString()} FCFA
+                  Total Payé : {(Number(approvedWithdrawalsSum) || 0).toLocaleString('fr-FR')} FCFA
                 </div>
               </div>
 
@@ -1531,7 +1546,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                       <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-4">
                         <div className="text-right">
                           <div className="font-mono font-bold text-red-400 text-base sm:text-lg">
-                            -{wth.amount.toLocaleString()} FCFA
+                            -{(Number(wth.amount) || 0).toLocaleString('fr-FR')} FCFA
                           </div>
                         </div>
 
@@ -1654,7 +1669,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                           </div>
                           <div className="text-right">
                             <div className="font-mono font-extrabold text-emerald-700 text-base">
-                              +{proof.amount.toLocaleString()} FCFA
+                              +{(Number(proof.amount) || 0).toLocaleString('fr-FR')} FCFA
                             </div>
                             <div className="text-[10px] text-slate-500 font-semibold">{proof.network}</div>
                           </div>
@@ -1693,7 +1708,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                             setDeleteConfirmation({
                               isOpen: true,
                               title: "Suppression de la preuve de retrait",
-                              message: `Êtes-vous sûr de vouloir supprimer définitivement la preuve de retrait de ${proof.userName} (${proof.amount.toLocaleString()} FCFA) ? Elle disparaîtra immédiatement de la plateforme.`,
+                              message: `Êtes-vous sûr de vouloir supprimer définitivement la preuve de retrait de ${proof.userName} (${(Number(proof.amount) || 0).toLocaleString('fr-FR')} FCFA) ? Elle disparaîtra immédiatement de la plateforme.`,
                               onConfirm: () => {
                                 deleteWithdrawalProof(proof.id);
                                 showToast('success', "Preuve de retrait supprimée avec succès !");
@@ -1820,7 +1835,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                         <div className="text-right">
                           <div className="text-[10px] text-slate-400 font-bold uppercase">Solde Client</div>
                           <div className="font-mono font-bold text-white text-base sm:text-lg">
-                            {usr.balance.toLocaleString()} FCFA
+                            {(Number(usr.balance) || 0).toLocaleString('fr-FR')} FCFA
                           </div>
                         </div>
 
@@ -2035,7 +2050,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                       <div className="bg-slate-900/90 p-3 rounded-xl grid grid-cols-2 gap-2 text-center text-xs">
                         <div>
                           <div className="text-slate-400 text-[10px]">Prix (FCFA)</div>
-                          <div className="font-bold text-white text-sm font-mono">{prod.price.toLocaleString()}</div>
+                          <div className="font-bold text-white text-sm font-mono">{(Number(prod.price) || 0).toLocaleString('fr-FR')}</div>
                         </div>
                         <div>
                           <div className="text-slate-400 text-[10px]">Durée Cycle</div>
@@ -2043,11 +2058,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                         </div>
                         <div>
                           <div className="text-slate-400 text-[10px]">Revenu / Jour</div>
-                          <div className="font-bold text-emerald-400 text-sm font-mono">+{prod.dailyGain.toLocaleString()} FCFA</div>
+                          <div className="font-bold text-emerald-400 text-sm font-mono">+{(Number(prod.dailyGain) || 0).toLocaleString('fr-FR')} FCFA</div>
                         </div>
                         <div>
                           <div className="text-slate-400 text-[10px]">Revenu Total</div>
-                          <div className="font-bold text-amber-400 text-sm font-mono">{prod.totalGain.toLocaleString()} FCFA</div>
+                          <div className="font-bold text-amber-400 text-sm font-mono">{(Number(prod.totalGain) || 0).toLocaleString('fr-FR')} FCFA</div>
                         </div>
                       </div>
                     </div>
@@ -2415,7 +2430,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                           </div>
                           <div className="text-[11px] text-slate-400 font-mono flex items-center space-x-2">
                             <span>Tél: {selectedChatUser.phone}</span>
-                            <span>• Solde: <strong className="text-emerald-400">{selectedChatUser.balance.toLocaleString()} FCFA</strong></span>
+                            <span>• Solde: <strong className="text-emerald-400">{(Number(selectedChatUser.balance) || 0).toLocaleString('fr-FR')} FCFA</strong></span>
                           </div>
                         </div>
                       </div>
@@ -3056,7 +3071,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                       <div className="w-3 h-3 rounded-full bg-amber-400 shrink-0"></div>
                       <div>
                         <div className="font-bold text-white">{p.label}</div>
-                        <div className="text-[11px] text-slate-400 font-mono">+{p.value.toLocaleString()} FCFA</div>
+                        <div className="text-[11px] text-slate-400 font-mono">+{(Number(p.value) || 0).toLocaleString('fr-FR')} FCFA</div>
                       </div>
                     </div>
 
@@ -3901,7 +3916,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
             <div>
               <span className="text-[10px] font-mono font-bold uppercase text-amber-400 bg-amber-500/20 px-2.5 py-0.5 rounded-full">Ajustement Financier</span>
               <h3 className="text-lg font-bold text-white mt-2">Modifier le solde de {selectedUserForBalance.name}</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Solde actuel: <strong className="text-amber-300 font-mono">{selectedUserForBalance.balance.toLocaleString()} FCFA</strong></p>
+              <p className="text-xs text-slate-400 mt-0.5">Solde actuel: <strong className="text-amber-300 font-mono">{(Number(selectedUserForBalance.balance) || 0).toLocaleString('fr-FR')} FCFA</strong></p>
             </div>
 
             <div className="space-y-4 text-xs">
@@ -3958,10 +3973,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 }`}
               >
                 {balanceAdjustType === 'add' 
-                  ? `+ Créditer le solde (${Math.abs(Number(balanceAdjustAmount) || 0).toLocaleString()} FCFA)` 
+                  ? `+ Créditer le solde (${Math.abs(Number(balanceAdjustAmount) || 0).toLocaleString('fr-FR')} FCFA)` 
                   : balanceAdjustType === 'subtract'
-                  ? `- Déduire du solde (${Math.abs(Number(balanceAdjustAmount) || 0).toLocaleString()} FCFA)`
-                  : `Confirmer le nouveau solde (${(Number(balanceAdjustAmount) || 0).toLocaleString()} FCFA)`
+                  ? `- Déduire du solde (${Math.abs(Number(balanceAdjustAmount) || 0).toLocaleString('fr-FR')} FCFA)`
+                  : `Confirmer le nouveau solde (${(Number(balanceAdjustAmount) || 0).toLocaleString('fr-FR')} FCFA)`
                 }
               </button>
             </div>

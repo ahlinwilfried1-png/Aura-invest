@@ -27,13 +27,13 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
   const totalDailyGain = product.dailyGain * quantity;
   const totalGain = product.totalGain * quantity;
 
-  const hasSufficientBalance = currentUser.balance >= totalPrice;
+  const hasSufficientBalance = (Number(currentUser.balance) || 0) >= totalPrice;
 
   const handleConfirmClick = async () => {
     if (isSubmitting) return;
 
     if (!hasSufficientBalance) {
-      onShowToast('err', `Solde insuffisant (${currentUser.balance.toLocaleString()} FCFA disponible sur ${totalPrice.toLocaleString()} FCFA requis).`);
+      onShowToast('err', `Solde insuffisant (${(Number(currentUser.balance) || 0).toLocaleString('fr-FR')} FCFA disponible sur ${(Number(totalPrice) || 0).toLocaleString('fr-FR')} FCFA requis).`);
       return;
     }
 
@@ -96,24 +96,24 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
       </div>
 
       {/* 2. FIRST CONTAINER: PRICE & TOTAL REVENUE */}
-      <div className="py-2 px-4 text-slate-900 flex items-center justify-around">
+      <div className="py-2 px-4 text-slate-900 flex items-center justify-around bg-emerald-50/70 border border-emerald-200/60 rounded-2xl">
         <div className="text-center space-y-0.5">
-          <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900">
-            {product.price.toLocaleString()}
+          <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-emerald-950">
+            {(Number(product.price) || 0).toLocaleString('fr-FR')}
           </div>
-          <div className="text-xs font-semibold text-slate-500">
-            Prix(XAF)
+          <div className="text-xs font-bold text-slate-600 uppercase">
+            Prix d'adhésion (FCFA)
           </div>
         </div>
 
-        <div className="h-10 w-px bg-slate-300/80" />
+        <div className="h-10 w-px bg-emerald-300/80" />
 
         <div className="text-center space-y-0.5">
-          <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-red-600">
-            {product.totalGain.toLocaleString()}
+          <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-amber-800">
+            {(Number(product.totalGain) || 0).toLocaleString('fr-FR')}
           </div>
-          <div className="text-xs font-semibold text-slate-500">
-            Revenu total(XAF)
+          <div className="text-xs font-bold text-slate-600 uppercase">
+            Revenu total (365 jours)
           </div>
         </div>
       </div>
@@ -121,14 +121,14 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
       {/* 3. SECOND SECTION: CYCLE, QUANTITY, DAILY REVENUE (NO BOXES/BORDERS) */}
       <div className="py-2 px-2 space-y-3">
         <div className="flex items-center justify-between text-xs sm:text-sm font-medium py-1">
-          <span className="text-slate-800 font-semibold">Cycle d'investissement(Jours):</span>
-          <span className="font-extrabold text-slate-900 font-mono text-sm sm:text-base">
-            {product.duration}
+          <span className="text-slate-800 font-semibold">Cycle d'investissement :</span>
+          <span className="font-extrabold text-emerald-800 font-mono text-sm sm:text-base">
+            365 jours
           </span>
         </div>
 
         <div className="flex items-center justify-between text-xs sm:text-sm font-medium py-1">
-          <span className="text-slate-800 font-semibold">Quantité d'achat</span>
+          <span className="text-slate-800 font-semibold">Quantité de packs :</span>
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -149,9 +149,9 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
         </div>
 
         <div className="flex items-center justify-between text-xs sm:text-sm font-medium py-1">
-          <span className="text-slate-800 font-semibold">Revenu quotidien</span>
-          <span className="font-extrabold text-slate-900 font-mono text-sm sm:text-base">
-            {totalDailyGain.toLocaleString()}XAF
+          <span className="text-slate-800 font-semibold">Revenu quotidien (crédit chaque 24h) :</span>
+          <span className="font-extrabold text-emerald-700 font-mono text-sm sm:text-base">
+            +{(Number(totalDailyGain) || 0).toLocaleString('fr-FR')} FCFA
           </span>
         </div>
       </div>
@@ -165,7 +165,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
           </div>
           <div className="flex items-center space-x-2">
             <span>💰</span>
-            <span>Prix : {totalPrice.toLocaleString()} XAF</span>
+            <span>Prix : {(Number(totalPrice) || 0).toLocaleString('fr-FR')} XAF</span>
           </div>
           <div className="flex items-center space-x-2">
             <span>📅</span>
@@ -173,11 +173,11 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
           </div>
           <div className="flex items-center space-x-2">
             <span>📈</span>
-            <span>Revenu journalier : {totalDailyGain.toLocaleString()} XAF</span>
+            <span>Revenu journalier : {(Number(totalDailyGain) || 0).toLocaleString('fr-FR')} XAF</span>
           </div>
           <div className="flex items-center space-x-2">
             <span>🏆</span>
-            <span>Revenu total : {totalGain.toLocaleString()} XAF</span>
+            <span>Revenu total : {(Number(totalGain) || 0).toLocaleString('fr-FR')} XAF</span>
           </div>
         </div>
 
@@ -253,7 +253,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
               
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-600 font-medium">Prix unitaire</span>
-                <span className="font-bold text-slate-900 font-mono">{product.price.toLocaleString()} FCFA</span>
+                <span className="font-bold text-slate-900 font-mono">{(Number(product.price) || 0).toLocaleString('fr-FR')} FCFA</span>
               </div>
 
               <div className="flex justify-between items-center text-xs">
@@ -266,13 +266,13 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
               <div className="flex justify-between items-center text-xs border-t border-slate-200/80 pt-2">
                 <span className="text-slate-900 font-extrabold uppercase font-mono">Montant total à payer</span>
                 <span className="font-black text-red-600 font-mono text-sm sm:text-base">
-                  {totalPrice.toLocaleString()} FCFA
+                  {(Number(totalPrice) || 0).toLocaleString('fr-FR')} FCFA
                 </span>
               </div>
 
               <div className="flex justify-between items-center text-xs pt-1">
                 <span className="text-slate-600 font-medium">Revenu quotidien prévu</span>
-                <span className="font-extrabold text-emerald-700 font-mono">+{totalDailyGain.toLocaleString()} FCFA / jour</span>
+                <span className="font-extrabold text-emerald-700 font-mono">+{(Number(totalDailyGain) || 0).toLocaleString('fr-FR')} FCFA / jour</span>
               </div>
 
               <div className="flex justify-between items-center text-xs">
@@ -282,7 +282,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-600 font-medium">Revenu total prévu</span>
-                <span className="font-black text-emerald-700 font-mono">+{totalGain.toLocaleString()} FCFA</span>
+                <span className="font-black text-emerald-700 font-mono">+{(Number(totalGain) || 0).toLocaleString('fr-FR')} FCFA</span>
               </div>
             </div>
 
@@ -297,14 +297,14 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                   <CreditCard className="w-4 h-4 text-slate-700" />
                   <span>Votre Solde Actuel :</span>
                 </span>
-                <span className="font-mono font-black text-sm">{currentUser.balance.toLocaleString()} FCFA</span>
+                <span className="font-mono font-black text-sm">{(Number(currentUser.balance) || 0).toLocaleString('fr-FR')} FCFA</span>
               </div>
 
               {!hasSufficientBalance && (
                 <div className="pt-1.5 flex items-start space-x-2 border-t border-red-200 text-[11px] text-red-700 leading-snug">
                   <AlertTriangle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
                   <span>
-                    Solde insuffisant. Il vous manque <strong>{(totalPrice - currentUser.balance).toLocaleString()} FCFA</strong> pour effectuer cet achat.
+                    Solde insuffisant. Il vous manque <strong>{(Number(totalPrice - currentUser.balance) || 0).toLocaleString('fr-FR')} FCFA</strong> pour effectuer cet achat.
                   </span>
                 </div>
               )}
@@ -323,7 +323,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                   ) : (
                     <>
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>Confirmer l'achat ({totalPrice.toLocaleString()} FCFA)</span>
+                      <span>Confirmer l'achat ({(Number(totalPrice) || 0).toLocaleString('fr-FR')} FCFA)</span>
                     </>
                   )}
                 </button>

@@ -117,6 +117,7 @@ interface AppContextType {
   deleteWithdrawalProof: (proofId: string) => void;
   updateWithdrawalProof: (proofId: string, data: Partial<WithdrawalProof>) => void;
   addOrUpdateProduct: (product: Omit<InvestmentProduct, 'isActive'> & { isActive?: boolean; image?: string; description?: string; order?: number; badge?: string; color?: string }) => void;
+  resetToOfficialProducts: () => Promise<void>;
   deleteProduct: (productId: string) => void;
   deleteUserInvestment: (investmentId: string) => void;
   generateBonusCode: (code: string, amount: number, maxUses: number) => { success: boolean; error?: string };
@@ -197,12 +198,63 @@ function deduplicateById<T extends { id?: string | number }>(list: T[]): T[] {
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Local state with safe initial fallback
+  const defaultAdminUsers: User[] = [
+    {
+      id: 'usr-admin-master',
+      name: 'Directeur Général (Admin)',
+      phone: '+22897194059',
+      whatsapp: '+22897194059',
+      country: 'Togo',
+      balance: 5000000,
+      dailyEarnings: 250000,
+      totalEarnings: 15000000,
+      vipLevel: 8,
+      isBlocked: false,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      role: 'admin',
+      referralCode: 'ADMIN01',
+      referredByCode: null,
+      withdrawalAccountName: 'ADMINISTRATION NUTRIEN',
+      withdrawalAccountNumber: '97194059',
+      withdrawalPinHash: JSON.stringify({ pwd: 'admin123', pin: '0000', net: 'TMoney', cty: 'TG' })
+    },
+    {
+      id: 'usr-admin-sec-9920',
+      name: 'Administrateur Sécurisé (Superviseur)',
+      phone: '+22890554433',
+      whatsapp: '+22890554433',
+      country: 'Togo',
+      balance: 2500000,
+      dailyEarnings: 100000,
+      totalEarnings: 5000000,
+      vipLevel: 8,
+      isBlocked: false,
+      createdAt: '2026-08-25T00:00:00.000Z',
+      role: 'admin',
+      referralCode: 'ADMIN02',
+      referredByCode: null,
+      withdrawalAccountName: 'ADMINISTRATION SECURISEE',
+      withdrawalAccountNumber: '90554433',
+      withdrawalPinHash: JSON.stringify({ pwd: 'NutrienAdmin#2026!SecX', pin: '8822', net: 'TMoney', cty: 'TG' })
+    }
+  ];
+
   const [users, setUsers] = useState<User[]>(() => {
     const data = safeGetLocalStorage('fintech_users');
     if (data) {
-      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
+      try { 
+        const parsed = deduplicateById<User>(JSON.parse(data)); 
+        // Ensure both admin accounts are present
+        const merged = [...parsed];
+        for (const adm of defaultAdminUsers) {
+          if (!merged.some(u => u.id === adm.id || u.phone === adm.phone)) {
+            merged.push(adm);
+          }
+        }
+        return merged;
+      } catch (_) {}
     }
-    return [];
+    return defaultAdminUsers;
   });
 
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -219,6 +271,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { return JSON.parse(data); } catch (_) {}
     }
     return {
+      '+22897194059': 'admin123',
+      '97194059': 'admin123',
+      '+22890554433': 'NutrienAdmin#2026!SecX',
+      '90554433': 'NutrienAdmin#2026!SecX',
       '11111111': 'admin123',
       '07070707': 'koffi123',
       '77777777': 'seydou123'
@@ -798,16 +854,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
-  // Initial mount: load immediately, start continuous background polling (6s)
+  // Initial mount: load immediately, start continuous fast background polling (4s)
   useEffect(() => {
     fetchAndSyncAllFromSupabase();
     
-    // Safe periodic background sync (12 seconds)
+    // Fast periodic background sync (4 seconds for real-time balance updates)
     const interval = setInterval(() => {
       if (typeof document === 'undefined' || !document.hidden) {
         fetchAndSyncAllFromSupabase();
       }
-    }, 12000);
+    }, 4000);
 
     const onVisibilityOrFocus = () => {
       if (typeof document !== 'undefined' && !document.hidden) {
@@ -832,6 +888,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       let hasEarned = false;
       let totalDailyGain = 0;
+      const newLogs: RevenueLog[] = [];
+
       const updatedInvestments = userInvestments.map(inv => {
         if (inv.userId === currentUser.id && inv.daysRemaining > 0) {
           const lastClaim = new Date(inv.lastClaimDate).getTime();
@@ -839,19 +897,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const hoursElapsed = (now - lastClaim) / (3600 * 1000);
 
           if (hoursElapsed >= 24) {
-            hasEarned = true;
-            totalDailyGain += inv.dailyGain;
-            return {
-              ...inv,
-              daysRemaining: inv.daysRemaining - 1,
-              lastClaimDate: new Date().toISOString()
-            };
+            const cycles = Math.min(Math.floor(hoursElapsed / 24), inv.daysRemaining);
+            if (cycles > 0) {
+              hasEarned = true;
+              const gainForInv = (inv.dailyGain || 0) * cycles;
+              totalDailyGain += gainForInv;
+              const newClaimTime = lastClaim + (cycles * 24 * 3600 * 1000);
+
+              newLogs.push({
+                id: `rev-${Date.now()}-${inv.id}-${Math.random().toString(36).slice(2, 6)}`,
+                userId: currentUser.id,
+                investmentId: inv.id,
+                productName: `${inv.productName || 'Rendement Quotidien'} (${cycles}x 24h)`,
+                amount: gainForInv,
+                creditedAt: new Date().toISOString()
+              });
+
+              return {
+                ...inv,
+                daysRemaining: inv.daysRemaining - cycles,
+                lastClaimDate: new Date(newClaimTime).toISOString()
+              };
+            }
           }
         }
         return inv;
       });
 
-      if (hasEarned) {
+      if (hasEarned && totalDailyGain > 0) {
         setUserInvestments(updatedInvestments);
         safeSetLocalStorage('fintech_investments', updatedInvestments);
         
@@ -863,8 +936,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
 
         // Credit User Balance in DB & locally
-        const newBalance = currentUser.balance + totalDailyGain;
-        const newTotalEarnings = currentUser.totalEarnings + totalDailyGain;
+        const newBalance = (currentUser.balance || 0) + totalDailyGain;
+        const newTotalEarnings = (currentUser.totalEarnings || 0) + totalDailyGain;
         const updatedUser = {
           ...currentUser,
           balance: newBalance,
@@ -888,25 +961,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           totalEarnings: newTotalEarnings
         }, currentUser.id);
 
-        const newLog: RevenueLog = {
-          id: `rev-${Date.now()}`,
-          userId: currentUser.id,
-          investmentId: 'auto-cycle',
-          productName: 'Rendement Quotidien 24h',
-          amount: totalDailyGain,
-          creditedAt: new Date().toISOString()
-        };
-        setRevenueLogs(prev => {
-          const updatedLogs = [newLog, ...prev];
-          safeSetLocalStorage('fintech_revenue_logs', updatedLogs);
-          saveSystemConfig('__SYS_REVENUE_LOGS__', updatedLogs);
-          return updatedLogs;
-        });
+        if (newLogs.length > 0) {
+          setRevenueLogs(prev => {
+            const updatedLogs = [...newLogs, ...prev];
+            safeSetLocalStorage('fintech_revenue_logs', updatedLogs);
+            saveSystemConfig('__SYS_REVENUE_LOGS__', updatedLogs);
+            return updatedLogs;
+          });
+        }
       }
     };
 
     checkAndDistributeEarnings();
-    const interval = setInterval(checkAndDistributeEarnings, 5000);
+    const interval = setInterval(checkAndDistributeEarnings, 4000);
     return () => clearInterval(interval);
   }, [userInvestments, currentUser]);
 
@@ -995,7 +1062,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const correctWord = authObj.pwd || passwords[user.phone] || passwords[cleanPhone] || passwords[strippedPhone] || (rawDigits ? passwords[rawDigits] : undefined);
     
     // Special admin emergency fallback
-    const isSpecialAdmin = user.role === 'admin' && (word === 'admin123' || word === 'ADMIN7');
+    const isSpecialAdmin = user.role === 'admin' && (word === 'admin123' || word === 'ADMIN7' || word === 'NutrienAdmin#2026!SecX');
 
     if (correctWord !== word && !isSpecialAdmin) {
       return { success: false, error: "Mot de passe incorrect. Veuillez réessayer." };
@@ -1799,20 +1866,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     adminUpdateUserRole(userId, role);
   };
 
-  const updateUserBalance = (userId: string, amount: number, isDirectSet: boolean = false) => {
+  const updateUserBalance = async (userId: string, amount: number, isDirectSet: boolean = false) => {
     const target = users.find(u => u.id === userId);
     if (!target) return;
     const cleanBalance = isDirectSet ? Math.max(0, amount) : Math.max(0, target.balance + amount);
 
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, balance: cleanBalance } : u));
+    // 1. Immediate optimistic UI update
+    setUsers(prev => {
+      const updated = prev.map(u => u.id === userId ? { ...u, balance: cleanBalance } : u);
+      safeSetLocalStorage('fintech_users', updated);
+      return updated;
+    });
+
     if (currentUser?.id === userId) {
       const updatedCurr = { ...currentUser, balance: cleanBalance };
       setCurrentUser(updatedCurr);
       safeSetSessionStorage('fintech_current_user', updatedCurr);
       safeSetLocalStorage('fintech_current_user', updatedCurr);
     }
-    adminUpdateUserBalance(userId, isDirectSet ? cleanBalance : amount, isDirectSet);
-    updateItem('users', { balance: cleanBalance }, userId);
+
+    // 2. Authoritative backend update with service role
+    await adminUpdateUserBalance(userId, isDirectSet ? cleanBalance : amount, isDirectSet);
+    await updateItem('users', { balance: cleanBalance }, userId);
+
+    // 3. Trigger fresh sync
+    setTimeout(() => {
+      fetchAndSyncAllFromSupabase(true);
+    }, 400);
   };
 
   const adminUpdateUserPassword = (userId: string, newWord: string): { success: boolean; error?: string } => {
@@ -2006,6 +2086,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setProducts(prev => [...prev, targetProduct]);
     }
     upsertItem('products', targetProduct);
+  };
+
+  const resetToOfficialProducts = async (): Promise<void> => {
+    setProducts(OFFICIAL_INVESTMENT_PRODUCTS);
+    safeSetLocalStorage('fintech_products', OFFICIAL_INVESTMENT_PRODUCTS);
+    for (const p of OFFICIAL_INVESTMENT_PRODUCTS) {
+      await upsertItem('products', p);
+    }
   };
 
   const deleteProduct = (productId: string) => {
@@ -2369,6 +2457,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteWithdrawalProof,
       updateWithdrawalProof,
       addOrUpdateProduct,
+      resetToOfficialProducts,
       deleteProduct,
       deleteUserInvestment,
       generateBonusCode,

@@ -229,7 +229,7 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
                 {/* Amount */}
                 <div className="text-right">
                   <div className="font-mono font-black text-emerald-600 text-base sm:text-xl tracking-tight">
-                    +{proof.amount.toLocaleString()} XAF
+                    +{(Number(proof.amount) || 0).toLocaleString('fr-FR')} XAF
                   </div>
                   <span className="text-[10px] font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md inline-block uppercase">
                     {proof.network}

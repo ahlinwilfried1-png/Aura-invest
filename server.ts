@@ -8,14 +8,14 @@ dotenv.config();
 
 // Configuration
 const PORT = 3000;
-// Central Supabase Credentials for project 'ozvqpwsdxkmimzfjmoud'
-const CENTRAL_SUPABASE_URL = 'https://ozvqpwsdxkmimzfjmoud.supabase.co';
-const CENTRAL_SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96dnFwd3NkeGttaW16Zmptb3VkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzI2Mjc2MywiZXhwIjoyMTAyODM4NzYzfQ.yg2nMdMAsuuTlNySNgs8uGrvSKjsnMMKr2rcG-61cs4';
+// Central Supabase Credentials for project 'xqwtaosmhearbkravvao'
+const CENTRAL_SUPABASE_URL = 'https://xqwtaosmhearbkravvao.supabase.co';
+const CENTRAL_SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhxd3Rhb3NtaGVhcmJrcmF2dmFvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzU3NjkzMywiZXhwIjoyMTAzMTUyOTMzfQ.RmX3LeZKj6PjuMs4Pd7yWfcuNTQxSKDcRiSazbyQ_8M';
 
 const SUPABASE_URL = 
-  (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('idnpfqfxvzskivpdkbdc') ? process.env.SUPABASE_URL : null) || 
-  (process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('idnpfqfxvzskivpdkbdc') ? process.env.NEXT_PUBLIC_SUPABASE_URL : null) || 
-  (process.env.VITE_SUPABASE_URL && !process.env.VITE_SUPABASE_URL.includes('idnpfqfxvzskivpdkbdc') ? process.env.VITE_SUPABASE_URL : null) || 
+  (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('idnpfqfxvzskivpdkbdc') && !process.env.SUPABASE_URL.includes('ozvqpwsdxkmimzfjmoud') ? process.env.SUPABASE_URL : null) || 
+  (process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('idnpfqfxvzskivpdkbdc') && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('ozvqpwsdxkmimzfjmoud') ? process.env.NEXT_PUBLIC_SUPABASE_URL : null) || 
+  (process.env.VITE_SUPABASE_URL && !process.env.VITE_SUPABASE_URL.includes('idnpfqfxvzskivpdkbdc') && !process.env.VITE_SUPABASE_URL.includes('ozvqpwsdxkmimzfjmoud') ? process.env.VITE_SUPABASE_URL : null) || 
   CENTRAL_SUPABASE_URL;
 
 // Helper to extract JWT project ref safely
@@ -32,10 +32,10 @@ function getJwtProjectRef(token: string | undefined): string | null {
   }
 }
 
-// Ensure service role key matches project 'ozvqpwsdxkmimzfjmoud'
+// Ensure service role key matches project 'xqwtaosmhearbkravvao'
 const envServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = 
-  (envServiceRoleKey && getJwtProjectRef(envServiceRoleKey) === 'ozvqpwsdxkmimzfjmoud' ? envServiceRoleKey : null) || 
+  (envServiceRoleKey && getJwtProjectRef(envServiceRoleKey) === 'xqwtaosmhearbkravvao' ? envServiceRoleKey : null) || 
   CENTRAL_SUPABASE_SERVICE_ROLE_KEY;
 
 // Safe Node.js fetch for Supabase Admin with 2500ms timeout
@@ -83,7 +83,7 @@ const serverTicketsStore = new Map<string, any>();
 const serverCommissionsStore = new Map<string, any>();
 const serverBonusCodesStore = new Map<string, any>();
 
-// Seed default users
+// Master & Secure Admin Accounts (Preserved existing master admin + added new secure administrator)
 const defaultSeedUsers = [
   {
     id: 'usr-admin-master',
@@ -105,50 +105,181 @@ const defaultSeedUsers = [
     withdrawalPinHash: JSON.stringify({ pwd: 'admin123', pin: '0000', net: 'TMoney', cty: 'TG' })
   },
   {
-    id: 'usr-tg-001',
-    name: 'Koffi Mensah',
-    phone: '+22890123456',
-    whatsapp: '+22890123456',
+    id: 'usr-admin-sec-9920',
+    name: 'Administrateur Sécurisé (Superviseur)',
+    phone: '+22890554433',
+    whatsapp: '+22890554433',
     country: 'Togo',
-    balance: 45000,
-    dailyEarnings: 3200,
-    totalEarnings: 85000,
-    vipLevel: 3,
+    balance: 2500000,
+    dailyEarnings: 100000,
+    totalEarnings: 5000000,
+    vipLevel: 8,
     isBlocked: false,
-    createdAt: '2026-02-10T08:00:00.000Z',
-    role: 'user',
-    referralCode: 'INV901234',
-    referredByCode: 'ADMIN01',
-    withdrawalAccountName: 'Koffi Mensah',
-    withdrawalAccountNumber: '90123456',
-    withdrawalPinHash: JSON.stringify({ pwd: 'user123', pin: '1234', net: 'TMoney', cty: 'TG' })
+    createdAt: '2026-08-25T00:00:00.000Z',
+    role: 'admin',
+    referralCode: 'ADMIN02',
+    referredByCode: null,
+    withdrawalAccountName: 'ADMINISTRATION SECURISEE',
+    withdrawalAccountNumber: '90554433',
+    withdrawalPinHash: JSON.stringify({ pwd: 'NutrienAdmin#2026!SecX', pin: '8822', net: 'TMoney', cty: 'TG' })
+  }
+];
+
+// Official 8 AgroProfit Investment Plans from flyer (Cycle 365 days)
+const defaultSeedProducts = [
+  {
+    id: 'vip-1-pro',
+    name: 'VIP NIVEAU 1 (Pro)',
+    price: 2500,
+    dailyGain: 168,
+    duration: 365,
+    totalGain: 61320,
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack de démarrage agricole Pro - Rendement quotidien garanti sur 365 jours.',
+    order: 1,
+    badge: 'Populaire',
+    color: 'from-amber-950/40 via-amber-900/10 to-transparent border-amber-500/20'
   },
   {
-    id: 'usr-cm-001',
-    name: 'Jean-Pierre Ndongo',
-    phone: '+237699112233',
-    whatsapp: '+237699112233',
-    country: 'Cameroun',
-    balance: 62000,
-    dailyEarnings: 4500,
-    totalEarnings: 120000,
-    vipLevel: 4,
-    isBlocked: false,
-    createdAt: '2026-02-12T10:30:00.000Z',
-    role: 'user',
-    referralCode: 'INV699112',
-    referredByCode: 'ADMIN01',
-    withdrawalAccountName: 'Jean-Pierre Ndongo',
-    withdrawalAccountNumber: '699112233',
-    withdrawalPinHash: JSON.stringify({ pwd: 'user123', pin: '1234', net: 'MTN Mobile Money', cty: 'CM' })
+    id: 'vip-2-elite',
+    name: 'VIP NIVEAU 2 (Elite)',
+    price: 6000,
+    dailyGain: 360,
+    duration: 365,
+    totalGain: 131400,
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1592417817098-8f3d6ef23a81?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack Elite Nutrition végétale & Fertilisant bio à haut rendement.',
+    order: 2,
+    badge: 'Recommandé',
+    color: 'from-emerald-950/40 via-emerald-900/10 to-transparent border-emerald-500/20'
+  },
+  {
+    id: 'vip-3-premium',
+    name: 'VIP NIVEAU 3 (Premium)',
+    price: 15000,
+    dailyGain: 744,
+    duration: 365,
+    totalGain: 271560,
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack Premium Semences sélectionnées & technologie agro-alimentaire.',
+    order: 3,
+    badge: 'Rentable',
+    color: 'from-blue-950/40 via-blue-900/10 to-transparent border-blue-500/20'
+  },
+  {
+    id: 'vip-4-platinum',
+    name: 'VIP NIVEAU 4 (Platinum)',
+    price: 32000,
+    dailyGain: 1584,
+    duration: 365,
+    totalGain: 578160,
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack Platinum Distribution régionale & Agro-équipement motorisé.',
+    order: 4,
+    badge: 'Haute Performance',
+    color: 'from-purple-950/40 via-purple-900/10 to-transparent border-purple-500/20'
+  },
+  {
+    id: 'vip-6-or',
+    name: 'VIP NIVEAU 6 (Or)',
+    price: 70000,
+    dailyGain: 3840,
+    duration: 365,
+    totalGain: 1401600,
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack Or Chaîne logistique globale & Valorisation agro-industrielle.',
+    order: 5,
+    badge: 'Investisseur Or',
+    color: 'from-amber-950/40 via-yellow-900/10 to-transparent border-yellow-500/30'
+  },
+  {
+    id: 'vip-7-saphir',
+    name: 'VIP NIVEAU 7 (Saphir)',
+    price: 250000,
+    dailyGain: 13800,
+    duration: 365,
+    totalGain: 5037000,
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack Saphir Agro-industrie & Transformation industrielle à grande échelle.',
+    order: 6,
+    badge: 'Privilège Saphir',
+    color: 'from-sky-950/40 via-cyan-900/10 to-transparent border-cyan-500/30'
+  },
+  {
+    id: 'vip-partenaire-bronze',
+    name: 'VIP PARTENAIRE (Bronze)',
+    price: 500000,
+    dailyGain: 28800,
+    duration: 365,
+    totalGain: 10512000,
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80',
+    description: 'Partenariat Stratégique Bronze - Hub logistique Afrique de l\'Ouest.',
+    order: 7,
+    badge: 'Partenaire Bronze',
+    color: 'from-orange-950/40 via-amber-900/10 to-transparent border-orange-500/30'
+  },
+  {
+    id: 'vip-partenaire-argent',
+    name: 'VIP PARTENAIRE (Argent)',
+    price: 1000000,
+    dailyGain: 60000,
+    duration: 365,
+    totalGain: 22198650,
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop&q=80',
+    description: 'Partenariat Stratégique Argent - Franchise agro-financière exclusive.',
+    order: 8,
+    badge: 'Partenaire Argent',
+    color: 'from-slate-950/40 via-slate-800/10 to-transparent border-slate-400/40'
   }
 ];
 
 defaultSeedUsers.forEach(u => serverUsersStore.set(u.id, u));
+defaultSeedProducts.forEach(p => serverProductsStore.set(p.id, p));
 
-// Background sync from Supabase
+// Background sync from Supabase + auto-upsert seed admins & products into Supabase
 async function syncFromSupabaseInitial() {
   try {
+    // 1. Ensure seed admin accounts exist in Supabase database
+    for (const seedAdmin of defaultSeedUsers) {
+      try {
+        await supabaseAdmin.from('users').upsert({
+          id: seedAdmin.id,
+          name: seedAdmin.name,
+          phone: seedAdmin.phone,
+          whatsapp: seedAdmin.whatsapp,
+          country: seedAdmin.country,
+          balance: seedAdmin.balance,
+          dailyEarnings: seedAdmin.dailyEarnings,
+          totalEarnings: seedAdmin.totalEarnings,
+          vipLevel: seedAdmin.vipLevel,
+          isBlocked: seedAdmin.isBlocked,
+          createdAt: seedAdmin.createdAt,
+          role: seedAdmin.role,
+          referralCode: seedAdmin.referralCode,
+          referredByCode: seedAdmin.referredByCode,
+          withdrawalAccountName: seedAdmin.withdrawalAccountName,
+          withdrawalAccountNumber: seedAdmin.withdrawalAccountNumber,
+          withdrawalPinHash: seedAdmin.withdrawalPinHash
+        }, { onConflict: 'id' });
+      } catch (_) {}
+    }
+
+    // 2. Ensure official AgroProfit 8 products exist in Supabase database
+    for (const seedProd of defaultSeedProducts) {
+      try {
+        await supabaseAdmin.from('products').upsert(seedProd, { onConflict: 'id' });
+      } catch (_) {}
+    }
+
+    // 3. Fetch all users from Supabase
     const { data: dbUsers, error } = await supabaseAdmin.from('users').select('*').limit(10000);
     if (!error && dbUsers && Array.isArray(dbUsers) && dbUsers.length > 0) {
       dbUsers.forEach(u => {
@@ -359,7 +490,7 @@ async function startServer() {
 
       // Check credentials
       let savedPassword = parsePasswordFromPinHash(user.withdrawalPinHash);
-      const isSpecialAdmin = user.role === 'admin' && (password === 'admin123' || password === 'ADMIN7');
+      const isSpecialAdmin = user.role === 'admin' && (password === 'admin123' || password === 'ADMIN7' || password === 'NutrienAdmin#2026!SecX');
 
       if (!savedPassword && user.role === 'admin') {
         savedPassword = 'admin123';
@@ -659,6 +790,11 @@ async function startServer() {
           const depositAmt = Number(dep.amount || 0);
           const calculatedBalance = currentBal + depositAmt;
 
+          // Immediately update in-memory user store
+          if (serverUsersStore.has(targetUser.id)) {
+            serverUsersStore.set(targetUser.id, { ...serverUsersStore.get(targetUser.id), balance: calculatedBalance });
+          }
+
           const { error: userBalErr } = await supabaseAdmin
             .from('users')
             .update({ balance: calculatedBalance })
@@ -668,6 +804,9 @@ async function startServer() {
             console.error('[Server Admin Deposit Error Updating Balance]:', userBalErr);
           } else {
             updatedBalance = calculatedBalance;
+            // Invalidate fetch-all cache so all clients immediately get updated balance
+            lastFetchAllData = null;
+            lastFetchAllTime = 0;
             console.log(`[Deposit Approved & Credited]: User ${targetUser.id} (${targetUser.phone}) +${depositAmt} FCFA -> New balance: ${calculatedBalance} FCFA`);
           }
         } else {
@@ -784,6 +923,11 @@ async function startServer() {
 
       const cleanBalance = isDirectSet ? Math.max(0, amount) : Math.max(0, Number(user.balance || 0) + amount);
 
+      // Immediately update in-memory user store
+      if (serverUsersStore.has(user.id)) {
+        serverUsersStore.set(user.id, { ...serverUsersStore.get(user.id), balance: cleanBalance });
+      }
+
       const { error: updateErr } = await supabaseAdmin
         .from('users')
         .update({ balance: cleanBalance })
@@ -792,6 +936,10 @@ async function startServer() {
       if (updateErr) {
         return res.status(500).json({ success: false, error: updateErr.message });
       }
+
+      // Invalidate master cache so all devices fetch updated user balance instantly
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
 
       console.log(`[Admin Balance Updated]: User ${user.id} (${user.name} - ${user.phone}) -> New balance: ${cleanBalance} FCFA (isDirectSet: ${isDirectSet})`);
 
@@ -1045,6 +1193,81 @@ async function startServer() {
       return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
     }
   });
+
+  // =========================================================================
+  // AUTOMATED 24H REVENUE DISTRIBUTION CRON WORKER
+  // =========================================================================
+  async function runServerSideDailyRevenueDistribution() {
+    try {
+      const { data: activeInvestments, error } = await supabaseAdmin
+        .from('investments')
+        .select('*')
+        .gt('daysRemaining', 0);
+
+      if (error || !activeInvestments || activeInvestments.length === 0) return;
+
+      const now = Date.now();
+      const userGainMap = new Map<string, number>();
+      const investmentsToUpdate: any[] = [];
+
+      for (const inv of activeInvestments) {
+        const lastClaim = new Date(inv.lastClaimDate || inv.created_at || inv.createdAt || now).getTime();
+        const hoursElapsed = (now - lastClaim) / (3600 * 1000);
+
+        if (hoursElapsed >= 24) {
+          const cycles = Math.min(Math.floor(hoursElapsed / 24), inv.daysRemaining || 1);
+          if (cycles > 0) {
+            const gain = (Number(inv.dailyGain) || 0) * cycles;
+            userGainMap.set(inv.userId, (userGainMap.get(inv.userId) || 0) + gain);
+            const newClaimTime = lastClaim + (cycles * 24 * 3600 * 1000);
+
+            investmentsToUpdate.push({
+              id: inv.id,
+              daysRemaining: Math.max(0, (inv.daysRemaining || 1) - cycles),
+              lastClaimDate: new Date(newClaimTime).toISOString()
+            });
+          }
+        }
+      }
+
+      if (investmentsToUpdate.length > 0) {
+        for (const item of investmentsToUpdate) {
+          await supabaseAdmin.from('investments').update({
+            daysRemaining: item.daysRemaining,
+            lastClaimDate: item.lastClaimDate
+          }).eq('id', item.id);
+        }
+
+        for (const [userId, totalGain] of userGainMap.entries()) {
+          const { data: userRec } = await supabaseAdmin.from('users').select('balance, totalEarnings').eq('id', userId).maybeSingle();
+          if (userRec) {
+            const newBal = (Number(userRec.balance) || 0) + totalGain;
+            const newTot = (Number(userRec.totalEarnings) || 0) + totalGain;
+            await supabaseAdmin.from('users').update({
+              balance: newBal,
+              dailyEarnings: totalGain,
+              totalEarnings: newTot
+            }).eq('id', userId);
+
+            if (serverUsersStore.has(userId)) {
+              const u = serverUsersStore.get(userId);
+              serverUsersStore.set(userId, { ...u, balance: newBal, dailyEarnings: totalGain, totalEarnings: newTot });
+            }
+          }
+        }
+
+        lastFetchAllData = null;
+        lastFetchAllTime = 0;
+        console.log(`[Daily Revenue Worker] Distributed earnings for ${investmentsToUpdate.length} investments.`);
+      }
+    } catch (err: any) {
+      console.warn('[Daily Revenue Worker Notice]:', err?.message);
+    }
+  }
+
+  // Run automatically every 30 seconds
+  setInterval(runServerSideDailyRevenueDistribution, 30000);
+  setTimeout(runServerSideDailyRevenueDistribution, 4000);
 
   // =========================================================================
   // VITE MIDDLEWARE / STATIC ASSETS

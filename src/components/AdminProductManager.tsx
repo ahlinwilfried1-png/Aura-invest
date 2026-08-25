@@ -1,31 +1,35 @@
 import React, { useState } from 'react';
 import { InvestmentProduct } from '../types';
-import { Plus, Edit2, Trash2, Power, X, Sparkles } from 'lucide-react';
+import { Plus, Edit2, Trash2, Power, X, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { OFFICIAL_INVESTMENT_PRODUCTS } from '../constants/products';
 
 interface AdminProductManagerProps {
   products: InvestmentProduct[];
-  onAddOrUpdateProduct: (product: Omit<InvestmentProduct, 'isActive'> & { isActive?: boolean; image?: string; description?: string; order?: number }) => void;
+  onAddOrUpdateProduct: (product: Omit<InvestmentProduct, 'isActive'> & { isActive?: boolean; image?: string; description?: string; order?: number; badge?: string; color?: string }) => void;
   onDeleteProduct: (productId: string) => void;
+  onResetToOfficialProducts?: () => void;
 }
 
 export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
   products,
   onAddOrUpdateProduct,
-  onDeleteProduct
+  onDeleteProduct,
+  onResetToOfficialProducts
 }) => {
   const [editingProduct, setEditingProduct] = useState<InvestmentProduct | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isResetDone, setIsResetDone] = useState(false);
 
   // Form Fields State
   const [formId, setFormId] = useState('');
   const [formName, setFormName] = useState('');
   const [formImage, setFormImage] = useState('');
   const [formDescription, setFormDescription] = useState('');
-  const [formPrice, setFormPrice] = useState<number>(3000);
-  const [formDailyGain, setFormDailyGain] = useState<number>(600);
-  const [formDuration, setFormDuration] = useState<number>(30);
-  const [formTotalGain, setFormTotalGain] = useState<number>(18000);
-  const [formBadge, setFormBadge] = useState('🔥 HOT');
+  const [formPrice, setFormPrice] = useState<number>(2500);
+  const [formDailyGain, setFormDailyGain] = useState<number>(168);
+  const [formDuration, setFormDuration] = useState<number>(365);
+  const [formTotalGain, setFormTotalGain] = useState<number>(61320);
+  const [formBadge, setFormBadge] = useState('Populaire');
   const [formOrder, setFormOrder] = useState<number>(1);
   const [formIsActive, setFormIsActive] = useState(true);
 
@@ -37,17 +41,29 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
   const openNewForm = () => {
     setEditingProduct(null);
     setFormId(`vip-${products.length + 1}`);
-    setFormName(`VIP ${products.length + 1} - Produit Santé`);
+    setFormName(`VIP NIVEAU ${products.length + 1} (Spécial)`);
     setFormImage('https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80');
-    setFormDescription('Pack de nutrition végétale et fertilisant agricole.');
-    setFormPrice(10000);
-    setFormDailyGain(2200);
-    setFormDuration(30);
-    setFormTotalGain(66000);
+    setFormDescription('Pack d\'investissement agricole officiel AgroProfit avec rendement garanti.');
+    setFormPrice(2500);
+    setFormDailyGain(168);
+    setFormDuration(365);
+    setFormTotalGain(61320);
     setFormBadge('Nouveau');
     setFormOrder(products.length + 1);
     setFormIsActive(true);
     setIsFormOpen(true);
+  };
+
+  const handleResetCatalog = () => {
+    if (onResetToOfficialProducts) {
+      onResetToOfficialProducts();
+    } else {
+      OFFICIAL_INVESTMENT_PRODUCTS.forEach(p => {
+        onAddOrUpdateProduct(p);
+      });
+    }
+    setIsResetDone(true);
+    setTimeout(() => setIsResetDone(false), 3000);
   };
 
   const openEditForm = (prod: InvestmentProduct) => {
@@ -111,13 +127,38 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
           </h3>
         </div>
 
-        <button
-          onClick={openNewForm}
-          className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl transition-all shadow-xs flex items-center justify-center space-x-2 cursor-pointer"
-        >
-          <Plus className="w-4 h-4 stroke-[3px]" />
-          <span>Ajouter un Produit</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={handleResetCatalog}
+            className={`font-black text-xs px-4 py-2.5 rounded-xl transition-all shadow-xs flex items-center justify-center space-x-2 cursor-pointer border ${
+              isResetDone 
+                ? 'bg-emerald-600 text-white border-emerald-500' 
+                : 'bg-emerald-800 hover:bg-emerald-700 text-white border-emerald-900/40'
+            }`}
+            title="Réinitialiser et enregistrer les 8 plans officiels de l'affiche AgroProfit"
+          >
+            {isResetDone ? (
+              <>
+                <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                <span>8 Plans VIP Synchronisés !</span>
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4 text-amber-300" />
+                <span>Restaurer les 8 VIP Officiels (Affiche)</span>
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={openNewForm}
+            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl transition-all shadow-xs flex items-center justify-center space-x-2 cursor-pointer"
+          >
+            <Plus className="w-4 h-4 stroke-[3px]" />
+            <span>Ajouter un Produit</span>
+          </button>
+        </div>
       </div>
 
       {/* Add / Edit Form Modal or Panel */}
@@ -314,7 +355,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                     )}
                   </div>
                   <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                    Prix : <span className="text-amber-700 font-bold">{prod.price.toLocaleString()} FCFA</span> | Gain/j : <span className="text-emerald-700 font-bold">+{prod.dailyGain.toLocaleString()} FCFA</span> | Cycle : <span className="text-slate-800 font-bold">{prod.duration}j</span>
+                    Prix : <span className="text-amber-700 font-bold">{(Number(prod.price) || 0).toLocaleString('fr-FR')} FCFA</span> | Gain/j : <span className="text-emerald-700 font-bold">+{(Number(prod.dailyGain) || 0).toLocaleString('fr-FR')} FCFA</span> | Cycle : <span className="text-slate-800 font-bold">{prod.duration}j</span>
                   </div>
                 </div>
               </div>

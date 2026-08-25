@@ -121,7 +121,7 @@ export const LiveWithdrawalFeed: React.FC<LiveWithdrawalFeedProps> = ({ withdraw
   const current = allFeedItems[currentIndex % allFeedItems.length];
   if (!current) return null;
 
-  const amountFormatted = current.amount.toLocaleString('fr-FR');
+  const amountFormatted = (Number(current.amount) || 0).toLocaleString('fr-FR');
 
   return (
     <div className="w-full flex justify-end mb-1">

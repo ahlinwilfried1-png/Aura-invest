@@ -249,7 +249,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const handleClaimEarningRow = (investmentId: string, amount: number) => {
     const res = claimDailyEarning(investmentId);
     if (res.success) {
-      showToast('success', `Félicitations ! Gain quotidien de +${amount.toLocaleString()} FCFA crédité avec succès.`);
+      showToast('success', `Félicitations ! Gain quotidien de +${(Number(amount) || 0).toLocaleString('fr-FR')} FCFA crédité avec succès.`);
     } else {
       showToast('err', res.error || "Échec du retrait quotidien.");
     }
@@ -305,7 +305,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     if (!bonusCodeInput.trim()) return;
     const res = redeemBonusCode(bonusCodeInput.trim());
     if (res.success) {
-      showToast('success', `Code activé ! +${res.amount?.toLocaleString()} FCFA ajoutés à votre solde.`);
+      showToast('success', `Code activé ! +${(Number(res.amount) || 0).toLocaleString('fr-FR')} FCFA ajoutés à votre solde.`);
       setBonusCodeInput('');
     } else {
       showToast('err', res.error || "Code promo invalide ou déjà utilisé.");
@@ -435,36 +435,44 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     unreadChatCount={unreadChatCount}
                   />
 
-                  {/* 4. TOUS LES PRODUITS EN DISPOSITION VERTICALE */}
+                  {/* 4. TOUS LES PRODUITS DU PLAN AGROPROFIT (AFFICHE OFFICIELLE) */}
                   <div className="space-y-4 pt-2">
-                    <div className="flex items-center justify-between pb-2">
+                    <div className="flex items-center justify-between pb-1">
                       <div>
-                        <span className="text-[10px] font-mono font-bold text-amber-800 uppercase tracking-widest block">
-                          CATALOGUE D'INVESTISSEMENT
-                        </span>
+                        <div className="inline-flex items-center space-x-1.5 bg-emerald-900 text-amber-400 px-2.5 py-0.5 rounded-full text-[9.5px] font-mono font-black uppercase tracking-wider mb-1">
+                          <Sparkles className="w-3 h-3 text-amber-400" />
+                          <span>PRIX ET REVENUS POUR UN CYCLE DE 365 JOURS</span>
+                        </div>
                         <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                          Nos Produits Agriculture
+                          Catalogue Officiel AgroProfit
                         </h3>
                       </div>
                     </div>
 
-                    {/* Vertical stack of product cards matching reference image */}
+                    {/* Vertical stack of product cards matching AGROPROFIT poster */}
                     <div className="space-y-3">
                       {activeProducts.map((product) => (
                         <div 
                           key={product.id}
                           onClick={() => setSelectedProductDetail(product)}
-                          className="bg-white rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-2.5 border border-slate-200/80 hover:border-slate-300 transition-all cursor-pointer group"
+                          className="bg-white rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-2.5 border-2 border-emerald-900/15 hover:border-amber-400 hover:shadow-md transition-all cursor-pointer group"
                         >
                           {/* Top row: Title + Duration on left, Image Thumbnail on right */}
                           <div className="flex items-start justify-between gap-3">
-                            <div className="space-y-0.5">
-                              <h4 className="text-base sm:text-lg font-bold text-slate-900 leading-snug group-hover:text-red-600 transition-colors">
-                                {product.name}
-                              </h4>
+                            <div className="space-y-1">
+                              <div className="flex items-center space-x-2">
+                                <h4 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug group-hover:text-emerald-800 transition-colors">
+                                  {product.name}
+                                </h4>
+                                {product.badge && (
+                                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300/60">
+                                    {product.badge}
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-xs text-slate-600 font-medium flex items-center space-x-1">
-                                <span>Durée (Jours) :</span>
-                                <strong className="text-slate-900 font-bold ml-1">{product.duration}</strong>
+                                <span>Cycle de profit :</span>
+                                <strong className="text-emerald-800 font-bold ml-1 font-mono">365 jours</strong>
                               </div>
                             </div>
 
@@ -472,34 +480,34 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                               src={product.image || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80'} 
                               alt={product.name}
                               onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80'; }}
-                              className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 border border-slate-100"
+                              className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 border border-slate-200"
                             />
                           </div>
 
                           {/* Middle row: Light Gray Box with 2 Columns */}
-                          <div className="bg-slate-100/90 rounded-2xl p-3 sm:p-4 grid grid-cols-2 gap-2 text-center">
+                          <div className="bg-amber-50/70 border border-amber-200/60 rounded-2xl p-3 sm:p-4 grid grid-cols-2 gap-2 text-center">
                             <div>
-                              <div className="text-red-500 font-bold text-lg sm:text-xl tracking-tight">
-                                {product.dailyGain.toLocaleString()}
+                              <div className="text-emerald-700 font-black text-lg sm:text-xl tracking-tight font-mono">
+                                +{(Number(product.dailyGain) || 0).toLocaleString('fr-FR')} FCFA
                               </div>
-                              <div className="text-xs sm:text-sm font-medium text-slate-900 mt-0.5">
-                                Revenu quotidien
+                              <div className="text-xs sm:text-sm font-semibold text-slate-700 mt-0.5">
+                                Revenu quotidien (24h)
                               </div>
                             </div>
                             <div>
-                              <div className="text-red-500 font-bold text-lg sm:text-xl tracking-tight">
-                                {product.totalGain.toLocaleString()}
+                              <div className="text-amber-900 font-black text-lg sm:text-xl tracking-tight font-mono">
+                                {(Number(product.totalGain) || 0).toLocaleString('fr-FR')} FCFA
                               </div>
-                              <div className="text-xs sm:text-sm font-medium text-slate-900 mt-0.5">
-                                Revenu total
+                              <div className="text-xs sm:text-sm font-semibold text-slate-700 mt-0.5">
+                                Revenu total (365j)
                               </div>
                             </div>
                           </div>
 
-                          {/* Bottom row: Price + Red INVESTIR Button */}
+                          {/* Bottom row: Price + Green/Amber INVESTIR Button */}
                           <div className="flex items-center justify-between pt-1">
                             <div className="text-sm sm:text-base font-normal text-slate-900">
-                              Prix(XAF):<span className="text-red-500 font-bold ml-1 text-base sm:text-lg">{product.price.toLocaleString()}</span>
+                              Prix d'adhésion : <span className="text-emerald-950 font-black ml-1 text-base sm:text-lg font-mono">{(Number(product.price) || 0).toLocaleString('fr-FR')} FCFA</span>
                             </div>
 
                             <button
@@ -507,9 +515,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                                 e.stopPropagation();
                                 setSelectedProductDetail(product);
                               }}
-                              className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-lg tracking-wider transition-all cursor-pointer shadow-xs uppercase"
+                              className="bg-emerald-700 hover:bg-emerald-600 text-white font-black text-xs sm:text-sm px-5 py-2.5 rounded-xl tracking-wider transition-all cursor-pointer shadow-xs uppercase flex items-center space-x-1.5"
                             >
-                              INVESTIR
+                              <span>INVESTIR</span>
+                              <ChevronRight className="w-4 h-4 stroke-[2.5]" />
                             </button>
                           </div>
                         </div>
@@ -803,7 +812,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 type="submit"
                 className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md flex items-center justify-center space-x-1.5"
               >
-                <span>Recharger maintenant ({depAmount.toLocaleString()} FCFA)</span>
+                <span>Recharger maintenant ({(Number(depAmount) || 0).toLocaleString('fr-FR')} FCFA)</span>
               </button>
             </form>
           </div>
@@ -824,7 +833,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <div>
               <span className="text-[10px] font-mono font-bold uppercase text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full">Demande de Retrait</span>
               <h3 className="text-xl font-black text-slate-900 mt-2">Retirer vers Mobile Money</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Solde actuel disponible : <strong className="text-slate-900 font-mono">{currentUser.balance.toLocaleString()} FCFA</strong></p>
+              <p className="text-xs text-slate-500 mt-0.5">Solde actuel disponible : <strong className="text-slate-900 font-mono">{(Number(currentUser.balance) || 0).toLocaleString('fr-FR')} FCFA</strong></p>
             </div>
 
             <form onSubmit={handleWithdrawalSubmit} className="space-y-4 text-xs font-medium">
@@ -877,7 +886,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 type="submit"
                 className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
               >
-                Confirmer le Retrait ({wthAmount.toLocaleString()} FCFA)
+                Confirmer le Retrait ({(Number(wthAmount) || 0).toLocaleString('fr-FR')} FCFA)
               </button>
             </form>
           </div>
@@ -997,10 +1006,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
                       <span>Revenu 24h : {log.productName}</span>
                     </div>
-                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">{new Date(log.creditedAt).toLocaleString()}</div>
+                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">{log.creditedAt ? new Date(log.creditedAt).toLocaleString('fr-FR') : 'Date inconnue'}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-blue-700 text-sm">+{log.amount.toLocaleString()} FCFA</div>
+                    <div className="font-bold text-blue-700 text-sm">+{(Number(log.amount) || 0).toLocaleString('fr-FR')} FCFA</div>
                     <div className="text-[9px] uppercase font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 inline-block font-mono">
                       Crédit Automatique
                     </div>
@@ -1012,10 +1021,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <div key={dep.id} className="p-3 bg-slate-50 rounded-xl flex items-center justify-between border border-slate-100">
                   <div>
                     <div className="font-bold text-slate-900 text-sm">Recharge Mobile Money</div>
-                    <div className="text-[10px] text-slate-500">{new Date(dep.createdAt).toLocaleString()}</div>
+                    <div className="text-[10px] text-slate-500">{dep.createdAt ? new Date(dep.createdAt).toLocaleString('fr-FR') : 'Date inconnue'}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-blue-600 text-sm">+{dep.amount.toLocaleString()} FCFA</div>
+                    <div className="font-bold text-blue-600 text-sm">+{(Number(dep.amount) || 0).toLocaleString('fr-FR')} FCFA</div>
                     <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${dep.status === 'approved' ? 'bg-blue-100 text-blue-800' : dep.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
                       {dep.status === 'approved' ? 'Validé' : dep.status === 'rejected' ? 'Refusé' : 'En attente'}
                     </div>
@@ -1027,10 +1036,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <div key={wth.id} className="p-3 bg-slate-50 rounded-xl flex items-center justify-between border border-slate-100">
                   <div>
                     <div className="font-bold text-slate-900 text-sm">Retrait Mobile Money</div>
-                    <div className="text-[10px] text-slate-500">{new Date(wth.createdAt).toLocaleString()}</div>
+                    <div className="text-[10px] text-slate-500">{wth.createdAt ? new Date(wth.createdAt).toLocaleString('fr-FR') : 'Date inconnue'}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-red-600 text-sm">-{wth.amount.toLocaleString()} FCFA</div>
+                    <div className="font-bold text-red-600 text-sm">-{(Number(wth.amount) || 0).toLocaleString('fr-FR')} FCFA</div>
                     <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${wth.status === 'approved' ? 'bg-blue-100 text-blue-800' : wth.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
                       {wth.status === 'approved' ? 'Payé' : wth.status === 'rejected' ? 'Refusé' : 'En traitement'}
                     </div>
