@@ -668,6 +668,18 @@ async function syncFromSupabaseInitial() {
       });
       console.log(`[Supabase Sync] Loaded ${dbUsers.length} users into server memory.`);
     }
+
+    // 4. Fetch all tickets / chat messages from Supabase and normalize
+    const { data: dbTickets, error: tktErr } = await supabaseAdmin.from('tickets').select('*').limit(10000);
+    if (!tktErr && dbTickets && Array.isArray(dbTickets) && dbTickets.length > 0) {
+      dbTickets.forEach(t => {
+        if (t && t.id) {
+          const norm = normalizeDbRow('tickets', t);
+          serverTicketsStore.set(norm.id, { ...serverTicketsStore.get(norm.id), ...norm });
+        }
+      });
+      console.log(`[Supabase Sync] Loaded ${dbTickets.length} tickets / chat messages into server memory.`);
+    }
   } catch (err: any) {
     console.warn('[Initial Sync Notice]:', err?.message);
   }
@@ -1318,7 +1330,14 @@ async function startServer() {
       }
 
       const nowIso = new Date().toISOString();
-      const existingTicket = serverTicketsStore.get(ticketId);
+      let existingTicket = serverTicketsStore.get(ticketId);
+
+      if (!existingTicket) {
+        const { data: dbTkt } = await supabaseAdmin.from('tickets').select('*').eq('id', ticketId).maybeSingle();
+        if (dbTkt) {
+          existingTicket = normalizeDbRow('tickets', dbTkt);
+        }
+      }
 
       const updates = {
         reply: reply.trim(),
@@ -1327,19 +1346,66 @@ async function startServer() {
         isReadByUser: false
       };
 
-      if (existingTicket) {
-        serverTicketsStore.set(ticketId, { ...existingTicket, ...updates });
-      }
+      const mergedTicket = existingTicket ? { ...existingTicket, ...updates } : { id: ticketId, ...updates };
+      serverTicketsStore.set(ticketId, mergedTicket);
 
+      // Persist to Supabase
       await safeSupabaseUpdate('tickets', updates, 'id', ticketId);
 
+      // Invalidate master sync cache so next refresh gets the fresh reply immediately
       lastFetchAllData = null;
       lastFetchAllTime = 0;
 
       console.log(`[Admin Replied to Ticket]: ID ${ticketId} -> "${reply.slice(0, 30)}..."`);
 
-      return res.json({ success: true });
+      return res.json({ success: true, ticket: mergedTicket });
     } catch (err: any) {
+      console.error('[Server Ticket Reply Exception]:', err);
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
+    }
+  });
+
+  // Admin Direct Message Route (creates or responds with admin message associated with user)
+  app.post('/api/tickets/direct-message', async (req, res) => {
+    try {
+      const { userId, message, subject } = req.body;
+      if (!userId || !message || !message.trim()) {
+        return res.status(400).json({ success: false, error: 'Utilisateur et message requis.' });
+      }
+
+      // Look up target user info
+      let targetUser = serverUsersStore.get(userId);
+      if (!targetUser) {
+        const { data: dbU } = await supabaseAdmin.from('users').select('*').eq('id', userId).maybeSingle();
+        if (dbU) targetUser = normalizeDbRow('users', dbU);
+      }
+
+      const nowIso = new Date().toISOString();
+      const newTicket = {
+        id: 'tkt-adm-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 7),
+        userId: targetUser?.id || userId,
+        userName: targetUser?.name || 'Client',
+        userPhone: targetUser?.phone || null,
+        subject: subject || "Message de l'Administration",
+        message: "Message direct du Support Client Nutrien.",
+        reply: message.trim(),
+        status: 'closed',
+        createdAt: nowIso,
+        replyCreatedAt: nowIso,
+        isReadByUser: false
+      };
+
+      serverTicketsStore.set(newTicket.id, newTicket);
+      await safeSupabaseUpsert('tickets', newTicket);
+
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
+
+      console.log(`[Admin Direct Message]: Sent to User ${newTicket.userName} (${newTicket.userId}) -> "${message.slice(0, 30)}..."`);
+
+      return res.json({ success: true, ticket: newTicket });
+    } catch (err: any) {
+      console.error('[Server Direct Message Exception]:', err);
       return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
     }
   });

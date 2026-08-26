@@ -389,7 +389,7 @@ export async function submitSupportTicket(
 export async function replySupportTicket(
   ticketId: string,
   reply: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; ticket?: any }> {
   try {
     const res = await resilientFetch('/api/tickets/reply', {
       method: 'POST',
@@ -408,6 +408,26 @@ export async function replySupportTicket(
     isReadByUser: false,
     replyCreatedAt: nowIso
   }, ticketId);
+}
+
+// Send Direct Admin Message to User
+export async function sendAdminDirectSupportTicket(
+  userId: string,
+  message: string,
+  subject?: string
+): Promise<{ success: boolean; error?: string; ticket?: any }> {
+  try {
+    const res = await resilientFetch('/api/tickets/direct-message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, message, subject })
+    }, 8000);
+    if (res.ok && res.isJson && res.data && res.data.success) {
+      return res.data;
+    }
+  } catch (_) {}
+
+  return { success: false, error: 'Erreur réseau lors de la transmission du message' };
 }
 
 // Process Deposit (Admin)

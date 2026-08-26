@@ -22,6 +22,7 @@ import {
   submitWithdrawalRequest,
   submitSupportTicket,
   replySupportTicket,
+  sendAdminDirectSupportTicket,
   adminProcessDeposit,
   adminProcessWithdrawal,
   adminUpdateUserBalance,
@@ -1613,23 +1614,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const targetUser = users.find(u => u.id === userId || u.phone === userId || u.name === userId);
     const actualUserId = targetUser?.id || userId;
     const userName = targetUser?.name || 'Client ' + userId.slice(0, 5);
+    const userPhone = targetUser?.phone || null;
 
+    const nowIso = new Date().toISOString();
     const newTicket: SupportTicket = {
-      id: 'tkt-adm-' + Math.random().toString(36).substr(2, 9),
+      id: 'tkt-adm-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 7),
       userId: actualUserId,
       userName: userName,
+      userPhone: userPhone || undefined,
       subject: "Message de l'Administration",
       message: "Message direct du Support Client Nutrien.",
       reply: message.trim(),
       status: 'closed',
-      createdAt: new Date().toISOString(),
-      replyCreatedAt: new Date().toISOString(),
+      createdAt: nowIso,
+      replyCreatedAt: nowIso,
       isReadByUser: false
     };
 
-    setTickets(prev => [newTicket, ...prev]);
-    const res = await insertItem('tickets', newTicket);
-    return res;
+    setTickets(prev => {
+      const updated = [newTicket, ...prev];
+      safeSetLocalStorage('fintech_tickets', updated);
+      return updated;
+    });
+
+    const res = await sendAdminDirectSupportTicket(actualUserId, message.trim(), "Message de l'Administration");
+    if (!res.success) {
+      await insertItem('tickets', newTicket);
+    }
+    return { success: true };
   };
 
   const requestWithdrawal = (amount: number, network: any, accountNumber: string) => {
@@ -2203,25 +2215,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const replyToTicket = async (ticketId: string, reply: string): Promise<{ success: boolean; error?: string }> => {
     if (!ticketId || !reply.trim()) return { success: false, error: "Réponse invalide." };
-    const targetTicket = tickets.find(t => t.id === ticketId);
     const nowIso = new Date().toISOString();
     
-    setTickets(prev => prev.map(t => {
-      if (t.id === ticketId || (targetTicket && t.userId === targetTicket.userId && t.status === 'open')) {
-        return {
-          ...t,
-          reply: t.id === ticketId ? reply : (t.reply || reply),
-          status: 'closed' as const,
-          isReadByUser: false,
-          replyCreatedAt: nowIso
-        };
-      }
-      return t;
-    }));
-    safeSetLocalStorage('fintech_tickets', tickets.map(t => t.id === ticketId ? { ...t, reply, status: 'closed' as const, isReadByUser: false, replyCreatedAt: nowIso } : t));
+    setTickets(prev => {
+      const updated = prev.map(t => {
+        if (t.id === ticketId) {
+          return {
+            ...t,
+            reply: reply.trim(),
+            status: 'closed' as const,
+            isReadByUser: false,
+            replyCreatedAt: nowIso
+          };
+        }
+        return t;
+      });
+      safeSetLocalStorage('fintech_tickets', updated);
+      return updated;
+    });
 
-    const res = await replySupportTicket(ticketId, reply);
-    return res;
+    const res = await replySupportTicket(ticketId, reply.trim());
+    if (!res.success) {
+      await updateItem('tickets', {
+        reply: reply.trim(),
+        status: 'closed',
+        isReadByUser: false,
+        replyCreatedAt: nowIso
+      }, ticketId);
+    }
+
+    return { success: true };
   };
 
   const markTicketsAsRead = (userId: string) => {
