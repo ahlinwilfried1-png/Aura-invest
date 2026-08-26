@@ -45,7 +45,8 @@ import {
   AlertCircle,
   MessageCircle,
   Users,
-  HeartHandshake
+  HeartHandshake,
+  RefreshCw
 } from 'lucide-react';
 
 interface AccountViewProps {
@@ -112,8 +113,22 @@ export const AccountView: React.FC<AccountViewProps> = ({
   onOpenTab,
   onToggleAdmin,
 }) => {
-  const { faqs = [] } = useApp();
+  const { faqs = [], users = [], refreshData } = useApp();
+  const [isSyncingAdmin, setIsSyncingAdmin] = useState(false);
   const [activeSubPage, setActiveSubPage] = useState<SubPage>(null);
+
+  const handleManualAdminSync = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsSyncingAdmin(true);
+    try {
+      if (refreshData) await refreshData();
+      onShowToast('success', "Base de données centrale Supabase synchronisée en direct !");
+    } catch (_) {
+      onShowToast('err', "Erreur lors de la synchronisation.");
+    } finally {
+      setIsSyncingAdmin(false);
+    }
+  };
 
   const unreadAnnouncementsCount = announcements.filter((a: any) => a.isNew).length;
   const hasUnreadAnnouncements = unreadAnnouncementsCount > 0;
@@ -237,6 +252,89 @@ export const AccountView: React.FC<AccountViewProps> = ({
       {/* ========================================================= */}
       {activeSubPage === null && (
         <div className="space-y-4 animate-fadeIn max-w-lg mx-auto pb-6 font-sans">
+          {/* SPECIAL ADMIN ACCESS HUB (DISPLAYED PROMINENTLY FOR ADMINISTRATOR ROLES) */}
+          {currentUser.role === 'admin' && (
+            <div 
+              onClick={() => onToggleAdmin && onToggleAdmin()}
+              className="bg-gradient-to-br from-red-600 via-red-700 to-rose-800 text-white rounded-3xl p-4 sm:p-5 shadow-lg border border-red-500 relative overflow-hidden cursor-pointer group transition-all transform hover:-translate-y-0.5"
+            >
+              {/* Background Glow */}
+              <div className="absolute top-0 right-0 -mt-6 -mr-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
+
+              <div className="relative z-10 space-y-3.5">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-white text-red-600 flex items-center justify-center font-black shadow-md shrink-0">
+                      <ShieldCheck className="w-6 h-6 stroke-[2.5]" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-sm sm:text-base font-black text-white tracking-tight">Panneau d'Administration</h3>
+                        <span className="bg-white/20 text-white text-[9px] font-mono px-2 py-0.5 rounded-full uppercase font-extrabold tracking-wider border border-white/20">
+                          SUPABASE DIRECT
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-red-100 font-medium">Gestion centrale, utilisateurs, transactions & chat</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-white/80 group-hover:translate-x-1 transition-transform" />
+                </div>
+
+                {/* Real-time stats pills */}
+                <div className="grid grid-cols-4 gap-1.5 pt-1 text-center font-mono">
+                  <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2 border border-white/10">
+                    <div className="text-xs sm:text-sm font-black text-white">{users.length || 1}</div>
+                    <div className="text-[9px] text-red-100 font-sans font-semibold">Comptes</div>
+                  </div>
+                  <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2 border border-white/10">
+                    <div className="text-xs sm:text-sm font-black text-amber-300">
+                      {deposits.filter(d => d.status === 'pending').length}
+                    </div>
+                    <div className="text-[9px] text-red-100 font-sans font-semibold">Dépôts att.</div>
+                  </div>
+                  <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2 border border-white/10">
+                    <div className="text-xs sm:text-sm font-black text-amber-300">
+                      {withdrawals.filter(w => w.status === 'pending').length}
+                    </div>
+                    <div className="text-[9px] text-red-100 font-sans font-semibold">Retraits att.</div>
+                  </div>
+                  <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2 border border-white/10">
+                    <div className="text-xs sm:text-sm font-black text-emerald-300">
+                      {tickets.filter(t => t.status === 'open').length}
+                    </div>
+                    <div className="text-[9px] text-red-100 font-sans font-semibold">Messages</div>
+                  </div>
+                </div>
+
+                {/* Actions Bar */}
+                <div className="flex items-center space-x-2 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onToggleAdmin) onToggleAdmin();
+                    }}
+                    className="flex-1 bg-white hover:bg-slate-100 active:scale-98 text-red-700 font-black text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center space-x-1.5 shadow-sm cursor-pointer"
+                  >
+                    <LockKeyhole className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Ouvrir le Panneau Admin</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleManualAdminSync}
+                    disabled={isSyncingAdmin}
+                    className="bg-white/20 hover:bg-white/30 text-white font-bold text-xs py-2.5 px-3 rounded-xl transition-all flex items-center space-x-1.5 border border-white/20 cursor-pointer disabled:opacity-50 shrink-0"
+                    title="Synchroniser immédiatement avec Supabase"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isSyncingAdmin ? 'animate-spin' : ''}`} />
+                    <span className="text-[10px] font-mono uppercase">{isSyncingAdmin ? 'Sync...' : 'Sync'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 1. Top Header Card: "Mon portefeuille" Nutrien Ag Solutions style (White theme) */}
           <div 
             className="py-3 px-1 relative overflow-hidden space-y-4 text-slate-900"

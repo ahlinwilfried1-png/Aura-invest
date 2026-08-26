@@ -6,7 +6,7 @@ interface ProductDetailViewProps {
   product: InvestmentProduct;
   currentUser: User;
   onBack: () => void;
-  onConfirmPurchase: (product: InvestmentProduct, quantity: number) => { success: boolean; error?: string };
+  onConfirmPurchase: (product: InvestmentProduct, quantity: number) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string };
   onOpenDeposit: () => void;
   onShowToast: (status: 'success' | 'err', text: string) => void;
 }
@@ -39,7 +39,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
     setIsSubmitting(true);
     try {
-      const res = onConfirmPurchase(product, quantity);
+      const res = await onConfirmPurchase(product, quantity);
       if (res.success) {
         setShowConfirmModal(false);
         onShowToast('success', `Souscription réussie ! Vous avez investi dans "${product.name}".`);

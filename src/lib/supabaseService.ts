@@ -1,56 +1,5 @@
 import { supabase } from './supabase';
-
-const TABLE_SCHEMAS: Record<string, string[]> = {
-  users: [
-    'id', 'name', 'phone', 'whatsapp', 'country', 'balance', 'dailyEarnings',
-    'totalEarnings', 'vipLevel', 'isBlocked', 'createdAt', 'role', 'referralCode',
-    'referredByCode', 'withdrawalAccountName', 'withdrawalAccountNumber', 'withdrawalPinHash'
-  ],
-  products: [
-    'id', 'name', 'price', 'dailyGain', 'duration', 'totalGain', 'isActive',
-    'image', 'description', 'order', 'badge', 'color'
-  ],
-  investments: [
-    'id', 'userId', 'productId', 'productName', 'price', 'dailyGain',
-    'duration', 'daysRemaining', 'purchaseDate', 'lastClaimDate'
-  ],
-  deposits: [
-    'id', 'userId', 'userName', 'userPhone', 'amount', 'method',
-    'transactionId', 'screenshotUrl', 'status', 'createdAt'
-  ],
-  withdrawals: [
-    'id', 'userId', 'userName', 'userPhone', 'amount', 'receivedAmount',
-    'network', 'accountNumber', 'status', 'createdAt'
-  ],
-  withdrawal_proofs: [
-    'id', 'userId', 'userName', 'userPhone', 'amount', 'network',
-    'message', 'imageUrl', 'createdAt', 'isVerified', 'status'
-  ],
-  tickets: [
-    'id', 'userId', 'userName', 'subject', 'message', 'imageUrl',
-    'status', 'createdAt', 'reply', 'replyCreatedAt', 'isReadByUser'
-  ],
-  commissions: [
-    'id', 'referrerId', 'refereeId', 'refereeName', 'amount', 'level', 'createdAt'
-  ],
-  bonus_codes: [
-    'code', 'amount', 'maxUses', 'usedBy', 'createdAt'
-  ]
-};
-
-export function sanitizeItem<T>(tableName: string, item: T): Partial<T> {
-  if (!item || typeof item !== 'object') return item;
-  const allowedCols = TABLE_SCHEMAS[tableName];
-  if (!allowedCols) return item;
-
-  const sanitized: any = {};
-  for (const col of allowedCols) {
-    if (col in (item as any)) {
-      sanitized[col] = (item as any)[col];
-    }
-  }
-  return sanitized as Partial<T>;
-}
+import { normalizeFromDbRow, prepareForDbPayload } from './dbMapper';
 
 // Resilient fetch helper with timeout and content-type verification
 async function resilientFetch(url: string, options: RequestInit = {}, timeoutMs: number = 6000): Promise<{ ok: boolean; status: number; data: any; isJson: boolean }> {
@@ -75,7 +24,6 @@ async function resilientFetch(url: string, options: RequestInit = {}, timeoutMs:
         return { ok: false, status: res.status, data: null, isJson: false };
       }
     } else {
-      // Returned HTML or text (e.g. Cloudflare 522 error page)
       const text = await res.text().catch(() => '');
       return { ok: false, status: res.status, data: text, isJson: false };
     }
@@ -106,7 +54,7 @@ export async function loginUserInDatabase(phone: string, password: string, count
 
     if (res.isJson && res.data) {
       if (res.data.success && res.data.user) {
-        return { success: true, user: res.data.user };
+        return { success: true, user: normalizeFromDbRow('users', res.data.user) };
       }
       if (res.data.error) {
         return { success: false, error: res.data.error };
@@ -128,7 +76,7 @@ export async function registerUserInDatabase(user: any): Promise<{ success: bool
 
     if (res.isJson && res.data) {
       if (res.data.success && res.data.user) {
-        return { success: true, user: res.data.user };
+        return { success: true, user: normalizeFromDbRow('users', res.data.user) };
       }
       if (res.data.error) {
         return { success: false, error: res.data.error };
@@ -147,7 +95,7 @@ export async function fetchTableData<T>(tableName: string): Promise<T[] | null> 
   try {
     const res = await resilientFetch(`/api/admin/fetch-table?tableName=${encodeURIComponent(tableName)}`, {}, 6000);
     if (res.ok && res.isJson && res.data && res.data.success && Array.isArray(res.data.data)) {
-      return res.data.data as T[];
+      return res.data.data.map((row: any) => normalizeFromDbRow(tableName, row)) as T[];
     }
   } catch (_) {}
 
@@ -162,7 +110,7 @@ export async function fetchTableData<T>(tableName: string): Promise<T[] | null> 
       console.warn(`[Supabase] Table '${tableName}' fetch notice:`, error.message);
       return null;
     }
-    return data as T[];
+    return (data || []).map((row: any) => normalizeFromDbRow(tableName, row)) as T[];
   } catch (err) {
     console.warn(`[Supabase] Error connecting to table '${tableName}':`, err);
     return null;
@@ -170,23 +118,22 @@ export async function fetchTableData<T>(tableName: string): Promise<T[] | null> 
 }
 
 export async function upsertItem<T>(tableName: string, item: T): Promise<{ success: boolean; error?: string }> {
-  const cleanItem = sanitizeItem(tableName, item);
-  
   // 1. Try authoritative Service Role execute endpoint
   try {
     const res = await resilientFetch('/api/admin/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'upsert', tableName, item: cleanItem })
+      body: JSON.stringify({ action: 'upsert', tableName, item })
     }, 6000);
     if (res.ok && res.isJson && res.data && res.data.success) {
       return { success: true };
     }
   } catch (_) {}
 
-  // 2. Fallback: Direct client upsert
+  // 2. Fallback: Direct client upsert with prepared db payload
   try {
-    const queryPromise = supabase.from(tableName).upsert(cleanItem as any);
+    const payload = prepareForDbPayload(tableName, item);
+    const queryPromise = supabase.from(tableName).upsert(payload as any);
     const timeoutPromise = new Promise<{ error: any }>((resolve) => 
       setTimeout(() => resolve({ error: { message: 'Timeout' } }), 6000)
     );
@@ -203,23 +150,22 @@ export async function upsertItem<T>(tableName: string, item: T): Promise<{ succe
 }
 
 export async function insertItem<T>(tableName: string, item: T): Promise<{ success: boolean; error?: string }> {
-  const cleanItem = sanitizeItem(tableName, item);
-
   // 1. Try authoritative Service Role execute endpoint
   try {
     const res = await resilientFetch('/api/admin/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'upsert', tableName, item: cleanItem })
+      body: JSON.stringify({ action: 'upsert', tableName, item })
     }, 6000);
     if (res.ok && res.isJson && res.data && res.data.success) {
       return { success: true };
     }
   } catch (_) {}
 
-  // 2. Fallback: Direct client insert
+  // 2. Fallback: Direct client insert with prepared db payload
   try {
-    const { error } = await supabase.from(tableName).insert(cleanItem as any);
+    const payload = prepareForDbPayload(tableName, item);
+    const { error } = await supabase.from(tableName).insert(payload as any);
     if (error) {
       console.warn(`[Supabase] Table '${tableName}' insert error:`, error.message);
       return { success: false, error: error.message };
@@ -237,23 +183,22 @@ export async function updateItem<T>(
   idValue: string,
   idCol: string = 'id'
 ): Promise<{ success: boolean; error?: string }> {
-  const cleanUpdates = sanitizeItem(tableName, updates);
-
   // 1. Try authoritative Service Role execute endpoint
   try {
     const res = await resilientFetch('/api/admin/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'update', tableName, updates: cleanUpdates, idValue, idCol })
+      body: JSON.stringify({ action: 'update', tableName, updates, idValue, idCol })
     }, 6000);
     if (res.ok && res.isJson && res.data && res.data.success) {
       return { success: true };
     }
   } catch (_) {}
 
-  // 2. Fallback: Direct client update
+  // 2. Fallback: Direct client update with prepared db payload
   try {
-    const { error } = await supabase.from(tableName).update(cleanUpdates as any).eq(idCol, idValue);
+    const payload = prepareForDbPayload(tableName, updates);
+    const { error } = await supabase.from(tableName).update(payload as any).eq(idCol, idValue);
     if (error) {
       console.warn(`[Supabase] Table '${tableName}' update error:`, error.message);
       return { success: false, error: error.message };
@@ -267,14 +212,13 @@ export async function updateItem<T>(
 
 export async function syncTableData<T>(tableName: string, items: T[]): Promise<{ success: boolean; error?: string }> {
   if (!items || items.length === 0) return { success: true };
-  const cleanItems = items.map(item => sanitizeItem(tableName, item));
 
   // 1. Try authoritative Service Role execute endpoint
   try {
     const res = await resilientFetch('/api/admin/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'sync', tableName, items: cleanItems })
+      body: JSON.stringify({ action: 'sync', tableName, items })
     }, 8000);
     if (res.ok && res.isJson && res.data && res.data.success) {
       return { success: true };
@@ -283,7 +227,8 @@ export async function syncTableData<T>(tableName: string, items: T[]): Promise<{
 
   // 2. Fallback: Direct client sync
   try {
-    const { error } = await supabase.from(tableName).upsert(cleanItems as any);
+    const payloads = items.map(item => prepareForDbPayload(tableName, item));
+    const { error } = await supabase.from(tableName).upsert(payloads as any);
     if (error) {
       console.warn(`[Supabase] Table '${tableName}' sync error:`, error.message);
       return { success: false, error: error.message };
@@ -345,11 +290,12 @@ export async function fetchSystemConfig<T>(configKey: string, fallbackValue: T):
     if (error || !data) {
       return fallbackValue;
     }
+    const norm = normalizeFromDbRow('bonus_codes', data);
     if (Array.isArray(fallbackValue)) {
-      return (data.usedBy || fallbackValue) as unknown as T;
+      return (norm.usedBy || fallbackValue) as unknown as T;
     }
-    if (data.usedBy && Array.isArray(data.usedBy) && data.usedBy.length > 0) {
-      return data.usedBy[0] as unknown as T;
+    if (norm.usedBy && Array.isArray(norm.usedBy) && norm.usedBy.length > 0) {
+      return norm.usedBy[0] as unknown as T;
     }
     return fallbackValue;
   } catch (err) {
@@ -357,23 +303,114 @@ export async function fetchSystemConfig<T>(configKey: string, fallbackValue: T):
   }
 }
 
+// Purchase Investment via Dedicated ACID Server Route
+export async function buyProductInvestment(
+  userId: string,
+  productId: string,
+  quantity: number = 1
+): Promise<{ success: boolean; error?: string; newBalance?: number; investments?: any[]; user?: any }> {
+  try {
+    const res = await resilientFetch('/api/investments/buy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, productId, quantity })
+    }, 10000);
 
+    if (res.isJson && res.data) {
+      return res.data;
+    }
+  } catch (err: any) {
+    console.warn('[Buy Investment Endpoint Error]:', err);
+  }
+  return { success: false, error: "Erreur lors de la communication avec le serveur d'achat." };
+}
+
+// Submit Deposit Request
 export async function submitDepositRequest(
   depositData: any
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; deposit?: any }> {
   try {
     const res = await resilientFetch('/api/deposits/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(depositData)
-    }, 6000);
-    if (res.ok && res.isJson && res.data && res.data.success) return { success: true };
+    }, 8000);
+    if (res.ok && res.isJson && res.data && res.data.success) {
+      return res.data;
+    }
   } catch (_) {}
 
   // Fallback to direct client upsert
-  return upsertItem('deposits', depositData);
+  const upRes = await upsertItem('deposits', depositData);
+  return { success: upRes.success, error: upRes.error, deposit: depositData };
 }
 
+// Submit Withdrawal Request
+export async function submitWithdrawalRequest(
+  withdrawalData: any
+): Promise<{ success: boolean; error?: string; withdrawal?: any }> {
+  try {
+    const res = await resilientFetch('/api/withdrawals/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(withdrawalData)
+    }, 8000);
+    if (res.ok && res.isJson && res.data && res.data.success) {
+      return res.data;
+    }
+  } catch (_) {}
+
+  // Fallback to direct client upsert
+  const upRes = await upsertItem('withdrawals', withdrawalData);
+  return { success: upRes.success, error: upRes.error, withdrawal: withdrawalData };
+}
+
+// Submit Chat Support Ticket
+export async function submitSupportTicket(
+  ticketData: any
+): Promise<{ success: boolean; error?: string; ticket?: any }> {
+  try {
+    const res = await resilientFetch('/api/tickets/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(ticketData)
+    }, 8000);
+    if (res.ok && res.isJson && res.data && res.data.success) {
+      return res.data;
+    }
+  } catch (_) {}
+
+  // Fallback to direct client upsert
+  const upRes = await upsertItem('tickets', ticketData);
+  return { success: upRes.success, error: upRes.error, ticket: ticketData };
+}
+
+// Reply to Chat Support Ticket
+export async function replySupportTicket(
+  ticketId: string,
+  reply: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await resilientFetch('/api/tickets/reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticketId, reply })
+    }, 8000);
+    if (res.ok && res.isJson && res.data && res.data.success) {
+      return res.data;
+    }
+  } catch (_) {}
+
+  const nowIso = new Date().toISOString();
+  return updateItem('tickets', {
+    reply,
+    status: 'closed',
+    isReadByUser: false,
+    replyCreatedAt: nowIso
+  }, ticketId);
+}
+
+// Process Deposit (Admin)
 export async function adminProcessDeposit(
   depositId: string,
   status: 'approved' | 'rejected',
@@ -394,6 +431,7 @@ export async function adminProcessDeposit(
   return updateItem('deposits', { status }, depositId);
 }
 
+// Process Withdrawal (Admin)
 export async function adminProcessWithdrawal(
   withdrawalId: string,
   status: 'approved' | 'rejected'
@@ -413,11 +451,12 @@ export async function adminProcessWithdrawal(
   return updateItem('withdrawals', { status }, withdrawalId);
 }
 
+// Update User Balance (Admin)
 export async function adminUpdateUserBalance(
   userId: string,
   amount: number,
   isDirectSet: boolean = false
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; newBalance?: number; userId?: string }> {
   try {
     const res = await resilientFetch('/api/admin/users/balance', {
       method: 'POST',
@@ -432,6 +471,7 @@ export async function adminUpdateUserBalance(
   return { success: true };
 }
 
+// Update User Role (Admin)
 export async function adminUpdateUserRole(
   userId: string,
   role: 'admin' | 'user'
@@ -450,6 +490,7 @@ export async function adminUpdateUserRole(
   return updateItem('users', { role }, userId);
 }
 
+// Update User Block Status (Admin)
 export async function adminUpdateUserBlock(
   userId: string,
   isBlocked: boolean
@@ -467,4 +508,3 @@ export async function adminUpdateUserBlock(
 
   return updateItem('users', { isBlocked }, userId);
 }
-
