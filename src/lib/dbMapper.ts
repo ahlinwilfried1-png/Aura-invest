@@ -197,7 +197,8 @@ export function normalizeFromDbRow<T = any>(tableName: string, dbRow: any): T {
 export function prepareForDbPayload(
   tableName: string, 
   jsObject: any, 
-  knownColumns?: Set<string> | null
+  knownColumns?: Set<string> | null,
+  allowDefaults: boolean = true
 ): Record<string, any> {
   if (!jsObject || typeof jsObject !== 'object') return jsObject;
 
@@ -221,7 +222,8 @@ export function prepareForDbPayload(
       }
     }
 
-    if (val === undefined && m.defaultValue !== undefined) {
+    // ONLY apply default values if allowDefaults is true (e.g. for creating new records, NOT for partial updates)
+    if (allowDefaults && val === undefined && m.defaultValue !== undefined) {
       val = m.defaultValue;
     }
 
@@ -244,6 +246,14 @@ export function prepareForDbPayload(
         const primaryDbKey = m.dbKeys[0];
         payload[primaryDbKey] = val;
       }
+    }
+  }
+
+  // Preserve any extra properties not found in schema definitions
+  for (const k of Object.keys(jsObject)) {
+    const isMapped = mappings.some(m => m.jsKey === k || m.dbKeys.includes(k));
+    if (!isMapped && jsObject[k] !== undefined) {
+      payload[k] = jsObject[k];
     }
   }
 

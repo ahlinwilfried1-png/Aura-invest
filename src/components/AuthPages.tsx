@@ -193,10 +193,31 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
           onSuccess();
         }, 300);
       } else {
-        setErrorMsg(res.error || "Une erreur est survenue lors de l'inscription.");
+        let err = res.error || "Une erreur est survenue lors de l'inscription.";
+        if (
+          err.includes('users_phone_key') || 
+          err.includes('unique constraint') || 
+          err.includes('duplicate key') || 
+          err.includes('23505') ||
+          err.toLowerCase().includes('déjà un compte') ||
+          err.toLowerCase().includes('already exists')
+        ) {
+          err = "Ce numéro possède déjà un compte, veuillez vous connecter.";
+        }
+        setErrorMsg(err);
       }
-    } catch (err) {
-      setErrorMsg("Échec de l'inscription. Veuillez vérifier vos informations.");
+    } catch (err: any) {
+      let msg = err?.message || '';
+      if (
+        msg.includes('users_phone_key') || 
+        msg.includes('unique constraint') || 
+        msg.includes('duplicate key') || 
+        msg.includes('23505')
+      ) {
+        setErrorMsg("Ce numéro possède déjà un compte, veuillez vous connecter.");
+      } else {
+        setErrorMsg("Échec de l'inscription. Veuillez vérifier vos informations.");
+      }
     } finally {
       setLoading(false);
     }
@@ -284,9 +305,24 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
             >
               {/* Alert Messages */}
               {errorMsg && (
-                <div className="bg-red-50 border border-red-200 p-3.5 rounded-2xl flex items-center space-x-2.5 text-xs text-red-700 animate-fadeIn font-medium">
-                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                  <span>{errorMsg}</span>
+                <div className="bg-red-50 border border-red-200 p-3.5 rounded-2xl flex flex-col space-y-2 text-xs text-red-700 animate-fadeIn font-medium">
+                  <div className="flex items-center space-x-2.5">
+                    <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                    <span>{errorMsg}</span>
+                  </div>
+                  {errorMsg.toLowerCase().includes('déjà un compte') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('login');
+                        setLoginPhone(regPhone);
+                        setErrorMsg(null);
+                      }}
+                      className="self-start text-[11px] font-black text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-3 py-1 rounded-xl transition-colors cursor-pointer ml-6"
+                    >
+                      → Se connecter maintenant
+                    </button>
+                  )}
                 </div>
               )}
 

@@ -256,7 +256,7 @@ function normalizeDbRow<T = any>(tableName: string, dbRow: any): T {
 /**
  * Prepares a clean JS object into a database payload matching actual table columns
  */
-function prepareDbPayload(tableName: string, jsObject: any): Record<string, any> {
+function prepareDbPayload(tableName: string, jsObject: any, allowDefaults: boolean = true): Record<string, any> {
   if (!jsObject || typeof jsObject !== 'object') return jsObject;
 
   const mappings = SCHEMA_DEFINITIONS[tableName];
@@ -276,7 +276,8 @@ function prepareDbPayload(tableName: string, jsObject: any): Record<string, any>
       }
     }
 
-    if (val === undefined && m.defaultValue !== undefined) {
+    // ONLY apply defaultValue if allowDefaults is true AND we are creating a new record!
+    if (allowDefaults && val === undefined && m.defaultValue !== undefined) {
       val = m.defaultValue;
     }
 
@@ -300,6 +301,14 @@ function prepareDbPayload(tableName: string, jsObject: any): Record<string, any>
     }
   }
 
+  // Preserve any extra properties not explicitly in SCHEMA_DEFINITIONS
+  for (const k of Object.keys(jsObject)) {
+    const isMapped = mappings.some(m => m.jsKey === k || m.dbKeys.includes(k));
+    if (!isMapped && jsObject[k] !== undefined) {
+      payload[k] = jsObject[k];
+    }
+  }
+
   return payload;
 }
 
@@ -309,12 +318,20 @@ function prepareDbPayload(tableName: string, jsObject: any): Record<string, any>
 async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ success: boolean; error?: string; data?: any }> {
   if (!item) return { success: false, error: 'Empty payload' };
 
-  let payload = prepareDbPayload(tableName, item);
+  // If upserting an existing user, merge with existing state to avoid overwriting existing balance or stats with default values
+  let payload: Record<string, any>;
+  if (tableName === 'users' && item.id && serverUsersStore.has(item.id)) {
+    const existing = serverUsersStore.get(item.id);
+    payload = prepareDbPayload(tableName, { ...existing, ...item }, false);
+  } else {
+    payload = prepareDbPayload(tableName, item, true);
+  }
 
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
+      const conflictCol = payload.id ? 'id' : (payload.code ? 'code' : undefined);
       const { data, error } = await (supabaseAdmin.from(tableName as any) as any)
-        .upsert(payload, { onConflict: (payload.id ? 'id' : undefined) })
+        .upsert(payload, conflictCol ? { onConflict: conflictCol } : undefined)
         .select();
 
       if (!error) {
@@ -323,6 +340,13 @@ async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ succe
 
       const errMsg = error.message || '';
       console.warn(`[Safe Upsert] '${tableName}' attempt ${attempt + 1} notice:`, errMsg);
+
+      // Check unique constraint on phone
+      if (errMsg.includes('users_phone_key') || errMsg.includes('unique constraint') || errMsg.includes('23505') || errMsg.includes('already exists')) {
+        if (tableName === 'users') {
+          return { success: false, error: 'Ce numéro possède déjà un compte, veuillez vous connecter.' };
+        }
+      }
 
       // Handle "Could not find the 'xyz' column of 'table' in the schema cache"
       const missingColMatch = errMsg.match(/Could not find the '([^']+)' column/i) || errMsg.match(/column "([^"]+)" of relation/i);
@@ -360,7 +384,8 @@ async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ succe
  * Resilient Supabase Update that automatically handles column mismatches
  */
 async function safeSupabaseUpdate(tableName: string, updates: any, idCol: string, idVal: any): Promise<{ success: boolean; error?: string }> {
-  let payload = prepareDbPayload(tableName, updates);
+  // Pass allowDefaults = false so partial updates (like bank card linking) never reset user balance or earnings!
+  let payload = prepareDbPayload(tableName, updates, false);
 
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -372,6 +397,13 @@ async function safeSupabaseUpdate(tableName: string, updates: any, idCol: string
 
       const errMsg = error.message || '';
       console.warn(`[Safe Update] '${tableName}' attempt ${attempt + 1} notice:`, errMsg);
+
+      // Check unique constraint on phone
+      if (errMsg.includes('users_phone_key') || errMsg.includes('unique constraint') || errMsg.includes('23505') || errMsg.includes('already exists')) {
+        if (tableName === 'users') {
+          return { success: false, error: 'Ce numéro possède déjà un compte, veuillez vous connecter.' };
+        }
+      }
 
       const missingColMatch = errMsg.match(/Could not find the '([^']+)' column/i) || errMsg.match(/column "([^"]+)" of relation/i);
       if (missingColMatch && missingColMatch[1]) {
@@ -995,6 +1027,19 @@ async function startServer() {
       const upsertResult = await safeSupabaseUpsert('users', userRecord);
       if (!upsertResult.success) {
         console.warn('[Register Supabase Upsert Notice]:', upsertResult.error);
+        // Remove from memory store if DB insert failed
+        serverUsersStore.delete(userRecord.id);
+        const errorMsg = (upsertResult.error && (
+          upsertResult.error.includes('users_phone_key') || 
+          upsertResult.error.includes('unique constraint') || 
+          upsertResult.error.includes('23505') || 
+          upsertResult.error.includes('already exists')
+        )) ? 'Ce numéro possède déjà un compte, veuillez vous connecter.' : (upsertResult.error || 'Erreur lors de l\'enregistrement.');
+
+        return res.status(400).json({
+          success: false,
+          error: errorMsg
+        });
       } else {
         console.log(`[Supabase Synced User]: ${userRecord.name} (${userRecord.phone}) [${userRecord.country}]`);
       }
@@ -1787,6 +1832,7 @@ async function startServer() {
         if (tableName === 'withdrawals' && key) serverWithdrawalsStore.set(key, norm);
         if (tableName === 'tickets' && key) serverTicketsStore.set(key, norm);
         if (tableName === 'products' && key) serverProductsStore.set(key, norm);
+        if (tableName === 'bonus_codes' && key) serverBonusCodesStore.set(key, norm);
 
         await safeSupabaseUpsert(tableName, item);
         return res.json({ success: true });
@@ -1807,6 +1853,7 @@ async function startServer() {
         if (tableName === 'withdrawals') serverWithdrawalsStore.delete(idValue);
         if (tableName === 'tickets') serverTicketsStore.delete(idValue);
         if (tableName === 'products') serverProductsStore.delete(idValue);
+        if (tableName === 'bonus_codes') serverBonusCodesStore.delete(idValue);
 
         await (supabaseAdmin.from(tableName as any) as any).delete().eq(idCol, idValue);
         return res.json({ success: true });

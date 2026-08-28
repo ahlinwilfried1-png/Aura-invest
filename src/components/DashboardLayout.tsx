@@ -151,7 +151,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   sendGlobalNotification,
   replyToTicket
 }) => {
-  const { announcements, markTicketsAsRead, revenueLogs = [] } = useApp();
+  const { announcements, markTicketsAsRead, revenueLogs = [], rechargeChannels = [] } = useApp();
   const userRevenueLogs = revenueLogs.filter(log => log.userId === currentUser.id);
 
   const isCurrentUserTicket = (t: SupportTicket) =>
@@ -202,6 +202,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [depMethod, setDepMethod] = useState<'Mixx By Yas' | 'Moov Money' | 'MTN Money' | 'Orange Money'>('Orange Money');
   const [depTxId, setDepTxId] = useState('');
   const [depScreenshot, setDepScreenshot] = useState<string | null>(null);
+
+  // Active matching channel for deposit modal
+  const activeModalChannel = rechargeChannels.find(c => {
+    if (!c.isActive) return false;
+    const nameLow = (c.name || '').toLowerCase();
+    const depLow = (depMethod || '').toLowerCase();
+    return nameLow.includes(depLow) || depLow.includes(nameLow) ||
+      (depLow.includes('orange') && nameLow.includes('orange')) ||
+      (depLow.includes('mtn') && nameLow.includes('mtn')) ||
+      (depLow.includes('moov') && (nameLow.includes('moov') || nameLow.includes('flooz'))) ||
+      (depLow.includes('yas') && (nameLow.includes('yas') || nameLow.includes('tmoney')));
+  }) || rechargeChannels.find(c => c.isActive) || rechargeChannels[0];
 
   // Withdrawal workflow state
   const [wthAmount, setWthAmount] = useState<number>(3000);
@@ -776,10 +788,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
               {/* Account Number Box to transfer money to */}
               <div className="p-3 bg-amber-500/10 rounded-xl space-y-1 font-mono text-[11px]">
-                <span className="text-slate-500 font-sans block text-[10px]">Numéro marchand pour le transfert ({depMethod}) :</span>
+                <span className="text-slate-500 font-sans block text-[10px]">Numéro marchand pour le transfert ({activeModalChannel ? activeModalChannel.name : depMethod}) :</span>
                 <div className="text-slate-900 font-extrabold text-sm flex items-center justify-between">
-                  <span>+228 90 00 00 00</span>
-                  <span className="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded uppercase font-bold">Infoline</span>
+                  <span>{activeModalChannel ? activeModalChannel.accountNumber : '+228 90 00 00 00'}</span>
+                  <span className="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded uppercase font-bold">
+                    {activeModalChannel?.accountHolder || 'Officiel'}
+                  </span>
                 </div>
               </div>
 

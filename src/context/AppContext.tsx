@@ -763,11 +763,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         safeSetLocalStorage('fintech_withdrawal_proofs', sortedProofs);
       }
 
-      // Process Support Tickets / Chat (sort newest first)
+      // Process Support Tickets / Chat (merge and sort newest first to ensure messages never disappear)
       if (dbTickets) {
-        const sortedTickets = deduplicateById([...dbTickets].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-        setTickets(sortedTickets);
-        safeSetLocalStorage('fintech_tickets', sortedTickets);
+        setTickets(prev => {
+          const merged = [...dbTickets, ...prev];
+          const sortedTickets = deduplicateById(merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+          safeSetLocalStorage('fintech_tickets', sortedTickets);
+          return sortedTickets;
+        });
       }
 
       // Process Commissions (sort newest first)
@@ -906,10 +909,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     window.addEventListener('visibilitychange', onVisibilityOrFocus);
     window.addEventListener('focus', onVisibilityOrFocus);
 
+    const onChannelsUpdated = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        setRechargeChannels(normalizeRechargeChannels(e.detail));
+      }
+    };
+    window.addEventListener('recharge_channels_updated', onChannelsUpdated);
+
+    const onStorageChange = (e: StorageEvent) => {
+      if (e.key === 'fintech_recharge_channels' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setRechargeChannels(normalizeRechargeChannels(parsed));
+          }
+        } catch (_) {}
+      }
+    };
+    window.addEventListener('storage', onStorageChange);
+
     return () => {
       clearInterval(interval);
       window.removeEventListener('visibilitychange', onVisibilityOrFocus);
       window.removeEventListener('focus', onVisibilityOrFocus);
+      window.removeEventListener('recharge_channels_updated', onChannelsUpdated);
+      window.removeEventListener('storage', onStorageChange);
     };
   }, [fetchAndSyncAllFromSupabase]);
 
@@ -1596,6 +1620,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const updatedUser: User = {
       ...currentUser,
+      balance: currentUser.balance,
+      dailyEarnings: currentUser.dailyEarnings,
+      totalEarnings: currentUser.totalEarnings,
+      vipLevel: currentUser.vipLevel,
+      drawTickets: currentUser.drawTickets,
       ...dbFields,
       withdrawalNetwork: targetNetwork,
       withdrawalCountry: targetCountry
@@ -1604,7 +1633,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser(updatedUser);
     safeSetSessionStorage('fintech_current_user', updatedUser);
     safeSetLocalStorage('fintech_current_user', updatedUser);
-    setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+    setUsers(prev => {
+      const nextUsers = prev.map(u => u.id === currentUser.id ? updatedUser : u);
+      safeSetLocalStorage('fintech_users', nextUsers);
+      return nextUsers;
+    });
 
     return { success: true };
   };
@@ -1904,6 +1937,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: 'tkt-' + Math.random().toString(36).substr(2, 9),
       userId: currentUser.id,
       userName: currentUser.name || ('Client ' + currentUser.phone),
+      userPhone: currentUser.phone || undefined,
       subject: (subject || "Message Chat Support").trim(),
       message: message.trim(),
       imageUrl: imageUrl || undefined,
@@ -2447,6 +2481,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = [...rechargeChannels, newChannel];
     setRechargeChannels(updated);
     safeSetLocalStorage('fintech_recharge_channels', updated);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('recharge_channels_updated', { detail: updated }));
+    }
     const res = await saveSystemConfig('__SYS_RECHARGE_CHANNELS__', updated);
     return res;
   };
@@ -2469,6 +2506,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     setRechargeChannels(updated);
     safeSetLocalStorage('fintech_recharge_channels', updated);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('recharge_channels_updated', { detail: updated }));
+    }
     const res = await saveSystemConfig('__SYS_RECHARGE_CHANNELS__', updated);
     return res;
   };
@@ -2477,6 +2517,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = rechargeChannels.filter(ch => ch.id !== id);
     setRechargeChannels(updated);
     safeSetLocalStorage('fintech_recharge_channels', updated);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('recharge_channels_updated', { detail: updated }));
+    }
     const res = await saveSystemConfig('__SYS_RECHARGE_CHANNELS__', updated);
     return res;
   };
@@ -2485,6 +2528,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = rechargeChannels.map(ch => ch.id === id ? { ...ch, isActive: !ch.isActive } : ch);
     setRechargeChannels(updated);
     safeSetLocalStorage('fintech_recharge_channels', updated);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('recharge_channels_updated', { detail: updated }));
+    }
     const res = await saveSystemConfig('__SYS_RECHARGE_CHANNELS__', updated);
     return res;
   };

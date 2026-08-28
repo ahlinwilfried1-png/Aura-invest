@@ -79,7 +79,11 @@ export async function registerUserInDatabase(user: any): Promise<{ success: bool
         return { success: true, user: normalizeFromDbRow('users', res.data.user) };
       }
       if (res.data.error) {
-        return { success: false, error: res.data.error };
+        let msg = res.data.error;
+        if (msg.includes('users_phone_key') || msg.includes('unique constraint') || msg.includes('23505') || msg.includes('already exists')) {
+          msg = 'Ce numéro possède déjà un compte, veuillez vous connecter.';
+        }
+        return { success: false, error: msg };
       }
     }
   } catch (err: any) {
@@ -87,7 +91,15 @@ export async function registerUserInDatabase(user: any): Promise<{ success: bool
   }
 
   // Fallback: Direct upsert via Supabase client
-  return upsertItem('users', user);
+  const fallbackRes = await upsertItem('users', user);
+  if (!fallbackRes.success && fallbackRes.error) {
+    let msg = fallbackRes.error;
+    if (msg.includes('users_phone_key') || msg.includes('unique constraint') || msg.includes('23505') || msg.includes('already exists')) {
+      msg = 'Ce numéro possède déjà un compte, veuillez vous connecter.';
+    }
+    return { success: false, error: msg };
+  }
+  return fallbackRes;
 }
 
 export async function fetchTableData<T>(tableName: string): Promise<T[] | null> {
@@ -133,7 +145,8 @@ export async function upsertItem<T>(tableName: string, item: T): Promise<{ succe
   // 2. Fallback: Direct client upsert with prepared db payload
   try {
     const payload = prepareForDbPayload(tableName, item);
-    const queryPromise = supabase.from(tableName).upsert(payload as any);
+    const conflictCol = (payload as any).id ? 'id' : ((payload as any).code ? 'code' : undefined);
+    const queryPromise = supabase.from(tableName).upsert(payload as any, conflictCol ? { onConflict: conflictCol } : undefined);
     const timeoutPromise = new Promise<{ error: any }>((resolve) => 
       setTimeout(() => resolve({ error: { message: 'Timeout' } }), 6000)
     );
@@ -195,9 +208,9 @@ export async function updateItem<T>(
     }
   } catch (_) {}
 
-  // 2. Fallback: Direct client update with prepared db payload
+  // 2. Fallback: Direct client update with prepared db payload (allowDefaults = false to prevent overwriting unincluded columns)
   try {
-    const payload = prepareForDbPayload(tableName, updates);
+    const payload = prepareForDbPayload(tableName, updates, null, false);
     const { error } = await supabase.from(tableName).update(payload as any).eq(idCol, idValue);
     if (error) {
       console.warn(`[Supabase] Table '${tableName}' update error:`, error.message);

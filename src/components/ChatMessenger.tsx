@@ -41,12 +41,27 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Filter tickets belonging to current user and sort chronologically (oldest to newest)
+  const cleanCurrentPhone = (currentUser.phone || '').replace(/\s+/g, '').replace(/[^\d+]/g, '');
+  const cleanCurrentPhoneNoPrefix = cleanCurrentPhone.replace(/^\+?(228|237)/, '');
+
   const userTickets = [...tickets]
-    .filter(t => 
-      t.userId === currentUser.id ||
-      (currentUser.phone && currentUser.phone !== 'Non renseigné' && t.userPhone === currentUser.phone) ||
-      (currentUser.name && t.userName && t.userName.trim().toLowerCase() === currentUser.name.trim().toLowerCase())
-    )
+    .filter(t => {
+      if (!t) return false;
+      if (t.userId === currentUser.id) return true;
+      if (currentUser.id && t.userId && (t.userId.includes(currentUser.id) || currentUser.id.includes(t.userId))) return true;
+      if (currentUser.name && t.userName && t.userName.trim().toLowerCase() === currentUser.name.trim().toLowerCase()) return true;
+      if (t.userPhone && t.userPhone !== 'Non renseigné') {
+        const cleanTktPhone = t.userPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+        const cleanTktPhoneNoPrefix = cleanTktPhone.replace(/^\+?(228|237)/, '');
+        if (cleanCurrentPhone && cleanTktPhone && (cleanCurrentPhone === cleanTktPhone || cleanCurrentPhone.endsWith(cleanTktPhone) || cleanTktPhone.endsWith(cleanCurrentPhone))) {
+          return true;
+        }
+        if (cleanCurrentPhoneNoPrefix && cleanTktPhoneNoPrefix && (cleanCurrentPhoneNoPrefix === cleanTktPhoneNoPrefix || cleanCurrentPhoneNoPrefix.endsWith(cleanTktPhoneNoPrefix) || cleanTktPhoneNoPrefix.endsWith(cleanCurrentPhoneNoPrefix))) {
+          return true;
+        }
+      }
+      return false;
+    })
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   // Auto-scroll to bottom of chat area
@@ -228,13 +243,14 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
 
         {/* DYNAMIC USER SUPPORT TICKETS & MESSAGES */}
         {userTickets.map((tkt) => {
-          const isAdminDirect = tkt.id.startsWith('tkt-adm-') || tkt.message === "Message direct du Support Client Nutrien.";
+          const isAdminDirect = tkt.id.startsWith('tkt-adm-') || tkt.message === "Message direct du Support Client Nutrien." || tkt.subject?.includes("Administration");
+          const adminReplyText = tkt.reply || (isAdminDirect ? tkt.message : '');
 
           return (
             <div key={tkt.id} className="max-w-2xl mx-auto space-y-4 my-6">
               
-              {/* User Message (Hidden if it's a direct message sent by admin) */}
-              {!isAdminDirect && (
+              {/* User Message (Hidden only if it's an admin direct transmission message) */}
+              {!isAdminDirect && tkt.message && (
                 <div className="flex flex-col items-end animate-fadeIn">
                   <div className="max-w-md space-y-1.5 text-right">
                     {tkt.subject && tkt.subject !== "Message Chat Support" && (
@@ -263,7 +279,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
               )}
 
               {/* Admin or Support Reply */}
-              {tkt.reply ? (
+              {adminReplyText ? (
                 <div className="flex items-start space-x-3 max-w-xl animate-fadeIn py-2">
                   <div className="w-8 h-8 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center flex-shrink-0 font-black text-xs shadow-xs">
                     ADM
@@ -275,7 +291,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
                     </span>
 
                     <p className="whitespace-pre-wrap text-slate-800 bg-amber-50/60 p-3 rounded-2xl border border-amber-200/60">
-                      {tkt.reply}
+                      {adminReplyText}
                     </p>
 
                     <div className="text-[9px] text-slate-400 font-mono font-medium pt-0.5">
