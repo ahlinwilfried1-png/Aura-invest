@@ -559,6 +559,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 users={users}
                 commissions={commissions}
                 userInvestments={userInvestments}
+                deposits={deposits}
                 onShowToast={showToast}
               />
             )}

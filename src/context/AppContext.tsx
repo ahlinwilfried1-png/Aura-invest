@@ -116,6 +116,7 @@ interface AppContextType {
   updateUserBalance: (userId: string, amount: number, isDirectSet?: boolean) => void;
   adminUpdateUserPassword: (userId: string, newWord: string) => { success: boolean; error?: string };
   adminUpdateUserPin: (userId: string, newPin: string) => { success: boolean; error?: string };
+  adminSetUserSponsor: (userId: string, sponsorCodeOrPhone: string) => Promise<{ success: boolean; error?: string; sponsor?: any }>;
   processDeposit: (depositId: string, status: 'approved' | 'rejected') => Promise<{ success: boolean; error?: string; alreadyApproved?: boolean; newBalance?: number }>;
   processWithdrawal: (withdrawalId: string, status: 'approved' | 'rejected') => void;
   processWithdrawalProof: (proofId: string, status: 'approved' | 'rejected') => void;
@@ -2045,6 +2046,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
+  const adminSetUserSponsor = async (
+    userId: string, 
+    sponsorCodeOrPhone: string
+  ): Promise<{ success: boolean; error?: string; sponsor?: any }> => {
+    try {
+      const response = await fetch('/api/admin/users/set-sponsor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, sponsorCodeOrPhone })
+      });
+      const data = await response.json();
+      if (!data.success) {
+        return { success: false, error: data.error || 'Erreur lors de la modification du parrain.' };
+      }
+      
+      // Update local state immediately
+      const newRefCode = data.user?.referredByCode || (data.sponsor ? data.sponsor.referralCode : sponsorCodeOrPhone);
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, referredByCode: newRefCode } : u));
+      
+      if (currentUser?.id === userId) {
+        setCurrentUser(prev => prev ? { ...prev, referredByCode: newRefCode } : null);
+      }
+
+      setTimeout(() => {
+        fetchAndSyncAllFromSupabase(true);
+      }, 300);
+
+      return { success: true, sponsor: data.sponsor };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Erreur réseau lors de la mise à jour.' };
+    }
+  };
+
   const processDeposit = async (
     depositId: string, 
     status: 'approved' | 'rejected'
@@ -2579,6 +2613,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateUserBalance,
       adminUpdateUserPassword,
       adminUpdateUserPin,
+      adminSetUserSponsor,
       processDeposit,
       processWithdrawal,
       processWithdrawalProof,

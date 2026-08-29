@@ -42,8 +42,11 @@ import {
   HelpCircle,
   CreditCard,
   Copy,
-  RefreshCw
+  RefreshCw,
+  Link2,
+  UserPlus
 } from 'lucide-react';
+import { isDirectReferee } from './TeamView';
 
 const ADMIN_BG_IMAGES = [
   'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1600&auto=format&fit=crop&q=80',
@@ -114,6 +117,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     updateRechargeChannel,
     deleteRechargeChannel,
     toggleRechargeChannel,
+    adminSetUserSponsor,
     refreshData
   } = useApp();
 
@@ -475,6 +479,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   const [selectedUserForPin, setSelectedUserForPin] = useState<User | null>(null);
   const [newUserPin, setNewUserPin] = useState<string>('');
 
+  // 1.7. Sponsor adjustment modal
+  const [selectedUserForSponsor, setSelectedUserForSponsor] = useState<User | null>(null);
+  const [newSponsorCodeOrPhone, setNewSponsorCodeOrPhone] = useState<string>('');
+  const [isUpdatingSponsor, setIsUpdatingSponsor] = useState<boolean>(false);
+
   // 2. User details modal
   const [selectedUserDetails, setSelectedUserDetails] = useState<User | null>(null);
 
@@ -700,13 +709,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     const query = userSearch.toLowerCase().trim();
     const isCam = (u.country && (u.country.toLowerCase().includes('cam') || u.country.toUpperCase() === 'CM')) || u.phone?.startsWith('+237');
     const countryLabel = isCam ? 'cameroun' : 'togo';
+    const sponsorObj = u.referredByCode ? users.find(s => s.referralCode?.toLowerCase() === u.referredByCode?.toLowerCase() || s.phone === u.referredByCode || s.id === u.referredByCode) : null;
     const matchesSearch = 
       !query ||
       u.name.toLowerCase().includes(query) ||
       u.phone.includes(query) ||
       countryLabel.includes(query) ||
       (u.country && u.country.toLowerCase().includes(query)) ||
-      (u.referralCode && u.referralCode.toLowerCase().includes(query));
+      (u.referralCode && u.referralCode.toLowerCase().includes(query)) ||
+      (u.referredByCode && u.referredByCode.toLowerCase().includes(query)) ||
+      (sponsorObj && (sponsorObj.name.toLowerCase().includes(query) || sponsorObj.phone.includes(query)));
     return matchesStatus && matchesSearch;
   });
 
@@ -1805,120 +1817,175 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700/60">
-                  {filteredUsers.map(usr => (
-                    <div key={usr.id} className="p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:bg-slate-800/50 transition-all">
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-bold text-white text-base">{usr.name}</span>
-                          <span className="text-xs text-slate-400 font-mono">({usr.phone})</span>
-                          {usr.role === 'admin' && (
-                            <span className="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded uppercase font-mono">ADMIN</span>
-                          )}
-                        </div>
-                        <div className="text-xs text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1 font-medium">
-                          <span>WhatsApp: <strong className="text-slate-200">{usr.whatsapp}</strong></span>
-                          <span>Code Parrain: <strong className="text-amber-300 font-mono font-bold">{usr.referralCode}</strong></span>
-                          <span className="flex items-center space-x-1">
-                            <span>Pays:</span>
-                            <span className={`inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[11px] font-bold ${
-                              (usr.country?.toLowerCase().includes('cam') || usr.country === 'CM' || usr.phone?.startsWith('+237'))
-                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                            }`}>
-                              <span>{(usr.country?.toLowerCase().includes('cam') || usr.country === 'CM' || usr.phone?.startsWith('+237')) ? '🇨🇲 Cameroun' : '🇹🇬 Togo'}</span>
-                            </span>
-                          </span>
-                        </div>
-                      </div>
+                  {filteredUsers.map(usr => {
+                    const sponsor = usr.referredByCode 
+                      ? users.find(s => s.referralCode?.toLowerCase() === usr.referredByCode?.toLowerCase() || s.phone === usr.referredByCode || s.id === usr.referredByCode) 
+                      : null;
+                    const directReferees = users.filter(u => isDirectReferee(u, usr));
+                    const activeDirect = directReferees.filter(u => 
+                      userInvestments.some(inv => inv.userId === u.id) || 
+                      deposits.some(d => d.userId === u.id && d.status === 'approved') || 
+                      (u.vipLevel || 0) > 0
+                    );
 
-                      <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-4">
-                        <div className="text-right">
-                          <div className="text-[10px] text-slate-400 font-bold uppercase">Solde Client</div>
-                          <div className="font-mono font-bold text-white text-base sm:text-lg">
-                            {(Number(usr.balance) || 0).toLocaleString('fr-FR')} FCFA
+                    return (
+                      <div key={usr.id} className="p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:bg-slate-800/50 transition-all">
+                        <div className="space-y-1.5 flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                            <span className="font-bold text-white text-base">{usr.name}</span>
+                            <span className="text-xs text-slate-400 font-mono">({usr.phone})</span>
+                            {usr.role === 'admin' && (
+                              <span className="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded uppercase font-mono">ADMIN</span>
+                            )}
+                            {usr.isBlocked && (
+                              <span className="bg-red-500/20 text-red-300 text-[10px] font-bold px-2 py-0.5 rounded uppercase font-mono">BLOQUÉ</span>
+                            )}
+                          </div>
+                          
+                          <div className="text-xs text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1.5 font-medium">
+                            <span>WhatsApp: <strong className="text-slate-200">{usr.whatsapp || usr.phone}</strong></span>
+                            
+                            <span>Code Perso: <strong className="text-amber-300 font-mono font-bold">{usr.referralCode}</strong></span>
+                            
+                            {/* Sponsor / Parrain Info */}
+                            <span className="inline-flex items-center space-x-1 bg-slate-900/80 px-2 py-0.5 rounded-lg border border-slate-700/80">
+                              <span className="text-slate-400 text-[11px]">Parrain:</span>
+                              <strong className="text-sky-300 font-mono text-[11px]">
+                                {sponsor ? `${sponsor.name} (${sponsor.referralCode})` : (usr.referredByCode || 'Direct (Aucun)')}
+                              </strong>
+                              <button
+                                onClick={() => {
+                                  setSelectedUserForSponsor(usr);
+                                  setNewSponsorCodeOrPhone(usr.referredByCode || '');
+                                }}
+                                className="text-amber-400 hover:text-amber-300 ml-1 underline text-[10px] font-bold cursor-pointer"
+                                title="Modifier le parrain"
+                              >
+                                Modifier
+                              </button>
+                            </span>
+
+                            {/* Godchildren Count */}
+                            <span className="inline-flex items-center space-x-1 bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-lg text-[11px] font-bold">
+                              <span>Filleuls N1:</span>
+                              <strong className="font-mono">{directReferees.length}</strong>
+                              <span className="text-[10px] text-emerald-400 font-normal">({activeDirect.length} actifs)</span>
+                            </span>
+
+                            <span className="flex items-center space-x-1">
+                              <span>Pays:</span>
+                              <span className={`inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[11px] font-bold ${
+                                (usr.country?.toLowerCase().includes('cam') || usr.country === 'CM' || usr.phone?.startsWith('+237'))
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              }`}>
+                                <span>{(usr.country?.toLowerCase().includes('cam') || usr.country === 'CM' || usr.phone?.startsWith('+237')) ? '🇨🇲 Cameroun' : '🇹🇬 Togo'}</span>
+                              </span>
+                            </span>
                           </div>
                         </div>
 
-                        <div className="flex items-center space-x-2">
-                          <button 
-                            onClick={() => setSelectedUserForBalance(usr)}
-                            className="bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center space-x-1"
-                            title="Ajuster le solde"
-                          >
-                            <Wallet className="w-3.5 h-3.5 text-amber-400" />
-                            <span>Solde</span>
-                          </button>
+                        <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-4 flex-shrink-0">
+                          <div className="text-right">
+                            <div className="text-[10px] text-slate-400 font-bold uppercase">Solde Client</div>
+                            <div className="font-mono font-bold text-white text-base sm:text-lg">
+                              {(Number(usr.balance) || 0).toLocaleString('fr-FR')} FCFA
+                            </div>
+                          </div>
 
-                          <button 
-                            onClick={() => {
-                              setSelectedUserForPassword(usr);
-                              setNewUserPassword('');
-                            }}
-                            className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center space-x-1"
-                            title="Modifier le mot de passe"
-                          >
-                            <Lock className="w-3.5 h-3.5 text-amber-400" />
-                            <span className="hidden sm:inline">Mot de passe</span>
-                          </button>
+                          <div className="flex items-center space-x-1.5 sm:space-x-2 flex-wrap">
+                            <button 
+                              onClick={() => setSelectedUserForBalance(usr)}
+                              className="bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs px-2.5 sm:px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center space-x-1"
+                              title="Ajuster le solde"
+                            >
+                              <Wallet className="w-3.5 h-3.5 text-amber-400" />
+                              <span className="hidden sm:inline">Solde</span>
+                            </button>
 
-                          <button 
-                            onClick={() => {
-                              setSelectedUserForPin(usr);
-                              setNewUserPin('');
-                            }}
-                            className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center space-x-1"
-                            title="Modifier le code PIN de retrait"
-                          >
-                            <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-                            <span className="hidden sm:inline">Code PIN</span>
-                          </button>
+                            <button 
+                              onClick={() => {
+                                setSelectedUserForSponsor(usr);
+                                setNewSponsorCodeOrPhone(usr.referredByCode || '');
+                              }}
+                              className="bg-slate-700 hover:bg-slate-600 text-sky-300 font-bold text-xs px-2.5 sm:px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center space-x-1"
+                              title="Modifier / Assigner un Parrain"
+                            >
+                              <Link2 className="w-3.5 h-3.5 text-sky-400" />
+                              <span className="hidden sm:inline">Parrain</span>
+                            </button>
 
-                          <button 
-                            onClick={() => setSelectedUserDetails(usr)}
-                            className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center space-x-1"
-                            title="Voir détails"
-                          >
-                            <Eye className="w-3.5 h-3.5 text-blue-400" />
-                            <span className="hidden sm:inline">Détails</span>
-                          </button>
+                            <button 
+                              onClick={() => {
+                                setSelectedUserForPassword(usr);
+                                setNewUserPassword('');
+                              }}
+                              className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-2.5 sm:px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center space-x-1"
+                              title="Modifier le mot de passe"
+                            >
+                              <Lock className="w-3.5 h-3.5 text-amber-400" />
+                              <span className="hidden md:inline">Mdp</span>
+                            </button>
 
-                          <button 
-                            onClick={() => {
-                              toggleBlockUser(usr.id);
-                              showToast('success', usr.isBlocked ? `Compte de ${usr.name} débloqué.` : `Compte de ${usr.name} bloqué.`);
-                            }}
-                            className={`p-2 rounded-xl transition-all cursor-pointer ${
-                              usr.isBlocked 
-                                ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30' 
-                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                            }`}
-                            title={usr.isBlocked ? "Débloquer le compte" : "Bloquer le compte"}
-                          >
-                            {usr.isBlocked ? <UserX className="w-4 h-4 text-red-400" /> : <UserCheck className="w-4 h-4 text-emerald-400" />}
-                          </button>
+                            <button 
+                              onClick={() => {
+                                setSelectedUserForPin(usr);
+                                setNewUserPin('');
+                              }}
+                              className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-2.5 sm:px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center space-x-1"
+                              title="Modifier le code PIN de retrait"
+                            >
+                              <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                              <span className="hidden md:inline">PIN</span>
+                            </button>
 
-                          <button 
-                            onClick={() => {
-                              const newRole = usr.role === 'admin' ? 'user' : 'admin';
-                              updateUserRole(usr.id, newRole);
-                              showToast('success', newRole === 'admin' 
-                                ? `Le compte de ${usr.name} est désormais Administrateur.` 
-                                : `Le rôle d'administrateur a été retiré à ${usr.name}.`
-                              );
-                            }}
-                            className={`p-2 rounded-xl transition-all cursor-pointer ${
-                              usr.role === 'admin' 
-                                ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40' 
-                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                            }`}
-                            title={usr.role === 'admin' ? "Retirer le rôle Administrateur" : "Nommer Administrateur"}
-                          >
-                            <Shield className={`w-4 h-4 ${usr.role === 'admin' ? 'text-amber-400 fill-amber-400/20' : 'text-slate-400'}`} />
-                          </button>
+                            <button 
+                              onClick={() => setSelectedUserDetails(usr)}
+                              className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-2.5 sm:px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center space-x-1"
+                              title="Voir détails & Équipe"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-blue-400" />
+                              <span className="hidden sm:inline">Détails</span>
+                            </button>
+
+                            <button 
+                              onClick={() => {
+                                toggleBlockUser(usr.id);
+                                showToast('success', usr.isBlocked ? `Compte de ${usr.name} débloqué.` : `Compte de ${usr.name} bloqué.`);
+                              }}
+                              className={`p-2 rounded-xl transition-all cursor-pointer ${
+                                usr.isBlocked 
+                                  ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30' 
+                                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                              }`}
+                              title={usr.isBlocked ? "Débloquer le compte" : "Bloquer le compte"}
+                            >
+                              {usr.isBlocked ? <UserX className="w-4 h-4 text-red-400" /> : <UserCheck className="w-4 h-4 text-emerald-400" />}
+                            </button>
+
+                            <button 
+                              onClick={() => {
+                                const newRole = usr.role === 'admin' ? 'user' : 'admin';
+                                updateUserRole(usr.id, newRole);
+                                showToast('success', newRole === 'admin' 
+                                  ? `Le compte de ${usr.name} est désormais Administrateur.` 
+                                  : `Le rôle d'administrateur a été retiré à ${usr.name}.`
+                                );
+                              }}
+                              className={`p-2 rounded-xl transition-all cursor-pointer ${
+                                usr.role === 'admin' 
+                                  ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40' 
+                                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                              }`}
+                              title={usr.role === 'admin' ? "Retirer le rôle Administrateur" : "Nommer Administrateur"}
+                            >
+                              <Shield className={`w-4 h-4 ${usr.role === 'admin' ? 'text-amber-400 fill-amber-400/20' : 'text-slate-400'}`} />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -4320,119 +4387,310 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
         </div>
       )}
 
-      {/* MODAL: USER DETAILS */}
-      {selectedUserDetails && (
+      {/* MODAL: CHANGE SPONSOR / PARRAIN */}
+      {selectedUserForSponsor && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-md w-full relative space-y-4">
             <button 
-              onClick={() => setSelectedUserDetails(null)}
+              onClick={() => {
+                setSelectedUserForSponsor(null);
+                setNewSponsorCodeOrPhone('');
+              }}
               className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div>
-              <span className="text-[10px] font-mono font-bold uppercase text-emerald-400 bg-emerald-500/20 px-2.5 py-0.5 rounded-full">Fiche Utilisateur</span>
-              <h3 className="text-xl font-bold text-white mt-2">{selectedUserDetails.name}</h3>
-              <p className="text-xs text-slate-400">Inscrit le {new Date(selectedUserDetails.createdAt).toLocaleDateString()}</p>
+              <span className="text-[10px] font-mono font-bold uppercase text-sky-400 bg-sky-500/20 px-2.5 py-0.5 rounded-full">Liaison Parrainage</span>
+              <h3 className="text-lg font-bold text-white mt-2">Modifier le Parrain de {selectedUserForSponsor.name}</h3>
+              <p className="text-xs text-slate-400">Téléphone client : <span className="font-mono text-slate-200">{selectedUserForSponsor.phone}</span></p>
             </div>
 
-            <div className="space-y-2 text-xs font-medium bg-slate-950 p-4 rounded-2xl border border-slate-800">
-              <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400">Téléphone:</span>
-                <span className="text-white font-mono font-bold">{selectedUserDetails.phone}</span>
+            <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Code Personnel du client :</span>
+                <span className="text-amber-300 font-mono font-bold">{selectedUserForSponsor.referralCode}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400">WhatsApp:</span>
-                <span className="text-white font-mono font-bold">{selectedUserDetails.whatsapp}</span>
-              </div>
-              <div className="flex justify-between items-center py-1 border-b border-slate-800">
-                <span className="text-slate-400">Solde:</span>
-                <div className="flex items-center space-x-2">
-                  <span className="text-amber-400 font-mono font-bold">{selectedUserDetails.balance.toLocaleString()} FCFA</span>
-                  <button
-                    onClick={() => {
-                      setSelectedUserForBalance(selectedUserDetails);
-                      setSelectedUserDetails(null);
-                    }}
-                    className="text-[10px] font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer"
-                  >
-                    Modifier
-                  </button>
-                </div>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400">Code Parrain:</span>
-                <span className="text-white font-mono font-bold">{selectedUserDetails.referralCode}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400">Pays:</span>
-                <span className="text-white font-bold">
-                  {(selectedUserDetails.country?.toLowerCase().includes('cam') || selectedUserDetails.country === 'CM' || selectedUserDetails.phone?.startsWith('+237')) ? '🇨🇲 Cameroun' : '🇹🇬 Togo'}
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Parrain actuel :</span>
+                <span className="text-sky-300 font-mono font-bold">
+                  {selectedUserForSponsor.referredByCode 
+                    ? (users.find(u => u.referralCode?.toLowerCase() === selectedUserForSponsor.referredByCode?.toLowerCase() || u.phone === selectedUserForSponsor.referredByCode)?.name 
+                        ? `${users.find(u => u.referralCode?.toLowerCase() === selectedUserForSponsor.referredByCode?.toLowerCase() || u.phone === selectedUserForSponsor.referredByCode)?.name} (${selectedUserForSponsor.referredByCode})`
+                        : selectedUserForSponsor.referredByCode)
+                    : 'Aucun (Direct)'}
                 </span>
-              </div>
-              <div className="flex justify-between items-center py-1 border-b border-slate-800">
-                <span className="text-slate-400">Compte de Retrait:</span>
-                <span className="text-white font-mono font-bold text-[11px]">
-                  {selectedUserDetails.withdrawalAccountNumber 
-                    ? `${selectedUserDetails.withdrawalAccountName || ''} (${selectedUserDetails.withdrawalAccountNumber})` 
-                    : 'Non lié'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-1 border-b border-slate-800">
-                <span className="text-slate-400">Code PIN Retrait:</span>
-                <div className="flex items-center space-x-2">
-                  <span className="text-amber-400 font-mono font-bold">
-                    {selectedUserDetails.withdrawalPinHash ? '•••• (Configuré)' : 'Non configuré'}
-                  </span>
-                  <button
-                    onClick={() => {
-                      setSelectedUserForPin(selectedUserDetails);
-                      setSelectedUserDetails(null);
-                    }}
-                    className="text-[10px] font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer"
-                  >
-                    Modifier
-                  </button>
-                </div>
-              </div>
-              <div className="flex justify-between items-center py-1">
-                <span className="text-slate-400">Rôle:</span>
-                <div className="flex items-center space-x-2">
-                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded font-mono ${
-                    selectedUserDetails.role === 'admin' 
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
-                      : 'bg-slate-800 text-slate-300'
-                  }`}>
-                    {selectedUserDetails.role === 'admin' ? 'Administrateur' : 'Utilisateur'}
-                  </span>
-                  <button
-                    onClick={() => {
-                      const newRole = selectedUserDetails.role === 'admin' ? 'user' : 'admin';
-                      updateUserRole(selectedUserDetails.id, newRole);
-                      setSelectedUserDetails({ ...selectedUserDetails, role: newRole });
-                      showToast('success', newRole === 'admin' 
-                        ? `Le compte de ${selectedUserDetails.name} est désormais Administrateur.` 
-                        : `Le rôle Admin a été retiré à ${selectedUserDetails.name}.`
-                      );
-                    }}
-                    className="text-[10px] font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer"
-                  >
-                    {selectedUserDetails.role === 'admin' ? 'Rétrograder' : 'Promouvoir Admin'}
-                  </button>
-                </div>
               </div>
             </div>
 
-            <button 
-              onClick={() => setSelectedUserDetails(null)}
-              className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl cursor-pointer"
+            <form 
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setIsUpdatingSponsor(true);
+                try {
+                  const res = await adminSetUserSponsor(selectedUserForSponsor.id, newSponsorCodeOrPhone.trim());
+                  if (res.success) {
+                    showToast('success', (res as any).message || "Relation de parrainage mise à jour et synchronisée avec Supabase !");
+                    setSelectedUserForSponsor(null);
+                    setNewSponsorCodeOrPhone('');
+                  } else {
+                    showToast('error', res.error || "Erreur lors de la mise à jour du parrain.");
+                  }
+                } catch (err: any) {
+                  showToast('error', err?.message || "Erreur réseau.");
+                } finally {
+                  setIsUpdatingSponsor(false);
+                }
+              }}
+              className="space-y-4 text-xs"
             >
-              Fermer
-            </button>
+              <div>
+                <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">
+                  Nouveau Code Parrain ou Numéro Téléphone du Parrain :
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="Ex: 849201 ou +237690000000"
+                  value={newSponsorCodeOrPhone}
+                  onChange={(e) => setNewSponsorCodeOrPhone(e.target.value)}
+                  className="w-full bg-slate-950 text-white font-mono font-bold text-sm p-3 rounded-xl border border-slate-700 outline-none focus:border-sky-500"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  💡 Laissez vide pour détacher l'utilisateur de tout parrain (compte direct sans parrain).
+                </p>
+              </div>
+
+              <div className="flex space-x-2">
+                <button 
+                  type="button"
+                  onClick={() => setNewSponsorCodeOrPhone('')}
+                  className="w-1/3 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                >
+                  Effacer
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isUpdatingSponsor}
+                  className="flex-1 py-3 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md flex items-center justify-center space-x-1.5"
+                >
+                  {isUpdatingSponsor ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Enregistrement...</span>
+                    </>
+                  ) : (
+                    <span>Enregistrer dans Supabase</span>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
+
+      {/* MODAL: USER DETAILS */}
+      {selectedUserDetails && (() => {
+        const uSponsor = selectedUserDetails.referredByCode 
+          ? users.find(s => s.referralCode?.toLowerCase() === selectedUserDetails.referredByCode?.toLowerCase() || s.phone === selectedUserDetails.referredByCode || s.id === selectedUserDetails.referredByCode) 
+          : null;
+        const directFilleuls = users.filter(u => isDirectReferee(u, selectedUserDetails));
+        const activeDirectFilleuls = directFilleuls.filter(u => 
+          userInvestments.some(inv => inv.userId === u.id) || 
+          deposits.some(d => d.userId === u.id && d.status === 'approved') || 
+          (u.vipLevel || 0) > 0
+        );
+
+        return (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-lg w-full relative space-y-4 my-8 max-h-[90vh] overflow-y-auto">
+              <button 
+                onClick={() => setSelectedUserDetails(null)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div>
+                <span className="text-[10px] font-mono font-bold uppercase text-emerald-400 bg-emerald-500/20 px-2.5 py-0.5 rounded-full">Fiche Utilisateur & Réseau</span>
+                <h3 className="text-xl font-bold text-white mt-2">{selectedUserDetails.name}</h3>
+                <p className="text-xs text-slate-400">Inscrit le {new Date(selectedUserDetails.createdAt).toLocaleDateString()} {new Date(selectedUserDetails.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+              </div>
+
+              <div className="space-y-2 text-xs font-medium bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                <div className="flex justify-between py-1 border-b border-slate-800">
+                  <span className="text-slate-400">Téléphone:</span>
+                  <span className="text-white font-mono font-bold">{selectedUserDetails.phone}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-800">
+                  <span className="text-slate-400">WhatsApp:</span>
+                  <span className="text-white font-mono font-bold">{selectedUserDetails.whatsapp || selectedUserDetails.phone}</span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-slate-800">
+                  <span className="text-slate-400">Solde:</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-amber-400 font-mono font-bold">{selectedUserDetails.balance.toLocaleString()} FCFA</span>
+                    <button
+                      onClick={() => {
+                        setSelectedUserForBalance(selectedUserDetails);
+                        setSelectedUserDetails(null);
+                      }}
+                      className="text-[10px] font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                    >
+                      Modifier
+                    </button>
+                  </div>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-800">
+                  <span className="text-slate-400">Code Parrain Personnel:</span>
+                  <span className="text-amber-300 font-mono font-bold">{selectedUserDetails.referralCode}</span>
+                </div>
+
+                {/* Parrain Section */}
+                <div className="flex justify-between items-center py-1 border-b border-slate-800">
+                  <span className="text-slate-400">Parrain Assigné:</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sky-300 font-mono font-bold">
+                      {uSponsor ? `${uSponsor.name} (${uSponsor.phone})` : (selectedUserDetails.referredByCode || 'Aucun (Direct)')}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setSelectedUserForSponsor(selectedUserDetails);
+                        setNewSponsorCodeOrPhone(selectedUserDetails.referredByCode || '');
+                        setSelectedUserDetails(null);
+                      }}
+                      className="text-[10px] font-bold text-sky-400 hover:text-sky-300 underline cursor-pointer"
+                    >
+                      Modifier
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex justify-between py-1 border-b border-slate-800">
+                  <span className="text-slate-400">Pays:</span>
+                  <span className="text-white font-bold">
+                    {(selectedUserDetails.country?.toLowerCase().includes('cam') || selectedUserDetails.country === 'CM' || selectedUserDetails.phone?.startsWith('+237')) ? '🇨🇲 Cameroun' : '🇹🇬 Togo'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-slate-800">
+                  <span className="text-slate-400">Compte de Retrait:</span>
+                  <span className="text-white font-mono font-bold text-[11px]">
+                    {selectedUserDetails.withdrawalAccountNumber 
+                      ? `${selectedUserDetails.withdrawalAccountName || ''} (${selectedUserDetails.withdrawalAccountNumber})` 
+                      : 'Non lié'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-slate-800">
+                  <span className="text-slate-400">Code PIN Retrait:</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-amber-400 font-mono font-bold">
+                      {selectedUserDetails.withdrawalPinHash ? '•••• (Configuré)' : 'Non configuré'}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setSelectedUserForPin(selectedUserDetails);
+                        setSelectedUserDetails(null);
+                      }}
+                      className="text-[10px] font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                    >
+                      Modifier
+                    </button>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-slate-400">Rôle:</span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded font-mono ${
+                      selectedUserDetails.role === 'admin' 
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
+                        : 'bg-slate-800 text-slate-300'
+                    }`}>
+                      {selectedUserDetails.role === 'admin' ? 'Administrateur' : 'Utilisateur'}
+                    </span>
+                    <button
+                      onClick={() => {
+                        const newRole = selectedUserDetails.role === 'admin' ? 'user' : 'admin';
+                        updateUserRole(selectedUserDetails.id, newRole);
+                        setSelectedUserDetails({ ...selectedUserDetails, role: newRole });
+                        showToast('success', newRole === 'admin' 
+                          ? `Le compte de ${selectedUserDetails.name} est désormais Administrateur.` 
+                          : `Le rôle Admin a été retiré à ${selectedUserDetails.name}.`
+                        );
+                      }}
+                      className="text-[10px] font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                    >
+                      {selectedUserDetails.role === 'admin' ? 'Rétrograder' : 'Promouvoir Admin'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* FILLEULS DIRECTS (NIVEAU 1) BREAKDOWN */}
+              <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-white uppercase flex items-center space-x-1.5">
+                    <Users className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Filleuls Directs (Niveau 1)</span>
+                  </h4>
+                  <span className="text-[11px] font-mono font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md">
+                    {directFilleuls.length} ({activeDirectFilleuls.length} actifs)
+                  </span>
+                </div>
+
+                {directFilleuls.length === 0 ? (
+                  <p className="text-[11px] text-slate-500 italic py-2 text-center">
+                    Aucun filleul direct enregistré pour ce parrain.
+                  </p>
+                ) : (
+                  <div className="divide-y divide-slate-800/80 max-h-48 overflow-y-auto pr-1">
+                    {directFilleuls.map(filleul => {
+                      const fInvestments = userInvestments.filter(inv => inv.userId === filleul.id);
+                      const isFilleulActive = fInvestments.length > 0 || deposits.some(d => d.userId === filleul.id && d.status === 'approved') || (filleul.vipLevel || 0) > 0;
+                      const fTotalInvested = fInvestments.reduce((sum, inv) => sum + (inv.price || 0), 0);
+
+                      return (
+                        <div key={filleul.id} className="py-2 flex items-center justify-between text-xs">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center space-x-1.5">
+                              <span className="font-bold text-slate-200">{filleul.name}</span>
+                              <span className="font-mono text-[10px] text-slate-400">({filleul.phone})</span>
+                            </div>
+                            <div className="text-[10px] text-slate-500">
+                              Inscrit le {new Date(filleul.createdAt).toLocaleDateString()}
+                            </div>
+                          </div>
+
+                          <div className="text-right space-y-0.5">
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase font-mono ${
+                              isFilleulActive 
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                                : 'bg-slate-800 text-slate-400'
+                            }`}>
+                              {isFilleulActive ? '🟢 Actif' : '⚪ Inactif'}
+                            </span>
+                            {fTotalInvested > 0 && (
+                              <div className="text-[10px] font-mono text-amber-400 font-bold">
+                                {fTotalInvested.toLocaleString()} FCFA
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <button 
+                onClick={() => setSelectedUserDetails(null)}
+                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl cursor-pointer"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* MODAL: DELETE PAID PRODUCT CONFIRMATION */}
       {investmentToDelete && (

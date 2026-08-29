@@ -97,8 +97,8 @@ const SCHEMA_DEFINITIONS: Record<string, FieldMapping[]> = {
     { jsKey: 'isBlocked', dbKeys: ['is_blocked', 'isBlocked'], defaultValue: false },
     { jsKey: 'createdAt', dbKeys: ['created_at', 'createdAt'] },
     { jsKey: 'role', dbKeys: ['role'], defaultValue: 'user' },
-    { jsKey: 'referralCode', dbKeys: ['referral_code', 'referralCode'] },
-    { jsKey: 'referredByCode', dbKeys: ['referred_by_code', 'referredByCode'], defaultValue: null },
+    { jsKey: 'referralCode', dbKeys: ['referral_code', 'referralCode', 'referral_id', 'invite_code', 'code_parrain'] },
+    { jsKey: 'referredByCode', dbKeys: ['referred_by_code', 'referredByCode', 'referred_by', 'referredBy', 'sponsor_code', 'sponsorCode', 'sponsor_id', 'parent_code', 'parrain'], defaultValue: null },
     { jsKey: 'withdrawalAccountName', dbKeys: ['withdrawal_account_name', 'withdrawalAccountName'], defaultValue: null },
     { jsKey: 'withdrawalAccountNumber', dbKeys: ['withdrawal_account_number', 'withdrawalAccountNumber'], defaultValue: null },
     { jsKey: 'withdrawalPinHash', dbKeys: ['withdrawal_pin_hash', 'withdrawalPinHash'], defaultValue: '' },
@@ -941,6 +941,66 @@ async function startServer() {
     }
   });
 
+  // Helper to find and resolve sponsor by referral code, phone, ID, etc.
+  async function resolveSponsorUser(input: string | null | undefined): Promise<any | null> {
+    if (!input || typeof input !== 'string') return null;
+    let clean = input.trim();
+    if (!clean) return null;
+
+    // Handle full URLs like https://.../?ref=INV123456 or #/register?ref=INV123456
+    const refMatch = clean.match(/[?&]ref=([a-zA-Z0-9_-]+)/i);
+    if (refMatch && refMatch[1]) {
+      clean = refMatch[1];
+    }
+
+    const cleanUpper = clean.toUpperCase();
+    const cleanLower = clean.toLowerCase();
+    const digitsOnly = clean.replace(/\D/g, '');
+
+    // 1. Search in-memory store
+    for (const u of serverUsersStore.values()) {
+      if (!u) continue;
+      const uRefCode = (u.referralCode || '').trim();
+      const uId = (u.id || '').trim();
+      const uPhone = (u.phone || '').trim();
+      const uPhoneDigits = uPhone.replace(/\D/g, '');
+
+      if (uRefCode && uRefCode.toUpperCase() === cleanUpper) return u;
+      if (uId && (uId.toLowerCase() === cleanLower || uId.toUpperCase() === cleanUpper)) return u;
+      if (uPhone && (uPhone === clean || uPhone.replace(/\s+/g, '') === clean.replace(/\s+/g, ''))) return u;
+      if (digitsOnly.length >= 8 && uPhoneDigits.length >= 8 && (uPhoneDigits.endsWith(digitsOnly) || digitsOnly.endsWith(uPhoneDigits))) return u;
+    }
+
+    // 2. Query Supabase database
+    try {
+      // Query by referral_code
+      const { data: byCode } = await supabaseAdmin.from('users').select('*').ilike('referral_code', clean).limit(1);
+      if (byCode && byCode.length > 0) {
+        const norm = normalizeDbRow('users', byCode[0]);
+        serverUsersStore.set(norm.id, norm);
+        return norm;
+      }
+
+      // Query by phone
+      if (clean) {
+        const { data: byPhone } = await supabaseAdmin.from('users').select('*').or(`phone.eq.${clean},phone.eq.+${digitsOnly},phone.eq.${digitsOnly}`).limit(1);
+        if (byPhone && byPhone.length > 0) {
+          const norm = normalizeDbRow('users', byPhone[0]);
+          serverUsersStore.set(norm.id, norm);
+          return norm;
+        }
+      }
+    } catch (_) {}
+
+    // 3. Fallback for default admin codes
+    if (cleanUpper === 'ADMIN' || cleanUpper === 'ADMIN01' || cleanUpper === 'ADMIN2026' || cleanUpper === 'ADMIN02' || clean === '97194059') {
+      const admin = Array.from(serverUsersStore.values()).find(u => u.role === 'admin' || (u.phone && u.phone.includes('97194059')));
+      if (admin) return admin;
+    }
+
+    return null;
+  }
+
   // User Registration Route
   app.post('/api/auth/register', async (req, res) => {
     try {
@@ -997,6 +1057,22 @@ async function startServer() {
         cty: phoneInfo.isCameroon ? 'CM' : 'TG'
       };
 
+      // Resolve Sponsor / Parrain strictly
+      const rawReferralInput = (user.referredByCode || user.referrerCode || user.parrain || user.refCode || user.inviteCode || '').toString().trim();
+      let finalReferredByCode: string | null = null;
+      let sponsorUser: any = null;
+
+      if (rawReferralInput) {
+        sponsorUser = await resolveSponsorUser(rawReferralInput);
+        if (sponsorUser && sponsorUser.referralCode) {
+          finalReferredByCode = sponsorUser.referralCode.trim().toUpperCase();
+          console.log(`[Affiliation] Link established: User registered under Sponsor ${sponsorUser.name} (${sponsorUser.phone}) [Code: ${finalReferredByCode}]`);
+        } else {
+          console.warn(`[Affiliation] Referral input '${rawReferralInput}' could not be matched to an active sponsor.`);
+          finalReferredByCode = null;
+        }
+      }
+
       const userRecord = {
         id: user.id || ('usr-' + Math.floor(100000 + Math.random() * 9000000)),
         name: (user.name && user.name.trim()) ? user.name.trim() : (`Membre ${phoneInfo.nationalDigits.slice(-4)}`),
@@ -1011,7 +1087,7 @@ async function startServer() {
         createdAt: user.createdAt || new Date().toISOString(),
         role: user.role || 'user',
         referralCode: user.referralCode || ('INV' + Math.floor(100000 + Math.random() * 900000)),
-        referredByCode: user.referredByCode || null,
+        referredByCode: finalReferredByCode,
         withdrawalAccountName: user.withdrawalAccountName || null,
         withdrawalAccountNumber: user.withdrawalAccountNumber || null,
         withdrawalPinHash: user.withdrawalPinHash || JSON.stringify(hashedPinObj),
@@ -1041,7 +1117,7 @@ async function startServer() {
           error: errorMsg
         });
       } else {
-        console.log(`[Supabase Synced User]: ${userRecord.name} (${userRecord.phone}) [${userRecord.country}]`);
+        console.log(`[Supabase Synced User]: ${userRecord.name} (${userRecord.phone}) [Parrain: ${userRecord.referredByCode || 'Aucun'}]`);
       }
 
       const normalizedUser = normalizeDbRow('users', userRecord);
@@ -1069,6 +1145,46 @@ async function startServer() {
 
       await safeSupabaseUpdate('users', updates, 'id', userId);
       return res.json({ success: true });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
+    }
+  });
+
+  // Set / Update User Sponsor (Admin & System)
+  app.post('/api/admin/users/set-sponsor', async (req, res) => {
+    try {
+      const { userId, sponsorCodeOrPhone } = req.body;
+      if (!userId) {
+        return res.status(400).json({ success: false, error: 'Identifiant utilisateur requis.' });
+      }
+
+      let user = serverUsersStore.get(userId);
+      if (!user) {
+        const { data: dbUser } = await supabaseAdmin.from('users').select('*').eq('id', userId).single();
+        if (dbUser) user = normalizeDbRow('users', dbUser);
+      }
+
+      if (!user) {
+        return res.status(404).json({ success: false, error: 'Utilisateur introuvable.' });
+      }
+
+      let newSponsorCode: string | null = null;
+      if (sponsorCodeOrPhone && String(sponsorCodeOrPhone).trim()) {
+        const sponsor = await resolveSponsorUser(String(sponsorCodeOrPhone).trim());
+        if (!sponsor) {
+          return res.status(404).json({ success: false, error: 'Parrain introuvable avec ce code ou numéro.' });
+        }
+        if (sponsor.id === userId || (user.referralCode && sponsor.referralCode === user.referralCode)) {
+          return res.status(400).json({ success: false, error: 'Un utilisateur ne peut pas être son propre parrain.' });
+        }
+        newSponsorCode = sponsor.referralCode.trim().toUpperCase();
+      }
+
+      const updatedUser = { ...user, referredByCode: newSponsorCode };
+      serverUsersStore.set(userId, updatedUser);
+      await safeSupabaseUpdate('users', { referredByCode: newSponsorCode }, 'id', userId);
+
+      return res.json({ success: true, user: updatedUser, sponsorCode: newSponsorCode });
     } catch (err: any) {
       return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
     }
