@@ -3649,7 +3649,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                     </label>
                     <input
                       type="text"
-                      placeholder={channelCountryCode === 'CM' ? "Ex: +237 670 12 34 56" : "Ex: +228 90 12 34 56"}
+                      placeholder={channelCountryCode === 'CM' ? "Ex: +237 677 45 12 89 ou 688969868" : "Ex: +228 90 12 34 56"}
                       value={channelNumber}
                       onChange={(e) => setChannelNumber(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono text-amber-300 placeholder-slate-500 outline-none focus:border-amber-400 transition-colors font-bold"

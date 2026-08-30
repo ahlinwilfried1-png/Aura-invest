@@ -472,6 +472,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           countryCode = 'TG';
         }
       }
+
+      // Automatically migrate old placeholder or standard Cameroon numbers to official new numbers
+      if (countryCode === 'CM' || c.id === 'rc-cm-mtn' || c.id === 'rc-cm-orange') {
+        const isMtn = c.id === 'rc-cm-mtn' || c.name?.toLowerCase().includes('mtn') || c.name?.toLowerCase().includes('momo') || c.accountNumber?.includes('670 00 00 00');
+        const isOrange = c.id === 'rc-cm-orange' || c.name?.toLowerCase().includes('orange') || c.name?.toLowerCase().includes('om') || c.accountNumber?.includes('690 00 00 00');
+
+        if (isMtn) {
+          return {
+            ...c,
+            countryCode: 'CM',
+            name: c.name || 'MTN Mobile Money (MoMo Cameroun)',
+            accountNumber: '+237 677 45 12 89',
+            instructions: c.instructions || 'Effectuez le transfert vers ce numéro MTN MoMo (677451289) puis saisissez l\'ID de transaction.'
+          };
+        }
+
+        if (isOrange) {
+          return {
+            ...c,
+            countryCode: 'CM',
+            name: c.name || 'Orange Money (OM Cameroun)',
+            accountNumber: '+237 688 96 98 68',
+            instructions: c.instructions || 'Effectuez le transfert vers ce numéro Orange Money (688969868) puis saisissez l\'ID de transaction.'
+          };
+        }
+      }
+
       return { ...c, countryCode };
     });
 
@@ -512,9 +539,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           id: 'rc-cm-mtn',
           name: 'MTN Mobile Money (MoMo Cameroun)',
           countryCode: 'CM',
-          accountNumber: '+237 670 00 00 00',
+          accountNumber: '+237 677 45 12 89',
           accountHolder: 'Service Recharge Nutrien Cameroun',
-          instructions: 'Effectuez le transfert vers ce numéro MTN MoMo puis saisissez l\'ID de transaction.',
+          instructions: 'Effectuez le transfert vers ce numéro MTN MoMo (677451289) puis saisissez l\'ID de transaction.',
           isActive: true,
           order: 3,
           createdAt: new Date().toISOString()
@@ -523,9 +550,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           id: 'rc-cm-orange',
           name: 'Orange Money (OM Cameroun)',
           countryCode: 'CM',
-          accountNumber: '+237 690 00 00 00',
+          accountNumber: '+237 688 96 98 68',
           accountHolder: 'Service Recharge Nutrien Cameroun',
-          instructions: 'Effectuez le transfert vers ce numéro Orange Money puis saisissez l\'ID de transaction.',
+          instructions: 'Effectuez le transfert vers ce numéro Orange Money (688969868) puis saisissez l\'ID de transaction.',
           isActive: true,
           order: 4,
           createdAt: new Date().toISOString()
@@ -573,9 +600,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: 'rc-cm-mtn',
         name: 'MTN Mobile Money (MoMo Cameroun)',
         countryCode: 'CM',
-        accountNumber: '+237 670 00 00 00',
+        accountNumber: '+237 677 45 12 89',
         accountHolder: 'Service Recharge Nutrien Cameroun',
-        instructions: 'Effectuez le transfert vers ce numéro MTN MoMo puis saisissez l\'ID de transaction.',
+        instructions: 'Effectuez le transfert vers ce numéro MTN MoMo (677451289) puis saisissez l\'ID de transaction.',
         isActive: true,
         order: 3,
         createdAt: new Date().toISOString()
@@ -584,9 +611,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: 'rc-cm-orange',
         name: 'Orange Money (OM Cameroun)',
         countryCode: 'CM',
-        accountNumber: '+237 690 00 00 00',
+        accountNumber: '+237 688 96 98 68',
         accountHolder: 'Service Recharge Nutrien Cameroun',
-        instructions: 'Effectuez le transfert vers ce numéro Orange Money puis saisissez l\'ID de transaction.',
+        instructions: 'Effectuez le transfert vers ce numéro Orange Money (688969868) puis saisissez l\'ID de transaction.',
         isActive: true,
         order: 4,
         createdAt: new Date().toISOString()
@@ -863,6 +890,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const normalizedSysChannels = normalizeRechargeChannels(sysRechargeChannels);
           setRechargeChannels(normalizedSysChannels);
           safeSetLocalStorage('fintech_recharge_channels', normalizedSysChannels);
+          if (JSON.stringify(normalizedSysChannels) !== JSON.stringify(sysRechargeChannels)) {
+            saveSystemConfig('__SYS_RECHARGE_CHANNELS__', normalizedSysChannels).catch(() => {});
+          }
+        } else {
+          // Initialize defaults in Supabase if not yet present
+          saveSystemConfig('__SYS_RECHARGE_CHANNELS__', rechargeChannels).catch(() => {});
         }
         if (sysWheel) {
           setWheelConfig(sysWheel);
