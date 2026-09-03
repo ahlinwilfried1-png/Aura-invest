@@ -1398,7 +1398,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (dbUser.referredByCode) {
       const l1 = updatedUsers.find(u => u.referralCode === dbUser.referredByCode);
       if (l1) {
-        const commL1 = Math.round(totalPrice * 0.20); // 20% Level 1
+        const commL1 = Math.round(totalPrice * 0.15); // 15% Level 1
         const ticketsGained = (wheelConfig?.ticketsPerReferral || 1) * quantity;
         const newL1Balance = l1.balance + commL1;
         const newL1Total = l1.totalEarnings + commL1;

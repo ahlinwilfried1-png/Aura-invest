@@ -1269,7 +1269,7 @@ async function startServer() {
 
       // 5. Calculate & Distribute Multi-level Referral Commissions
       if (user.referredByCode) {
-        // Level 1 (20%)
+        // Level 1 (15%)
         let l1User = Array.from(serverUsersStore.values()).find(u => u.referralCode === user.referredByCode);
         if (!l1User) {
           const { data: dbL1 } = await supabaseAdmin.from('users').select('*').eq('referral_code', user.referredByCode).maybeSingle();
@@ -1277,7 +1277,7 @@ async function startServer() {
         }
 
         if (l1User) {
-          const commL1 = Math.round(totalPrice * 0.20);
+          const commL1 = Math.round(totalPrice * 0.15);
           const l1Bal = (l1User.balance || 0) + commL1;
           const l1Tot = (l1User.totalEarnings || 0) + commL1;
           const l1Tickets = (l1User.drawTickets || 0) + qty;
