@@ -38,10 +38,25 @@ export async function fetchAllTablesMaster(force: boolean = false): Promise<any 
     const url = force ? '/api/admin/fetch-all?force=true' : '/api/admin/fetch-all';
     const res = await resilientFetch(url, {}, 8000);
     if (res.ok && res.isJson && res.data && res.data.success && res.data.data) {
-      return res.data.data;
+      return {
+        ...res.data.data,
+        _supabaseStatus: res.data.supabaseStatus,
+        _isQuotaExceeded: res.data.isQuotaExceeded,
+        _supabaseMessage: res.data.supabaseMessage
+      };
     }
   } catch (_) {}
   return null;
+}
+
+export async function checkSupabaseStatus(): Promise<any> {
+  try {
+    const res = await resilientFetch('/api/admin/check-supabase', {}, 6000);
+    if (res.isJson && res.data) {
+      return res.data;
+    }
+  } catch (_) {}
+  return { success: false, status: 'error', message: 'Impossible de contacter le serveur.' };
 }
 
 export async function loginUserInDatabase(phone: string, password: string, country?: string): Promise<{ success: boolean; error?: string; user?: any }> {

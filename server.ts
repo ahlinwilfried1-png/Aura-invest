@@ -1,23 +1,19 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 
-dotenv.config();
+dotenv.config({ override: true });
 
 // Configuration
 const PORT = 3000;
-// Central Supabase Credentials for project 'xqwtaosmhearbkravvao'
-const CENTRAL_SUPABASE_URL = 'https://xqwtaosmhearbkravvao.supabase.co';
-const CENTRAL_SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhxd3Rhb3NtaGVhcmJrcmF2dmFvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzU3NjkzMywiZXhwIjoyMTAzMTUyOTMzfQ.RmX3LeZKj6PjuMs4Pd7yWfcuNTQxSKDcRiSazbyQ_8M';
-
-const SUPABASE_URL = 
-  (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('idnpfqfxvzskivpdkbdc') && !process.env.SUPABASE_URL.includes('ozvqpwsdxkmimzfjmoud') ? process.env.SUPABASE_URL : null) || 
-  (process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('idnpfqfxvzskivpdkbdc') && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('ozvqpwsdxkmimzfjmoud') ? process.env.NEXT_PUBLIC_SUPABASE_URL : null) || 
-  (process.env.VITE_SUPABASE_URL && !process.env.VITE_SUPABASE_URL.includes('idnpfqfxvzskivpdkbdc') && !process.env.VITE_SUPABASE_URL.includes('ozvqpwsdxkmimzfjmoud') ? process.env.VITE_SUPABASE_URL : null) || 
-  CENTRAL_SUPABASE_URL;
+// Central Supabase Credentials for project 'ykoqcaggjfhpnysvumuu'
+const TARGET_PROJECT_REF = 'ykoqcaggjfhpnysvumuu';
+const CENTRAL_SUPABASE_URL = 'https://ykoqcaggjfhpnysvumuu.supabase.co';
+const CENTRAL_SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlrb3FjYWdnamZocG55c3Z1bXV1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4ODQyMzg5OSwiZXhwIjoyMTAzOTk5ODk5fQ.7HSpfFhr9f9ET9XytoQoz1Qe5l64ID_VcTD3HpFSItU';
 
 // Helper to extract JWT project ref safely
 function getJwtProjectRef(token: string | undefined): string | null {
@@ -33,29 +29,63 @@ function getJwtProjectRef(token: string | undefined): string | null {
   }
 }
 
-// Ensure service role key matches project 'xqwtaosmhearbkravvao'
-const envServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const SUPABASE_SERVICE_ROLE_KEY = 
-  (envServiceRoleKey && getJwtProjectRef(envServiceRoleKey) === 'xqwtaosmhearbkravvao' ? envServiceRoleKey : null) || 
-  CENTRAL_SUPABASE_SERVICE_ROLE_KEY;
+function resolveServerSupabaseUrl(): string {
+  const candidates = [
+    process.env.SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.VITE_SUPABASE_URL
+  ];
+  for (const c of candidates) {
+    if (c && c.includes(TARGET_PROJECT_REF)) return c;
+  }
+  return CENTRAL_SUPABASE_URL;
+}
 
-// Safe Node.js fetch for Supabase Admin with 3000ms timeout
+function resolveServerServiceRoleKey(): string {
+  const envKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (envKey && getJwtProjectRef(envKey) === TARGET_PROJECT_REF) {
+    return envKey;
+  }
+  return CENTRAL_SUPABASE_SERVICE_ROLE_KEY;
+}
+
+const SUPABASE_URL = resolveServerSupabaseUrl();
+const SUPABASE_SERVICE_ROLE_KEY = resolveServerServiceRoleKey();
+
+// Global Supabase connection & quota monitoring state
+let isSupabaseQuotaExceeded = false;
+let lastSupabaseErrorMsg: string | null = null;
+let lastSupabaseSuccessTimestamp = 0;
+
+// Safe Node.js fetch for Supabase Admin with 8000ms timeout and accurate status reporting
 const safeServerFetch: typeof fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3000);
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
   try {
     const res = await fetch(input, {
       ...init,
       signal: init?.signal || controller.signal,
     });
     clearTimeout(timeoutId);
+
+    // If Supabase returns 402 Payment Required (exceed_egress_quota)
+    if (res.status === 402) {
+      isSupabaseQuotaExceeded = true;
+      lastSupabaseErrorMsg = 'exceed_egress_quota (402): Quota de bande passante mensuelle Supabase atteint. Mode résilience locale actif.';
+      console.warn('[Supabase Egress Quota Exceeded]: Supabase returned HTTP 402. Switched to high-availability local storage.');
+    } else if (res.ok) {
+      isSupabaseQuotaExceeded = false;
+      lastSupabaseSuccessTimestamp = Date.now();
+    }
+
     return res;
   } catch (err: any) {
     clearTimeout(timeoutId);
+    console.warn('[Supabase Fetch Timeout/Error]:', err?.message);
     return new Response(
-      '[]',
+      JSON.stringify({ message: err?.message || 'Database connection timeout', code: 'NETWORK_ERROR' }),
       {
-        status: 200,
+        status: 504,
         headers: { 'Content-Type': 'application/json' },
       }
     );
@@ -140,7 +170,7 @@ const SCHEMA_DEFINITIONS: Record<string, FieldMapping[]> = {
     { jsKey: 'amount', dbKeys: ['amount'] },
     { jsKey: 'method', dbKeys: ['method'] },
     { jsKey: 'transactionId', dbKeys: ['transaction_id', 'transactionId'] },
-    { jsKey: 'screenshotUrl', dbKeys: ['screenshot_url', 'screenshotUrl'], defaultValue: null },
+    { jsKey: 'screenshotUrl', dbKeys: ['screenshot_url', 'screenshotUrl', 'image_url', 'imageUrl', 'image'], defaultValue: null },
     { jsKey: 'status', dbKeys: ['status'], defaultValue: 'pending' },
     { jsKey: 'createdAt', dbKeys: ['created_at', 'createdAt'] }
   ],
@@ -164,7 +194,7 @@ const SCHEMA_DEFINITIONS: Record<string, FieldMapping[]> = {
     { jsKey: 'amount', dbKeys: ['amount'] },
     { jsKey: 'network', dbKeys: ['network'] },
     { jsKey: 'message', dbKeys: ['message'] },
-    { jsKey: 'imageUrl', dbKeys: ['image_url', 'imageUrl'], defaultValue: null },
+    { jsKey: 'imageUrl', dbKeys: ['image_url', 'imageUrl', 'image', 'photo_url', 'screenshot_url'], defaultValue: null },
     { jsKey: 'createdAt', dbKeys: ['created_at', 'createdAt'] },
     { jsKey: 'isVerified', dbKeys: ['is_verified', 'isVerified'], defaultValue: true },
     { jsKey: 'status', dbKeys: ['status'], defaultValue: 'approved' }
@@ -176,7 +206,7 @@ const SCHEMA_DEFINITIONS: Record<string, FieldMapping[]> = {
     { jsKey: 'userPhone', dbKeys: ['user_phone', 'userPhone'] },
     { jsKey: 'subject', dbKeys: ['subject'], defaultValue: 'Message Chat Support' },
     { jsKey: 'message', dbKeys: ['message'] },
-    { jsKey: 'imageUrl', dbKeys: ['image_url', 'imageUrl'], defaultValue: null },
+    { jsKey: 'imageUrl', dbKeys: ['image_url', 'imageUrl', 'image', 'photo_url', 'screenshot_url'], defaultValue: null },
     { jsKey: 'status', dbKeys: ['status'], defaultValue: 'open' },
     { jsKey: 'createdAt', dbKeys: ['created_at', 'createdAt'] },
     { jsKey: 'reply', dbKeys: ['reply'], defaultValue: null },
@@ -203,6 +233,15 @@ const SCHEMA_DEFINITIONS: Record<string, FieldMapping[]> = {
 
 // Track discovered database columns per table in Supabase
 const knownTableColumns = new Map<string, Set<string>>();
+
+// Pre-initialize known columns for all tables from schema definitions
+for (const [tbl, fieldList] of Object.entries(SCHEMA_DEFINITIONS)) {
+  const set = new Set<string>();
+  for (const f of fieldList) {
+    for (const k of f.dbKeys) set.add(k);
+  }
+  knownTableColumns.set(tbl, set);
+}
 
 /**
  * Normalizes a raw Supabase database row into a clean JS Model (camelCase)
@@ -247,6 +286,19 @@ function normalizeDbRow<T = any>(tableName: string, dbRow: any): T {
     if (!(k in jsObject)) {
       const camel = k.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
       if (!(camel in jsObject)) jsObject[camel] = dbRow[k];
+    }
+  }
+
+  // Enforce numbers for numeric fields to prevent string concatenation bugs
+  const numericKeys = new Set([
+    'balance', 'dailyEarnings', 'totalEarnings', 'vipLevel', 'drawTickets',
+    'price', 'dailyGain', 'duration', 'totalGain', 'daysRemaining',
+    'amount', 'receivedAmount', 'order', 'level', 'maxUses'
+  ]);
+  for (const k of Object.keys(jsObject)) {
+    if (numericKeys.has(k) && jsObject[k] !== null && jsObject[k] !== undefined && typeof jsObject[k] !== 'number') {
+      const parsed = Number(jsObject[k]);
+      if (!isNaN(parsed)) jsObject[k] = parsed;
     }
   }
 
@@ -315,7 +367,7 @@ function prepareDbPayload(tableName: string, jsObject: any, allowDefaults: boole
 /**
  * Resilient Supabase Upsert that automatically handles column mismatches and retries
  */
-async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ success: boolean; error?: string; data?: any }> {
+async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ success: boolean; error?: string; data?: any; quotaExceeded?: boolean; localOnly?: boolean }> {
   if (!item) return { success: false, error: 'Empty payload' };
 
   // If upserting an existing user, merge with existing state to avoid overwriting existing balance or stats with default values
@@ -335,11 +387,21 @@ async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ succe
         .select();
 
       if (!error) {
+        isSupabaseQuotaExceeded = false;
+        lastSupabaseSuccessTimestamp = Date.now();
         return { success: true, data };
       }
 
       const errMsg = error.message || '';
       console.warn(`[Safe Upsert] '${tableName}' attempt ${attempt + 1} notice:`, errMsg);
+
+      // Handle Supabase Egress Quota restriction (HTTP 402 / exceed_egress_quota)
+      if (errMsg.includes('exceed_egress_quota') || errMsg.includes('restricted') || errMsg.includes('402') || (error as any).code === '402') {
+        isSupabaseQuotaExceeded = true;
+        lastSupabaseErrorMsg = errMsg;
+        console.warn(`[Supabase Quota Alert]: Project restricted by Supabase quota. Record saved safely in local persistent store.`);
+        return { success: true, localOnly: true, quotaExceeded: true };
+      }
 
       // Check unique constraint on phone
       if (errMsg.includes('users_phone_key') || errMsg.includes('unique constraint') || errMsg.includes('23505') || errMsg.includes('already exists')) {
@@ -373,7 +435,13 @@ async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ succe
         return { success: false, error: error.message };
       }
     } catch (err: any) {
-      return { success: false, error: err?.message || 'Database error' };
+      const msg = err?.message || '';
+      if (msg.includes('exceed_egress_quota') || msg.includes('402')) {
+        isSupabaseQuotaExceeded = true;
+        lastSupabaseErrorMsg = msg;
+        return { success: true, localOnly: true, quotaExceeded: true };
+      }
+      return { success: false, error: msg || 'Database error' };
     }
   }
 
@@ -383,7 +451,7 @@ async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ succe
 /**
  * Resilient Supabase Update that automatically handles column mismatches
  */
-async function safeSupabaseUpdate(tableName: string, updates: any, idCol: string, idVal: any): Promise<{ success: boolean; error?: string }> {
+async function safeSupabaseUpdate(tableName: string, updates: any, idCol: string, idVal: any): Promise<{ success: boolean; error?: string; quotaExceeded?: boolean; localOnly?: boolean }> {
   // Pass allowDefaults = false so partial updates (like bank card linking) never reset user balance or earnings!
   let payload = prepareDbPayload(tableName, updates, false);
 
@@ -393,10 +461,21 @@ async function safeSupabaseUpdate(tableName: string, updates: any, idCol: string
         .update(payload)
         .eq(idCol, idVal);
 
-      if (!error) return { success: true };
+      if (!error) {
+        isSupabaseQuotaExceeded = false;
+        lastSupabaseSuccessTimestamp = Date.now();
+        return { success: true };
+      }
 
       const errMsg = error.message || '';
       console.warn(`[Safe Update] '${tableName}' attempt ${attempt + 1} notice:`, errMsg);
+
+      // Handle Supabase Egress Quota restriction
+      if (errMsg.includes('exceed_egress_quota') || errMsg.includes('restricted') || errMsg.includes('402') || (error as any).code === '402') {
+        isSupabaseQuotaExceeded = true;
+        lastSupabaseErrorMsg = errMsg;
+        return { success: true, localOnly: true, quotaExceeded: true };
+      }
 
       // Check unique constraint on phone
       if (errMsg.includes('users_phone_key') || errMsg.includes('unique constraint') || errMsg.includes('23505') || errMsg.includes('already exists')) {
@@ -418,7 +497,13 @@ async function safeSupabaseUpdate(tableName: string, updates: any, idCol: string
         return { success: false, error: error.message };
       }
     } catch (err: any) {
-      return { success: false, error: err?.message || 'Database error' };
+      const msg = err?.message || '';
+      if (msg.includes('exceed_egress_quota') || msg.includes('402')) {
+        isSupabaseQuotaExceeded = true;
+        lastSupabaseErrorMsg = msg;
+        return { success: true, localOnly: true, quotaExceeded: true };
+      }
+      return { success: false, error: msg || 'Database error' };
     }
   }
 
@@ -435,6 +520,101 @@ const serverProofsStore = new Map<string, any>();
 const serverTicketsStore = new Map<string, any>();
 const serverCommissionsStore = new Map<string, any>();
 const serverBonusCodesStore = new Map<string, any>();
+
+// =========================================================================
+// LOCAL PERSISTENT DISK STORAGE (FAILSAFE AGAINST SUPABASE QUOTA VIOLATIONS)
+// =========================================================================
+const DATA_DIR = path.join(process.cwd(), 'data');
+const DATA_FILE = path.join(DATA_DIR, 'platform_store.json');
+
+try {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+} catch (err: any) {
+  console.warn('[Persistent Store Dir Init Warning]:', err?.message);
+}
+
+let saveDebounceTimer: NodeJS.Timeout | null = null;
+
+function savePlatformDataToDisk(force: boolean = false): void {
+  const doSave = () => {
+    try {
+      const dump = {
+        users: Array.from(serverUsersStore.values()),
+        products: Array.from(serverProductsStore.values()),
+        investments: Array.from(serverInvestmentsStore.values()),
+        deposits: Array.from(serverDepositsStore.values()),
+        withdrawals: Array.from(serverWithdrawalsStore.values()),
+        withdrawal_proofs: Array.from(serverProofsStore.values()),
+        tickets: Array.from(serverTicketsStore.values()),
+        commissions: Array.from(serverCommissionsStore.values()),
+        bonus_codes: Array.from(serverBonusCodesStore.values()),
+        lastSaved: new Date().toISOString()
+      };
+      const tmpFile = DATA_FILE + '.tmp';
+      fs.writeFileSync(tmpFile, JSON.stringify(dump, null, 2), 'utf-8');
+      fs.renameSync(tmpFile, DATA_FILE);
+    } catch (err: any) {
+      console.warn('[Persistent Store Save Warning]:', err?.message);
+    }
+  };
+
+  if (force) {
+    if (saveDebounceTimer) {
+      clearTimeout(saveDebounceTimer);
+      saveDebounceTimer = null;
+    }
+    doSave();
+  } else {
+    if (saveDebounceTimer) return;
+    saveDebounceTimer = setTimeout(() => {
+      saveDebounceTimer = null;
+      doSave();
+    }, 300);
+  }
+}
+
+function loadPlatformDataFromDisk(): void {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (parsed) {
+        if (Array.isArray(parsed.users)) {
+          parsed.users.forEach((u: any) => { if (u && u.id) serverUsersStore.set(u.id, u); });
+        }
+        if (Array.isArray(parsed.products)) {
+          parsed.products.forEach((p: any) => { if (p && p.id) serverProductsStore.set(p.id, p); });
+        }
+        if (Array.isArray(parsed.investments)) {
+          parsed.investments.forEach((i: any) => { if (i && i.id) serverInvestmentsStore.set(i.id, i); });
+        }
+        if (Array.isArray(parsed.deposits)) {
+          parsed.deposits.forEach((d: any) => { if (d && d.id) serverDepositsStore.set(d.id, d); });
+        }
+        if (Array.isArray(parsed.withdrawals)) {
+          parsed.withdrawals.forEach((w: any) => { if (w && w.id) serverWithdrawalsStore.set(w.id, w); });
+        }
+        if (Array.isArray(parsed.withdrawal_proofs)) {
+          parsed.withdrawal_proofs.forEach((pr: any) => { if (pr && pr.id) serverProofsStore.set(pr.id, pr); });
+        }
+        if (Array.isArray(parsed.tickets)) {
+          parsed.tickets.forEach((t: any) => { if (t && t.id) serverTicketsStore.set(t.id, t); });
+        }
+        if (Array.isArray(parsed.commissions)) {
+          parsed.commissions.forEach((c: any) => { if (c && c.id) serverCommissionsStore.set(c.id, c); });
+        }
+        if (Array.isArray(parsed.bonus_codes)) {
+          parsed.bonus_codes.forEach((b: any) => { if (b && (b.id || b.code)) serverBonusCodesStore.set(b.code || b.id, b); });
+        }
+        console.log(`[Persistent Store] Loaded from disk: ${serverUsersStore.size} users, ${serverDepositsStore.size} deposits, ${serverWithdrawalsStore.size} withdrawals, ${serverInvestmentsStore.size} investments, ${serverTicketsStore.size} tickets.`);
+      }
+    }
+  } catch (err: any) {
+    console.warn('[Persistent Store Load Warning]:', err?.message);
+  }
+}
 
 // Cryptographic Password Hashing & Verification Helper (PBKDF2)
 const SYSTEM_ADMIN_SALT = 'd8e3b1c4a7f05926';
@@ -662,56 +842,172 @@ const defaultSeedProducts = [
 defaultSeedUsers.forEach(u => serverUsersStore.set(u.id, u));
 defaultSeedProducts.forEach(p => serverProductsStore.set(p.id, p));
 
-// Initial Discovery & Sync from Supabase
+// Load all persistent records from disk (users, deposits, withdrawals, tickets, investments)
+loadPlatformDataFromDisk();
+
+// Ensure seeds remain present even after disk load
+defaultSeedUsers.forEach(u => {
+  if (!serverUsersStore.has(u.id)) {
+    serverUsersStore.set(u.id, u);
+  }
+});
+defaultSeedProducts.forEach(p => {
+  if (!serverProductsStore.has(p.id)) {
+    serverProductsStore.set(p.id, p);
+  }
+});
+savePlatformDataToDisk(true);
+
+// Initial Discovery & Complete Sync from Supabase
 async function syncFromSupabaseInitial() {
   try {
     const tableNames = ['users', 'products', 'investments', 'deposits', 'withdrawals', 'withdrawal_proofs', 'tickets', 'commissions', 'bonus_codes'];
     
-    // 0. Discover table columns
+    // 0. Discover table columns dynamically
     for (const tbl of tableNames) {
       try {
         const { data, error } = await supabaseAdmin.from(tbl).select('*').limit(1);
         if (!error && data && data.length > 0) {
           const cols = new Set(Object.keys(data[0]));
-          knownTableColumns.set(tbl, cols);
-          console.log(`[Schema Discovery] Table '${tbl}' has columns:`, Array.from(cols).join(', '));
+          // Merge with pre-initialized known columns
+          const existing = knownTableColumns.get(tbl) || new Set();
+          cols.forEach(c => existing.add(c));
+          knownTableColumns.set(tbl, existing);
+          console.log(`[Schema Discovery] Table '${tbl}' has columns:`, Array.from(existing).join(', '));
         }
       } catch (_) {}
     }
 
-    // 1. Ensure seed admin accounts exist in Supabase database
-    for (const seedAdmin of defaultSeedUsers) {
-      await safeSupabaseUpsert('users', seedAdmin);
-    }
-
-    // 2. Ensure official AgroProfit 8 products exist in Supabase database
-    for (const seedProd of defaultSeedProducts) {
-      await safeSupabaseUpsert('products', seedProd);
-    }
-
-    // 3. Fetch all users from Supabase and normalize
-    const { data: dbUsers, error } = await supabaseAdmin.from('users').select('*').limit(10000);
-    if (!error && dbUsers && Array.isArray(dbUsers) && dbUsers.length > 0) {
+    // 1. Fetch all existing users from Supabase FIRST to preserve all registered accounts
+    const { data: dbUsers, error: userErr } = await supabaseAdmin.from('users').select('*').limit(10000);
+    const existingUserIds = new Set<string>();
+    const existingUserPhones = new Set<string>();
+    if (!userErr && dbUsers && Array.isArray(dbUsers)) {
       dbUsers.forEach(u => {
         if (u && (u.id || u.phone)) {
           const norm = normalizeDbRow('users', u);
-          serverUsersStore.set(norm.id, { ...serverUsersStore.get(norm.id), ...norm });
+          serverUsersStore.set(norm.id, norm);
+          if (norm.id) existingUserIds.add(norm.id);
+          if (norm.phone) existingUserPhones.add(norm.phone);
         }
       });
-      console.log(`[Supabase Sync] Loaded ${dbUsers.length} users into server memory.`);
+      console.log(`[Supabase Sync] Successfully loaded ${dbUsers.length} existing users from database into memory.`);
     }
 
-    // 4. Fetch all tickets / chat messages from Supabase and normalize
+    // 2. Only insert default seed admin accounts if not already present in Supabase or memory
+    for (const seedAdmin of defaultSeedUsers) {
+      if (!existingUserIds.has(seedAdmin.id) && !existingUserPhones.has(seedAdmin.phone)) {
+        await safeSupabaseUpsert('users', seedAdmin);
+      }
+    }
+
+    // 3. Fetch all products from Supabase FIRST
+    const { data: dbProducts, error: prodErr } = await supabaseAdmin.from('products').select('*').limit(10000);
+    const existingProductIds = new Set<string>();
+    if (!prodErr && dbProducts && Array.isArray(dbProducts)) {
+      dbProducts.forEach(p => {
+        if (p && p.id) {
+          const norm = normalizeDbRow('products', p);
+          serverProductsStore.set(norm.id, norm);
+          existingProductIds.add(norm.id);
+        }
+      });
+      console.log(`[Supabase Sync] Successfully loaded ${dbProducts.length} products from database into memory.`);
+    }
+
+    // 4. Only insert default seed products if not already present in database
+    for (const seedProd of defaultSeedProducts) {
+      if (!existingProductIds.has(seedProd.id)) {
+        await safeSupabaseUpsert('products', seedProd);
+      }
+    }
+
+    // 5. Fetch all customer service tickets / chat messages & attached images
     const { data: dbTickets, error: tktErr } = await supabaseAdmin.from('tickets').select('*').limit(10000);
-    if (!tktErr && dbTickets && Array.isArray(dbTickets) && dbTickets.length > 0) {
+    if (!tktErr && dbTickets && Array.isArray(dbTickets)) {
       dbTickets.forEach(t => {
         if (t && t.id) {
           const norm = normalizeDbRow('tickets', t);
-          serverTicketsStore.set(norm.id, { ...serverTicketsStore.get(norm.id), ...norm });
+          serverTicketsStore.set(norm.id, norm);
         }
       });
-      console.log(`[Supabase Sync] Loaded ${dbTickets.length} tickets / chat messages into server memory.`);
+      console.log(`[Supabase Sync] Successfully loaded ${dbTickets.length} tickets/chat messages from database into memory.`);
     }
+
+    // 6. Fetch all deposits (pending, validated, rejected)
+    const { data: dbDeposits, error: depErr } = await supabaseAdmin.from('deposits').select('*').limit(10000);
+    if (!depErr && dbDeposits && Array.isArray(dbDeposits)) {
+      dbDeposits.forEach(d => {
+        if (d && d.id) {
+          const norm = normalizeDbRow('deposits', d);
+          serverDepositsStore.set(norm.id, norm);
+        }
+      });
+      console.log(`[Supabase Sync] Successfully loaded ${dbDeposits.length} deposits from database into memory.`);
+    }
+
+    // 7. Fetch all withdrawals (pending, approved, rejected)
+    const { data: dbWithdrawals, error: wthErr } = await supabaseAdmin.from('withdrawals').select('*').limit(10000);
+    if (!wthErr && dbWithdrawals && Array.isArray(dbWithdrawals)) {
+      dbWithdrawals.forEach(w => {
+        if (w && w.id) {
+          const norm = normalizeDbRow('withdrawals', w);
+          serverWithdrawalsStore.set(norm.id, norm);
+        }
+      });
+      console.log(`[Supabase Sync] Successfully loaded ${dbWithdrawals.length} withdrawals from database into memory.`);
+    }
+
+    // 8. Fetch all investments (purchased products, earnings, progression)
+    const { data: dbInvestments, error: invErr } = await supabaseAdmin.from('investments').select('*').limit(10000);
+    if (!invErr && dbInvestments && Array.isArray(dbInvestments)) {
+      dbInvestments.forEach(i => {
+        if (i && i.id) {
+          const norm = normalizeDbRow('investments', i);
+          serverInvestmentsStore.set(norm.id, norm);
+        }
+      });
+      console.log(`[Supabase Sync] Successfully loaded ${dbInvestments.length} active investments from database into memory.`);
+    }
+
+    // 9. Fetch all forum publications and screenshot proofs
+    const { data: dbProofs, error: proofErr } = await supabaseAdmin.from('withdrawal_proofs').select('*').limit(10000);
+    if (!proofErr && dbProofs && Array.isArray(dbProofs)) {
+      dbProofs.forEach(pr => {
+        if (pr && pr.id) {
+          const norm = normalizeDbRow('withdrawal_proofs', pr);
+          serverProofsStore.set(norm.id, norm);
+        }
+      });
+      console.log(`[Supabase Sync] Successfully loaded ${dbProofs.length} forum publications/proofs from database into memory.`);
+    }
+
+    // 10. Fetch all referral commissions
+    const { data: dbComms, error: commErr } = await supabaseAdmin.from('commissions').select('*').limit(10000);
+    if (!commErr && dbComms && Array.isArray(dbComms)) {
+      dbComms.forEach(c => {
+        if (c && c.id) {
+          const norm = normalizeDbRow('commissions', c);
+          serverCommissionsStore.set(norm.id, norm);
+        }
+      });
+      console.log(`[Supabase Sync] Successfully loaded ${dbComms.length} commissions from database into memory.`);
+    }
+
+    // 11. Fetch all bonus codes
+    const { data: dbBonus, error: bonusErr } = await supabaseAdmin.from('bonus_codes').select('*').limit(10000);
+    if (!bonusErr && dbBonus && Array.isArray(dbBonus)) {
+      dbBonus.forEach(b => {
+        if (b && (b.id || b.code)) {
+          const norm = normalizeDbRow('bonus_codes', b);
+          serverBonusCodesStore.set(norm.code || norm.id, norm);
+        }
+      });
+      console.log(`[Supabase Sync] Successfully loaded ${dbBonus.length} bonus codes from database into memory.`);
+    }
+
+    // Persist all gathered real database data to disk cache
+    savePlatformDataToDisk(true);
   } catch (err: any) {
     console.warn('[Initial Sync Notice]:', err?.message);
   }
@@ -1096,30 +1392,35 @@ async function startServer() {
         withdrawalCountry: user.withdrawalCountry || (phoneInfo.isCameroon ? 'CM' : 'TG')
       };
 
-      // Record in memory store
+      // Record in memory store and persist immediately to disk
       serverUsersStore.set(userRecord.id, userRecord);
+      savePlatformDataToDisk(true);
 
       // Save to Supabase using resilient upsert
       const upsertResult = await safeSupabaseUpsert('users', userRecord);
-      if (!upsertResult.success) {
+      if (!upsertResult.success && !upsertResult.localOnly && !upsertResult.quotaExceeded) {
         console.warn('[Register Supabase Upsert Notice]:', upsertResult.error);
-        // Remove from memory store if DB insert failed
-        serverUsersStore.delete(userRecord.id);
-        const errorMsg = (upsertResult.error && (
+        const isDuplicate = upsertResult.error && (
           upsertResult.error.includes('users_phone_key') || 
           upsertResult.error.includes('unique constraint') || 
           upsertResult.error.includes('23505') || 
           upsertResult.error.includes('already exists')
-        )) ? 'Ce numéro possède déjà un compte, veuillez vous connecter.' : (upsertResult.error || 'Erreur lors de l\'enregistrement.');
+        );
 
-        return res.status(400).json({
-          success: false,
-          error: errorMsg
-        });
+        if (isDuplicate) {
+          serverUsersStore.delete(userRecord.id);
+          savePlatformDataToDisk(true);
+          return res.status(400).json({
+            success: false,
+            error: 'Ce numéro possède déjà un compte, veuillez vous connecter.'
+          });
+        }
+        // If other error (e.g. quota or timeout), keep user in resilient store!
       } else {
         console.log(`[Supabase Synced User]: ${userRecord.name} (${userRecord.phone}) [Parrain: ${userRecord.referredByCode || 'Aucun'}]`);
       }
 
+      savePlatformDataToDisk(true);
       const normalizedUser = normalizeDbRow('users', userRecord);
       return res.json({
         success: true,
@@ -1365,6 +1666,7 @@ async function startServer() {
       // Invalidate cache so all clients fetch updated state immediately
       lastFetchAllData = null;
       lastFetchAllTime = 0;
+      savePlatformDataToDisk(true);
 
       console.log(`[Product Purchased]: User ${user.id} (${user.name}) bought ${qty}x ${product.name} -> New balance: ${newBalance} FCFA`);
 
@@ -1399,6 +1701,7 @@ async function startServer() {
       };
 
       serverDepositsStore.set(normDep.id, normDep);
+      savePlatformDataToDisk(true);
       await safeSupabaseUpsert('deposits', normDep);
 
       lastFetchAllData = null;
@@ -1436,6 +1739,7 @@ async function startServer() {
       };
 
       serverWithdrawalsStore.set(normWth.id, normWth);
+      savePlatformDataToDisk(true);
       await safeSupabaseUpsert('withdrawals', normWth);
 
       lastFetchAllData = null;
@@ -1469,6 +1773,7 @@ async function startServer() {
       };
 
       serverTicketsStore.set(normTicket.id, normTicket);
+      savePlatformDataToDisk(true);
       await safeSupabaseUpsert('tickets', normTicket);
 
       lastFetchAllData = null;
@@ -1509,6 +1814,7 @@ async function startServer() {
 
       const mergedTicket = existingTicket ? { ...existingTicket, ...updates } : { id: ticketId, ...updates };
       serverTicketsStore.set(ticketId, mergedTicket);
+      savePlatformDataToDisk(true);
 
       // Persist to Supabase
       await safeSupabaseUpdate('tickets', updates, 'id', ticketId);
@@ -1557,6 +1863,7 @@ async function startServer() {
       };
 
       serverTicketsStore.set(newTicket.id, newTicket);
+      savePlatformDataToDisk(true);
       await safeSupabaseUpsert('tickets', newTicket);
 
       lastFetchAllData = null;
@@ -1615,6 +1922,7 @@ async function startServer() {
       // Update deposit status
       const updatedDep = { ...dep, status };
       serverDepositsStore.set(depositId, updatedDep);
+      savePlatformDataToDisk(true);
       await safeSupabaseUpdate('deposits', { status }, 'id', depositId);
 
       let updatedBalance: number | null = null;
@@ -1640,6 +1948,7 @@ async function startServer() {
 
           const updatedUserObj = { ...targetUser, balance: calculatedBalance };
           serverUsersStore.set(targetUser.id, updatedUserObj);
+          savePlatformDataToDisk(true);
 
           await safeSupabaseUpdate('users', { balance: calculatedBalance }, 'id', targetUser.id);
 
@@ -1684,6 +1993,7 @@ async function startServer() {
 
       // Update withdrawal status
       serverWithdrawalsStore.set(withdrawalId, { ...wth, status });
+      savePlatformDataToDisk(true);
       await safeSupabaseUpdate('withdrawals', { status }, 'id', withdrawalId);
 
       // If rejected, refund user balance
@@ -1692,6 +2002,7 @@ async function startServer() {
         if (targetUser) {
           const refundedBalance = Number(targetUser.balance || 0) + Number(wth.amount || 0);
           serverUsersStore.set(targetUser.id, { ...targetUser, balance: refundedBalance });
+          savePlatformDataToDisk(true);
           await safeSupabaseUpdate('users', { balance: refundedBalance }, 'id', targetUser.id);
         }
       }
@@ -1727,6 +2038,7 @@ async function startServer() {
       const cleanBalance = isDirectSet ? Math.max(0, amount) : Math.max(0, Number(user.balance || 0) + amount);
 
       serverUsersStore.set(user.id, { ...user, balance: cleanBalance });
+      savePlatformDataToDisk(true);
       await safeSupabaseUpdate('users', { balance: cleanBalance }, 'id', user.id);
 
       lastFetchAllData = null;
@@ -1753,6 +2065,7 @@ async function startServer() {
         serverUsersStore.set(userId, { ...serverUsersStore.get(userId), role });
       }
 
+      savePlatformDataToDisk(true);
       await safeSupabaseUpdate('users', { role }, 'id', userId);
       return res.json({ success: true });
     } catch (err: any) {
@@ -1771,6 +2084,8 @@ async function startServer() {
       if (serverUsersStore.has(userId)) {
         serverUsersStore.set(userId, { ...serverUsersStore.get(userId), isBlocked });
       }
+
+      savePlatformDataToDisk(true);
 
       await safeSupabaseUpdate('users', { isBlocked }, 'id', userId);
       return res.json({ success: true });
@@ -1800,7 +2115,8 @@ async function startServer() {
   // Master Cache
   let lastFetchAllData: any = null;
   let lastFetchAllTime = 0;
-  const CACHE_TTL_MS = 2000;
+  // Increase Cache TTL to 15 seconds to drastically reduce egress bandwidth while staying responsive
+  const CACHE_TTL_MS = 15000;
 
   async function withDbTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
     let timer: NodeJS.Timeout;
@@ -1819,7 +2135,9 @@ async function startServer() {
         return res.json({
           success: true,
           data: lastFetchAllData,
-          cached: true
+          cached: true,
+          supabaseStatus: isSupabaseQuotaExceeded ? 'quota_exceeded' : 'connected',
+          isQuotaExceeded: isSupabaseQuotaExceeded
         });
       }
 
@@ -1830,20 +2148,29 @@ async function startServer() {
               .from(table)
               .select('*')
               .limit(10000);
+
             if (error) {
+              const errMsg = error.message || '';
+              if (errMsg.includes('exceed_egress_quota') || errMsg.includes('restricted') || errMsg.includes('402')) {
+                isSupabaseQuotaExceeded = true;
+                lastSupabaseErrorMsg = errMsg;
+              }
               return Array.from(fallbackStore.values());
             }
-            if (data && Array.isArray(data) && data.length > 0) {
-              data.forEach(item => {
-                const norm = normalizeDbRow(table, item);
-                const key = norm.id || norm.code;
-                if (key) fallbackStore.set(key, { ...fallbackStore.get(key), ...norm });
+
+            if (data && Array.isArray(data)) {
+              isSupabaseQuotaExceeded = false;
+              const normalized = data.map(item => normalizeDbRow(table, item));
+              normalized.forEach(item => {
+                const key = item.id || item.code;
+                if (key) fallbackStore.set(key, item);
               });
+              return normalized;
             }
             return Array.from(fallbackStore.values());
           })();
 
-          return await withDbTimeout(queryPromise, 3000, Array.from(fallbackStore.values()));
+          return await withDbTimeout(queryPromise, 6000, Array.from(fallbackStore.values()));
         } catch (_) {
           return Array.from(fallbackStore.values());
         }
@@ -1872,43 +2199,210 @@ async function startServer() {
       ]);
 
       const resultData = {
-        users: users || Array.from(serverUsersStore.values()),
-        products: products || [],
-        investments: investments || [],
-        deposits: deposits || [],
-        withdrawals: withdrawals || [],
-        withdrawal_proofs: proofs || [],
-        tickets: tickets || [],
-        commissions: commissions || [],
-        bonus_codes: bonusCodes || []
+        users: Array.isArray(users) ? users : Array.from(serverUsersStore.values()),
+        products: Array.isArray(products) ? products : Array.from(serverProductsStore.values()),
+        investments: Array.isArray(investments) ? investments : Array.from(serverInvestmentsStore.values()),
+        deposits: Array.isArray(deposits) ? deposits : Array.from(serverDepositsStore.values()),
+        withdrawals: Array.isArray(withdrawals) ? withdrawals : Array.from(serverWithdrawalsStore.values()),
+        withdrawal_proofs: Array.isArray(proofs) ? proofs : Array.from(serverProofsStore.values()),
+        tickets: Array.isArray(tickets) ? tickets : Array.from(serverTicketsStore.values()),
+        commissions: Array.isArray(commissions) ? commissions : Array.from(serverCommissionsStore.values()),
+        bonus_codes: Array.isArray(bonusCodes) ? bonusCodes : Array.from(serverBonusCodesStore.values())
       };
+
+      // Keep disk file updated with the latest in-memory master state
+      savePlatformDataToDisk();
 
       lastFetchAllData = resultData;
       lastFetchAllTime = Date.now();
 
       return res.json({
         success: true,
-        data: resultData
+        data: resultData,
+        supabaseStatus: isSupabaseQuotaExceeded ? 'quota_exceeded' : 'connected',
+        isQuotaExceeded: isSupabaseQuotaExceeded,
+        supabaseMessage: lastSupabaseErrorMsg
       });
     } catch (err: any) {
       console.error('[Server Admin Fetch All Error]:', err);
       if (lastFetchAllData) {
-        return res.json({ success: true, data: lastFetchAllData, fallback: true });
+        return res.json({
+          success: true,
+          data: lastFetchAllData,
+          fallback: true,
+          supabaseStatus: isSupabaseQuotaExceeded ? 'quota_exceeded' : 'connected',
+          isQuotaExceeded: isSupabaseQuotaExceeded
+        });
       }
       return res.json({
         success: true,
         data: {
           users: Array.from(serverUsersStore.values()),
-          products: [],
-          investments: [],
-          deposits: [],
-          withdrawals: [],
-          withdrawal_proofs: [],
-          tickets: [],
-          commissions: [],
-          bonus_codes: []
+          products: Array.from(serverProductsStore.values()),
+          investments: Array.from(serverInvestmentsStore.values()),
+          deposits: Array.from(serverDepositsStore.values()),
+          withdrawals: Array.from(serverWithdrawalsStore.values()),
+          withdrawal_proofs: Array.from(serverProofsStore.values()),
+          tickets: Array.from(serverTicketsStore.values()),
+          commissions: Array.from(serverCommissionsStore.values()),
+          bonus_codes: Array.from(serverBonusCodesStore.values())
+        },
+        supabaseStatus: isSupabaseQuotaExceeded ? 'quota_exceeded' : 'connected',
+        isQuotaExceeded: isSupabaseQuotaExceeded
+      });
+    }
+  });
+
+  // Rehydrate server store from client backup
+  app.post('/api/admin/rehydrate', async (req, res) => {
+    try {
+      const { users, deposits, withdrawals, investments, tickets, commissions, proofs, bonusCodes } = req.body || {};
+      let rehydratedCount = 0;
+
+      if (Array.isArray(users)) {
+        users.forEach(u => {
+          if (u && (u.id || u.phone)) {
+            const id = u.id || u.phone;
+            if (!serverUsersStore.has(id)) {
+              serverUsersStore.set(id, u);
+              rehydratedCount++;
+            } else {
+              const current = serverUsersStore.get(id);
+              serverUsersStore.set(id, { ...u, ...current, balance: Math.max(current.balance || 0, u.balance || 0) });
+            }
+          }
+        });
+      }
+
+      if (Array.isArray(deposits)) {
+        deposits.forEach(d => {
+          if (d && d.id && !serverDepositsStore.has(d.id)) {
+            serverDepositsStore.set(d.id, d);
+            rehydratedCount++;
+          }
+        });
+      }
+
+      if (Array.isArray(withdrawals)) {
+        withdrawals.forEach(w => {
+          if (w && w.id && !serverWithdrawalsStore.has(w.id)) {
+            serverWithdrawalsStore.set(w.id, w);
+            rehydratedCount++;
+          }
+        });
+      }
+
+      if (Array.isArray(investments)) {
+        investments.forEach(i => {
+          if (i && i.id && !serverInvestmentsStore.has(i.id)) {
+            serverInvestmentsStore.set(i.id, i);
+            rehydratedCount++;
+          }
+        });
+      }
+
+      if (Array.isArray(tickets)) {
+        tickets.forEach(t => {
+          if (t && t.id && !serverTicketsStore.has(t.id)) {
+            serverTicketsStore.set(t.id, t);
+            rehydratedCount++;
+          }
+        });
+      }
+
+      if (Array.isArray(commissions)) {
+        commissions.forEach(c => {
+          if (c && c.id && !serverCommissionsStore.has(c.id)) {
+            serverCommissionsStore.set(c.id, c);
+            rehydratedCount++;
+          }
+        });
+      }
+
+      savePlatformDataToDisk(true);
+
+      return res.json({
+        success: true,
+        rehydratedCount,
+        currentCounts: {
+          users: serverUsersStore.size,
+          deposits: serverDepositsStore.size,
+          withdrawals: serverWithdrawalsStore.size,
+          investments: serverInvestmentsStore.size,
+          tickets: serverTicketsStore.size
         }
       });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur de réhydratation.' });
+    }
+  });
+
+  // Check Supabase Live Connection & Quota Diagnostic Probe
+  app.get('/api/admin/check-supabase', async (req, res) => {
+    try {
+      const probeStart = Date.now();
+      const { data, error } = await supabaseAdmin.from('users').select('id').limit(1);
+      const probeLatency = Date.now() - probeStart;
+
+      const errMsg = error ? (error.message || '') : '';
+      const isMissingTable = (error as any)?.code === 'PGRST205' || errMsg.includes('Could not find the table') || errMsg.includes('schema cache');
+
+      if (!error || isMissingTable) {
+        isSupabaseQuotaExceeded = false;
+        lastSupabaseErrorMsg = null;
+        lastSupabaseSuccessTimestamp = Date.now();
+        return res.json({
+          success: true,
+          status: 'connected',
+          latencyMs: probeLatency,
+          message: !error 
+            ? 'Connexion Supabase active et tables distantes synchronisées.' 
+            : 'Connexion Supabase réussie avec la clé Service Role. Les tables distantes peuvent être initialisées avec supabase_schema.sql si besoin.',
+          isQuotaExceeded: false,
+          supabaseUrl: SUPABASE_URL,
+          serverStoreCounts: {
+            users: serverUsersStore.size,
+            deposits: serverDepositsStore.size,
+            withdrawals: serverWithdrawalsStore.size,
+            investments: serverInvestmentsStore.size,
+            tickets: serverTicketsStore.size
+          }
+        });
+      }
+
+      const isQuota = errMsg.includes('exceed_egress_quota') || errMsg.includes('402') || errMsg.includes('restricted') || (error as any).code === '402';
+
+      if (isQuota) {
+        isSupabaseQuotaExceeded = true;
+        lastSupabaseErrorMsg = errMsg;
+      }
+
+      return res.json({
+        success: !isQuota,
+        status: isQuota ? 'quota_exceeded' : 'error',
+        isQuotaExceeded: isQuota,
+        errorCode: (error as any).code || (isQuota ? '402' : 'UNKNOWN'),
+        message: errMsg,
+        supabaseUrl: SUPABASE_URL,
+        instructions: isQuota ? {
+          title: 'Dépassement du quota mensuel Supabase (Egress Quota)',
+          resolutionUrl: `https://supabase.com/dashboard/project/${getJwtProjectRef(SUPABASE_SERVICE_ROLE_KEY) || 'ykoqcaggjfhpnysvumuu'}/settings/billing`,
+          steps: [
+            `1. Connectez-vous sur votre tableau de bord Supabase : https://supabase.com/dashboard/project/${getJwtProjectRef(SUPABASE_SERVICE_ROLE_KEY) || 'ykoqcaggjfhpnysvumuu'}/settings/billing`,
+            '2. Désactivez le "Spend Cap" ou mettez à niveau vers le forfait Pro ($25/mois).',
+            '3. Dès la validation, la restriction est immédiatement levée et la synchronisation reprendra sans aucune perte de données.'
+          ]
+        } : null,
+        serverStoreCounts: {
+          users: serverUsersStore.size,
+          deposits: serverDepositsStore.size,
+          withdrawals: serverWithdrawalsStore.size,
+          investments: serverInvestmentsStore.size,
+          tickets: serverTicketsStore.size
+        }
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur de diagnostic.' });
     }
   });
 
@@ -1924,6 +2418,7 @@ async function startServer() {
         serverUsersStore.set(userId, { ...serverUsersStore.get(userId), withdrawalPinHash });
       }
 
+      savePlatformDataToDisk(true);
       await safeSupabaseUpdate('users', { withdrawalPinHash }, 'id', userId);
       return res.json({ success: true });
     } catch (err: any) {
@@ -1950,6 +2445,7 @@ async function startServer() {
         if (tableName === 'products' && key) serverProductsStore.set(key, norm);
         if (tableName === 'bonus_codes' && key) serverBonusCodesStore.set(key, norm);
 
+        savePlatformDataToDisk(true);
         await safeSupabaseUpsert(tableName, item);
         return res.json({ success: true });
       }
@@ -1958,6 +2454,7 @@ async function startServer() {
         if (tableName === 'users' && serverUsersStore.has(idValue)) {
           serverUsersStore.set(idValue, { ...serverUsersStore.get(idValue), ...updates });
         }
+        savePlatformDataToDisk(true);
         await safeSupabaseUpdate(tableName, updates, idCol, idValue);
         return res.json({ success: true });
       }
@@ -1971,6 +2468,7 @@ async function startServer() {
         if (tableName === 'products') serverProductsStore.delete(idValue);
         if (tableName === 'bonus_codes') serverBonusCodesStore.delete(idValue);
 
+        savePlatformDataToDisk(true);
         await (supabaseAdmin.from(tableName as any) as any).delete().eq(idCol, idValue);
         return res.json({ success: true });
       }
@@ -1979,6 +2477,7 @@ async function startServer() {
         for (const it of items) {
           await safeSupabaseUpsert(tableName, it);
         }
+        savePlatformDataToDisk(true);
         return res.json({ success: true });
       }
 

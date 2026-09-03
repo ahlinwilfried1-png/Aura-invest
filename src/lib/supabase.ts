@@ -1,19 +1,26 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Central Authoritative Supabase Database Configuration
-const CENTRAL_SUPABASE_URL = 'https://xqwtaosmhearbkravvao.supabase.co';
-const CENTRAL_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhxd3Rhb3NtaGVhcmJrcmF2dmFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1NzY5MzMsImV4cCI6MjEwMzE1MjkzM30.BhpXH27y7r8jBJv_zyEOMXT5d--q9ZFQVTlRms0bPpo';
+const TARGET_PROJECT_REF = 'ykoqcaggjfhpnysvumuu';
+const CENTRAL_SUPABASE_URL = 'https://ykoqcaggjfhpnysvumuu.supabase.co';
+const CENTRAL_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlrb3FjYWdnamZocG55c3Z1bXV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MjM4OTksImV4cCI6MjEwMzk5OTg5OX0.bw2WBm3lLCE6fbYq5usyqooU5p7Mk-Vfv0iLi-7Jr0U';
 
 const env = (import.meta as any).env || {};
-const SUPABASE_URL = 
-  (env.NEXT_PUBLIC_SUPABASE_URL && !env.NEXT_PUBLIC_SUPABASE_URL.includes('idnpfqfxvzskivpdkbdc') && !env.NEXT_PUBLIC_SUPABASE_URL.includes('ozvqpwsdxkmimzfjmoud') ? env.NEXT_PUBLIC_SUPABASE_URL : null) || 
-  (env.VITE_SUPABASE_URL && !env.VITE_SUPABASE_URL.includes('idnpfqfxvzskivpdkbdc') && !env.VITE_SUPABASE_URL.includes('ozvqpwsdxkmimzfjmoud') ? env.VITE_SUPABASE_URL : null) || 
-  CENTRAL_SUPABASE_URL;
 
-const SUPABASE_ANON_KEY = 
-  (env.NEXT_PUBLIC_SUPABASE_ANON_KEY && !env.NEXT_PUBLIC_SUPABASE_ANON_KEY.includes('ozvqpwsdxkmimzfjmoud') ? env.NEXT_PUBLIC_SUPABASE_ANON_KEY : null) || 
-  (env.VITE_SUPABASE_ANON_KEY && !env.VITE_SUPABASE_ANON_KEY.includes('idnpfqfxvzskivpdkbdc') && !env.VITE_SUPABASE_ANON_KEY.includes('ozvqpwsdxkmimzfjmoud') ? env.VITE_SUPABASE_ANON_KEY : null) || 
-  CENTRAL_SUPABASE_ANON_KEY;
+function resolveClientUrl(): string {
+  const url = env.NEXT_PUBLIC_SUPABASE_URL || env.VITE_SUPABASE_URL;
+  if (url && url.includes(TARGET_PROJECT_REF)) return url;
+  return CENTRAL_SUPABASE_URL;
+}
+
+function resolveClientAnonKey(): string {
+  const key = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY;
+  if (key && !key.includes('ozvqpwsdxkmimzfjmoud') && !key.includes('idnpfqfxvzskivpdkbdc')) return key;
+  return CENTRAL_SUPABASE_ANON_KEY;
+}
+
+const SUPABASE_URL = resolveClientUrl();
+const SUPABASE_ANON_KEY = resolveClientAnonKey();
 
 // Resilient fetch wrapper that catches Cloudflare 522/5xx HTML and timeout errors
 const safeFetch: typeof fetch = async (input: RequestInfo | URL, init?: RequestInit) => {

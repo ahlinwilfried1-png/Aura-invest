@@ -143,6 +143,9 @@ interface AppContextType {
   
   // Refresh / Sync
   refreshData: (force?: boolean) => Promise<void>;
+  supabaseStatus: 'connected' | 'quota_exceeded' | 'checking' | 'error';
+  isQuotaExceeded: boolean;
+  probeSupabase: () => Promise<any>;
 
   // Recharge channels management
   addRechargeChannel: (data: { name: string; countryCode?: string; accountNumber: string; accountHolder?: string; instructions?: string; isActive?: boolean }) => Promise<{ success: boolean; error?: string }>;
@@ -632,6 +635,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return safeGetLocalStorage('fintech_global_notification');
   });
 
+  const [supabaseStatus, setSupabaseStatus] = useState<'connected' | 'quota_exceeded' | 'checking' | 'error'>('checking');
+  const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
+
+  const probeSupabase = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/check-supabase');
+      const data = await res.json();
+      if (data.isQuotaExceeded) {
+        setIsQuotaExceeded(true);
+        setSupabaseStatus('quota_exceeded');
+      } else if (data.status === 'connected') {
+        setIsQuotaExceeded(false);
+        setSupabaseStatus('connected');
+      } else {
+        setSupabaseStatus('error');
+      }
+      return data;
+    } catch (_) {
+      return { success: false, status: 'error' };
+    }
+  }, []);
+
   // Track if initial sync has occurred
   const isHydratedRef = useRef(false);
   const isSyncingRef = useRef(false);
@@ -660,6 +685,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const master = await fetchAllTablesMaster(force);
       if (master) {
+        if (master._isQuotaExceeded) {
+          setIsQuotaExceeded(true);
+          setSupabaseStatus('quota_exceeded');
+        } else if (master._supabaseStatus === 'connected') {
+          setIsQuotaExceeded(false);
+          setSupabaseStatus('connected');
+        }
+
         dbUsers = master.users || [];
         dbProducts = master.products || [];
         dbInvestments = master.investments || [];
@@ -669,6 +702,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         dbTickets = master.tickets || [];
         dbCommissions = master.commissions || [];
         dbBonusRows = master.bonus_codes || [];
+
+        // Check if client has local records that aren't on server and rehydrate
+        try {
+          const rawLocalUsers = safeGetLocalStorage('fintech_users');
+          if (rawLocalUsers) {
+            const localUsers: User[] = JSON.parse(rawLocalUsers);
+            const serverUserIds = new Set((master.users || []).map((u: any) => u.id));
+            const missingUsers = Array.isArray(localUsers) ? localUsers.filter(u => u && u.id && !serverUserIds.has(u.id)) : [];
+            if (missingUsers.length > 0) {
+              fetch('/api/admin/rehydrate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ users: missingUsers })
+              }).catch(() => {});
+            }
+          }
+        } catch (_) {}
       } else {
         const [
           u, p, i, d, w, pr, t, c, b
@@ -2674,7 +2724,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateRechargeChannel,
       deleteRechargeChannel,
       toggleRechargeChannel,
-      refreshData: (force: boolean = true) => fetchAndSyncAllFromSupabase(force)
+      refreshData: (force: boolean = true) => fetchAndSyncAllFromSupabase(force),
+      supabaseStatus,
+      isQuotaExceeded,
+      probeSupabase
     }}>
       {children}
     </AppContext.Provider>

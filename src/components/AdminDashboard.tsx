@@ -118,7 +118,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     deleteRechargeChannel,
     toggleRechargeChannel,
     adminSetUserSponsor,
-    refreshData
+    refreshData,
+    supabaseStatus,
+    isQuotaExceeded,
+    probeSupabase
   } = useApp();
 
   const [isRefreshingUsers, setIsRefreshingUsers] = useState(false);
@@ -126,8 +129,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   const handleRefreshUsers = async () => {
     setIsRefreshingUsers(true);
     try {
-      await refreshData();
-      showToast('success', "Base de données centrale Supabase synchronisée !");
+      await refreshData(true);
+      const probe = await probeSupabase();
+      if (probe && probe.isQuotaExceeded) {
+        showToast('success', "Mode Sécurisé Actif : Vos données sont protégées et sauvegardées sur le serveur.");
+      } else {
+        showToast('success', "Données centrales synchronisées avec succès !");
+      }
     } catch (err: any) {
       showToast('error', "Erreur de synchronisation.");
     } finally {
@@ -908,6 +916,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
             </button>
           </div>
         </div>
+
+        {/* STATUS BANNER WHEN SUPABASE EGRESS QUOTA LIMIT IS REACHED */}
+        {isQuotaExceeded && (
+          <div className="bg-amber-500/10 border-t border-b border-amber-300/60 px-4 sm:px-6 py-2.5 flex items-center justify-between text-xs text-amber-900">
+            <div className="flex items-center space-x-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+              <span className="font-extrabold text-amber-950">Mode Résilience Locale Actif :</span>
+              <span className="hidden md:inline text-amber-800">Toutes les actions utilisateurs, dépôts, retraits et messages sont sécurisés et sauvegardés sur le serveur en continu.</span>
+            </div>
+            <button
+              onClick={handleRefreshUsers}
+              disabled={isRefreshingUsers}
+              className="text-[11px] font-bold text-amber-900 underline hover:text-amber-950 cursor-pointer shrink-0 ml-2"
+            >
+              {isRefreshingUsers ? 'Vérification...' : 'Re-tester connexion Supabase'}
+            </button>
+          </div>
+        )}
 
         {/* HORIZONTAL NAVIGATION BAR */}
         <div className="border-t border-slate-200 bg-slate-50 overflow-x-auto no-scrollbar">

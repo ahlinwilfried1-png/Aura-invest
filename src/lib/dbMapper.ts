@@ -68,7 +68,7 @@ export const SCHEMA_DEFINITIONS: Record<string, FieldMapping[]> = {
     { jsKey: 'amount', dbKeys: ['amount'] },
     { jsKey: 'method', dbKeys: ['method'] },
     { jsKey: 'transactionId', dbKeys: ['transaction_id', 'transactionId'] },
-    { jsKey: 'screenshotUrl', dbKeys: ['screenshot_url', 'screenshotUrl'], defaultValue: null },
+    { jsKey: 'screenshotUrl', dbKeys: ['screenshot_url', 'screenshotUrl', 'image_url', 'imageUrl', 'image'], defaultValue: null },
     { jsKey: 'status', dbKeys: ['status'], defaultValue: 'pending' },
     { jsKey: 'createdAt', dbKeys: ['created_at', 'createdAt'] }
   ],
@@ -92,7 +92,7 @@ export const SCHEMA_DEFINITIONS: Record<string, FieldMapping[]> = {
     { jsKey: 'amount', dbKeys: ['amount'] },
     { jsKey: 'network', dbKeys: ['network'] },
     { jsKey: 'message', dbKeys: ['message'] },
-    { jsKey: 'imageUrl', dbKeys: ['image_url', 'imageUrl'], defaultValue: null },
+    { jsKey: 'imageUrl', dbKeys: ['image_url', 'imageUrl', 'image', 'photo_url', 'screenshot_url'], defaultValue: null },
     { jsKey: 'createdAt', dbKeys: ['created_at', 'createdAt'] },
     { jsKey: 'isVerified', dbKeys: ['is_verified', 'isVerified'], defaultValue: true },
     { jsKey: 'status', dbKeys: ['status'], defaultValue: 'approved' }
@@ -104,7 +104,7 @@ export const SCHEMA_DEFINITIONS: Record<string, FieldMapping[]> = {
     { jsKey: 'userPhone', dbKeys: ['user_phone', 'userPhone'] },
     { jsKey: 'subject', dbKeys: ['subject'], defaultValue: 'Message Chat Support' },
     { jsKey: 'message', dbKeys: ['message'] },
-    { jsKey: 'imageUrl', dbKeys: ['image_url', 'imageUrl'], defaultValue: null },
+    { jsKey: 'imageUrl', dbKeys: ['image_url', 'imageUrl', 'image', 'photo_url', 'screenshot_url'], defaultValue: null },
     { jsKey: 'status', dbKeys: ['status'], defaultValue: 'open' },
     { jsKey: 'createdAt', dbKeys: ['created_at', 'createdAt'] },
     { jsKey: 'reply', dbKeys: ['reply'], defaultValue: null },
@@ -182,6 +182,19 @@ export function normalizeFromDbRow<T = any>(tableName: string, dbRow: any): T {
       if (!(camel in jsObject)) {
         jsObject[camel] = dbRow[k];
       }
+    }
+  }
+
+  // Enforce numbers for numeric fields to prevent string concatenation bugs
+  const numericKeys = new Set([
+    'balance', 'dailyEarnings', 'totalEarnings', 'vipLevel', 'drawTickets',
+    'price', 'dailyGain', 'duration', 'totalGain', 'daysRemaining',
+    'amount', 'receivedAmount', 'order', 'level', 'maxUses'
+  ]);
+  for (const k of Object.keys(jsObject)) {
+    if (numericKeys.has(k) && jsObject[k] !== null && jsObject[k] !== undefined && typeof jsObject[k] !== 'number') {
+      const parsed = Number(jsObject[k]);
+      if (!isNaN(parsed)) jsObject[k] = parsed;
     }
   }
 
