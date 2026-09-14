@@ -63,13 +63,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-tr from-emerald-600 to-amber-400 rounded-xl flex items-center justify-center shadow-md shadow-emerald-600/20">
-              <Sprout className="w-5 h-5 text-white stroke-[2.5px]" />
+              <Sparkles className="w-5 h-5 text-white stroke-[2.5px]" />
             </div>
             <div>
               <span className="text-xl font-black tracking-tight text-emerald-900">
-                AGRO<span className="text-amber-600 font-black">PROFIT</span>
+                AIR<span className="text-amber-600 font-black">PODS</span>
               </span>
-              <span className="block text-[8.5px] tracking-[0.22em] uppercase font-mono text-emerald-700 font-black">INVESTISSEMENT AGRICOLE</span>
+              <span className="block text-[8.5px] tracking-[0.22em] uppercase font-mono text-emerald-700 font-black">INVESTISSEMENT AUDIO VIP</span>
             </div>
           </div>
 
@@ -92,32 +92,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
         </div>
       </header>
 
-      {/* Hero Section styled after AGROPROFIT poster */}
+      {/* Hero Section styled after AirPods platform */}
       <main className="flex-grow flex flex-col">
-        {/* Banner with Agriculture Background */}
+        {/* Banner with Background */}
         <section className="relative bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-800 text-white overflow-hidden py-12 sm:py-20 px-4">
           <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#fbbf24_1px,transparent_1px)] [background-size:16px_16px]"></div>
           
           <div className="max-w-6xl mx-auto text-center relative z-10 space-y-6">
-            {/* AGROPROFIT 3D Logo Header */}
+            {/* AIRPODS Header */}
             <div className="inline-flex flex-col items-center">
               <div className="flex items-center space-x-2 justify-center mb-1">
                 <span className="text-3xl sm:text-6xl md:text-7xl font-black tracking-tight text-white drop-shadow-md">
-                  AGRO<span className="text-amber-400">PROFIT</span>
+                  AIR<span className="text-amber-400">PODS</span>
                 </span>
                 <div className="w-9 h-9 sm:w-14 sm:h-14 bg-gradient-to-tr from-amber-400 to-yellow-200 rounded-full border-2 border-amber-300 flex items-center justify-center shadow-lg shadow-amber-400/30">
                   <DollarSign className="w-5 h-5 sm:w-8 sm:h-8 text-emerald-950 stroke-[3px]" />
                 </div>
               </div>
               <div className="inline-flex items-center space-x-2 bg-emerald-800/80 border border-emerald-500/40 px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold uppercase tracking-widest text-amber-300 shadow-inner">
-                <Leaf className="w-4 h-4 text-emerald-400" />
+                <Sparkles className="w-4 h-4 text-emerald-400" />
                 <span>INVESTIR AUJOURD’HUI, RÉCOLTER DEMAIN !</span>
                 <TrendingUp className="w-4 h-4 text-amber-400" />
               </div>
             </div>
 
             <p className="text-emerald-100 text-sm sm:text-lg max-w-2xl mx-auto font-medium leading-relaxed">
-              La plateforme d'investissement agricole à haut rendement en Afrique. Choisissez votre pack VIP, vos revenus tombent chaque 24h directement sur votre solde et sont retirables instantanément via Mobile Money (Togo & Cameroun).
+              La plateforme officielle d'investissement AirPods à haut rendement en Afrique. Choisissez votre pack VIP, vos revenus tombent chaque 24h directement sur votre solde et sont retirables instantanément via Mobile Money (🇨🇲 Cameroun, 🇹🇬 Togo, 🇧🇯 Bénin, 🇧🇫 Burkina Faso, 🇨🇮 Côte d’Ivoire).
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto pt-2">
@@ -168,26 +168,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
           </div>
         </section>
 
-        {/* OFFICIAL AGROPROFIT PRICING TABLE SECTION */}
+        {/* OFFICIAL AIRPODS PRICING TABLE SECTION */}
         <section className="py-12 px-4 sm:px-6 max-w-6xl mx-auto w-full">
           {/* Header Badge */}
           <div className="text-center mb-8">
             <div className="inline-block bg-[#0e3d1c] border-2 border-amber-400 text-white font-black text-xs sm:text-base md:text-lg uppercase px-6 sm:px-10 py-2.5 rounded-full shadow-lg tracking-wider font-mono">
-              PRIX ET REVENUS POUR UN CYCLE DE 365 JOURS
+              PRIX ET REVENUS AIRPODS POUR UN CYCLE DE 365 JOURS
             </div>
             <p className="text-slate-600 text-xs sm:text-sm mt-3 font-medium">
               Chaque formule génère des intérêts crédités automatiquement toutes les 24 heures sur le solde disponible.
             </p>
           </div>
 
-          {/* Desktop Table matching the exact flyer */}
+          {/* Desktop Table matching the exact plans */}
           <div className="hidden md:block overflow-hidden bg-white border-2 border-emerald-900/20 rounded-3xl shadow-xl">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[#fef3c7] text-[#1c1917] border-b-2 border-amber-300 text-xs uppercase font-mono font-black">
                   <th className="py-4 px-6 flex items-center space-x-2">
-                    <Sprout className="w-4 h-4 text-emerald-800" />
-                    <span>PRODUITS</span>
+                    <Sparkles className="w-4 h-4 text-emerald-800" />
+                    <span>MODÈLES AIRPODS</span>
                   </th>
                   <th className="py-4 px-6 text-center">
                     <span className="inline-flex items-center space-x-1 justify-center">
@@ -219,16 +219,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
               <tbody className="divide-y divide-slate-200 text-sm font-semibold">
                 {[
                   { 
-                    name: 'VIP NIVEAU 1 (Pro)', 
+                    name: 'VIP NIVEAU 1 (AirPods 2)', 
                     price: 2500, 
                     daily: 168, 
                     cycle: '365 jours', 
                     total: 61320, 
-                    icon: <Leaf className="w-5 h-5 text-emerald-600 fill-emerald-500/20" />,
+                    icon: <Sparkles className="w-5 h-5 text-emerald-600 fill-emerald-500/20" />,
                     bgBadge: 'bg-emerald-800 text-white'
                   },
                   { 
-                    name: 'VIP NIVEAU 2 (Elite)', 
+                    name: 'VIP NIVEAU 2 (AirPods 3)', 
                     price: 6000, 
                     daily: 360, 
                     cycle: '365 jours', 
@@ -238,7 +238,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                     highlightColor: 'text-blue-900'
                   },
                   { 
-                    name: 'VIP NIVEAU 3 (Premium)', 
+                    name: 'VIP NIVEAU 3 (AirPods 4 ANC)', 
                     price: 15000, 
                     daily: 744, 
                     cycle: '365 jours', 
@@ -247,7 +247,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                     bgBadge: 'bg-purple-900 text-white'
                   },
                   { 
-                    name: 'VIP NIVEAU 4 (Platinum)', 
+                    name: 'VIP NIVEAU 4 (AirPods Pro)', 
                     price: 32000, 
                     daily: 1584, 
                     cycle: '365 jours', 
@@ -256,7 +256,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                     bgBadge: 'bg-slate-800 text-white'
                   },
                   { 
-                    name: 'VIP NIVEAU 6 (Or)', 
+                    name: 'VIP NIVEAU 6 (AirPods Pro 2 USB-C)', 
                     price: 70000, 
                     daily: 3840, 
                     cycle: '365 jours', 
@@ -266,7 +266,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                     highlightColor: 'text-amber-800'
                   },
                   { 
-                    name: 'VIP NIVEAU 7 (Saphir)', 
+                    name: 'VIP NIVEAU 7 (AirPods Pro 2 MagSafe)', 
                     price: 250000, 
                     daily: 13800, 
                     cycle: '365 jours', 
@@ -276,7 +276,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                     highlightColor: 'text-blue-900 font-extrabold'
                   },
                   { 
-                    name: 'VIP PARTENAIRE (Bronze)', 
+                    name: 'VIP PARTENAIRE (AirPods Max Silver)', 
                     price: 500000, 
                     daily: 28800, 
                     cycle: '365 jours', 
@@ -286,7 +286,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                     highlightColor: 'text-amber-900'
                   },
                   { 
-                    name: 'VIP PARTENAIRE (Argent)', 
+                    name: 'VIP PARTENAIRE (AirPods Max Space Gray)', 
                     price: 1000000, 
                     daily: 60000, 
                     cycle: '365 jours', 
@@ -331,17 +331,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
             </table>
           </div>
 
-          {/* Mobile Card List with exact flyer color-coding */}
+          {/* Mobile Card List with exact plans */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
             {[
-              { name: 'VIP NIVEAU 1 (Pro)', price: 2500, daily: 168, cycle: '365 jours', total: 61320, icon: <Leaf className="w-5 h-5 text-emerald-600" /> },
-              { name: 'VIP NIVEAU 2 (Elite)', price: 6000, daily: 360, cycle: '365 jours', total: 131400, icon: <Crown className="w-5 h-5 text-amber-500" /> },
-              { name: 'VIP NIVEAU 3 (Premium)', price: 15000, daily: 744, cycle: '365 jours', total: 271560, icon: <Gem className="w-5 h-5 text-purple-600" /> },
-              { name: 'VIP NIVEAU 4 (Platinum)', price: 32000, daily: 1584, cycle: '365 jours', total: 578160, icon: <Star className="w-5 h-5 text-slate-500" /> },
-              { name: 'VIP NIVEAU 6 (Or)', price: 70000, daily: 3840, cycle: '365 jours', total: 1401600, icon: <Layers className="w-5 h-5 text-amber-600" /> },
-              { name: 'VIP NIVEAU 7 (Saphir)', price: 250000, daily: 13800, cycle: '365 jours', total: 5037000, icon: <Gem className="w-5 h-5 text-sky-500" /> },
-              { name: 'VIP PARTENAIRE (Bronze)', price: 500000, daily: 28800, cycle: '365 jours', total: 10512000, icon: <Shield className="w-5 h-5 text-amber-700" /> },
-              { name: 'VIP PARTENAIRE (Argent)', price: 1000000, daily: 60000, cycle: '365 jours', total: 22198650, icon: <ShieldCheck className="w-5 h-5 text-slate-700" /> },
+              { name: 'VIP NIVEAU 1 (AirPods 2)', price: 2500, daily: 168, cycle: '365 jours', total: 61320, icon: <Sparkles className="w-5 h-5 text-emerald-600" /> },
+              { name: 'VIP NIVEAU 2 (AirPods 3)', price: 6000, daily: 360, cycle: '365 jours', total: 131400, icon: <Crown className="w-5 h-5 text-amber-500" /> },
+              { name: 'VIP NIVEAU 3 (AirPods 4 ANC)', price: 15000, daily: 744, cycle: '365 jours', total: 271560, icon: <Gem className="w-5 h-5 text-purple-600" /> },
+              { name: 'VIP NIVEAU 4 (AirPods Pro)', price: 32000, daily: 1584, cycle: '365 jours', total: 578160, icon: <Star className="w-5 h-5 text-slate-500" /> },
+              { name: 'VIP NIVEAU 6 (AirPods Pro 2 USB-C)', price: 70000, daily: 3840, cycle: '365 jours', total: 1401600, icon: <Layers className="w-5 h-5 text-amber-600" /> },
+              { name: 'VIP NIVEAU 7 (AirPods Pro 2 MagSafe)', price: 250000, daily: 13800, cycle: '365 jours', total: 5037000, icon: <Gem className="w-5 h-5 text-sky-500" /> },
+              { name: 'VIP PARTENAIRE (AirPods Max Silver)', price: 500000, daily: 28800, cycle: '365 jours', total: 10512000, icon: <Shield className="w-5 h-5 text-amber-700" /> },
+              { name: 'VIP PARTENAIRE (AirPods Max Space Gray)', price: 1000000, daily: 60000, cycle: '365 jours', total: 22198650, icon: <ShieldCheck className="w-5 h-5 text-slate-700" /> },
             ].map((item, idx) => (
               <div key={idx} className="bg-white border-2 border-emerald-900/20 rounded-2xl p-4 shadow-md space-y-3">
                 <div className="flex items-center justify-between">
@@ -381,7 +381,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
             ))}
           </div>
 
-          {/* RÉSUMÉ DU FONCTIONNEMENT - Matching Flyer 1:1 */}
+          {/* RÉSUMÉ DU FONCTIONNEMENT */}
           <div className="mt-12 bg-white border-2 border-emerald-900/20 rounded-3xl p-6 sm:p-8 shadow-xl">
             <div className="inline-flex items-center space-x-2 bg-[#0e3d1c] text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider mb-6 font-mono">
               <Sparkles className="w-4 h-4 text-amber-400" />
@@ -399,7 +399,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                   <div>
                     <h4 className="font-black text-emerald-950 text-sm uppercase font-mono">PRINCIPE :</h4>
                     <p className="text-xs sm:text-sm text-slate-700 font-semibold mt-0.5">
-                      Tu investis un montant selon le niveau VIP que tu choisis.
+                      Tu investis un montant selon le modèle d'AirPods que tu choisis.
                     </p>
                   </div>
                 </div>
@@ -412,7 +412,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                   <div>
                     <h4 className="font-black text-emerald-950 text-sm uppercase font-mono">DURÉE :</h4>
                     <p className="text-xs sm:text-sm text-slate-700 font-semibold mt-0.5">
-                      365 jours pour tous les niveaux.
+                      365 jours pour tous les modèles.
                     </p>
                   </div>
                 </div>
@@ -437,7 +437,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                   <ShieldCheck className="w-10 h-10 text-emerald-950" />
                 </div>
                 <h3 className="text-xl sm:text-2xl font-black text-amber-400 tracking-tight">
-                  AGROPROFIT
+                  AIRPODS
                 </h3>
                 <p className="text-xs text-emerald-100 font-bold uppercase tracking-wider mt-1">
                   VOTRE PARTENAIRE POUR UN AVENIR PROSPÈRE
@@ -459,7 +459,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
         </section>
       </main>
 
-      {/* Footer Banner matching Flyer Bottom */}
+      {/* Footer Banner */}
       <div className="bg-[#0e3d1c] text-white border-t-2 border-amber-400 py-4 px-4">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-bold font-mono">
           <div className="flex items-center space-x-6">
@@ -468,8 +468,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
               <span>SÉCURISÉ</span>
             </div>
             <div className="flex items-center space-x-1.5 text-emerald-300">
-              <Leaf className="w-4 h-4 text-amber-400" />
-              <span>DURABLE</span>
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>OFFICIEL</span>
             </div>
             <div className="flex items-center space-x-1.5 text-emerald-300">
               <Users className="w-4 h-4 text-amber-400" />
@@ -485,8 +485,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
       {/* Footer Standard Info */}
       <footer className="bg-slate-900 text-slate-400 py-6 px-4 text-center text-xs">
         <div className="max-w-7xl mx-auto space-y-1">
-          <p className="font-bold text-slate-200">© 2026 AgroProfit Ag Solutions. Tous droits réservés.</p>
-          <p>Dépôts et retraits automatiques TMoney, Moov Money, Mixx By Yas, MTN & Orange Money.</p>
+          <p className="font-bold text-slate-200">© 2026 AirPods Solutions. Tous droits réservés.</p>
+          <p>Dépôts et retraits automatiques Mobile Money (Cameroun, Togo, Bénin, Burkina Faso, Côte d’Ivoire).</p>
         </div>
       </footer>
     </div>

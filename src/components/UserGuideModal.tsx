@@ -51,7 +51,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
           
           <div className="text-center pb-0.5">
             <h3 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight leading-snug">
-              ✨ Lancement officiel de Nutrien ✨
+              ✨ Lancement officiel d'AirPods ✨
             </h3>
           </div>
 

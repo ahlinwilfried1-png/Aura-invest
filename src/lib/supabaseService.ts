@@ -373,6 +373,55 @@ export async function submitDepositRequest(
   return { success: upRes.success, error: upRes.error, deposit: depositData };
 }
 
+// Initiate Secure Deposit Checkout via Server
+export async function checkoutDeposit(payload: {
+  userId: string;
+  amount: number;
+  country: string;
+  countryCode: string;
+  method: string;
+  phoneNumber: string;
+}): Promise<{ success: boolean; error?: string; deposit?: any; redirectUrl?: string }> {
+  try {
+    const res = await resilientFetch('/api/deposits/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }, 10000);
+    if (res.ok && res.isJson && res.data && res.data.success) {
+      return res.data;
+    }
+    if (res.data && res.data.error) {
+      return { success: false, error: res.data.error };
+    }
+  } catch (err: any) {
+    console.warn('[Deposit Checkout Client Warning]:', err);
+  }
+
+  // Resilient fallback: create deposit directly and provide server redirect
+  const trackingCode = 'DEP-' + Math.floor(100000 + Math.random() * 900000);
+  const fallbackDep = {
+    id: 'dep-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 7),
+    userId: payload.userId,
+    userName: 'Membre AirPods',
+    userPhone: payload.phoneNumber,
+    amount: payload.amount,
+    method: `${payload.method} (${payload.country})`,
+    transactionId: trackingCode,
+    screenshotUrl: null,
+    status: 'pending',
+    country: payload.country,
+    countryCode: payload.countryCode,
+    createdAt: new Date().toISOString()
+  };
+  await upsertItem('deposits', fallbackDep);
+  return {
+    success: true,
+    deposit: fallbackDep,
+    redirectUrl: `/api/pay-redirect/${fallbackDep.id}`
+  };
+}
+
 // Submit Withdrawal Request
 export async function submitWithdrawalRequest(
   withdrawalData: any

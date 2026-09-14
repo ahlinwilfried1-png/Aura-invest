@@ -1,6 +1,6 @@
 {
-  "name": "Plateforme d'Investissement FinTech",
-  "description": "Une interface web moderne, sécurisée et rapide inspirée des grandes plateformes financières. Comprend un tableau de bord VIP, la gestion des dépôts et retraits, le parrainage multiniveau, des codes bonus, et un panneau d'administration.",
+  "name": "AirPods",
+  "description": "Plateforme officielle d'investissement AirPods avec revenus quotidiens automatisés 24h/24, cycle de 365 jours et retraits Mobile Money instantanés.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

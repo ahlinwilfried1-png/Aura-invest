@@ -4,6 +4,7 @@ import { WithdrawalHistoryView } from './WithdrawalHistoryView';
 import { LuckyWheel } from './LuckyWheel';
 import { LinkBankCardView } from './LinkBankCardView';
 import { FaqView } from './FaqView';
+import { OrdersView } from './OrdersView';
 import { useApp } from '../context/AppContext';
 import { ALLOWED_COUNTRIES } from '../constants/countries';
 import { 
@@ -69,8 +70,9 @@ interface AccountViewProps {
   onLogout: () => void;
   onShowToast: (type: 'success' | 'err' | 'info', message: string) => void;
   onBuyProduct?: (product: InvestmentProduct) => void;
-  onOpenTab?: (tab: 'deposit' | 'withdraw' | 'announcements' | 'chat') => void;
+  onOpenTab?: (tab: 'deposit' | 'withdraw' | 'announcements' | 'chat' | 'products') => void;
   onToggleAdmin?: () => void;
+  onClaimDailyEarning?: (investmentId: string) => { success: boolean; error?: string };
 }
 
 type SubPage = 
@@ -112,6 +114,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
   onBuyProduct,
   onOpenTab,
   onToggleAdmin,
+  onClaimDailyEarning,
 }) => {
   const { faqs = [], users = [], refreshData } = useApp();
   const [isSyncingAdmin, setIsSyncingAdmin] = useState(false);
@@ -335,11 +338,11 @@ export const AccountView: React.FC<AccountViewProps> = ({
             </div>
           )}
 
-          {/* 1. Top Header Card: "Mon portefeuille" Nutrien Ag Solutions style (White theme) */}
+          {/* 1. Top Header Card: "Mon portefeuille" AirPods Official style (White theme) */}
           <div 
             className="py-3 px-1 relative overflow-hidden space-y-4 text-slate-900"
           >
-            {/* Nutrien Ag Badge & User Info */}
+            {/* AirPods Badge & User Info */}
             <div className="flex items-center justify-between pb-1">
               <div className="flex items-center space-x-2.5">
                 <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
@@ -359,7 +362,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
               </div>
               <div className="bg-emerald-50 px-2.5 py-1 rounded-full flex items-center space-x-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-black font-mono text-emerald-700 uppercase tracking-widest">Nutrien Ag</span>
+                <span className="text-[10px] font-black font-mono text-emerald-700 uppercase tracking-widest">AirPods Official</span>
               </div>
             </div>
 
@@ -431,8 +434,32 @@ export const AccountView: React.FC<AccountViewProps> = ({
             </div>
           </div>
 
-          {/* 2. Framed Cards for key actions (Lier carte bancaire, Rechargement enregistré, Retrait enregistré) */}
+          {/* 2. Framed Cards for key actions (Commande, Lier carte bancaire, Rechargement enregistré, Retrait enregistré) */}
           <div className="space-y-2.5 pt-1">
+            {/* Commande (déplacée depuis la barre de navigation) */}
+            <div 
+              onClick={() => setActiveSubPage('order_history')}
+              className="bg-white hover:bg-slate-50/90 border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs cursor-pointer flex items-center justify-between transition-all group"
+            >
+              <div className="flex items-center space-x-3.5">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-700 flex items-center justify-center font-bold shrink-0 group-hover:bg-amber-500 group-hover:text-white transition-all">
+                  <ShoppingBag className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs sm:text-sm font-extrabold text-slate-900 block">Commande</span>
+                    {myInvestments.length > 0 && (
+                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full border border-emerald-300">
+                        {myInvestments.length} active{myInvestments.length > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Consulter mes commandes, achats & gains quotidiens</span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-amber-600 transition-colors" />
+            </div>
+
             {/* Lier carte bancaire */}
             <div 
               onClick={() => setActiveSubPage('link_card')}
@@ -535,7 +562,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
               <ChevronRight className="w-4 h-4 text-slate-400" />
             </div>
 
-            {/* À propos de Nutrien */}
+            {/* À propos d'AirPods */}
             <div 
               onClick={() => setActiveSubPage('profile')}
               className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
@@ -763,11 +790,11 @@ export const AccountView: React.FC<AccountViewProps> = ({
       )}
 
       {/* ========================================================= */}
-      {/* SUB-PAGE 1: À PROPOS DE NUTRIEN */}
+      {/* SUB-PAGE 1: À PROPOS D'AIRPODS */}
       {/* ========================================================= */}
       {activeSubPage === 'profile' && (
         <div className="space-y-6 animate-fadeIn pb-8">
-          {renderHeader('À propos de Nutrien')}
+          {renderHeader("À propos d'AirPods")}
 
           {/* Clean presentation laid directly on background without borders or outer card boxes */}
           <div className="space-y-6 text-slate-900 font-sans px-1">
@@ -780,7 +807,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
             >
               <img 
                 src={partnershipImage} 
-                alt="Accord de Partenariat International - Nutrien Agriculture" 
+                alt="Accord de Partenariat International - AirPods Audio & FinTech" 
                 className="w-full h-auto object-cover block"
                 referrerPolicy="no-referrer"
                 loading="eager"
@@ -791,13 +818,13 @@ export const AccountView: React.FC<AccountViewProps> = ({
             <div className="space-y-2">
               <div className="flex items-center space-x-2 text-amber-700 font-mono font-extrabold text-xs uppercase tracking-wider">
                 <Globe className="w-4 h-4 text-amber-600" />
-                <span>Leader Mondial de l'Agro-Industrie & FinTech</span>
+                <span>Plateforme Officielle Audio Premium & FinTech</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                Nutrien Ag Solutions
+                AirPods Official
               </h2>
               <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
-                Nutrien est le plus grand fournisseur mondial d'intrants agricoles, de nutrition des cultures et de solutions financières d'investissement à fort impact. Avec plus de 25 000 collaborateurs et une présence dans plus de 50 pays, Nutrien produit et distribue plus de 27 millions de tonnes de potasse, d'azote et de phosphate.
+                AirPods est la première plateforme d'investissement et de distribution exclusive de solutions audio intelligentes et d'écouteurs sans fil haute fidélité en Afrique. En partenariat avec les fabricants et centres logistiques certifiés, nous permettons aux membres d'obtenir des rendements quotidiens réguliers et garantis en soutenant les volumes de distribution de toute la gamme AirPods.
               </p>
             </div>
 
@@ -808,7 +835,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 <span>Notre Mission & Vision Globale</span>
               </h3>
               <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
-                Notre mission est d'alimenter l'avenir de manière durable en combinant la puissance de la technologie agricole, des investissements responsables et du bien-être. Nous permettons à des centaines de milliers de membres à travers le monde de participer au rendement direct des chaînes de valeur agricoles mondiales.
+                Notre mission est de démocratiser l'accès aux technologies audio de pointe tout en offrant des rendements financiers réels, transparents et payés quotidiennement 24h/24 via Mobile Money à nos membres.
               </p>
             </div>
 
@@ -820,7 +847,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                   <span>Contrats & Accords Internationaux Majeurs</span>
                 </h3>
                 <p className="text-xs text-slate-600 font-medium">
-                  Nutrien entretient des alliances stratégiques et des contrats de distribution exclusive avec les géants mondiaux de l'industrie :
+                  AirPods entretient des partenariats industriels et logistiques majeurs pour assurer la rentabilité de chaque plan :
                 </p>
               </div>
 
@@ -828,55 +855,55 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
                     <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">Bayer CropScience</span>
-                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Accord Cadre Exclusif</span>
+                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">Apple Audio Supply</span>
+                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Certification Originale</span>
                   </div>
                   <p className="text-xs text-slate-700 leading-relaxed font-medium pl-6">
-                    Partenariat stratégique pluriannuel pour la distribution exclusive de semences de haute qualité, d'intrants certifiés et le développement de technologies agricoles à rendement garanti.
+                    Approvisionnement direct et certification des composants acoustiques haute fidélité pour l'ensemble des gammes AirPods.
                   </p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
                     <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">Yara International</span>
-                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Partenariat Décarbonation</span>
+                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">Foxconn Technology</span>
+                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Lignes de Production</span>
                   </div>
                   <p className="text-xs text-slate-700 leading-relaxed font-medium pl-6">
-                    Accord international pour la production et la distribution d'engrais verts à faible empreinte carbone et le financement des chaînes d'approvisionnement durables.
+                    Lignes d'assemblage de haute précision assurant un volume continu et des rendements réguliers sur chaque investissement.
                   </p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
                     <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">The Mosaic Company</span>
-                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Alliance Logistique</span>
+                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">DHL Express & Bolloré Logistics</span>
+                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Hub Logistique Africain</span>
                   </div>
                   <p className="text-xs text-slate-700 leading-relaxed font-medium pl-6">
-                    Joint-venture mondiale sécurisant l'approvisionnement en nutriments essentiels (potasse et phosphates) pour stabiliser les retours sur investissement.
+                    Réseau logistique express garantissant la livraison rapide et la rotation active des stocks d'AirPods sur les 5 pays partenaires.
                   </p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
                     <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">Syngenta Group & BASF</span>
-                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Alliance Numérique</span>
+                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">Qualcomm Audio Tech</span>
+                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Technologies Puces</span>
                   </div>
                   <p className="text-xs text-slate-700 leading-relaxed font-medium pl-6">
-                    Contrats d'intégration technologique garantissant la traçabilité numérique, la protection des actifs et la certification des produits de bien-être.
+                    Intégration des processeurs H2 et réduction active du bruit pour garantir la performance des écouteurs.
                   </p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
                     <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">Cargill & John Deere</span>
-                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Partenariat FinTech</span>
+                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">WestPay & Mobile Money Africa</span>
+                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Paiements Sécurisés</span>
                   </div>
                   <p className="text-xs text-slate-700 leading-relaxed font-medium pl-6">
-                    Accords de liquidité financière et d'automatisation des paiements garantissant des retraits rapides et sécurisés 24/7 pour tous les investisseurs.
+                    Passerelles automatisées garantissant des dépôts instantanés et des retraits fluides 24/7 vers Orange, MTN, Moov et Yas.
                   </p>
                 </div>
               </div>
@@ -889,11 +916,11 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 <span>Certifications & Garanties d'Investissement</span>
               </h3>
               <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
-                Nutrien opère sous licence d'exploitation internationale FinTech & AgTech (#NUTRIEN-2026-8890). Tous les projets distribués font l'objet d'un audit de conformité rigoureux assurant la transparence totale et la régularité des paiements quotidiens.
+                AirPods opère sous licence internationale (#AIRPODS-2026-8890). Tous les projets distribués font l'objet d'un audit de conformité rigoureux assurant la transparence totale et la régularité des paiements quotidiens.
               </p>
             </div>
 
-            {/* Section: Équipe Nutrien & Engagement Communautaire (En bas de page) */}
+            {/* Section: Équipe AirPods & Engagement Communautaire (En bas de page) */}
             <div className="space-y-3 pt-5 border-t border-slate-200">
               <div className="space-y-1">
                 <div className="flex items-center space-x-2 text-emerald-800 font-extrabold text-xs uppercase tracking-wider">
@@ -901,22 +928,22 @@ export const AccountView: React.FC<AccountViewProps> = ({
                   <span>Notre Équipe & Engagement Communautaire</span>
                 </div>
                 <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
-                  L'Équipe Nutrien sur le Terrain
+                  L'Équipe AirPods sur le Terrain
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
-                  Nos collaborateurs en maillots verts Nutrien s'engagent activement au quotidien dans les initiatives de développement durable, d'action sociale et de protection de l'environnement.
+                  Nos ambassadeurs et experts techniques AirPods s'engagent activement au quotidien pour apporter un support de proximité et maximiser la rentabilité de nos investisseurs.
                 </p>
               </div>
 
-              {/* IMAGE DE L'ÉQUIPE NUTRIEN */}
+              {/* IMAGE DE L'ÉQUIPE AIRPODS */}
               <div 
                 className="relative rounded-2xl overflow-hidden border border-emerald-800/20 shadow-lg bg-white select-none pointer-events-none touch-none"
                 style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none' }}
                 onContextMenu={(e) => e.preventDefault()}
               >
                 <img 
-                  src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=1200&auto=format&fit=crop&q=80" 
-                  alt="Équipe Nutrien - Action Communautaire & Environnementale" 
+                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200&auto=format&fit=crop&q=80" 
+                  alt="Équipe AirPods - Action Communautaire & Support" 
                   className="w-full h-auto object-cover block"
                   referrerPolicy="no-referrer"
                   loading="eager"
@@ -924,10 +951,10 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 <div className="p-3 bg-gradient-to-r from-emerald-900 via-emerald-850 to-teal-900 text-white flex items-center justify-between text-xs font-bold">
                   <span className="flex items-center space-x-1.5">
                     <HeartHandshake className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Semaine d'Action & Engagement Communautaire</span>
+                    <span>Équipe Support & Ambassadeurs Régionaux</span>
                   </span>
                   <span className="text-[10px] bg-emerald-500/30 text-emerald-200 px-2.5 py-0.5 rounded-full border border-emerald-400/30 font-mono">
-                    Nutrien Green Team
+                    AirPods Official Team
                   </span>
                 </div>
               </div>
@@ -1135,6 +1162,25 @@ export const AccountView: React.FC<AccountViewProps> = ({
       )}
 
       {/* ========================================================= */}
+      {/* SUB-PAGE 6: COMMANDE (SUIVI DES COMMANDES & ACHATS) */}
+      {/* ========================================================= */}
+      {activeSubPage === 'order_history' && (
+        <div className="space-y-4 animate-fadeIn">
+          {renderHeader('Mes Commandes & Achats')}
+          <OrdersView
+            currentUser={currentUser}
+            userInvestments={userInvestments}
+            onClaimDailyEarning={onClaimDailyEarning || (() => ({ success: false, error: 'Fonction de collecte non disponible.' }))}
+            onShowToast={onShowToast}
+            onGoToProducts={() => {
+              setActiveSubPage(null);
+              if (onOpenTab) onOpenTab('products');
+            }}
+          />
+        </div>
+      )}
+
+      {/* ========================================================= */}
       {/* SUB-PAGE 7: PRODUITS */}
       {/* ========================================================= */}
       {activeSubPage === 'products' && (
@@ -1149,9 +1195,9 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 <div key={prod.id} className="py-3 border-b border-slate-200/60 flex items-center justify-between gap-3">
                   <div className="flex items-center space-x-3 min-w-0 flex-1">
                     <img 
-                      src={prod.image || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80'} 
+                      src={prod.image || 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80'} 
                       alt={prod.name}
-                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80'; }}
+                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80'; }}
                       className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 border border-slate-100"
                     />
                     <div className="space-y-1 min-w-0">

@@ -58,13 +58,13 @@
 
   <!-- TOP BRANDING & HEADER -->
   <g transform="translate(600, 75)" text-anchor="middle">
-    <!-- Nutrien Logo Leaves -->
+    <!-- AirPods Logo Leaves -->
     <path d="M-18,-5 C-35,-25 -10,-45 0,-45 C0,-45 5,-25 -18,-5 Z" fill="#84cc16"/>
     <path d="M0,-45 C10,-45 35,-25 18,-5 C-5,-25 0,-45 0,-45 Z" fill="#16a34a"/>
     <path d="M-8,-10 C-25,-5 -30,15 -10,20 C5,10 -8,-10 -8,-10 Z" fill="#65a30d"/>
     
-    <!-- Nutrien Header Title -->
-    <text y="4" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="900" font-size="28" fill="#0f172a" letter-spacing="2">NUTRIEN</text>
+    <!-- AirPods Header Title -->
+    <text y="4" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="900" font-size="28" fill="#0f172a" letter-spacing="2">AIRPODS</text>
     <text y="22" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="800" font-size="14" fill="#047857" letter-spacing="6">AGRICULTURE</text>
   </g>
 
@@ -93,12 +93,12 @@
   <rect x="35" y="322" width="1130" height="150" rx="16" fill="#ffffff" fill-opacity="0.8" stroke="#e2e8f0" stroke-width="1.5"/>
 
   <!-- 6 PARTNERS COLUMNS -->
-  <!-- Partner 1: Nutrien Togo -->
+  <!-- Partner 1: AirPods Togo -->
   <g transform="translate(130, 395)" text-anchor="middle">
-    <!-- Nutrien Mini Logo -->
+    <!-- AirPods Mini Logo -->
     <path d="M-10,-28 C-20,-40 -5,-50 0,-50 C0,-50 3,-38 -10,-28 Z" fill="#84cc16"/>
     <path d="M0,-50 C6,-50 20,-38 10,-28 C-3,-38 0,-50 0,-50 Z" fill="#16a34a"/>
-    <text y="-8" font-family="sans-serif" font-weight="900" font-size="15" fill="#0f172a">NUTRIEN</text>
+    <text y="-8" font-family="sans-serif" font-weight="900" font-size="15" fill="#0f172a">AIRPODS</text>
     <text y="4" font-family="sans-serif" font-weight="800" font-size="8" fill="#047857" letter-spacing="2">AGRICULTURE</text>
     <!-- Flag Togo -->
     <g transform="translate(-32, 22)">
@@ -217,13 +217,13 @@
 
   <!-- 6 DIRECTORS SIGNATURES & SEALS -->
 
-  <!-- Director 1: Koffi A. ESSOWE (Nutrien) -->
+  <!-- Director 1: Koffi A. ESSOWE (AirPods) -->
   <g transform="translate(130, 670)" text-anchor="middle">
     <!-- Signature Cursive -->
     <path d="M-30,-42 C-15,-65 0,-30 15,-50 C25,-60 -5,-25 30,-35" stroke="#1d4ed8" stroke-width="2.5" fill="none" stroke-linecap="round"/>
     <text y="-8" font-family="sans-serif" font-weight="900" font-size="12" fill="#0f172a">M. Koffi A. ESSOWE</text>
     <text y="6" font-family="sans-serif" font-weight="700" font-size="10" fill="#64748b">Directeur Général</text>
-    <text y="19" font-family="sans-serif" font-weight="900" font-size="10" fill="#047857">NUTRIEN AGRICULTURE</text>
+    <text y="19" font-family="sans-serif" font-weight="900" font-size="10" fill="#047857">AIRPODS AGRICULTURE</text>
     <!-- Official Circular Stamp -->
     <g transform="translate(0, 50)">
       <circle cx="0" cy="0" r="24" fill="none" stroke="#047857" stroke-width="2.5" stroke-dasharray="3,1"/>

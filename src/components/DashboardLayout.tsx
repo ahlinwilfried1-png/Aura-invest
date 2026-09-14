@@ -44,7 +44,9 @@ import {
   Zap,
   CreditCard,
   X,
-  Headphones
+  Headphones,
+  Package,
+  ArrowLeft
 } from 'lucide-react';
 import { 
   User as UserType, 
@@ -70,6 +72,7 @@ import { DepositView } from './DepositView';
 import { WithdrawView } from './WithdrawView';
 import { AnnouncementsView } from './AnnouncementsView';
 import { ProductDetailView } from './ProductDetailView';
+import { ProductsView } from './ProductsView';
 import { ProofOfWithdrawalView } from './ProofOfWithdrawalView';
 import { LinkBankCardView } from './LinkBankCardView';
 import { LuckyWheel } from './LuckyWheel';
@@ -168,8 +171,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const hasUnreadAnnouncements = unreadAnnouncementsCount > 0;
   const totalUnreadAnnouncements = unreadAnnouncementsCount;
 
-  // Navigation State (Req: Accueil, Commande, Équipe, Chat, Mon compte + full-page operations)
-  const [activeTab, setActiveTab] = useState<'home' | 'orders' | 'team' | 'chat' | 'profile' | 'deposit' | 'withdraw' | 'announcements' | 'link_card' | 'proofs' | 'service_client'>('home');
+  // Navigation State (Req: Accueil, Produit, Équipe, Chat, Mon compte + full-page operations)
+  const [activeTab, setActiveTab] = useState<'home' | 'products' | 'orders' | 'team' | 'chat' | 'profile' | 'deposit' | 'withdraw' | 'announcements' | 'link_card' | 'proofs' | 'service_client'>('home');
 
   const navigateToHome = () => {
     setSelectedProductDetail(null);
@@ -397,159 +400,113 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <main className="max-w-7xl mx-auto px-2 sm:px-6 pt-1 sm:pt-3 pb-2 flex-grow w-full">
         {/* USER WORKSPACE (DYNAMIC SUB-SCREENS VIA TABS) */}
         <div>
-            {/* TAB 1: ACCUEIL (DASHBOARD HOME) */}
+            {/* TAB 1: ACCUEIL (DASHBOARD HOME SANS LES PRODUITS DÉPLACÉS) */}
             {activeTab === 'home' && (
-              selectedProductDetail ? (
-                <ProductDetailView
-                  product={selectedProductDetail}
-                  currentUser={currentUser}
-                  onBack={() => setSelectedProductDetail(null)}
-                  onConfirmPurchase={(product, qty) => {
-                    return buyInvestment(product.id, qty);
+              <div className="space-y-4 animate-fadeIn">
+                
+                {/* 1. Carte Portefeuille Principal Encadrée */}
+                <MainWalletCard 
+                  user={currentUser}
+                  onOpenDeposit={() => setActiveTab('deposit')}
+                  onOpenWithdraw={() => setActiveTab('withdraw')}
+                  onOpenHistory={() => {
+                    setActiveTab('orders');
                   }}
-                  onOpenDeposit={() => {
-                    setSelectedProductDetail(null);
-                    setActiveTab('deposit');
-                  }}
-                  onShowToast={showToast}
+                  onOpenSupport={() => setActiveTab('service_client')}
                 />
-              ) : (
-                <div className="space-y-4 animate-fadeIn">
-                  
-                  {/* 1. Carte Portefeuille Principal Encadrée */}
-                  <MainWalletCard 
-                    user={currentUser}
-                    onOpenDeposit={() => setActiveTab('deposit')}
-                    onOpenWithdraw={() => setActiveTab('withdraw')}
-                    onOpenHistory={() => {
-                      setActiveTab('orders');
-                    }}
-                    onOpenSupport={() => setActiveTab('service_client')}
-                  />
 
-                  {/* 3. Section Opérations Rapides */}
-                  <QuickOperationsGrid
-                    onRecharger={() => setActiveTab('deposit')}
-                    onRetirer={() => setActiveTab('withdraw')}
-                    onPointage={() => {
-                      const res = claimDailyBonus();
-                      if (res.success) {
-                        showToast('success', `Pointage quotidien récompensé ! +${res.amount || 20} FCFA crédités.`);
-                      } else {
-                        showToast('err', res.error || "Pointage déjà effectué aujourd'hui.");
-                      }
-                    }}
-                    onAnnonces={() => setActiveTab('announcements')}
-                    onGuide={() => setGuideModalOpen(true)}
-                    onChat={() => setActiveTab('service_client')}
-                    hasUnreadAnnouncements={hasUnreadAnnouncements}
-                    unreadAnnouncementsCount={totalUnreadAnnouncements}
-                    unreadChatCount={unreadChatCount}
-                  />
+                {/* 2. Section Opérations Rapides */}
+                <QuickOperationsGrid
+                  onRecharger={() => setActiveTab('deposit')}
+                  onRetirer={() => setActiveTab('withdraw')}
+                  onPointage={() => {
+                    const res = claimDailyBonus();
+                    if (res.success) {
+                      showToast('success', `Pointage quotidien récompensé ! +${res.amount || 20} FCFA crédités.`);
+                    } else {
+                      showToast('err', res.error || "Pointage déjà effectué aujourd'hui.");
+                    }
+                  }}
+                  onAnnonces={() => setActiveTab('announcements')}
+                  onGuide={() => setGuideModalOpen(true)}
+                  onChat={() => setActiveTab('service_client')}
+                  hasUnreadAnnouncements={hasUnreadAnnouncements}
+                  unreadAnnouncementsCount={totalUnreadAnnouncements}
+                  unreadChatCount={unreadChatCount}
+                />
 
-                  {/* 4. TOUS LES PRODUITS DU PLAN AGROPROFIT (AFFICHE OFFICIELLE) */}
-                  <div className="space-y-4 pt-2">
-                    <div className="flex items-center justify-between pb-1">
-                      <div>
-                        <div className="inline-flex items-center space-x-1.5 bg-emerald-900 text-amber-400 px-2.5 py-0.5 rounded-full text-[9.5px] font-mono font-black uppercase tracking-wider mb-1">
-                          <Sparkles className="w-3 h-3 text-amber-400" />
-                          <span>PRIX ET REVENUS POUR UN CYCLE DE 365 JOURS</span>
-                        </div>
-                        <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                          Catalogue Officiel AgroProfit
-                        </h3>
+                {/* 3. Carte d'accès rapide vers la page Produit */}
+                <div className="bg-gradient-to-br from-emerald-900 via-emerald-950 to-slate-950 text-white rounded-3xl p-5 sm:p-6 relative overflow-hidden shadow-md border border-emerald-800/40 space-y-3.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1.5 max-w-sm">
+                      <div className="inline-flex items-center space-x-1.5 bg-amber-400/20 text-amber-300 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black uppercase tracking-wider border border-amber-400/30">
+                        <Sparkles className="w-3 h-3 text-amber-300" />
+                        <span>Formules d'Investissement</span>
                       </div>
+                      <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
+                        Gamme Officielle AirPods & Revenus Quotidiens
+                      </h3>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        Découvrez tous nos plans d'adhésion VIP avec gains quotidiens garantis 24h/24 et retraits Mobile Money instantanés.
+                      </p>
                     </div>
-
-                    {/* Vertical stack of product cards matching AGROPROFIT poster */}
-                    <div className="space-y-3">
-                      {activeProducts.map((product) => (
-                        <div 
-                          key={product.id}
-                          onClick={() => setSelectedProductDetail(product)}
-                          className="bg-white rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-2.5 border-2 border-emerald-900/15 hover:border-amber-400 hover:shadow-md transition-all cursor-pointer group"
-                        >
-                          {/* Top row: Title + Duration on left, Image Thumbnail on right */}
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="space-y-1">
-                              <div className="flex items-center space-x-2">
-                                <h4 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug group-hover:text-emerald-800 transition-colors">
-                                  {product.name}
-                                </h4>
-                                {product.badge && (
-                                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300/60">
-                                    {product.badge}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-xs text-slate-600 font-medium flex items-center space-x-1">
-                                <span>Cycle de profit :</span>
-                                <strong className="text-emerald-800 font-bold ml-1 font-mono">365 jours</strong>
-                              </div>
-                            </div>
-
-                            <img 
-                              src={product.image || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80'} 
-                              alt={product.name}
-                              onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80'; }}
-                              className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 border border-slate-200"
-                            />
-                          </div>
-
-                          {/* Middle row: Light Gray Box with 2 Columns */}
-                          <div className="bg-amber-50/70 border border-amber-200/60 rounded-2xl p-3 sm:p-4 grid grid-cols-2 gap-2 text-center">
-                            <div>
-                              <div className="text-emerald-700 font-black text-lg sm:text-xl tracking-tight font-mono">
-                                +{(Number(product.dailyGain) || 0).toLocaleString('fr-FR')} FCFA
-                              </div>
-                              <div className="text-xs sm:text-sm font-semibold text-slate-700 mt-0.5">
-                                Revenu quotidien (24h)
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-amber-900 font-black text-lg sm:text-xl tracking-tight font-mono">
-                                {(Number(product.totalGain) || 0).toLocaleString('fr-FR')} FCFA
-                              </div>
-                              <div className="text-xs sm:text-sm font-semibold text-slate-700 mt-0.5">
-                                Revenu total (365j)
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Bottom row: Price + Green/Amber INVESTIR Button */}
-                          <div className="flex items-center justify-between pt-1">
-                            <div className="text-sm sm:text-base font-normal text-slate-900">
-                              Prix d'adhésion : <span className="text-emerald-950 font-black ml-1 text-base sm:text-lg font-mono">{(Number(product.price) || 0).toLocaleString('fr-FR')} FCFA</span>
-                            </div>
-
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedProductDetail(product);
-                              }}
-                              className="bg-emerald-700 hover:bg-emerald-600 text-white font-black text-xs sm:text-sm px-5 py-2.5 rounded-xl tracking-wider transition-all cursor-pointer shadow-xs uppercase flex items-center space-x-1.5"
-                            >
-                              <span>INVESTIR</span>
-                              <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="w-12 h-12 rounded-2xl bg-amber-400/20 text-amber-400 flex items-center justify-center font-bold border border-amber-400/30 shrink-0">
+                      <Package className="w-6 h-6 stroke-[2.2]" />
                     </div>
                   </div>
 
+                  <div className="pt-1 flex items-center justify-between">
+                    <div className="text-xs text-emerald-200 font-mono">
+                      {activeProducts.length} formules disponibles
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedProductDetail(null);
+                        setActiveTab('products');
+                      }}
+                      className="bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl tracking-wider transition-all cursor-pointer shadow-md flex items-center space-x-1.5 uppercase font-sans"
+                    >
+                      <span>VOIR LES PRODUITS</span>
+                      <ChevronRight className="w-4 h-4 stroke-[3]" />
+                    </button>
+                  </div>
                 </div>
-              )
+
+              </div>
             )}
 
-            {/* TAB 2: COMMANDE (REQ: ORDER MANAGEMENT & INVESTMENT PLANS) */}
-            {activeTab === 'orders' && (
-              <OrdersView
+            {/* TAB 2: PRODUIT (ESPACE PRINCIPAL CONSACRÉ AUX PRODUITS) */}
+            {activeTab === 'products' && (
+              <ProductsView
+                products={products}
                 currentUser={currentUser}
-                userInvestments={userInvestments}
-                onClaimDailyEarning={claimDailyEarning}
+                onConfirmPurchase={(product, qty) => buyInvestment(product.id, qty)}
+                onOpenDeposit={() => setActiveTab('deposit')}
                 onShowToast={showToast}
               />
+            )}
+
+            {/* VUE DIRECTE: COMMANDE (ACCESSIBLE DEPUIS MON COMPTE OU HISTORIQUE) */}
+            {activeTab === 'orders' && (
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3 pb-3 border-b border-slate-200/80 mb-2">
+                  <button
+                    onClick={navigateToHome}
+                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer"
+                    title="Retour à l'accueil"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900">Mes Commandes & Achats</h2>
+                </div>
+                <OrdersView
+                  currentUser={currentUser}
+                  userInvestments={userInvestments}
+                  onClaimDailyEarning={claimDailyEarning}
+                  onShowToast={showToast}
+                  onGoToProducts={() => setActiveTab('products')}
+                />
+              </div>
             )}
 
             {/* TAB 3: ÉQUIPE (REQ: REFERRAL & NETWORK - MATCHING EXACT REFERENCE UI) */}
@@ -599,8 +556,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 onLogout={logout}
                 onShowToast={showToast}
                 onBuyProduct={handleBuyProduct}
-                onOpenTab={(tab) => setActiveTab(tab)}
+                onOpenTab={(tab) => setActiveTab(tab as any)}
                 onToggleAdmin={() => setIsAdminMode(true)}
+                onClaimDailyEarning={claimDailyEarning}
               />
             )}
 
@@ -673,9 +631,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       )}
 
       {/* DYNAMIC FIXED FOOTER NAVIGATION TABS MENU BAR */}
-      {/* REQ ORDER: Accueil – Commande – Équipe – Chat – Mon compte */}
+      {/* REQ ORDER: Accueil – Produit – Équipe – Chat – Mon compte */}
       {!isAdminMode && (
-        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md py-2 px-2">
+        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md py-2 px-2 border-t border-slate-200/60 shadow-lg">
           <div className="max-w-md mx-auto flex justify-between items-center text-center">
             
             {/* 1. Accueil */}
@@ -689,15 +647,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <span className="text-[10px]">Accueil</span>
             </button>
 
-            {/* 2. Commande */}
+            {/* 2. Produit (remplace Commande à cet emplacement) */}
             <button 
-              onClick={() => setActiveTab('orders')}
+              onClick={() => {
+                setSelectedProductDetail(null);
+                setActiveTab('products');
+              }}
               className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer ${
-                activeTab === 'orders' ? 'text-amber-700 font-black scale-105' : 'text-slate-400 hover:text-slate-600 font-medium'
+                activeTab === 'products' ? 'text-amber-700 font-black scale-105' : 'text-slate-400 hover:text-slate-600 font-medium'
               }`}
             >
-              <ShoppingBag className="w-5 h-5" />
-              <span className="text-[10px]">Commande</span>
+              <Package className="w-5 h-5" />
+              <span className="text-[10px]">Produit</span>
             </button>
 
             {/* 3. Équipe */}

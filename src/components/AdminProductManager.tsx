@@ -41,9 +41,9 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
   const openNewForm = () => {
     setEditingProduct(null);
     setFormId(`vip-${products.length + 1}`);
-    setFormName(`VIP NIVEAU ${products.length + 1} (Spécial)`);
-    setFormImage('https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80');
-    setFormDescription('Pack d\'investissement agricole officiel AgroProfit avec rendement garanti.');
+    setFormName(`VIP NIVEAU ${products.length + 1} (AirPods Pro)`);
+    setFormImage('https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80');
+    setFormDescription('Pack officiel d\'investissement AirPods avec rendement garanti.');
     setFormPrice(2500);
     setFormDailyGain(168);
     setFormDuration(365);
@@ -136,7 +136,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                 ? 'bg-emerald-600 text-white border-emerald-500' 
                 : 'bg-emerald-800 hover:bg-emerald-700 text-white border-emerald-900/40'
             }`}
-            title="Réinitialiser et enregistrer les 8 plans officiels de l'affiche AgroProfit"
+            title="Réinitialiser et enregistrer les 8 plans officiels AirPods"
           >
             {isResetDone ? (
               <>
@@ -146,7 +146,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
             ) : (
               <>
                 <RefreshCw className="w-4 h-4 text-amber-300" />
-                <span>Restaurer les 8 VIP Officiels (Affiche)</span>
+                <span>Restaurer les 8 VIP Officiels</span>
               </>
             )}
           </button>
@@ -184,7 +184,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                 type="text"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                placeholder="Ex: VIP 1 - Nutrien Bio"
+                placeholder="Ex: VIP 1 - AirPods Pro"
                 className="w-full bg-white outline-none rounded-xl py-2 px-3 text-slate-900 font-bold"
                 required
               />

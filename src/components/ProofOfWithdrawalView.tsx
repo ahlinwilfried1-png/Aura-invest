@@ -43,7 +43,7 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
             userPhone: maskedPhone,
             amount: w.amount,
             network: w.network || 'Mobile Money',
-            message: 'Retrait validé et payé avec succès par Nutrien.',
+            message: 'Retrait validé et payé avec succès par AirPods.',
             imageUrl: null,
             createdAt: w.createdAt ? w.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
             isVerified: true,
@@ -59,7 +59,7 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const finalAmount = Number(amount) > 0 ? Number(amount) : 2000;
-    const finalMessage = message.trim() || `Retrait reçu avec succès via ${network}. Merci Nutrien !`;
+    const finalMessage = message.trim() || `Retrait reçu avec succès via ${network}. Merci AirPods !`;
 
     const res = addWithdrawalProof(finalAmount, network, finalMessage, imageUrl.trim() || null);
     if (res.success) {
@@ -174,7 +174,7 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
           Preuves de Retrait
         </h1>
         <p className="text-xs sm:text-sm text-slate-300 font-medium max-w-xl leading-relaxed">
-          Découvrez en temps réel les témoignages et preuves de paiement réelles soumises par les membres de la communauté Nutrien.
+          Découvrez en temps réel les témoignages et preuves de paiement réelles soumises par les membres de la communauté AirPods.
         </p>
       </div>
 
@@ -315,7 +315,7 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
                   rows={3}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Partagez votre expérience avec Nutrien..."
+                  placeholder="Partagez votre expérience avec AirPods..."
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 outline-none focus:border-amber-500"
                 />
               </div>

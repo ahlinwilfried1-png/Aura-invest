@@ -222,7 +222,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
   };
 
   const shareText = encodeURIComponent(
-    `Rejoins mon équipe sur AgroProfit et gagne des revenus quotidiens garantis ! Inscription avec mon code ${currentUser.referralCode} : ${referralUrl}`
+    `Rejoins mon équipe sur AirPods et gagne des revenus quotidiens garantis ! Inscription avec mon code ${currentUser.referralCode} : ${referralUrl}`
   );
 
   return (
@@ -371,7 +371,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
 
             {/* Telegram */}
             <a
-              href={`https://t.me/share/url?url=${encodeURIComponent(referralUrl)}&text=${encodeURIComponent('Rejoins mon équipe sur AgroProfit !')}`}
+              href={`https://t.me/share/url?url=${encodeURIComponent(referralUrl)}&text=${encodeURIComponent('Rejoins mon équipe sur AirPods !')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-sky-500 hover:bg-sky-600 text-white py-2.5 px-1 rounded-2xl flex flex-col items-center justify-center space-y-1 text-center transition-all shadow-2xs cursor-pointer"

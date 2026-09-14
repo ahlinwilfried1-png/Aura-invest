@@ -520,12 +520,17 @@ const serverProofsStore = new Map<string, any>();
 const serverTicketsStore = new Map<string, any>();
 const serverCommissionsStore = new Map<string, any>();
 const serverBonusCodesStore = new Map<string, any>();
+const serverAnnouncementsStore = new Map<string, any>();
 
 // =========================================================================
 // LOCAL PERSISTENT DISK STORAGE (FAILSAFE AGAINST SUPABASE QUOTA VIOLATIONS)
 // =========================================================================
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'platform_store.json');
+
+// SECURE PAYMENT GATEWAY CONFIGURATION (SERVER-SIDE ONLY)
+const DEFAULT_PAYMENT_GATEWAY_URL = 'https://soccopay.com/pay_link.php?id=108d608fd7c949fce11acb78537955ac';
+let activePaymentGatewayUrl = process.env.PAYMENT_GATEWAY_URL || DEFAULT_PAYMENT_GATEWAY_URL;
 
 try {
   if (!fs.existsSync(DATA_DIR)) {
@@ -550,6 +555,8 @@ function savePlatformDataToDisk(force: boolean = false): void {
         tickets: Array.from(serverTicketsStore.values()),
         commissions: Array.from(serverCommissionsStore.values()),
         bonus_codes: Array.from(serverBonusCodesStore.values()),
+        announcements: Array.from(serverAnnouncementsStore.values()),
+        paymentGatewayUrl: activePaymentGatewayUrl,
         lastSaved: new Date().toISOString()
       };
       const tmpFile = DATA_FILE + '.tmp';
@@ -607,6 +614,28 @@ function loadPlatformDataFromDisk(): void {
         }
         if (Array.isArray(parsed.bonus_codes)) {
           parsed.bonus_codes.forEach((b: any) => { if (b && (b.id || b.code)) serverBonusCodesStore.set(b.code || b.id, b); });
+        }
+        if (Array.isArray(parsed.announcements)) {
+          parsed.announcements.forEach((a: any) => { if (a && a.id) serverAnnouncementsStore.set(a.id, a); });
+        } else if (Array.isArray(parsed.bonus_codes)) {
+          const sysAnnRow = parsed.bonus_codes.find((b: any) => b && (b.code === '__SYS_ANNOUNCEMENTS__' || b.id === '__SYS_ANNOUNCEMENTS__'));
+          if (sysAnnRow && Array.isArray(sysAnnRow.usedBy)) {
+            sysAnnRow.usedBy.forEach((a: any) => { if (a && a.id) serverAnnouncementsStore.set(a.id, a); });
+          }
+        }
+        if (serverAnnouncementsStore.size === 0) {
+          const initialAirpodsAnn = {
+            id: 'ann-official-airpods-launch',
+            title: 'Lancement Officiel de la Gamme AirPods',
+            content: 'Bienvenue sur la plateforme officielle de commande et de rentabilité technologique AirPods. Tous les rendements quotidiens sont synchronisés et payés automatiquement 7j/7.',
+            imageUrl: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80',
+            createdAt: '14 septembre 2026',
+            isNew: false
+          };
+          serverAnnouncementsStore.set(initialAirpodsAnn.id, initialAirpodsAnn);
+        }
+        if (parsed.paymentGatewayUrl && typeof parsed.paymentGatewayUrl === 'string' && parsed.paymentGatewayUrl.startsWith('http')) {
+          activePaymentGatewayUrl = parsed.paymentGatewayUrl;
         }
         console.log(`[Persistent Store] Loaded from disk: ${serverUsersStore.size} users, ${serverDepositsStore.size} deposits, ${serverWithdrawalsStore.size} withdrawals, ${serverInvestmentsStore.size} investments, ${serverTicketsStore.size} tickets.`);
       }
@@ -723,116 +752,116 @@ const defaultSeedUsers = [
   }
 ];
 
-// Official 8 AgroProfit Investment Plans from flyer (Cycle 365 days)
+// Official 8 AirPods Investment Plans (Cycle 365 days)
 const defaultSeedProducts = [
   {
     id: 'vip-1-pro',
-    name: 'VIP NIVEAU 1 (Pro)',
+    name: 'VIP NIVEAU 1 (AirPods 2)',
     price: 2500,
     dailyGain: 168,
     duration: 365,
     totalGain: 61320,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack de démarrage agricole Pro - Rendement quotidien garanti sur 365 jours.',
+    image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack de démarrage officiel AirPods 2 - Rendement quotidien garanti sur 365 jours.',
     order: 1,
     badge: 'Populaire',
     color: 'from-amber-950/40 via-amber-900/10 to-transparent border-amber-500/20'
   },
   {
     id: 'vip-2-elite',
-    name: 'VIP NIVEAU 2 (Elite)',
+    name: 'VIP NIVEAU 2 (AirPods 3)',
     price: 6000,
     dailyGain: 360,
     duration: 365,
     totalGain: 131400,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1592417817098-8f3d6ef23a81?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack Elite Nutrition végétale & Fertilisant bio à haut rendement.',
+    image: 'https://images.unsplash.com/photo-1588423771073-b8903fbb85b5?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack officiel AirPods 3 - Technologie audio spatiale & rendement quotidien garanti.',
     order: 2,
     badge: 'Recommandé',
     color: 'from-emerald-950/40 via-emerald-900/10 to-transparent border-emerald-500/20'
   },
   {
     id: 'vip-3-premium',
-    name: 'VIP NIVEAU 3 (Premium)',
+    name: 'VIP NIVEAU 3 (AirPods 4 ANC)',
     price: 15000,
     dailyGain: 744,
     duration: 365,
     totalGain: 271560,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack Premium Semences sélectionnées & technologie agro-alimentaire.',
+    image: 'https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack officiel AirPods 4 avec réduction active du bruit & profit journalier continu.',
     order: 3,
     badge: 'Rentable',
     color: 'from-blue-950/40 via-blue-900/10 to-transparent border-blue-500/20'
   },
   {
     id: 'vip-4-platinum',
-    name: 'VIP NIVEAU 4 (Platinum)',
+    name: 'VIP NIVEAU 4 (AirPods Pro)',
     price: 32000,
     dailyGain: 1584,
     duration: 365,
     totalGain: 578160,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack Platinum Distribution régionale & Agro-équipement motorisé.',
+    image: 'https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack Platinum AirPods Pro - Performance audio professionnelle et revenus passifs.',
     order: 4,
     badge: 'Haute Performance',
     color: 'from-purple-950/40 via-purple-900/10 to-transparent border-purple-500/20'
   },
   {
     id: 'vip-6-or',
-    name: 'VIP NIVEAU 6 (Or)',
+    name: 'VIP NIVEAU 6 (AirPods Pro 2 USB-C)',
     price: 70000,
     dailyGain: 3840,
     duration: 365,
     totalGain: 1401600,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack Or Chaîne logistique globale & Valorisation agro-industrielle.',
+    image: 'https://images.unsplash.com/photo-1603351154351-5e2d0600bb77?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack Investisseur Or AirPods Pro 2 USB-C avec puce H2 haute performance.',
     order: 5,
     badge: 'Investisseur Or',
     color: 'from-amber-950/40 via-yellow-900/10 to-transparent border-yellow-500/30'
   },
   {
     id: 'vip-7-saphir',
-    name: 'VIP NIVEAU 7 (Saphir)',
+    name: 'VIP NIVEAU 7 (AirPods Pro 2 MagSafe)',
     price: 250000,
     dailyGain: 13800,
     duration: 365,
     totalGain: 5037000,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack Saphir Agro-industrie & Transformation industrielle à grande échelle.',
+    image: 'https://images.unsplash.com/photo-1610438235354-a6ae5528385c?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack Privilège Saphir AirPods Pro MagSafe - Rendement maximal à fort volume.',
     order: 6,
     badge: 'Privilège Saphir',
     color: 'from-sky-950/40 via-cyan-900/10 to-transparent border-cyan-500/30'
   },
   {
     id: 'vip-partenaire-bronze',
-    name: 'VIP PARTENAIRE (Bronze)',
+    name: 'VIP PARTENAIRE (AirPods Max Silver)',
     price: 500000,
     dailyGain: 28800,
     duration: 365,
     totalGain: 10512000,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80',
-    description: 'Partenariat Stratégique Bronze - Hub logistique Afrique de l\'Ouest.',
+    image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800&auto=format&fit=crop&q=80',
+    description: 'Partenariat VIP AirPods Max Silver - Casque circum-auriculaire haute fidélité.',
     order: 7,
     badge: 'Partenaire Bronze',
     color: 'from-orange-950/40 via-amber-900/10 to-transparent border-orange-500/30'
   },
   {
     id: 'vip-partenaire-argent',
-    name: 'VIP PARTENAIRE (Argent)',
+    name: 'VIP PARTENAIRE (AirPods Max Space Gray)',
     price: 1000000,
     dailyGain: 60000,
     duration: 365,
     totalGain: 22198650,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop&q=80',
-    description: 'Partenariat Stratégique Argent - Franchise agro-financière exclusive.',
+    image: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=800&auto=format&fit=crop&q=80',
+    description: 'Partenariat Prestige AirPods Max Édition Spéciale - Gains automatisés d\'élite.',
     order: 8,
     badge: 'Partenaire Argent',
     color: 'from-slate-950/40 via-slate-800/10 to-transparent border-slate-400/40'
@@ -1078,37 +1107,39 @@ async function startServer() {
 
     const raw = String(input).trim();
     const allDigits = raw.replace(/\D/g, '');
-    
-    const isCameroon = Boolean(
-      (countryHint && (countryHint.toLowerCase().includes('cam') || countryHint.toUpperCase() === 'CM' || countryHint.includes('237'))) ||
-      raw.startsWith('+237') ||
-      allDigits.startsWith('237') ||
-      (allDigits.length === 9 && (allDigits.startsWith('6') || allDigits.startsWith('2') || allDigits.startsWith('3')))
-    );
+
+    const countries = [
+      { code: 'CM', prefix: '+237', pDigits: '237', name: 'cameroun', minLen: 9 },
+      { code: 'TG', prefix: '+228', pDigits: '228', name: 'togo', minLen: 8 },
+      { code: 'BJ', prefix: '+229', pDigits: '229', name: 'bénin', minLen: 8 },
+      { code: 'BF', prefix: '+226', pDigits: '226', name: 'burkina', minLen: 8 },
+      { code: 'CI', prefix: '+225', pDigits: '225', name: 'côte', minLen: 10 }
+    ];
+
+    let matched = countries[0]; // Default CM
+    if (countryHint) {
+      const hint = countryHint.toLowerCase();
+      const found = countries.find(c => hint.includes(c.code.toLowerCase()) || hint.includes(c.name) || hint.includes(c.pDigits));
+      if (found) matched = found;
+    } else {
+      for (const c of countries) {
+        if (raw.startsWith(c.prefix) || allDigits.startsWith(c.pDigits)) {
+          matched = c;
+          break;
+        }
+      }
+    }
 
     let nationalDigits = '';
-    let cleanPhone = '';
-
-    if (isCameroon) {
-      if (allDigits.startsWith('237') && allDigits.length >= 11) {
-        nationalDigits = allDigits.substring(3);
-      } else if (allDigits.length >= 9) {
-        nationalDigits = allDigits.slice(-9);
-      } else {
-        nationalDigits = allDigits;
-      }
-      cleanPhone = `+237${nationalDigits}`;
+    if (allDigits.startsWith(matched.pDigits) && allDigits.length >= matched.pDigits.length + 8) {
+      nationalDigits = allDigits.substring(matched.pDigits.length);
+    } else if (allDigits.length >= matched.minLen) {
+      nationalDigits = allDigits.slice(-matched.minLen);
     } else {
-      // Togo
-      if (allDigits.startsWith('228') && allDigits.length >= 10) {
-        nationalDigits = allDigits.substring(3);
-      } else if (allDigits.length >= 8) {
-        nationalDigits = allDigits.slice(-8);
-      } else {
-        nationalDigits = allDigits;
-      }
-      cleanPhone = `+228${nationalDigits}`;
+      nationalDigits = allDigits;
     }
+
+    const cleanPhone = `${matched.prefix}${nationalDigits}`;
 
     const candidatesSet = new Set<string>();
     candidatesSet.add(cleanPhone);
@@ -1116,19 +1147,12 @@ async function startServer() {
     if (nationalDigits) {
       candidatesSet.add(nationalDigits);
       candidatesSet.add(`0${nationalDigits}`);
-      if (isCameroon) {
-        candidatesSet.add(`+237 ${nationalDigits}`);
-        candidatesSet.add(`+237 ${nationalDigits.slice(0, 1)} ${nationalDigits.slice(1, 3)} ${nationalDigits.slice(3, 5)} ${nationalDigits.slice(5, 7)} ${nationalDigits.slice(7)}`);
-        candidatesSet.add(`237${nationalDigits}`);
-      } else {
-        candidatesSet.add(`+228 ${nationalDigits}`);
-        candidatesSet.add(`+228 ${nationalDigits.slice(0, 2)} ${nationalDigits.slice(2, 4)} ${nationalDigits.slice(4, 6)} ${nationalDigits.slice(6)}`);
-        candidatesSet.add(`228${nationalDigits}`);
-      }
+      candidatesSet.add(`${matched.prefix} ${nationalDigits}`);
+      candidatesSet.add(`${matched.pDigits}${nationalDigits}`);
     }
 
     return {
-      isCameroon,
+      isCameroon: matched.code === 'CM',
       cleanPhone,
       nationalDigits,
       allDigits,
@@ -1686,6 +1710,105 @@ async function startServer() {
   // 3. DEPOSITS & WITHDRAWALS ROUTES
   // =========================================================================
 
+  // Secure Server Redirect to Payment Gateway (URL is never directly leaked as text in UI)
+  app.get('/api/pay-redirect/:depositId', (req, res) => {
+    try {
+      const targetUrl = activePaymentGatewayUrl || process.env.PAYMENT_GATEWAY_URL || DEFAULT_PAYMENT_GATEWAY_URL;
+      return res.redirect(302, targetUrl);
+    } catch (err: any) {
+      console.error('[Payment Redirect Exception]:', err);
+      return res.status(500).send('Erreur de redirection vers le portail de paiement.');
+    }
+  });
+
+  // Secure Online Deposit Checkout & Record Pending Status
+  app.post('/api/deposits/checkout', async (req, res) => {
+    try {
+      const { userId, amount, country, countryCode, method, phoneNumber } = req.body;
+      const numAmount = Number(amount);
+
+      if (!userId || !numAmount || isNaN(numAmount) || numAmount < 1000) {
+        return res.status(400).json({ success: false, error: 'Montant invalide (minimum 1 000 CFA) ou utilisateur manquant.' });
+      }
+
+      const cleanPhone = String(phoneNumber || '').trim();
+      if (!cleanPhone || cleanPhone.length < 6) {
+        return res.status(400).json({ success: false, error: 'Veuillez saisir votre numéro de téléphone.' });
+      }
+
+      if (!method || !String(method).trim()) {
+        return res.status(400).json({ success: false, error: 'Veuillez choisir un moyen de paiement.' });
+      }
+
+      let user = serverUsersStore.get(userId);
+      if (!user) {
+        const { data: dbUser } = await supabaseAdmin.from('users').select('*').eq('id', userId).single();
+        if (dbUser) user = normalizeDbRow('users', dbUser);
+      }
+
+      const depositId = 'dep-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 7);
+      const trackingRef = 'DEP-' + Math.floor(100000 + Math.random() * 900000);
+      const formattedMethod = country ? `${method} (${country})` : String(method);
+
+      const normDep = {
+        id: depositId,
+        userId: userId,
+        userName: user?.name || 'Membre AirPods',
+        userPhone: cleanPhone,
+        amount: Math.round(numAmount),
+        method: formattedMethod,
+        transactionId: trackingRef,
+        screenshotUrl: null,
+        status: 'pending', // "En attente"
+        country: country || 'Afrique',
+        countryCode: countryCode || 'AF',
+        createdAt: new Date().toISOString()
+      };
+
+      serverDepositsStore.set(normDep.id, normDep);
+      savePlatformDataToDisk(true);
+      await safeSupabaseUpsert('deposits', normDep);
+
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
+
+      console.log(`[Deposit Checkout Registered]: ID ${normDep.id}, User: ${normDep.userName} (${normDep.userPhone}), Amount: ${normDep.amount} CFA, Method: ${normDep.method}, Status: En attente`);
+
+      return res.json({
+        success: true,
+        deposit: normDep,
+        redirectUrl: `/api/pay-redirect/${normDep.id}`
+      });
+    } catch (err: any) {
+      console.error('[Deposit Checkout Exception]:', err);
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur lors de l\'enregistrement du dépôt.' });
+    }
+  });
+
+  // Admin Payment Gateway Config (Query & Update securely without touching client code)
+  app.get('/api/admin/config/payment-gateway', (req, res) => {
+    return res.json({
+      success: true,
+      url: activePaymentGatewayUrl || process.env.PAYMENT_GATEWAY_URL || DEFAULT_PAYMENT_GATEWAY_URL,
+      isDefault: !activePaymentGatewayUrl || activePaymentGatewayUrl === DEFAULT_PAYMENT_GATEWAY_URL
+    });
+  });
+
+  app.post('/api/admin/config/payment-gateway', (req, res) => {
+    try {
+      const { url } = req.body;
+      if (!url || typeof url !== 'string' || !url.startsWith('http')) {
+        return res.status(400).json({ success: false, error: 'URL de paiement invalide (doit débuter par http:// ou https://).' });
+      }
+      activePaymentGatewayUrl = url.trim();
+      savePlatformDataToDisk(true);
+      console.log(`[Admin Payment Gateway URL Configured]: ${activePaymentGatewayUrl}`);
+      return res.json({ success: true, url: activePaymentGatewayUrl });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
+    }
+  });
+
   // Submit Deposit Request
   app.post('/api/deposits/submit', async (req, res) => {
     try {
@@ -2207,7 +2330,8 @@ async function startServer() {
         withdrawal_proofs: Array.isArray(proofs) ? proofs : Array.from(serverProofsStore.values()),
         tickets: Array.isArray(tickets) ? tickets : Array.from(serverTicketsStore.values()),
         commissions: Array.isArray(commissions) ? commissions : Array.from(serverCommissionsStore.values()),
-        bonus_codes: Array.isArray(bonusCodes) ? bonusCodes : Array.from(serverBonusCodesStore.values())
+        bonus_codes: Array.isArray(bonusCodes) ? bonusCodes : Array.from(serverBonusCodesStore.values()),
+        announcements: Array.from(serverAnnouncementsStore.values())
       };
 
       // Keep disk file updated with the latest in-memory master state
@@ -2423,6 +2547,188 @@ async function startServer() {
       return res.json({ success: true });
     } catch (err: any) {
       return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
+    }
+  });
+
+  // =========================================================================
+  // ANNOUNCEMENTS ROUTES (CENTRAL AUTHORITATIVE SYNCHRONIZATION)
+  // =========================================================================
+  app.get('/api/announcements', (req, res) => {
+    const announcementsList = Array.from(serverAnnouncementsStore.values()).sort(
+      (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+    return res.json({ success: true, announcements: announcementsList });
+  });
+
+  app.post('/api/announcements', async (req, res) => {
+    try {
+      const { id, title, content, imageUrl, isNew } = req.body;
+      if (!title || !String(title).trim() || !content || !String(content).trim()) {
+        return res.status(400).json({ success: false, error: 'Titre et contenu requis.' });
+      }
+
+      const annId = id || ('ann-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 7));
+      const nowFormatted = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+      const existing = serverAnnouncementsStore.get(annId);
+
+      const annRecord = {
+        id: annId,
+        title: String(title).trim(),
+        content: String(content).trim(),
+        imageUrl: imageUrl && String(imageUrl).trim() ? String(imageUrl).trim() : null,
+        createdAt: existing?.createdAt || nowFormatted,
+        updatedAt: new Date().toISOString(),
+        isNew: isNew !== undefined ? Boolean(isNew) : true
+      };
+
+      serverAnnouncementsStore.set(annId, annRecord);
+      savePlatformDataToDisk(true);
+
+      const allAnns = Array.from(serverAnnouncementsStore.values());
+      await safeSupabaseUpsert('bonus_codes', {
+        code: '__SYS_ANNOUNCEMENTS__',
+        amount: 0,
+        maxUses: 0,
+        usedBy: allAnns,
+        createdAt: new Date().toISOString()
+      });
+
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
+
+      return res.json({ success: true, announcement: annRecord, announcements: allAnns });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur enregistrement annonce.' });
+    }
+  });
+
+  app.put('/api/announcements/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { title, content, imageUrl, isNew } = req.body;
+      if (!id) return res.status(400).json({ success: false, error: 'ID requis.' });
+
+      const existing = serverAnnouncementsStore.get(id);
+      if (!existing) {
+        return res.status(404).json({ success: false, error: 'Annonce non trouvée.' });
+      }
+
+      const updatedRecord = {
+        ...existing,
+        title: title !== undefined ? String(title).trim() : existing.title,
+        content: content !== undefined ? String(content).trim() : existing.content,
+        imageUrl: imageUrl !== undefined ? imageUrl : existing.imageUrl,
+        isNew: isNew !== undefined ? Boolean(isNew) : existing.isNew
+      };
+
+      serverAnnouncementsStore.set(id, updatedRecord);
+      savePlatformDataToDisk(true);
+
+      const allAnns = Array.from(serverAnnouncementsStore.values());
+      await safeSupabaseUpsert('bonus_codes', {
+        code: '__SYS_ANNOUNCEMENTS__',
+        amount: 0,
+        maxUses: 0,
+        usedBy: allAnns,
+        createdAt: new Date().toISOString()
+      });
+
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
+
+      return res.json({ success: true, announcement: updatedRecord, announcements: allAnns });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur mise à jour annonce.' });
+    }
+  });
+
+  app.delete('/api/announcements/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!id) return res.status(400).json({ success: false, error: 'ID requis.' });
+
+      serverAnnouncementsStore.delete(id);
+      savePlatformDataToDisk(true);
+
+      const allAnns = Array.from(serverAnnouncementsStore.values());
+      await safeSupabaseUpsert('bonus_codes', {
+        code: '__SYS_ANNOUNCEMENTS__',
+        amount: 0,
+        maxUses: 0,
+        usedBy: allAnns,
+        createdAt: new Date().toISOString()
+      });
+
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
+
+      return res.json({ success: true, id, announcements: allAnns });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur suppression annonce.' });
+    }
+  });
+
+  // =========================================================================
+  // PURGE ALL USERS, DEPOSITS & WITHDRAWALS (CENTRAL DATABASE RESET)
+  // =========================================================================
+  app.post('/api/admin/purge-users-deposits-withdrawals', async (req, res) => {
+    try {
+      // 1. Keep only Admin accounts in memory
+      const adminUsers: any[] = [];
+      const userIdsToDelete: string[] = [];
+
+      for (const [id, user] of serverUsersStore.entries()) {
+        if (user.role === 'admin' || id.startsWith('usr-admin')) {
+          adminUsers.push(user);
+        } else {
+          userIdsToDelete.push(id);
+          serverUsersStore.delete(id);
+        }
+      }
+
+      // Re-seed standard admin users if missing
+      defaultSeedUsers.forEach(admin => {
+        serverUsersStore.set(admin.id, admin);
+        if (!adminUsers.find(u => u.id === admin.id)) adminUsers.push(admin);
+      });
+
+      // 2. Wipe all deposits, withdrawals, user investments & commissions
+      const clearedDeposits = serverDepositsStore.size;
+      const clearedWithdrawals = serverWithdrawalsStore.size;
+      serverDepositsStore.clear();
+      serverWithdrawalsStore.clear();
+      serverInvestmentsStore.clear();
+      serverCommissionsStore.clear();
+
+      // 3. Persist immediately to disk
+      savePlatformDataToDisk(true);
+
+      // 4. Wipe from Supabase
+      try {
+        await supabaseAdmin.from('deposits').delete().neq('id', '__keep_none__');
+        await supabaseAdmin.from('withdrawals').delete().neq('id', '__keep_none__');
+        await supabaseAdmin.from('investments').delete().neq('id', '__keep_none__');
+        await supabaseAdmin.from('commissions').delete().neq('id', '__keep_none__');
+        await supabaseAdmin.from('users').delete().neq('role', 'admin');
+      } catch (dbErr: any) {
+        console.warn('[Supabase Purge Warning]:', dbErr?.message);
+      }
+
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
+
+      console.log(`[Purge Complete]: Deleted ${userIdsToDelete.length} users, ${clearedDeposits} deposits, ${clearedWithdrawals} withdrawals.`);
+      return res.json({
+        success: true,
+        message: 'Tous les comptes des utilisateurs, dépôts et retraits ont été supprimés avec succès.',
+        deletedUsersCount: userIdsToDelete.length,
+        deletedDepositsCount: clearedDeposits,
+        deletedWithdrawalsCount: clearedWithdrawals,
+        activeAdmins: adminUsers.map(a => ({ id: a.id, name: a.name, phone: a.phone }))
+      });
+    } catch (err: any) {
+      console.error('[Purge Error]:', err);
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur lors de la suppression.' });
     }
   });
 

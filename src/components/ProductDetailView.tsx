@@ -187,7 +187,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
           </p>
 
           <p>
-            {product.description || `Chez Nutrien, nous croyons que les opportunités appartiennent à ceux qui osent agir. Grâce à une participation active, à l'apprentissage continu et au partage d'expériences, vous pouvez non seulement vous épanouir personnellement, mais aussi grandir aux côtés de votre équipe pour bâtir ensemble un avenir meilleur.`}
+            {product.description || `Chez AirPods, nous croyons que les opportunités appartiennent à ceux qui osent agir. Grâce à une participation active, à l'apprentissage continu et au partage d'expériences, vous pouvez non seulement vous épanouir personnellement, mais aussi grandir aux côtés de votre équipe pour bâtir ensemble un avenir meilleur.`}
           </p>
 
           <p className="font-bold text-slate-900 pt-1">
@@ -199,7 +199,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
           </p>
 
           <p className="font-bold text-slate-900 pt-1">
-            💪 Rejoignez Nutrien et ouvrez la voie à un avenir brillant !
+            💪 Rejoignez AirPods et ouvrez la voie à un avenir brillant !
           </p>
         </div>
       </div>

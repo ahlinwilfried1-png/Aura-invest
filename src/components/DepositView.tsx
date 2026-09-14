@@ -1,593 +1,630 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   ArrowLeft, 
-  Info, 
+  Wallet, 
   ShieldCheck, 
   Phone, 
-  Copy, 
-  Check, 
   CreditCard, 
   Lock, 
+  CheckCircle2, 
+  AlertCircle, 
+  Clock, 
+  ExternalLink,
+  ChevronRight,
   Sparkles,
-  CheckCircle2,
-  AlertCircle,
-  FileText
+  RefreshCw
 } from 'lucide-react';
-import { User, DepositRequest, RechargeChannel } from '../types';
+import { User, DepositRequest } from '../types';
 import { useApp } from '../context/AppContext';
-import { ALLOWED_COUNTRIES } from '../constants/countries';
+import { ALLOWED_COUNTRIES, AllowedCountry, getCountryByCode } from '../constants/countries';
 
 interface DepositViewProps {
   currentUser: User;
   deposits: DepositRequest[];
-  onRequestDeposit: (amount: number, method: any, transactionId: string, screenshotUrl: string | null) => { success: boolean; error?: string };
+  onRequestDeposit?: (amount: number, method: any, transactionId: string, screenshotUrl: string | null) => { success: boolean; error?: string };
   onBack: () => void;
   onShowToast: (status: 'success' | 'err', text: string) => void;
 }
 
+// Payment networks tailored specifically per country
+interface PaymentMethodOption {
+  id: string;
+  name: string;
+  badge: string;
+  color: string;
+}
+
+const COUNTRY_PAYMENT_METHODS: Record<string, PaymentMethodOption[]> = {
+  CM: [
+    { id: 'mtn_cm', name: 'MTN Mobile Money', badge: 'MoMo', color: 'bg-amber-500 text-black border-amber-400' },
+    { id: 'orange_cm', name: 'Orange Money', badge: 'OM', color: 'bg-orange-500 text-white border-orange-400' }
+  ],
+  TG: [
+    { id: 'tmoney_tg', name: 'TMoney', badge: 'Togocom', color: 'bg-emerald-600 text-white border-emerald-500' },
+    { id: 'moov_tg', name: 'Moov Money', badge: 'Flooz', color: 'bg-blue-600 text-white border-blue-500' }
+  ],
+  BJ: [
+    { id: 'mtn_bj', name: 'MTN Mobile Money', badge: 'MoMo', color: 'bg-amber-500 text-black border-amber-400' },
+    { id: 'moov_bj', name: 'Moov Money', badge: 'Flooz', color: 'bg-blue-600 text-white border-blue-500' },
+    { id: 'celtiis_bj', name: 'Celtiis Cash', badge: 'Celtiis', color: 'bg-purple-600 text-white border-purple-500' }
+  ],
+  BF: [
+    { id: 'orange_bf', name: 'Orange Money', badge: 'OM', color: 'bg-orange-500 text-white border-orange-400' },
+    { id: 'moov_bf', name: 'Moov Money', badge: 'Flooz', color: 'bg-blue-600 text-white border-blue-500' },
+    { id: 'wave_bf', name: 'Wave', badge: 'Wave', color: 'bg-sky-500 text-white border-sky-400' }
+  ],
+  CI: [
+    { id: 'wave_ci', name: 'Wave', badge: 'Wave', color: 'bg-sky-500 text-white border-sky-400' },
+    { id: 'orange_ci', name: 'Orange Money', badge: 'OM', color: 'bg-orange-500 text-white border-orange-400' },
+    { id: 'mtn_ci', name: 'MTN Mobile Money', badge: 'MoMo', color: 'bg-amber-500 text-black border-amber-400' },
+    { id: 'moov_ci', name: 'Moov Money', badge: 'Flooz', color: 'bg-blue-600 text-white border-blue-500' }
+  ]
+};
+
+// Quick selection amounts required by specifications
+const QUICK_AMOUNTS = [3000, 8000, 15000, 25000, 70000, 100000];
+
 export const DepositView: React.FC<DepositViewProps> = ({
   currentUser,
-  onRequestDeposit,
+  deposits,
   onBack,
   onShowToast
 }) => {
-  const { rechargeChannels, products } = useApp();
+  const { initiateDepositCheckout } = useApp();
 
-  // Detect user's country or fallback
-  const userCountry = ALLOWED_COUNTRIES.find(c => 
-    c.name.toLowerCase() === (currentUser.country || '').toLowerCase() || 
-    c.code.toLowerCase() === (currentUser.country || '').toLowerCase() ||
-    (currentUser.phone && currentUser.phone.startsWith(c.prefix)) ||
-    c.code === currentUser.withdrawalCountry
-  ) || ALLOWED_COUNTRIES[0];
+  // Active view: 'form' or 'history'
+  const [activeTab, setActiveTab] = useState<'form' | 'history'>('form');
 
-  const [selectedCountryCode, setSelectedCountryCode] = useState<string>(userCountry.code);
-  const currentCountry = ALLOWED_COUNTRIES.find(c => c.code === selectedCountryCode) || userCountry;
+  // Detect user's registered country
+  const detectedCountry = useMemo(() => {
+    return ALLOWED_COUNTRIES.find(c => 
+      c.name.toLowerCase() === (currentUser.country || '').toLowerCase() || 
+      c.code.toLowerCase() === (currentUser.country || '').toLowerCase() ||
+      (currentUser.phone && currentUser.phone.startsWith(c.prefix)) ||
+      c.code === currentUser.withdrawalCountry
+    ) || ALLOWED_COUNTRIES[0];
+  }, [currentUser]);
 
-  // Active channels filtered strictly by selected country
-  const activeChannels = React.useMemo(() => {
-    return rechargeChannels.filter(c => {
-      if (!c.isActive) return false;
-      const chCountry = c.countryCode || (
-        c.accountNumber?.startsWith('+237') ||
-        c.name?.toLowerCase().includes('cameroun') ||
-        c.name?.toLowerCase().includes('orange money') ||
-        c.name?.toLowerCase().includes('mtn')
-          ? 'CM'
-          : 'TG'
-      );
-      return chCountry === currentCountry.code;
-    });
-  }, [rechargeChannels, currentCountry.code]);
+  const [selectedCountryCode, setSelectedCountryCode] = useState<string>(detectedCountry.code);
+  const currentCountry: AllowedCountry = useMemo(() => {
+    return ALLOWED_COUNTRIES.find(c => c.code === selectedCountryCode) || detectedCountry;
+  }, [selectedCountryCode, detectedCountry]);
 
-  // Preset amounts in FCFA configured according to official VIP products
-  const presetAmounts = React.useMemo(() => {
-    const dynamicPrices = (products || [])
-      .filter(p => p.isActive !== false && p.price >= 1000)
-      .map(p => p.price);
-    const defaults = [2500, 6000, 15000, 32000, 70000, 250000, 500000, 1000000];
-    const combined = Array.from(new Set([...dynamicPrices, ...defaults])).sort((a, b) => a - b);
-    return combined.slice(0, 8);
-  }, [products]);
+  // Payment methods for selected country
+  const availableMethods = useMemo(() => {
+    return COUNTRY_PAYMENT_METHODS[currentCountry.code] || COUNTRY_PAYMENT_METHODS['CM'];
+  }, [currentCountry.code]);
 
-  // States
-  const [selectedChannelId, setSelectedChannelId] = useState<string>(
-    activeChannels.length > 0 ? activeChannels[0].id : ''
+  // Selected payment method
+  const [selectedMethodName, setSelectedMethodName] = useState<string>(
+    availableMethods[0]?.name || 'MTN Mobile Money'
   );
 
-  // Sync selectedChannelId when activeChannels list updates from central DB or country switch
+  // Update selected method whenever country changes
   useEffect(() => {
-    if (activeChannels.length > 0) {
-      if (!selectedChannelId || !activeChannels.some(c => c.id === selectedChannelId)) {
-        setSelectedChannelId(activeChannels[0].id);
-      }
-    } else {
-      setSelectedChannelId('');
+    if (availableMethods.length > 0) {
+      setSelectedMethodName(availableMethods[0].name);
     }
-  }, [activeChannels, selectedChannelId, currentCountry.code]);
+  }, [availableMethods]);
 
-  const selectedChannel = activeChannels.find(c => c.id === selectedChannelId) || activeChannels[0];
+  // Amount state (Default to 15 000 CFA or 8 000 CFA)
+  const [depAmount, setDepAmount] = useState<number>(15000);
+  const [customAmountStr, setCustomAmountStr] = useState<string>('15000');
 
-  const [phone, setPhone] = useState<string>(currentUser.phone || '');
-  const [depAmount, setDepAmount] = useState<number>(2500);
-  const [customAmountStr, setCustomAmountStr] = useState<string>('2500');
-  const [txRef, setTxRef] = useState<string>('');
-  const [copiedNumber, setCopiedNumber] = useState<boolean>(false);
-  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
-  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
-  const [latestTxId, setLatestTxId] = useState<string>('');
+  // Phone number state
+  const initialPhone = useMemo(() => {
+    if (!currentUser.phone) return '';
+    let p = currentUser.phone.trim();
+    if (p.startsWith(currentCountry.prefix)) {
+      p = p.substring(currentCountry.prefix.length).trim();
+    }
+    return p;
+  }, [currentUser.phone, currentCountry.prefix]);
+
+  const [phoneNumber, setPhoneNumber] = useState<string>(initialPhone);
+
+  // Submission & Redirection state
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [submittedDeposit, setSubmittedDeposit] = useState<DepositRequest | null>(null);
+  const [redirectPath, setRedirectPath] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
 
-  // Strict Validation Calculation
-  const missingFields = React.useMemo(() => {
-    const missing: string[] = [];
-    if (!selectedChannelId || !selectedChannel) {
-      missing.push("Canal de paiement");
-    }
-    if (!depAmount || depAmount < 1000) {
-      missing.push("Montant valide (min. 1 000 FCFA)");
-    }
-    const cleanPhone = phone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
-    if (!cleanPhone || cleanPhone.length < 6) {
-      missing.push("Numéro de téléphone émetteur");
-    }
-    if (!txRef.trim() || txRef.trim().length < 3) {
-      missing.push("ID / Référence de la transaction SMS");
-    }
-    return missing;
-  }, [selectedChannelId, selectedChannel, depAmount, phone, txRef]);
+  // User's own deposits
+  const userDeposits = useMemo(() => {
+    return (deposits || [])
+      .filter(d => d.userId === currentUser.id || (currentUser.phone && d.userPhone === currentUser.phone))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [deposits, currentUser.id, currentUser.phone]);
 
-  const isFormValid = missingFields.length === 0;
-
-  const handleSelectPreset = (amount: number) => {
+  const handleSelectQuickAmount = (amount: number) => {
     setDepAmount(amount);
     setCustomAmountStr(amount.toString());
   };
 
   const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/[^0-9]/g, '');
-    setCustomAmountStr(val);
-    setDepAmount(val ? parseInt(val, 10) : 0);
+    const rawVal = e.target.value.replace(/[^0-9]/g, '');
+    setCustomAmountStr(rawVal);
+    setDepAmount(rawVal ? parseInt(rawVal, 10) : 0);
   };
 
-  const handleCopyNumber = (num: string) => {
-    try {
-      navigator.clipboard.writeText(num);
-      setCopiedNumber(true);
-      onShowToast('success', `Numéro de recharge ${num} copié !`);
-      setTimeout(() => setCopiedNumber(false), 2000);
-    } catch (_) {
-      onShowToast('success', `Numéro : ${num}`);
+  // Validation
+  const validationError = useMemo(() => {
+    if (!depAmount || depAmount < 1000) {
+      return "Le montant minimum de recharge est de 1 000 CFA.";
     }
-  };
+    if (!selectedMethodName) {
+      return "Veuillez sélectionner un moyen de paiement.";
+    }
+    const cleanNum = phoneNumber.replace(/[^0-9]/g, '');
+    if (!cleanNum || cleanNum.length < 6) {
+      return "Veuillez saisir un numéro de téléphone valide.";
+    }
+    return null;
+  }, [depAmount, selectedMethodName, phoneNumber]);
 
-  const handleOpenConfirm = (e: React.FormEvent) => {
+  // Submit and open secure payment gateway
+  const handleConfirmDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFormValid) {
-      onShowToast('err', `Champs manquants obligatoires : ${missingFields.join(', ')}`);
+    if (validationError) {
+      onShowToast('err', validationError);
       return;
     }
-    setShowConfirmModal(true);
-  };
 
-  const handleExecuteDeposit = () => {
     if (isSubmitting) return;
-    if (!isFormValid) {
-      onShowToast('err', `Veuillez remplir tous les champs obligatoires : ${missingFields.join(', ')}`);
-      return;
-    }
     setIsSubmitting(true);
 
-    const generatedRef = txRef.trim();
-    setLatestTxId(generatedRef);
+    try {
+      const fullPhone = `${currentCountry.prefix} ${phoneNumber.trim()}`;
+      
+      const res = await initiateDepositCheckout({
+        amount: depAmount,
+        country: currentCountry.name,
+        countryCode: currentCountry.code,
+        method: selectedMethodName,
+        phoneNumber: fullPhone
+      });
 
-    const methodName = selectedChannel ? `${selectedChannel.name}` : 'Mobile Money Togo';
-    const res = onRequestDeposit(depAmount, methodName, generatedRef, null);
-
-    setTimeout(() => {
       setIsSubmitting(false);
-      setShowConfirmModal(false);
 
-      if (res.success) {
+      if (res.success && res.deposit) {
+        setSubmittedDeposit(res.deposit);
+        const redUrl = res.redirectUrl || `/api/pay-redirect/${res.deposit.id}`;
+        setRedirectPath(redUrl);
         setShowSuccessModal(true);
-        onShowToast('success', "Demande de recharge soumise avec succès !");
+        onShowToast('success', "Dépôt enregistré avec succès. Redirection vers la passerelle sécurisée...");
+
+        // Automatically open the payment page via server redirect
+        try {
+          const win = window.open(redUrl, '_blank');
+          if (!win || win.closed || typeof win.closed === 'undefined') {
+            // Popup was blocked by browser; user will click the explicit button on the success modal
+            console.log('[Popup Notice]: Browser blocked automated popup. Fallback button available.');
+          }
+        } catch (_) {
+          // Iframe or sandboxed environment fallback
+        }
       } else {
-        onShowToast('err', res.error || "Erreur lors de la soumission de la recharge.");
+        onShowToast('err', res.error || "Erreur lors de la création de la recharge.");
       }
-    }, 400);
+    } catch (err: any) {
+      setIsSubmitting(false);
+      onShowToast('err', err?.message || "Erreur réseau lors de l'enregistrement.");
+    }
+  };
+
+  const handleOpenGatewayManually = () => {
+    if (redirectPath) {
+      window.open(redirectPath, '_blank');
+    }
   };
 
   return (
-    <div className="bg-slate-50 min-h-screen pb-12 animate-fadeIn max-w-lg mx-auto font-sans">
-      {/* 1. EN-TÊTE COMPACT */}
-      <div className="bg-white border-b border-slate-200/80 sticky top-0 z-20 px-3.5 py-2.5 flex items-center justify-between shadow-2xs">
+    <div className="bg-slate-50 min-h-screen pb-16 font-sans max-w-lg mx-auto select-none">
+      
+      {/* 1. EN-TÊTE FIXE */}
+      <header className="bg-white border-b border-slate-200/80 sticky top-0 z-20 px-4 py-3 flex items-center justify-between shadow-2xs">
         <button
           onClick={onBack}
           type="button"
-          className="flex items-center space-x-1 text-slate-800 hover:text-amber-600 font-bold text-xs sm:text-sm cursor-pointer"
+          id="btn-back-deposit"
+          className="flex items-center space-x-1.5 text-slate-800 hover:text-slate-950 font-bold text-xs sm:text-sm cursor-pointer transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Retour</span>
         </button>
 
-        <h1 className="text-sm sm:text-base font-black text-slate-900 tracking-tight text-center flex items-center gap-1.5">
-          <span>Recharger mon compte</span>
-          <span className="text-base">{currentCountry.flag}</span>
+        <h1 className="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-1.5">
+          <span>Recharge Sécurisée</span>
+          <span className="text-sm">{currentCountry.flag}</span>
         </h1>
 
-        <div className="w-12" />
-      </div>
+        <button
+          type="button"
+          onClick={() => setActiveTab(activeTab === 'form' ? 'history' : 'form')}
+          className="flex items-center space-x-1 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-full cursor-pointer transition-all"
+        >
+          <Clock className="w-3.5 h-3.5" />
+          <span>{activeTab === 'form' ? 'Historique' : 'Formulaire'}</span>
+        </button>
+      </header>
 
       <div className="p-3.5 space-y-3.5">
-        
-        {/* BANDEAU PAYS : TOGO 🇹🇬 / CAMEROUN 🇨🇲 */}
-        <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-900 rounded-2xl p-3.5 text-white border border-emerald-800/40 shadow-xs space-y-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2.5">
-              <span className="text-2xl">{currentCountry.flag}</span>
-              <div>
-                <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold">Zone de paiement</p>
-                <h2 className="text-xs sm:text-sm font-black text-white">{currentCountry.name} ({currentCountry.networks.join(' & ')})</h2>
+
+        {/* 2. SOLDE ACTUEL AFFICHÉ EN HAUT */}
+        <section className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 rounded-2xl p-4 text-white shadow-md border border-slate-800 relative overflow-hidden">
+          <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+          
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-2">
+              <div className="w-7 h-7 rounded-xl bg-amber-400/20 text-amber-400 flex items-center justify-center">
+                <Wallet className="w-4 h-4" />
               </div>
+              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-300 font-mono">
+                Solde actuel
+              </span>
             </div>
-            <span className="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-              {currentCountry.prefix}
+            <div className="flex items-center space-x-1 text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Actif</span>
+            </div>
+          </div>
+
+          <div className="flex items-baseline space-x-2 mt-1">
+            <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-white">
+              {(currentUser.balance || 0).toLocaleString('fr-FR')}
             </span>
+            <span className="text-sm font-bold text-amber-400 font-mono">CFA</span>
           </div>
 
-          {/* Quick country switcher */}
-          <div className="flex items-center space-x-2 pt-1 border-t border-slate-800/80">
-            <span className="text-[10px] font-bold text-slate-400">Changer de pays :</span>
-            <div className="flex items-center space-x-1.5">
-              {ALLOWED_COUNTRIES.map((c) => (
-                <button
-                  key={c.code}
-                  type="button"
-                  onClick={() => setSelectedCountryCode(c.code)}
-                  className={`px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all flex items-center space-x-1 cursor-pointer border ${
-                    currentCountry.code === c.code
-                      ? 'bg-emerald-500/30 text-emerald-300 border-emerald-400 font-black shadow-xs'
-                      : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:text-white'
-                  }`}
-                >
-                  <span>{c.flag}</span>
-                  <span>{c.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* ÉTAPE 1: CHOISIR LE CANAL DE RECHARGE CONFIGURE PAR L'ADMIN */}
-        <div className="bg-white rounded-2xl p-3.5 space-y-3 border border-slate-200/70 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-slate-900 font-extrabold text-xs uppercase tracking-wider font-mono">
-              <CreditCard className="w-4 h-4 text-amber-500 shrink-0" />
-              <span>1. Sélectionner un canal de recharge</span>
-            </div>
-            <span className="text-[10px] font-mono bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full">
-              {activeChannels.length} disponible{activeChannels.length > 1 ? 's' : ''}
+          <div className="mt-3 pt-2.5 border-t border-slate-700/60 flex items-center justify-between text-[11px] text-slate-400">
+            <span className="flex items-center space-x-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+              <span>Paiement crypté & instantané</span>
             </span>
+            <span className="font-mono text-slate-300 font-bold">{currentCountry.name}</span>
           </div>
+        </section>
 
-          {activeChannels.length === 0 ? (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 flex items-start space-x-2">
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold">Aucun canal de recharge configuré</p>
-                <p className="text-[11px] text-amber-800">Veuillez contacter le support client pour effectuer votre recharge.</p>
+        {activeTab === 'history' ? (
+          /* SECTION HISTORIQUE DES DÉPÔTS */
+          <section className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3 animate-fadeIn">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 font-mono flex items-center space-x-1.5">
+                <Clock className="w-4 h-4 text-amber-500" />
+                <span>Mes Recharges Récentes</span>
+              </h2>
+              <span className="text-[11px] font-bold text-slate-500 font-mono">
+                {userDeposits.length} demande{userDeposits.length > 1 ? 's' : ''}
+              </span>
+            </div>
+
+            {userDeposits.length === 0 ? (
+              <div className="text-center py-8 text-slate-400 space-y-1">
+                <Wallet className="w-8 h-8 mx-auto text-slate-300 stroke-1" />
+                <p className="text-xs font-bold text-slate-600">Aucun dépôt enregistré</p>
+                <p className="text-[11px]">Effectuez votre première recharge pour approvisionner votre compte.</p>
               </div>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {activeChannels.map((channel) => {
-                const isSelected = selectedChannel?.id === channel.id;
-                return (
-                  <div
-                    key={channel.id}
-                    onClick={() => setSelectedChannelId(channel.id)}
-                    className={`rounded-2xl p-3 border transition-all cursor-pointer space-y-2 ${
-                      isSelected
-                        ? 'bg-amber-50/80 border-amber-500 ring-2 ring-amber-400/40 shadow-xs'
-                        : 'bg-slate-50/70 border-slate-200/80 hover:bg-slate-100/80'
-                    }`}
+            ) : (
+              <div className="space-y-2.5">
+                {userDeposits.map((dep) => (
+                  <div 
+                    key={dep.id} 
+                    className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between text-xs hover:border-slate-300 transition-colors"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${
+                    <div className="space-y-0.5">
+                      <div className="font-black text-slate-900 font-mono text-sm">
+                        {(Number(dep.amount) || 0).toLocaleString('fr-FR')} CFA
+                      </div>
+                      <div className="text-[10px] text-slate-500 flex items-center space-x-1.5">
+                        <span>{dep.method}</span>
+                        <span>•</span>
+                        <span>{new Date(dep.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <div className="text-[10px] font-mono text-slate-400">
+                        Réf: {dep.transactionId}
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      {dep.status === 'approved' ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                          Validé
+                        </span>
+                      ) : dep.status === 'rejected' ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-red-100 text-red-800 border border-red-300">
+                          Rejeté
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
+                          En attente
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        ) : (
+          /* FORMULAIRE DE RECHARGE MODERNE */
+          <form onSubmit={handleConfirmDeposit} className="space-y-3.5">
+            
+            {/* 3. SÉLECTION DU PAYS (5 PAYS COMPATIBLES) */}
+            <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-2xs space-y-2.5">
+              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 font-mono block">
+                1. Sélectionner votre pays
+              </label>
+
+              <div className="grid grid-cols-5 gap-1.5">
+                {ALLOWED_COUNTRIES.map((c) => {
+                  const isSelected = c.code === currentCountry.code;
+                  return (
+                    <button
+                      key={c.code}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCountryCode(c.code);
+                        // Update default phone prefix if empty
+                        if (!phoneNumber || phoneNumber.length < 3) {
+                          setPhoneNumber('');
+                        }
+                      }}
+                      className={`p-2 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-0.5 ${
+                        isSelected
+                          ? 'bg-amber-50 border-amber-500 ring-2 ring-amber-400/40 shadow-xs'
+                          : 'bg-slate-50/80 border-slate-200/80 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="text-xl leading-none">{c.flag}</span>
+                      <span className={`text-[10px] font-black truncate w-full ${isSelected ? 'text-amber-900' : 'text-slate-600'}`}>
+                        {c.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 4. MONTANT À DÉPOSER (CFA) & BOUTONS DE MONTANTS RAPIDES */}
+            <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 font-mono block">
+                  2. Montant à déposer (CFA)
+                </label>
+                <span className="text-[10px] font-bold text-slate-400">Min. 1 000 CFA</span>
+              </div>
+
+              {/* Champ principal de saisie du montant */}
+              <div className="relative flex items-center bg-slate-50 border-2 border-slate-200 rounded-xl px-3.5 py-2.5 focus-within:border-amber-500 focus-within:bg-white transition-all">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={customAmountStr}
+                  onChange={handleCustomAmountChange}
+                  placeholder="ex: 15000"
+                  id="input-deposit-amount"
+                  className="w-full bg-transparent outline-none font-black text-slate-900 text-lg sm:text-xl font-mono"
+                  required
+                />
+                <span className="text-xs sm:text-sm font-black text-amber-600 font-mono ml-2 shrink-0">
+                  CFA
+                </span>
+              </div>
+
+              {/* Boutons de montants rapides (exacts demandés : 3000, 8000, 15000, 25000, 70000, 100000) */}
+              <div>
+                <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider block mb-1.5">
+                  Montants rapides :
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  {QUICK_AMOUNTS.map((amt) => {
+                    const isSelected = depAmount === amt;
+                    return (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => handleSelectQuickAmount(amt)}
+                        className={`py-2.5 px-2 rounded-xl text-center font-black text-xs font-mono transition-all cursor-pointer border ${
+                          isSelected
+                            ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-xs ring-2 ring-amber-400/50 scale-[1.02]'
+                            : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border-slate-200/90 active:scale-95'
+                        }`}
+                      >
+                        {amt.toLocaleString('fr-FR')} CFA
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* 5. SÉLECTION DU MOYEN DE PAIEMENT */}
+            <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-2xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 font-mono block">
+                  3. Moyen de paiement ({currentCountry.name})
+                </label>
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  Instant
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {availableMethods.map((method) => {
+                  const isSelected = selectedMethodName === method.name;
+                  return (
+                    <div
+                      key={method.id}
+                      onClick={() => setSelectedMethodName(method.name)}
+                      className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                        isSelected
+                          ? 'bg-amber-50/70 border-amber-500 ring-2 ring-amber-400/40 shadow-xs'
+                          : 'bg-slate-50/80 border-slate-200/80 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2.5">
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
                           isSelected ? 'border-amber-600 bg-amber-500' : 'border-slate-400 bg-white'
                         }`}>
                           {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </div>
-                        <span className="font-black text-xs sm:text-sm text-slate-900">{channel.name}</span>
+                        <div className="min-w-0">
+                          <span className="font-bold text-xs text-slate-900 block truncate">
+                            {method.name}
+                          </span>
+                          <span className="text-[9px] text-slate-400 block font-mono">
+                            {currentCountry.name}
+                          </span>
+                        </div>
                       </div>
 
-                      {channel.accountHolder && (
-                        <span className="text-[10px] font-semibold text-slate-500 bg-white px-2 py-0.5 rounded-lg border border-slate-200">
-                          {channel.accountHolder}
-                        </span>
-                      )}
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border shrink-0 ${method.color}`}>
+                        {method.badge}
+                      </span>
                     </div>
-
-                    {/* Encadré Numéro Officiel de Recharge */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-2.5 flex items-center justify-between shadow-2xs">
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Numéro de dépôt officiel</p>
-                        <p className="text-xs sm:text-sm font-mono font-black text-amber-600 tracking-wide">
-                          {channel.accountNumber}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCopyNumber(channel.accountNumber);
-                        }}
-                        className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold rounded-lg flex items-center space-x-1 transition-all cursor-pointer active:scale-95"
-                      >
-                        {copiedNumber && selectedChannel?.id === channel.id ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-400" />
-                            <span className="text-emerald-300">Copié</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3 text-amber-300" />
-                            <span>Copier</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    {/* Instructions if provided */}
-                    {channel.instructions && isSelected && (
-                      <div className="text-[11px] text-slate-600 bg-white/80 rounded-lg p-2 border border-slate-200/60 leading-relaxed">
-                        <strong className="text-slate-800 font-bold">Consigne : </strong>
-                        {channel.instructions}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* ÉTAPE 2: SELECTION DU MONTANT */}
-        <div className="bg-white rounded-2xl p-3.5 space-y-2.5 border border-slate-200/70 shadow-2xs">
-          <div className="flex items-center space-x-2 text-slate-900 font-extrabold text-xs uppercase tracking-wider font-mono">
-            <Info className="w-4 h-4 text-amber-500 shrink-0" />
-            <span>2. Montant de la recharge</span>
-          </div>
-
-          {/* Grille des montants prédéfinis */}
-          <div className="grid grid-cols-4 gap-1.5">
-            {presetAmounts.map(amt => {
-              const isSelected = depAmount === amt;
-              return (
-                <button
-                  key={amt}
-                  type="button"
-                  onClick={() => handleSelectPreset(amt)}
-                  className={`py-2 px-1 rounded-xl text-center font-black text-xs font-mono transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-amber-400 text-slate-950 shadow-xs ring-2 ring-amber-400/50'
-                      : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border border-slate-200/60'
-                  }`}
-                >
-                  {amt.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Champ de saisie personnalisé */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 flex items-center space-x-2 focus-within:border-amber-500 transition-colors">
-            <span className="text-xs font-black text-slate-900 font-mono tracking-wider shrink-0">
-              FCFA
-            </span>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={customAmountStr}
-              onChange={handleCustomAmountChange}
-              className="w-full bg-transparent outline-none font-black text-amber-600 text-sm sm:text-base font-mono"
-              placeholder="Saisir un autre montant..."
-            />
-          </div>
-        </div>
-
-        {/* ÉTAPE 3: VOS COORDONNÉES ET RÉFÉRENCE DE TRANSFERT */}
-        <div className="bg-white rounded-2xl p-3.5 space-y-3 border border-slate-200/70 shadow-2xs">
-          <div className="flex items-center space-x-2 text-slate-900 font-extrabold text-xs uppercase tracking-wider font-mono">
-            <Phone className="w-4 h-4 text-amber-500 shrink-0" />
-            <span>3. Coordonnées & Référence SMS</span>
-          </div>
-
-          <div className="space-y-2.5 text-xs">
-            {/* Numéro de téléphone de l'utilisateur */}
-            <div>
-              <label className="text-[10px] font-bold text-slate-700 block mb-1 uppercase tracking-wider flex items-center justify-between">
-                <span>Votre numéro de téléphone (Émetteur)</span>
-                <span className="text-red-500 font-bold text-[9px]">* Obligatoire</span>
+            {/* 6. CHAMP VOTRE NUMÉRO DE TÉLÉPHONE */}
+            <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-2xs space-y-2">
+              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 font-mono block">
+                4. Votre numéro de téléphone
               </label>
-              <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus-within:border-amber-500 transition-colors">
-                <span className="text-xs font-bold font-mono text-amber-600 mr-2 shrink-0">{currentCountry.prefix}</span>
+
+              <div className="flex items-center bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-amber-500 focus-within:bg-white transition-all">
+                <div className="flex items-center space-x-1.5 mr-2.5 pr-2.5 border-r border-slate-300 shrink-0">
+                  <span className="text-base leading-none">{currentCountry.flag}</span>
+                  <span className="text-xs font-black font-mono text-slate-800">{currentCountry.prefix}</span>
+                </div>
                 <input
                   type="tel"
                   inputMode="numeric"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Ex: 90 12 34 56"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="ex: 90 12 34 56"
+                  id="input-deposit-phone"
                   className="w-full bg-transparent outline-none font-bold text-slate-900 text-xs sm:text-sm font-mono"
                   required
                 />
               </div>
+
+              <p className="text-[10px] text-slate-500 leading-normal">
+                Indiquez le numéro Mobile Money avec lequel vous effectuerez le paiement sécurisé.
+              </p>
             </div>
 
-            {/* Référence ou ID de transaction SMS */}
-            <div>
-              <label className="text-[10px] font-bold text-slate-700 block mb-1 uppercase tracking-wider flex items-center justify-between">
-                <span>ID / Référence de la transaction SMS</span>
-                <span className="text-red-500 font-bold text-[9px]">* Obligatoire</span>
-              </label>
-              <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus-within:border-amber-500 transition-colors">
-                <FileText className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                <input
-                  type="text"
-                  value={txRef}
-                  onChange={(e) => setTxRef(e.target.value)}
-                  placeholder={currentCountry.code === 'CM' ? "Ex: MP240101.1234.A12345 ou réf SMS Orange/MTN" : "Ex: TX-987654321 ou réf SMS TMoney / Moov"}
-                  className="w-full bg-transparent outline-none font-semibold text-slate-900 text-xs font-mono"
-                  required
-                />
+            {/* MESSAGE D'ERREUR ÉVENTUEL */}
+            {validationError && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-xs text-amber-900 flex items-center space-x-2 animate-fadeIn">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="text-[11px] font-semibold">{validationError}</span>
               </div>
-              <span className="text-slate-400 text-[9px] block mt-0.5">Saisissez l'ID ou code reçu par SMS après votre transfert Mobile Money {currentCountry.name}.</span>
+            )}
+
+            {/* 7. BOUTON CONFIRMER LE DÉPÔT */}
+            <button
+              type="submit"
+              disabled={Boolean(validationError) || isSubmitting}
+              id="btn-confirm-deposit"
+              className={`w-full py-4 px-5 font-black text-sm uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer ${
+                validationError || isSubmitting
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+                  : 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-amber-500/25 active:scale-[0.99]'
+              }`}
+            >
+              {isSubmitting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Enregistrement du dépôt...</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4" />
+                  <span>Confirmer le dépôt ({depAmount > 0 ? `${depAmount.toLocaleString('fr-FR')} CFA` : ''})</span>
+                </>
+              )}
+            </button>
+
+            {/* NOTE DE SÉCURITÉ */}
+            <div className="bg-slate-100/80 rounded-xl p-3 text-[11px] text-slate-500 text-center flex items-center justify-center space-x-1.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Votre dépôt sera enregistré au statut <strong>« En attente »</strong> et synchronisé avec le serveur central.</span>
             </div>
-          </div>
-        </div>
-
-        {/* CADRE SOUMETTRE LA RECHARGE */}
-        <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs space-y-2.5">
-          {!isFormValid && (
-            <div className="bg-amber-50 border border-amber-300 rounded-xl p-2.5 text-xs text-amber-900 flex items-start space-x-2">
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold text-[11px]">Champs obligatoires à compléter :</p>
-                <p className="text-[10px] text-amber-800">{missingFields.join(' • ')}</p>
-              </div>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={handleOpenConfirm}
-            disabled={!isFormValid}
-            className={`w-full py-3.5 px-4 font-black text-sm uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 text-center ${
-              isFormValid
-                ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-400 text-slate-950 cursor-pointer shadow-amber-500/20 active:scale-[0.99]'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
-            }`}
-            id="btn-soumettre-recharge"
-          >
-            <Lock className="w-4 h-4 shrink-0" />
-            <span>
-              {isFormValid 
-                ? `Valider la recharge (${depAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA)`
-                : `Complétez le formulaire (${missingFields.length} champ${missingFields.length > 1 ? 's' : ''} restant${missingFields.length > 1 ? 's' : ''})`
-              }
-            </span>
-          </button>
-        </div>
-
-        {/* GUIDE RAPIDE */}
-        <div className="px-1 space-y-1.5 text-slate-600 text-xs">
-          <p className="font-extrabold text-slate-800 text-[11px] uppercase font-mono flex items-center space-x-1">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>Comment recharger mon compte ?</span>
-          </p>
-          <ul className="space-y-1.5 text-[11px] text-slate-500 leading-snug bg-white rounded-xl p-3 border border-slate-200/60">
-            <li className="flex items-start space-x-1.5">
-              <span className="w-4 h-4 rounded-full bg-amber-100 text-amber-800 font-black flex items-center justify-center text-[10px] shrink-0">1</span>
-              <span>Copiez le numéro officiel de recharge affiché ci-dessus ({selectedChannel?.name || `Mobile Money ${currentCountry.name}`}).</span>
-            </li>
-            <li className="flex items-start space-x-1.5">
-              <span className="w-4 h-4 rounded-full bg-amber-100 text-amber-800 font-black flex items-center justify-center text-[10px] shrink-0">2</span>
-              <span>Effectuez le transfert depuis votre compte Mobile Money ({currentCountry.networks.join(' ou ')}) vers ce numéro.</span>
-            </li>
-            <li className="flex items-start space-x-1.5">
-              <span className="w-4 h-4 rounded-full bg-amber-100 text-amber-800 font-black flex items-center justify-center text-[10px] shrink-0">3</span>
-              <span>Collez la référence SMS puis cliquez sur <strong>"Valider la recharge"</strong>. Votre solde sera crédité dès validation.</span>
-            </li>
-          </ul>
-        </div>
+          </form>
+        )}
       </div>
 
-      {/* MODAL DE CONFIRMATION DE RECHARGE */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-xs sm:max-w-sm w-full p-5 space-y-4 shadow-2xl border border-slate-100">
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
-              <div className="flex items-center space-x-2 text-amber-600">
-                <ShieldCheck className="w-5 h-5" />
-                <h3 className="font-black text-sm text-slate-900">Confirmation de Recharge</h3>
-              </div>
-            </div>
-
-            <div className="space-y-2 text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
-              <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
-                <span className="text-slate-500 font-medium">Canal de transfert :</span>
-                <span className="font-bold text-slate-900 text-xs">{selectedChannel?.name}</span>
-              </div>
-
-              <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
-                <span className="text-slate-500 font-medium">Numéro destinataire :</span>
-                <span className="font-bold font-mono text-amber-700 text-xs">{selectedChannel?.accountNumber}</span>
-              </div>
-
-              <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
-                <span className="text-slate-500 font-medium">Votre numéro :</span>
-                <span className="font-bold font-mono text-slate-900 text-xs">{currentCountry.prefix} {phone}</span>
-              </div>
-
-              <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
-                <span className="text-slate-500 font-medium">Montant :</span>
-                <span className="font-black font-mono text-slate-900 text-xs">{depAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA</span>
-              </div>
-
-              {txRef.trim() && (
-                <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
-                  <span className="text-slate-500 font-medium">Réf. SMS :</span>
-                  <span className="font-mono text-slate-700 text-xs">{txRef.trim()}</span>
-                </div>
-              )}
-            </div>
-
-            <p className="text-[11px] text-slate-500 font-medium text-center">
-              Confirmez-vous avoir effectué ou vouloir initier le transfert de <strong className="text-slate-800 font-mono">{depAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA</strong> ?
-            </p>
-
-            <div className="grid grid-cols-2 gap-2.5 pt-1">
-              <button
-                type="button"
-                onClick={() => setShowConfirmModal(false)}
-                disabled={isSubmitting}
-                className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={handleExecuteDeposit}
-                disabled={isSubmitting}
-                className="py-2.5 px-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black rounded-xl text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center space-x-1"
-              >
-                {isSubmitting ? (
-                  <span>Envoi...</span>
-                ) : (
-                  <span>Confirmer</span>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DE SUCCÈS APRÈS SOUMISSION */}
-      {showSuccessModal && (
+      {/* MODAL DE CONFIRMATION / REDIRECTION SÉCURISÉE */}
+      {showSuccessModal && submittedDeposit && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl max-w-xs sm:max-w-sm w-full p-5 space-y-4 shadow-2xl border border-slate-100 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
-              <CheckCircle2 className="w-7 h-7" />
+            
+            <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center shadow-xs">
+              <CheckCircle2 className="w-8 h-8" />
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-base font-black text-slate-900">Demande de recharge envoyée</h3>
-              <p className="text-xs text-slate-500">
-                Référence : <strong className="font-mono text-slate-800">{latestTxId}</strong>
-              </p>
-            </div>
-
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 space-y-1.5 text-left text-xs">
-              <div className="flex items-center justify-between font-bold text-emerald-900 text-[11px]">
-                <span>Montant à valider :</span>
-                <span className="font-mono">{depAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA</span>
+              <h3 className="text-base font-black text-slate-900 tracking-tight">
+                Dépôt enregistré avec succès
+              </h3>
+              <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
+                Statut : En attente
               </div>
-              <p className="text-[11px] text-emerald-800 leading-relaxed">
-                Votre demande de recharge a été enregistrée avec succès. Notre équipe validera votre transfert sous quelques minutes.
-              </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setShowSuccessModal(false);
-                onBack();
-              }}
-              className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
-            >
-              Retour à l'accueil
-            </button>
+            {/* Récapitulatif du dépôt */}
+            <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 space-y-2 text-left text-xs">
+              <div className="flex justify-between items-center py-0.5 border-b border-slate-200/60">
+                <span className="text-slate-500 font-medium">Montant :</span>
+                <span className="font-black font-mono text-slate-900 text-sm">
+                  {(Number(submittedDeposit.amount) || 0).toLocaleString('fr-FR')} CFA
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center py-0.5 border-b border-slate-200/60">
+                <span className="text-slate-500 font-medium">Moyen :</span>
+                <span className="font-bold text-slate-800">{submittedDeposit.method}</span>
+              </div>
+
+              <div className="flex justify-between items-center py-0.5 border-b border-slate-200/60">
+                <span className="text-slate-500 font-medium">Téléphone :</span>
+                <span className="font-mono text-slate-800 font-bold">{submittedDeposit.userPhone}</span>
+              </div>
+
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-500 font-medium">Réf. transaction :</span>
+                <span className="font-mono font-bold text-amber-700">{submittedDeposit.transactionId}</span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              La page de paiement sécurisée s'est ouverte automatiquement. Si la redirection a été bloquée par votre navigateur, cliquez sur le bouton ci-dessous pour finaliser votre règlement :
+            </p>
+
+            <div className="space-y-2 pt-1">
+              {/* Bouton sécurisé vers le portail (utilise le point de terminaison du backend) */}
+              <button
+                type="button"
+                onClick={handleOpenGatewayManually}
+                className="w-full py-3 px-4 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black rounded-xl text-xs shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-95"
+              >
+                <span>Accéder à la page de paiement sécurisée</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  setActiveTab('history');
+                }}
+                className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                Voir mes dépôts
+              </button>
+            </div>
           </div>
         </div>
       )}

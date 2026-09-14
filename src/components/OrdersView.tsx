@@ -18,6 +18,7 @@ interface OrdersViewProps {
   userInvestments: UserInvestment[];
   onClaimDailyEarning: (investmentId: string) => { success: boolean; error?: string };
   onShowToast: (type: 'success' | 'err' | 'info', message: string) => void;
+  onGoToProducts?: () => void;
 }
 
 const formatAmount = (num: number | undefined | null): string => {
@@ -30,6 +31,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   userInvestments,
   onClaimDailyEarning,
   onShowToast,
+  onGoToProducts,
 }) => {
   const [now, setNow] = useState<number>(Date.now());
 
@@ -105,8 +107,20 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
           <Package className="w-12 h-12 text-slate-300 mx-auto stroke-[1.5]" />
           <h3 className="text-base font-bold text-slate-800">Aucune commande souscrite pour l'instant</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Rendez-vous sur la page d'accueil pour choisir un produit et commencer à percevoir vos revenus quotidiens.
+            Rendez-vous sur l'onglet <strong className="text-amber-800 font-semibold">Produit</strong> pour choisir une formule d'investissement et commencer à percevoir vos revenus quotidiens.
           </p>
+          {onGoToProducts && (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={onGoToProducts}
+                className="inline-flex items-center space-x-2 bg-emerald-700 hover:bg-emerald-600 active:scale-95 text-white font-black text-xs px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-xs uppercase tracking-wider"
+              >
+                <Package className="w-4 h-4" />
+                <span>Voir les Produits</span>
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-4">

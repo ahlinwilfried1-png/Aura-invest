@@ -1,9 +1,15 @@
 /**
  * Phone Number Normalization & Country Utilities
- * Handles Togo (+228) and Cameroun (+237) phone formats flawlessly
+ * Handles all 5 allowed countries:
+ * - Cameroun (+237)
+ * - Togo (+228)
+ * - Bénin (+229)
+ * - Burkina Faso (+226)
+ * - Côte d’Ivoire (+225)
  */
+import { ALLOWED_COUNTRIES, DEFAULT_COUNTRY, AllowedCountry, getCountryByCode, getCountryByNameOrCode } from '../constants/countries';
 
-export function normalizePhoneNumber(input: string | undefined | null, defaultPrefix: string = '+228'): string {
+export function normalizePhoneNumber(input: string | undefined | null, defaultPrefix: string = '+237'): string {
   if (!input) return '';
   
   // Strip all non-digit and non-plus characters (remove spaces, parentheses, hyphens, dots)
@@ -20,15 +26,13 @@ export function normalizePhoneNumber(input: string | undefined | null, defaultPr
     const digits = cleaned.substring(2).replace(/\D/g, '');
     return '+' + digits;
   }
-  
-  // If starts with 237 (Cameroun international code without +)
-  if (cleaned.startsWith('237') && cleaned.length >= 11) {
-    return '+' + cleaned;
-  }
-  
-  // If starts with 228 (Togo international code without +)
-  if (cleaned.startsWith('228') && cleaned.length >= 10) {
-    return '+' + cleaned;
+
+  // Check known country prefixes without +
+  for (const c of ALLOWED_COUNTRIES) {
+    const rawPrefix = c.prefix.replace('+', '');
+    if (cleaned.startsWith(rawPrefix) && cleaned.length >= rawPrefix.length + 8) {
+      return '+' + cleaned;
+    }
   }
   
   // If starts with leading 0 (local mobile prefix e.g. 06..., 09...)
@@ -36,19 +40,38 @@ export function normalizePhoneNumber(input: string | undefined | null, defaultPr
     cleaned = cleaned.substring(1);
   }
 
-  // If defaultPrefix explicitly indicates Cameroon
-  if (defaultPrefix.includes('237') || defaultPrefix.toLowerCase().includes('cam')) {
-    return `+237${cleaned}`;
+  // If defaultPrefix matches any allowed country
+  const matchedCountry = ALLOWED_COUNTRIES.find(c => 
+    defaultPrefix === c.prefix || 
+    defaultPrefix.replace('+', '') === c.prefix.replace('+', '') ||
+    defaultPrefix.toLowerCase().includes(c.name.toLowerCase()) ||
+    defaultPrefix.toUpperCase() === c.code
+  );
+
+  if (matchedCountry) {
+    return `${matchedCountry.prefix}${cleaned}`;
   }
 
-  // Automatic country detection for raw local phone numbers
-  // Cameroon numbers are 9 digits and start with 6 or 2 or 3 (e.g. 6xxxxxxxx, 2xxxxxxxx)
+  // Automatic country heuristics for raw national digits if no prefix
+  // Côte d'Ivoire: 10 digits or starts with 01, 05, 07
+  if (cleaned.length === 10 && (cleaned.startsWith('07') || cleaned.startsWith('05') || cleaned.startsWith('01'))) {
+    return `+225${cleaned}`;
+  }
+  // Cameroon: 9 digits starting with 6, 2, 3
   if (cleaned.length === 9 && (cleaned.startsWith('6') || cleaned.startsWith('2') || cleaned.startsWith('3'))) {
     return `+237${cleaned}`;
   }
-  // Togo numbers are 8 digits and start with 9, 7 or 2 (e.g. 9xxxxxxx, 7xxxxxxx)
+  // Togo: 8 digits starting with 9, 7, 2
   if (cleaned.length === 8 && (cleaned.startsWith('9') || cleaned.startsWith('7') || cleaned.startsWith('2'))) {
     return `+228${cleaned}`;
+  }
+  // Burkina Faso: 8 digits starting with 7, 6, 5
+  if (cleaned.length === 8 && (cleaned.startsWith('7') || cleaned.startsWith('6') || cleaned.startsWith('5'))) {
+    return `+226${cleaned}`;
+  }
+  // Benin: 8 digits
+  if (cleaned.length === 8) {
+    return `+229${cleaned}`;
   }
   
   const prefix = defaultPrefix.startsWith('+') ? defaultPrefix : `+${defaultPrefix}`;
@@ -56,6 +79,7 @@ export function normalizePhoneNumber(input: string | undefined | null, defaultPr
 }
 
 export function extractPhoneDetails(input: string | undefined | null, countryHint?: string): {
+  countryCode: string;
   isCameroon: boolean;
   cleanPhone: string;
   nationalDigits: string;
@@ -64,6 +88,7 @@ export function extractPhoneDetails(input: string | undefined | null, countryHin
 } {
   if (!input) {
     return {
+      countryCode: 'CM',
       isCameroon: false,
       cleanPhone: '',
       nationalDigits: '',
@@ -74,37 +99,31 @@ export function extractPhoneDetails(input: string | undefined | null, countryHin
 
   const raw = String(input).trim();
   const allDigits = raw.replace(/\D/g, '');
-  
-  const isCameroon = Boolean(
-    (countryHint && (countryHint.toLowerCase().includes('cam') || countryHint.toUpperCase() === 'CM' || countryHint.includes('237'))) ||
-    raw.startsWith('+237') ||
-    allDigits.startsWith('237') ||
-    (allDigits.length === 9 && (allDigits.startsWith('6') || allDigits.startsWith('2') || allDigits.startsWith('3')))
-  );
+
+  let detectedCountry: AllowedCountry = DEFAULT_COUNTRY;
+
+  if (countryHint) {
+    detectedCountry = getCountryByNameOrCode(countryHint);
+  } else {
+    // Detect by prefix
+    for (const c of ALLOWED_COUNTRIES) {
+      const pDigits = c.prefix.replace('+', '');
+      if (raw.startsWith(c.prefix) || allDigits.startsWith(pDigits)) {
+        detectedCountry = c;
+        break;
+      }
+    }
+  }
 
   let nationalDigits = '';
-  let cleanPhone = '';
-
-  if (isCameroon) {
-    if (allDigits.startsWith('237') && allDigits.length >= 11) {
-      nationalDigits = allDigits.substring(3);
-    } else if (allDigits.length >= 9) {
-      nationalDigits = allDigits.slice(-9);
-    } else {
-      nationalDigits = allDigits;
-    }
-    cleanPhone = `+237${nationalDigits}`;
+  const prefixDigits = detectedCountry.prefix.replace('+', '');
+  if (allDigits.startsWith(prefixDigits) && allDigits.length > prefixDigits.length) {
+    nationalDigits = allDigits.substring(prefixDigits.length);
   } else {
-    // Togo
-    if (allDigits.startsWith('228') && allDigits.length >= 10) {
-      nationalDigits = allDigits.substring(3);
-    } else if (allDigits.length >= 8) {
-      nationalDigits = allDigits.slice(-8);
-    } else {
-      nationalDigits = allDigits;
-    }
-    cleanPhone = `+228${nationalDigits}`;
+    nationalDigits = allDigits;
   }
+
+  const cleanPhone = `${detectedCountry.prefix}${nationalDigits}`;
 
   // Generate lookup candidates for fast database indexing
   const candidatesSet = new Set<string>();
@@ -113,19 +132,13 @@ export function extractPhoneDetails(input: string | undefined | null, countryHin
   if (nationalDigits) {
     candidatesSet.add(nationalDigits);
     candidatesSet.add(`0${nationalDigits}`);
-    if (isCameroon) {
-      candidatesSet.add(`+237 ${nationalDigits}`);
-      candidatesSet.add(`+237 ${nationalDigits.slice(0, 1)} ${nationalDigits.slice(1, 3)} ${nationalDigits.slice(3, 5)} ${nationalDigits.slice(5, 7)} ${nationalDigits.slice(7)}`);
-      candidatesSet.add(`237${nationalDigits}`);
-    } else {
-      candidatesSet.add(`+228 ${nationalDigits}`);
-      candidatesSet.add(`+228 ${nationalDigits.slice(0, 2)} ${nationalDigits.slice(2, 4)} ${nationalDigits.slice(4, 6)} ${nationalDigits.slice(6)}`);
-      candidatesSet.add(`228${nationalDigits}`);
-    }
+    candidatesSet.add(`${detectedCountry.prefix} ${nationalDigits}`);
+    candidatesSet.add(`${prefixDigits}${nationalDigits}`);
   }
 
   return {
-    isCameroon,
+    countryCode: detectedCountry.code,
+    isCameroon: detectedCountry.code === 'CM',
     cleanPhone,
     nationalDigits,
     allDigits,
@@ -133,25 +146,22 @@ export function extractPhoneDetails(input: string | undefined | null, countryHin
   };
 }
 
-export function detectCountryFromPhone(phone: string | undefined | null): 'Cameroun' | 'Togo' {
-  if (!phone) return 'Togo';
+export function detectCountryFromPhone(phone: string | undefined | null): string {
+  if (!phone) return 'Cameroun';
   const clean = String(phone).replace(/\s+/g, '');
-  if (clean.startsWith('+237') || clean.startsWith('237')) {
-    return 'Cameroun';
+  for (const c of ALLOWED_COUNTRIES) {
+    const rawPrefix = c.prefix.replace('+', '');
+    if (clean.startsWith(c.prefix) || clean.startsWith(rawPrefix)) {
+      return c.name;
+    }
   }
-  const digits = clean.replace(/\D/g, '');
-  if (digits.length === 9 && (digits.startsWith('6') || digits.startsWith('2') || digits.startsWith('3'))) {
-    return 'Cameroun';
-  }
-  return 'Togo';
+  return 'Cameroun';
 }
 
-export function getCountryCode(countryNameOrCode: string | undefined | null): 'CM' | 'TG' {
-  if (!countryNameOrCode) return 'TG';
-  const str = String(countryNameOrCode).toLowerCase();
-  if (str.includes('cam') || str === 'cm' || str.includes('237')) {
-    return 'CM';
-  }
-  return 'TG';
+export function getCountryCode(countryNameOrCode: string | undefined | null): string {
+  if (!countryNameOrCode) return 'CM';
+  const found = getCountryByNameOrCode(countryNameOrCode);
+  return found.code;
 }
+
 

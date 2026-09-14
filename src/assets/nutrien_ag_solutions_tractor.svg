@@ -164,7 +164,7 @@
     <rect x="710" y="170" width="14" height="35" rx="4" fill="#dc2626"/>
   </g>
 
-  <!-- FOREGROUND LEFT: WHITE NUTRIEN AG SOLUTIONS TRUCK / SERVICE VEHICLE -->
+  <!-- FOREGROUND LEFT: WHITE AIRPODS AG SOLUTIONS TRUCK / SERVICE VEHICLE -->
   <g filter="url(#softShadow)">
     <!-- Truck Side Panel Body -->
     <path d="M -50,-20 L 380,-20 L 320,530 L 260,680 L -50,680 Z" fill="url(#truckBody)" stroke="#cbd5e1" stroke-width="3"/>
@@ -177,16 +177,16 @@
     <rect x="220" y="390" width="28" height="55" rx="8" fill="#1e293b" stroke="#64748b" stroke-width="2"/>
     <rect x="230" y="405" width="8" height="25" rx="2" fill="#94a3b8"/>
 
-    <!-- NUTRIEN AG SOLUTIONS BRAND LOGO ON TRUCK SIDE -->
+    <!-- AIRPODS AG SOLUTIONS BRAND LOGO ON TRUCK SIDE -->
     <g transform="translate(30, 80) scale(1.35)">
-      <!-- Leaf Icon (Green Leaf above the 'u' in Nutrien) -->
+      <!-- Leaf Icon (Green Leaf above the 'u' in AirPods) -->
       <path d="M 38 10 C 26 10 18 18 18 30 C 18 42 26 50 38 50 C 50 50 58 42 58 30 C 58 18 50 10 38 10 Z" fill="#22c55e" />
       <path d="M 38 10 C 48 10 58 20 58 30 C 48 30 38 20 38 10 Z" fill="#86efac" />
       <path d="M 38 20 C 32 26 30 36 32 44" stroke="#15803d" stroke-width="3" fill="none" stroke-linecap="round"/>
 
-      <!-- "Nutrien" Main Logo Text -->
+      <!-- "AirPods" Main Logo Text -->
       <text x="65" y="44" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="46" fill="#0f172a" letter-spacing="-1.5">
-        Nutrien
+        AirPods
       </text>
 
       <!-- "Ag Solutions" Subtitle Text -->

@@ -12,10 +12,10 @@ import {
   CheckCircle2, 
   XCircle, 
   ChevronDown,
-  ArrowLeft
+  ArrowLeft,
+  Headphones
 } from 'lucide-react';
 import { ALLOWED_COUNTRIES } from '../constants/countries';
-import nutrienAgTractorImg from '../assets/nutrien_ag_solutions_tractor.svg';
 import { normalizePhoneNumber } from '../lib/phoneUtils';
 
 import { 
@@ -240,34 +240,32 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col font-sans select-none antialiased relative overflow-hidden">
       
-      {/* Background Nutrien Agricultural Product Image Layer */}
+      {/* Background AirPods Audio Product Image Layer */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20 pointer-events-none transform scale-105"
-        style={{ backgroundImage: `url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200&auto=format&fit=crop&q=80')` }}
+        style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=1200&auto=format&fit=crop&q=80')` }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/80 via-slate-950/75 to-slate-900/95 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/75 to-slate-900/95 pointer-events-none" />
 
-      {/* HEADER SECTION (FEATURING NUTRIEN AG SOLUTIONS EQUIPMENT BACKDROP) */}
+      {/* HEADER SECTION (FEATURING AIRPODS BACKDROP) */}
       <div className="relative text-white pt-8 pb-14 px-5 shadow-md overflow-hidden min-h-[170px] flex flex-col justify-center">
-        {/* Nutrien Ag Solutions Tractor & Equipment Image */}
+        {/* AirPods Audio Atmosphere Background Image */}
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat transform scale-100 transition-all duration-300 opacity-95"
-          style={{ backgroundImage: `url('${nutrienAgTractorImg}')` }}
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transform scale-100 transition-all duration-300 opacity-80"
+          style={{ backgroundImage: `url('https://images.unsplash.com/photo-1572536147248-ac59a8abfa4b?w=1200&auto=format&fit=crop&q=80')` }}
         />
-        {/* Subtle dark gradient overlay to ensure text contrast while keeping the smartphone & chart image clear */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-slate-900/50" />
+        {/* Subtle dark gradient overlay to ensure text contrast while keeping the image clear */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-slate-900/60" />
         
         {/* Top Header Bar: Logo & Centered Title */}
         <div className="relative z-10 flex items-center justify-between mb-4">
-          {/* Logo "Nutrien" on Top Left */}
+          {/* Logo "AirPods" on Top Left */}
           <div className="flex items-center space-x-2">
-            <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white font-black text-sm tracking-tight border border-white/30 shadow-xs">
-              <svg className="w-5 h-5 fill-current text-white" viewBox="0 0 24 24">
-                <path d="M17 8C14.23 8 12 10.23 12 13C12 15.77 14.23 18 17 18C19.77 18 22 15.77 22 13C22 10.23 19.77 8 17 8ZM17 16C15.35 16 14 14.65 14 13C14 11.35 15.35 10 17 10C18.65 10 20 11.35 20 13C20 14.65 18.65 16 17 16ZM12 3C8.13 3 5 6.13 5 10C5 12.38 6.19 14.47 8 15.74V21H10V16C11.3 15.42 12.36 14.42 13 13.15C12.37 12.22 12 11.16 12 10C12 7.24 13.79 4.88 16.3 4.2C15.11 3.44 13.61 3 12 3Z" />
-              </svg>
+            <div className="w-9 h-9 rounded-xl bg-amber-500/30 backdrop-blur-xs flex items-center justify-center text-amber-300 font-black text-sm tracking-tight border border-amber-400/40 shadow-xs">
+              <Headphones className="w-5 h-5 text-amber-300 stroke-[2.5px]" />
             </div>
             <span className="text-2xl font-black tracking-tight text-white drop-shadow-xs">
-              Nutrien
+              AirPods
             </span>
           </div>
 
@@ -493,27 +491,25 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                 </button>
               </div>
 
-              {/* Logo Nutrien en bas de la page d'inscription */}
+              {/* Logo AirPods en bas de la page d'inscription */}
               <div className="pt-5 border-t border-slate-100 mt-5 flex flex-col items-center justify-center text-center space-y-2">
-                <div className="p-3 bg-emerald-50/90 rounded-2xl border border-emerald-100 flex items-center justify-center space-x-3 w-full shadow-2xs">
-                  {/* Nutrien Green Sprout Leaf SVG Logo Icon */}
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#046A38] via-[#03542c] to-[#023d20] text-white flex items-center justify-center shrink-0 shadow-xs border border-emerald-400/30">
-                    <svg className="w-7 h-7 fill-current text-white" viewBox="0 0 24 24">
-                      <path d="M17 8C14.23 8 12 10.23 12 13C12 15.77 14.23 18 17 18C19.77 18 22 15.77 22 13C22 10.23 19.77 8 17 8ZM17 16C15.35 16 14 14.65 14 13C14 11.35 15.35 10 17 10C18.65 10 20 11.35 20 13C20 14.65 18.65 16 17 16ZM12 3C8.13 3 5 6.13 5 10C5 12.38 6.19 14.47 8 15.74V21H10V16C11.3 15.42 12.36 14.42 13 13.15C12.37 12.22 12 11.16 12 10C12 7.24 13.79 4.88 16.3 4.2C15.11 3.44 13.61 3 12 3Z" />
-                    </svg>
+                <div className="p-3 bg-amber-50/90 rounded-2xl border border-amber-200 flex items-center justify-center space-x-3 w-full shadow-2xs">
+                  {/* AirPods Headphones SVG Logo Icon */}
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-slate-950 flex items-center justify-center shrink-0 shadow-xs border border-amber-400/40">
+                    <Headphones className="w-6 h-6 stroke-[2.5px] text-slate-950" />
                   </div>
                   <div className="text-left min-w-0">
                     <div className="flex items-center space-x-1.5">
-                      <span className="text-base font-black tracking-tight text-[#046A38]">Nutrien</span>
-                      <span className="text-[10px] font-black text-amber-700 bg-amber-100/80 px-1.5 py-0.2 rounded font-mono">Ag</span>
+                      <span className="text-base font-black tracking-tight text-slate-900">AirPods</span>
+                      <span className="text-[10px] font-black text-amber-900 bg-amber-200/80 px-1.5 py-0.2 rounded font-mono">Official</span>
                     </div>
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate">
-                      Nutrien Ag Solutions • Feeding the Future
+                      AirPods Official • Audio Premium & FinTech
                     </p>
                   </div>
                 </div>
                 <span className="text-[10px] text-slate-400 font-medium">
-                  © Nutrien Ag Solutions — Plateforme Officielle Certifiée
+                  © AirPods — Plateforme Officielle Certifiée
                 </span>
               </div>
             </motion.div>
@@ -639,27 +635,25 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                 </button>
               </div>
 
-              {/* Logo Nutrien en bas de la page de connexion */}
+              {/* Logo AirPods en bas de la page de connexion */}
               <div className="pt-5 border-t border-slate-100 mt-5 flex flex-col items-center justify-center text-center space-y-2">
-                <div className="p-3 bg-emerald-50/90 rounded-2xl border border-emerald-100 flex items-center justify-center space-x-3 w-full shadow-2xs">
-                  {/* Nutrien Green Sprout Leaf SVG Logo Icon */}
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#046A38] via-[#03542c] to-[#023d20] text-white flex items-center justify-center shrink-0 shadow-xs border border-emerald-400/30">
-                    <svg className="w-7 h-7 fill-current text-white" viewBox="0 0 24 24">
-                      <path d="M17 8C14.23 8 12 10.23 12 13C12 15.77 14.23 18 17 18C19.77 18 22 15.77 22 13C22 10.23 19.77 8 17 8ZM17 16C15.35 16 14 14.65 14 13C14 11.35 15.35 10 17 10C18.65 10 20 11.35 20 13C20 14.65 18.65 16 17 16ZM12 3C8.13 3 5 6.13 5 10C5 12.38 6.19 14.47 8 15.74V21H10V16C11.3 15.42 12.36 14.42 13 13.15C12.37 12.22 12 11.16 12 10C12 7.24 13.79 4.88 16.3 4.2C15.11 3.44 13.61 3 12 3Z" />
-                    </svg>
+                <div className="p-3 bg-amber-50/90 rounded-2xl border border-amber-200 flex items-center justify-center space-x-3 w-full shadow-2xs">
+                  {/* AirPods Headphones SVG Logo Icon */}
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-slate-950 flex items-center justify-center shrink-0 shadow-xs border border-amber-400/40">
+                    <Headphones className="w-6 h-6 stroke-[2.5px] text-slate-950" />
                   </div>
                   <div className="text-left min-w-0">
                     <div className="flex items-center space-x-1.5">
-                      <span className="text-base font-black tracking-tight text-[#046A38]">Nutrien</span>
-                      <span className="text-[10px] font-black text-amber-700 bg-amber-100/80 px-1.5 py-0.2 rounded font-mono">Ag</span>
+                      <span className="text-base font-black tracking-tight text-slate-900">AirPods</span>
+                      <span className="text-[10px] font-black text-amber-900 bg-amber-200/80 px-1.5 py-0.2 rounded font-mono">Official</span>
                     </div>
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate">
-                      Nutrien Ag Solutions • Feeding the Future
+                      AirPods Official • Audio Premium & FinTech
                     </p>
                   </div>
                 </div>
                 <span className="text-[10px] text-slate-400 font-medium">
-                  © Nutrien Ag Solutions — Plateforme Officielle Certifiée
+                  © AirPods — Plateforme Officielle Certifiée
                 </span>
               </div>
             </motion.div>

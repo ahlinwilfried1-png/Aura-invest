@@ -145,7 +145,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
 
           <div>
             <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
-              Service Client <span className="text-amber-700">Nutrien</span>
+              Service Client <span className="text-amber-700">AirPods</span>
             </h3>
             <p className="text-[11px] text-slate-500 font-medium">Assistance instantanée VIP • Réponse en 5 min</p>
           </div>
@@ -168,7 +168,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
           {/* Header Line with Emojis */}
           <div className="space-y-3 font-medium text-slate-900">
             <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center space-x-2">
-              <span>🚗✨</span> <span>Nutrien — Avancez vers la réalisation de vos rêves !</span>
+              <span>🎧✨</span> <span>AirPods — Avancez vers la réalisation de vos rêves !</span>
             </h2>
 
             <div className="py-2 flex items-center space-x-2 text-slate-800 font-medium">
@@ -184,7 +184,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
           </div>
 
           <p className="text-slate-800 text-sm sm:text-base leading-relaxed">
-            Chez Nutrien, nous croyons que les opportunités appartiennent à ceux qui osent agir. Grâce à une participation active, à l'apprentissage continu et au partage d'expériences, vous pouvez non seulement vous épanouir personnellement, mais aussi grandir aux côtés de votre équipe pour bâtir ensemble un avenir meilleur.
+            Chez AirPods, nous croyons que les opportunités appartiennent à ceux qui osent agir. Grâce à une participation active, à l'apprentissage continu et au partage d'expériences, vous pouvez non seulement vous épanouir personnellement, mais aussi grandir aux côtés de votre équipe pour bâtir ensemble un avenir meilleur.
           </p>
 
           <p className="text-slate-900 font-bold text-sm sm:text-base leading-relaxed flex items-start space-x-2">
@@ -198,13 +198,13 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
 
           <p className="font-extrabold text-amber-800 text-sm sm:text-base flex items-center space-x-2 pt-2">
             <span className="text-lg">💪</span>
-            <span>Rejoignez Nutrien et ouvrez la voie à un avenir brillant !</span>
+            <span>Rejoignez AirPods et ouvrez la voie à un avenir brillant !</span>
           </p>
 
           {/* Bullet Points Section */}
           <div className="space-y-3 pt-4 text-xs sm:text-sm">
             <p className="font-bold text-slate-900 flex items-center space-x-2">
-              <span>💡</span> <span>Pourquoi choisir Nutrien ?</span>
+              <span>💡</span> <span>Pourquoi choisir AirPods ?</span>
             </p>
 
             <ul className="space-y-2.5 pl-1 text-slate-800 font-medium">
@@ -243,7 +243,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
 
         {/* DYNAMIC USER SUPPORT TICKETS & MESSAGES */}
         {userTickets.map((tkt) => {
-          const isAdminDirect = tkt.id.startsWith('tkt-adm-') || tkt.message === "Message direct du Support Client Nutrien." || tkt.subject?.includes("Administration");
+          const isAdminDirect = tkt.id.startsWith('tkt-adm-') || tkt.message === "Message direct du Support Client AirPods." || tkt.message === "Message direct du Support Client Nutrien." || tkt.subject?.includes("Administration");
           const adminReplyText = tkt.reply || (isAdminDirect ? tkt.message : '');
 
           return (
@@ -287,7 +287,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
 
                   <div className="space-y-1 text-xs sm:text-sm text-slate-900 font-medium leading-relaxed">
                     <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 font-mono block">
-                      Administration Nutrien
+                      Administration AirPods
                     </span>
 
                     <p className="whitespace-pre-wrap text-slate-800 bg-amber-50/60 p-3 rounded-2xl border border-amber-200/60">

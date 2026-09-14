@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { InvestmentProduct, User, DepositRequest, WithdrawalRequest, SupportTicket, FaqItem, RechargeChannel } from '../types';
+import { InvestmentProduct, User, DepositRequest, WithdrawalRequest, SupportTicket, FaqItem, RechargeChannel, Announcement } from '../types';
 import { OFFICIAL_INVESTMENT_PRODUCTS } from '../constants/products';
 import { 
   LayoutDashboard, 
@@ -107,7 +107,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     addTicketsToUser,
     announcements,
     addAnnouncement,
+    updateAnnouncement,
     deleteAnnouncement,
+    purgeAllUsersDepositsWithdrawals,
     faqs,
     addFaq,
     updateFaq,
@@ -181,9 +183,75 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     showToast('success', "Annonce publiée avec succès !");
   };
 
-  // Navigation tab state
+  // State for Editing an Announcement
+  const [editingAnn, setEditingAnn] = useState<Announcement | null>(null);
+  const [editAnnTitle, setEditAnnTitle] = useState('');
+  const [editAnnContent, setEditAnnContent] = useState('');
+  const [editAnnImageUrl, setEditAnnImageUrl] = useState('');
+
+  const handleOpenEditAnn = (ann: Announcement) => {
+    setEditingAnn(ann);
+    setEditAnnTitle(ann.title);
+    setEditAnnContent(ann.content);
+    setEditAnnImageUrl(ann.imageUrl || '');
+  };
+
+  const handleEditAnnImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('error', "La taille de la photo ne doit pas dépasser 5 Mo.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditAnnImageUrl(reader.result as string);
+        showToast('success', "Photo modifiée avec succès !");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveEditAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAnn) return;
+    if (!editAnnTitle.trim() || !editAnnContent.trim()) {
+      showToast('error', "Veuillez renseigner un titre et un contenu.");
+      return;
+    }
+    await updateAnnouncement(editingAnn.id, {
+      title: editAnnTitle.trim(),
+      content: editAnnContent.trim(),
+      imageUrl: editAnnImageUrl.trim() || undefined
+    });
+    setEditingAnn(null);
+    showToast('success', "Annonce mise à jour et synchronisée avec succès !");
+  };
+
+  // State for Purge Data Modal
+  const [showPurgeModal, setShowPurgeModal] = useState(false);
+  const [isPurgingData, setIsPurgingData] = useState(false);
+
+  const handlePurgeUsersDepositsWithdrawals = async () => {
+    setIsPurgingData(true);
+    try {
+      const res = await purgeAllUsersDepositsWithdrawals();
+      if (res.success) {
+        showToast('success', res.message || "Purge réussie : tous les utilisateurs (hors admins), dépôts et retraits ont été supprimés.");
+        setShowPurgeModal(false);
+      } else {
+        showToast('error', res.error || "Erreur lors de la suppression.");
+      }
+    } catch (err: any) {
+      showToast('error', err?.message || "Erreur lors de la suppression.");
+    } finally {
+      setIsPurgingData(false);
+    }
+  };
+
+  // Navigation tab state (sans 'recharge_channels')
   const [activeAdminTab, setActiveAdminTab] = useState<
-    'dashboard' | 'deposits' | 'withdrawals' | 'proofs' | 'users' | 'products' | 'paid_products' | 'support' | 'announcements' | 'wheel' | 'faq' | 'recharge_channels'
+    'dashboard' | 'deposits' | 'withdrawals' | 'proofs' | 'users' | 'products' | 'paid_products' | 'support' | 'announcements' | 'wheel' | 'faq'
   >('dashboard');
 
   // Recharge Channels Admin State
@@ -359,6 +427,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
       showToast('error', err?.message || "Erreur de traitement.");
     } finally {
       setProcessingDepositIds(prev => ({ ...prev, [depId]: false }));
+    }
+  };
+
+  // Payment Gateway Config State & Handlers
+  const [paymentGatewayUrl, setPaymentGatewayUrl] = useState<string>('https://soccopay.com/pay_link.php?id=108d608fd7c949fce11acb78537955ac');
+  const [isEditingGateway, setIsEditingGateway] = useState<boolean>(false);
+  const [newGatewayUrl, setNewGatewayUrl] = useState<string>('https://soccopay.com/pay_link.php?id=108d608fd7c949fce11acb78537955ac');
+
+  useEffect(() => {
+    fetch('/api/admin/config/payment-gateway')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.url) {
+          setPaymentGatewayUrl(data.url);
+          setNewGatewayUrl(data.url);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveGatewayUrl = async () => {
+    if (!newGatewayUrl.trim().startsWith('http')) {
+      showToast('error', 'URL invalide. Doit commencer par http:// ou https://');
+      return;
+    }
+    try {
+      const res = await fetch('/api/admin/config/payment-gateway', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: newGatewayUrl.trim() })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        setPaymentGatewayUrl(data.url);
+        setIsEditingGateway(false);
+        showToast('success', 'Lien de paiement passerelle mis à jour avec succès !');
+      } else {
+        showToast('error', data?.error || 'Erreur lors de la mise à jour.');
+      }
+    } catch (_) {
+      showToast('error', 'Erreur de communication serveur.');
     }
   };
 
@@ -896,6 +1005,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
               </span>
             </button>
 
+            {/* Purge Accounts, Deposits & Withdrawals Button */}
+            <button
+              onClick={() => setShowPurgeModal(true)}
+              className="bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-200 text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer shadow-2xs"
+              title="Supprimer tous les comptes utilisateurs (hors admins), dépôts et retraits"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+              <span className="text-[11px] font-extrabold uppercase font-mono tracking-tight hidden sm:inline">
+                Purger Données
+              </span>
+            </button>
+
             {/* Background Image Switcher Badge */}
             <button 
               onClick={() => setBgIndex((prev) => (prev + 1) % ADMIN_BG_IMAGES.length)}
@@ -1097,21 +1218,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
               <HelpCircle className="w-4 h-4" />
               <span>Gestion FAQ</span>
               <span className="text-[10px] opacity-80 bg-slate-200 text-slate-800 px-1.5 py-0.2 rounded ml-1 font-mono">{faqs.length}</span>
-            </button>
-
-            <button
-              onClick={() => setActiveAdminTab('recharge_channels')}
-              className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
-                activeAdminTab === 'recharge_channels'
-                  ? 'bg-red-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <CreditCard className="w-4 h-4" />
-              <span>Canaux de recharge</span>
-              <span className="text-[10px] opacity-80 bg-slate-200 text-slate-800 px-1.5 py-0.2 rounded ml-1 font-mono">
-                {rechargeChannels.filter(c => c.isActive).length}/{rechargeChannels.length}
-              </span>
             </button>
 
           </div>
@@ -1342,35 +1448,83 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 </div>
               </div>
 
-              {/* Passerelle de paiement WestPay active */}
-              <div className="bg-slate-900/90 border border-slate-700 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                <div className="flex items-center space-x-2 min-w-0">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></div>
-                  <div className="min-w-0">
-                    <span className="text-xs font-bold text-amber-400 block">Lien Passerelle Recharge Actif (WestPay) :</span>
-                    <span className="text-xs font-mono text-slate-300 truncate block">https://westpay.cfd/link/3s7hn53gmsupa11l</span>
+              {/* Passerelle de paiement sécurisée active */}
+              <div className="bg-slate-900/90 border border-slate-700 rounded-xl p-3.5 space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center space-x-2.5 min-w-0">
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></div>
+                    <div className="min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-bold text-amber-400">Passerelle de Paiement Active :</span>
+                        <span className="text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-800/60 px-2 py-0.5 rounded-full">
+                          En ligne
+                        </span>
+                      </div>
+                      <span className="text-xs font-mono text-slate-300 truncate block mt-0.5">
+                        {paymentGatewayUrl}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(paymentGatewayUrl);
+                        showToast('success', 'Lien de paiement copié !');
+                      }}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      Copier
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewGatewayUrl(paymentGatewayUrl);
+                        setIsEditingGateway(!isEditingGateway);
+                      }}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      {isEditingGateway ? 'Fermer' : 'Modifier le lien'}
+                    </button>
+                    <a
+                      href="/api/pay-redirect/test"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-black transition-colors"
+                    >
+                      Tester ↗
+                    </a>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText('https://westpay.cfd/link/3s7hn53gmsupa11l');
-                      showToast('success', 'Lien WestPay copié !');
-                    }}
-                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    Copier le lien
-                  </button>
-                  <a
-                    href="https://westpay.cfd/link/3s7hn53gmsupa11l"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-black transition-colors"
-                  >
-                    Tester le lien ↗
-                  </a>
-                </div>
+
+                {/* Formulaire de modification rapide du lien de paiement */}
+                {isEditingGateway && (
+                  <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-700/80 space-y-2 animate-fadeIn">
+                    <label className="text-[11px] font-bold text-slate-300 block">
+                      Remplacer l'URL de la passerelle de paiement (prise en compte immédiate côté serveur) :
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="url"
+                        value={newGatewayUrl}
+                        onChange={(e) => setNewGatewayUrl(e.target.value)}
+                        placeholder="https://soccopay.com/..."
+                        className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-xs font-mono text-white outline-none focus:border-amber-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveGatewayUrl}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-lg shrink-0 transition-colors cursor-pointer"
+                      >
+                        Enregistrer
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-slate-400">
+                      Vous pouvez également configurer la variable d'environnement <code>PAYMENT_GATEWAY_URL</code> sur votre serveur.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Filter Tabs & Search Bar */}
@@ -1785,15 +1939,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   <p className="text-xs text-slate-400 mt-0.5">Consultez, modifiez les soldes et gérez les accès des comptes utilisateurs en temps réel.</p>
                 </div>
 
-                <button
-                  onClick={handleRefreshUsers}
-                  disabled={isRefreshingUsers}
-                  className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer disabled:opacity-50"
-                  title="Forcer la synchronisation avec la base centrale Supabase"
-                >
-                  <RotateCw className={`w-3.5 h-3.5 ${isRefreshingUsers ? 'animate-spin text-blue-400' : ''}`} />
-                  <span>{isRefreshingUsers ? 'Actualisation...' : 'Actualiser la liste'}</span>
-                </button>
+                <div className="flex items-center space-x-2 shrink-0">
+                  <button
+                    onClick={() => setShowPurgeModal(true)}
+                    className="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer"
+                    title="Supprimer tous les comptes utilisateurs (hors admins), dépôts et retraits"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Purger Utilisateurs & Transactions</span>
+                  </button>
+
+                  <button
+                    onClick={handleRefreshUsers}
+                    disabled={isRefreshingUsers}
+                    className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer disabled:opacity-50"
+                    title="Forcer la synchronisation avec la base centrale Supabase"
+                  >
+                    <RotateCw className={`w-3.5 h-3.5 ${isRefreshingUsers ? 'animate-spin text-blue-400' : ''}`} />
+                    <span>{isRefreshingUsers ? 'Actualisation...' : 'Actualiser la liste'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Filter Tabs & Search */}
@@ -2566,7 +2731,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                         </div>
                       ) : (
                         selectedUserTickets.map((tkt) => {
-                          const isAdminDirect = tkt.id.startsWith('tkt-adm-') || tkt.message === "Message direct du Support Client Nutrien.";
+                          const isAdminDirect = tkt.id.startsWith('tkt-adm-') || tkt.message === "Message direct du Support Client AirPods." || tkt.message === "Message direct du Support Client Nutrien.";
 
                           return (
                             <div key={tkt.id} className="space-y-2">
@@ -2638,7 +2803,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                         </button>
                         <button
                           type="button"
-                          onClick={() => setChatMessageText("Bonjour, le paiement a été crédité sur votre compte Nutrien.")}
+                          onClick={() => setChatMessageText("Bonjour, le paiement a été crédité sur votre compte AirPods.")}
                           className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded-lg whitespace-nowrap border border-slate-700 cursor-pointer"
                         >
                           💰 Solde crédité
@@ -2839,6 +3004,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                       </div>
 
                       <div className="flex items-center space-x-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditAnn(ann)}
+                          className="bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold px-3 py-2 rounded-xl border border-amber-200 transition-all cursor-pointer flex items-center space-x-1"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>Modifier</span>
+                        </button>
+
                         <button
                           onClick={() => {
                             deleteAnnouncement(ann.id);
@@ -3452,549 +3626,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* TAB: RECHARGE CHANNELS (GESTION SÉPARÉE TOGO 🇹🇬 ET CAMEROUN 🇨🇲)          */}
-        {/* ========================================================================= */}
-        {activeAdminTab === 'recharge_channels' && (
-          <div className="space-y-6 animate-fadeIn font-sans">
-            
-            {/* Header & Stats Banner */}
-            <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-700/80 rounded-3xl p-6 shadow-xl relative overflow-hidden">
-              <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-              
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-                <div className="space-y-1.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-mono font-black uppercase text-amber-400 bg-amber-500/20 border border-amber-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
-                      <CreditCard className="w-3 h-3" />
-                      <span>Gestion Multi-Pays (Cameroun 🇨🇲 & Togo 🇹🇬)</span>
-                    </span>
-                    <span className="text-[10px] font-mono font-bold uppercase text-emerald-400 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                      Base Centrale Synchronisée
-                    </span>
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                    Canaux & Réseaux de Recharge Officiels
-                  </h2>
-                  <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-                    Configurez et gérez séparément les réseaux de paiement pour le <strong>Cameroun 🇨🇲</strong> (MTN MoMo, Orange Money) et le <strong>Togo 🇹🇬</strong> (TMoney, Moov Flooz). Chaque utilisateur ne voit que les canaux de son pays.
-                  </p>
-                </div>
-
-                {/* Quick Summary Counter */}
-                <div className="flex items-center gap-2.5 bg-slate-950/70 border border-slate-800 p-2.5 rounded-2xl shrink-0">
-                  <div className="text-center px-2">
-                    <p className="text-[9px] uppercase font-bold text-emerald-400 flex items-center justify-center gap-1">
-                      <span>🇨🇲 Cameroun</span>
-                    </p>
-                    <p className="text-base font-black text-white font-mono">
-                      {rechargeChannels.filter(c => (c.countryCode === 'CM' || (!c.countryCode && (c.accountNumber?.startsWith('+237') || c.name?.toLowerCase().includes('cameroun') || c.name?.toLowerCase().includes('orange'))))).length}
-                    </p>
-                  </div>
-                  <div className="w-px h-7 bg-slate-800" />
-                  <div className="text-center px-2">
-                    <p className="text-[9px] uppercase font-bold text-amber-400 flex items-center justify-center gap-1">
-                      <span>🇹🇬 Togo</span>
-                    </p>
-                    <p className="text-base font-black text-white font-mono">
-                      {rechargeChannels.filter(c => (c.countryCode === 'TG' || (!c.countryCode && !c.accountNumber?.startsWith('+237') && !c.name?.toLowerCase().includes('cameroun') && !c.name?.toLowerCase().includes('orange')))).length}
-                    </p>
-                  </div>
-                  <div className="w-px h-7 bg-slate-800" />
-                  <div className="text-center px-2">
-                    <p className="text-[9px] uppercase font-bold text-slate-400">Total</p>
-                    <p className="text-base font-black text-emerald-400 font-mono">
-                      {rechargeChannels.length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* FORM CONTAINER (ADD / EDIT) */}
-            <div id="channel-form-container" className="bg-slate-900/90 border border-slate-700/80 rounded-3xl p-5 sm:p-6 shadow-lg space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-2">
-                <div className="flex items-center space-x-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold">
-                    {editingChannelId ? <Edit2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                  </div>
-                  <div>
-                    <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                      <span>{editingChannelId ? "Modifier le canal de recharge" : "Ajouter un nouveau canal de recharge"}</span>
-                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border ${
-                        channelCountryCode === 'CM' 
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
-                          : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                      }`}>
-                        {channelCountryCode === 'CM' ? '🇨🇲 Cameroun (+237)' : '🇹🇬 Togo (+228)'}
-                      </span>
-                    </h3>
-                    <p className="text-[11px] text-slate-400">
-                      Renseignez l'opérateur, le pays concerné, le numéro officiel de dépôt et les instructions.
-                    </p>
-                  </div>
-                </div>
-                {editingChannelId && (
-                  <button
-                    type="button"
-                    onClick={handleCancelEditChannel}
-                    className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl border border-slate-700 font-bold transition-all cursor-pointer self-start sm:self-auto"
-                  >
-                    Annuler la modification
-                  </button>
-                )}
-              </div>
-
-              <form onSubmit={handleSaveChannel} className="space-y-4">
-                
-                {/* Choix du pays pour le canal */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                    <span>Pays de destination du canal</span>
-                    <span className="text-amber-400 font-black">*</span>
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setChannelCountryCode('CM');
-                        if (!channelName || channelName.includes('TMoney') || channelName.includes('Moov')) {
-                          setChannelName('MTN Mobile Money (MoMo)');
-                        }
-                        if (!channelNumber || channelNumber.startsWith('+228')) {
-                          setChannelNumber('+237 ');
-                        }
-                      }}
-                      className={`py-3 px-4 rounded-2xl border text-xs font-black transition-all flex items-center justify-center space-x-2 cursor-pointer ${
-                        channelCountryCode === 'CM'
-                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 ring-2 ring-emerald-500/30 shadow-sm'
-                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      <span className="text-lg">🇨🇲</span>
-                      <span>Cameroun (+237)</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setChannelCountryCode('TG');
-                        if (!channelName || channelName.includes('MTN') || channelName.includes('Orange')) {
-                          setChannelName('TMoney (Togocom)');
-                        }
-                        if (!channelNumber || channelNumber.startsWith('+237')) {
-                          setChannelNumber('+228 ');
-                        }
-                      }}
-                      className={`py-3 px-4 rounded-2xl border text-xs font-black transition-all flex items-center justify-center space-x-2 cursor-pointer ${
-                        channelCountryCode === 'TG'
-                          ? 'bg-amber-500/20 border-amber-500 text-amber-300 ring-2 ring-amber-500/30 shadow-sm'
-                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      <span className="text-lg">🇹🇬</span>
-                      <span>Togo (+228)</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Modèles rapides de réseaux */}
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Raccourcis opérateurs {channelCountryCode === 'CM' ? 'Cameroun 🇨🇲' : 'Togo 🇹🇬'} :</span>
-                  <div className="flex flex-wrap gap-2">
-                    {channelCountryCode === 'CM' ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setChannelName('MTN Mobile Money (MoMo Cameroun)');
-                            setChannelInstructions('Effectuez le transfert vers ce numéro MTN MoMo puis saisissez l\'ID de transaction.');
-                          }}
-                          className="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-700 text-amber-300 text-xs font-bold rounded-lg cursor-pointer transition-colors"
-                        >
-                          + MTN Mobile Money (MoMo)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setChannelName('Orange Money (OM Cameroun)');
-                            setChannelInstructions('Effectuez le transfert vers ce numéro Orange Money puis saisissez l\'ID de transaction.');
-                          }}
-                          className="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-700 text-amber-300 text-xs font-bold rounded-lg cursor-pointer transition-colors"
-                        >
-                          + Orange Money (OM)
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setChannelName('TMoney (Togocom)');
-                            setChannelInstructions('Effectuez le transfert vers ce numéro TMoney puis saisissez la référence de transaction.');
-                          }}
-                          className="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-700 text-amber-300 text-xs font-bold rounded-lg cursor-pointer transition-colors"
-                        >
-                          + TMoney (Togocom)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setChannelName('Moov Money (Flooz)');
-                            setChannelInstructions('Effectuez le transfert vers ce numéro Moov Money Flooz puis saisissez la référence de transaction.');
-                          }}
-                          className="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-700 text-amber-300 text-xs font-bold rounded-lg cursor-pointer transition-colors"
-                        >
-                          + Moov Money (Flooz)
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  
-                  {/* Nom du canal / opérateur */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                      <span>Nom de l'opérateur / Canal</span>
-                      <span className="text-amber-400 font-black">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={channelCountryCode === 'CM' ? "Ex: MTN Mobile Money, Orange Money..." : "Ex: TMoney (Togocom), Moov Money (Flooz)..."}
-                      value={channelName}
-                      onChange={(e) => setChannelName(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 outline-none focus:border-amber-400 transition-colors"
-                      required
-                    />
-                  </div>
-
-                  {/* Numéro de recharge */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                      <span>Numéro officiel de dépôt</span>
-                      <span className="text-amber-400 font-black">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={channelCountryCode === 'CM' ? "Ex: +237 677 45 12 89 ou 688969868" : "Ex: +228 90 12 34 56"}
-                      value={channelNumber}
-                      onChange={(e) => setChannelNumber(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono text-amber-300 placeholder-slate-500 outline-none focus:border-amber-400 transition-colors font-bold"
-                      required
-                    />
-                  </div>
-
-                  {/* Nom du titulaire */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-300">
-                      Nom du titulaire / Bénéficiaire (Optionnel)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={channelCountryCode === 'CM' ? "Ex: Service Nutrien Cameroun, Agence Dépôt..." : "Ex: Service Nutrien Togo, Agence Dépôt..."}
-                      value={channelHolder}
-                      onChange={(e) => setChannelHolder(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 outline-none focus:border-amber-400 transition-colors"
-                    />
-                  </div>
-
-                  {/* Statut d'activation */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-300">Statut du canal</label>
-                    <div className="flex items-center gap-3 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setChannelIsActive(true)}
-                        className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 border transition-all cursor-pointer ${
-                          channelIsActive 
-                            ? 'bg-emerald-500/20 border-emerald-500/60 text-emerald-300 shadow-xs' 
-                            : 'bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-300'
-                        }`}
-                      >
-                        <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Actif (Visible)</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setChannelIsActive(false)}
-                        className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 border transition-all cursor-pointer ${
-                          !channelIsActive 
-                            ? 'bg-rose-500/20 border-rose-500/60 text-rose-300 shadow-xs' 
-                            : 'bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-300'
-                        }`}
-                      >
-                        <XCircle className="w-3.5 h-3.5 text-rose-400" />
-                        <span>Inactif (Masqué)</span>
-                      </button>
-                    </div>
-                  </div>
-
-                </div>
-
-                {/* Instructions / Notes de transfert */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300">
-                    Instructions spécifiques de dépôt (Optionnel)
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder={channelCountryCode === 'CM' ? "Ex: Composez *126# ou *150# pour transférer vers ce numéro, puis collez l'ID de transaction reçu..." : "Ex: Composez *145# ou *155# pour transférer vers ce numéro, puis collez la référence SMS..."}
-                    value={channelInstructions}
-                    onChange={(e) => setChannelInstructions(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-400 transition-colors"
-                  />
-                </div>
-
-                {/* Bouton de soumission */}
-                <div className="flex justify-end gap-3 pt-2">
-                  {editingChannelId && (
-                    <button
-                      type="button"
-                      onClick={handleCancelEditChannel}
-                      className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                    >
-                      Annuler
-                    </button>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={isProcessingChannel}
-                    className="px-6 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md flex items-center space-x-2 cursor-pointer disabled:opacity-50"
-                  >
-                    {isProcessingChannel ? (
-                      <span className="inline-block animate-spin">⏳</span>
-                    ) : editingChannelId ? (
-                      <Edit2 className="w-4 h-4" />
-                    ) : (
-                      <Plus className="w-4 h-4" />
-                    )}
-                    <span>
-                      {isProcessingChannel 
-                        ? "Enregistrement en base..." 
-                        : editingChannelId 
-                          ? `Enregistrer pour ${channelCountryCode === 'CM' ? '🇨🇲 Cameroun' : '🇹🇬 Togo'}` 
-                          : `Ajouter pour ${channelCountryCode === 'CM' ? '🇨🇲 Cameroun' : '🇹🇬 Togo'}`}
-                    </span>
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* LIST OF CHANNELS */}
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center space-x-2">
-                  <CreditCard className="w-4 h-4 text-amber-400" />
-                  <h3 className="text-base font-bold text-white">Canaux de recharge enregistrés</h3>
-                </div>
-
-                {/* Country Filter Buttons & Search Bar */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
-                    <button
-                      type="button"
-                      onClick={() => setAdminChannelCountryFilter('ALL')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        adminChannelCountryFilter === 'ALL'
-                          ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Tous ({rechargeChannels.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAdminChannelCountryFilter('CM')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center space-x-1 ${
-                        adminChannelCountryFilter === 'CM'
-                          ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                          : 'text-slate-400 hover:text-emerald-300'
-                      }`}
-                    >
-                      <span>🇨🇲 Cameroun</span>
-                      <span className="text-[10px] font-mono opacity-80">
-                        ({rechargeChannels.filter(c => c.countryCode === 'CM' || (!c.countryCode && (c.accountNumber?.startsWith('+237') || c.name?.toLowerCase().includes('cameroun') || c.name?.toLowerCase().includes('orange')))).length})
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAdminChannelCountryFilter('TG')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center space-x-1 ${
-                        adminChannelCountryFilter === 'TG'
-                          ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
-                          : 'text-slate-400 hover:text-amber-300'
-                      }`}
-                    >
-                      <span>🇹🇬 Togo</span>
-                      <span className="text-[10px] font-mono opacity-80">
-                        ({rechargeChannels.filter(c => c.countryCode === 'TG' || (!c.countryCode && !c.accountNumber?.startsWith('+237') && !c.name?.toLowerCase().includes('cameroun') && !c.name?.toLowerCase().includes('orange'))).length})
-                      </span>
-                    </button>
-                  </div>
-
-                  {/* Search Bar */}
-                  <div className="relative w-full sm:w-56">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
-                    <input
-                      type="text"
-                      placeholder="Rechercher..."
-                      value={channelSearch}
-                      onChange={(e) => setChannelSearch(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-400"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {rechargeChannels.length === 0 ? (
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center space-y-2">
-                  <CreditCard className="w-10 h-10 text-slate-600 mx-auto" />
-                  <p className="text-sm font-bold text-slate-300">Aucun canal de recharge configuré</p>
-                  <p className="text-xs text-slate-500">Utilisez le formulaire ci-dessus pour ajouter votre premier canal Mobile Money.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {rechargeChannels
-                    .filter(c => {
-                      const cCode = c.countryCode || (c.accountNumber?.startsWith('+237') || c.name?.toLowerCase().includes('cameroun') || c.name?.toLowerCase().includes('orange') ? 'CM' : 'TG');
-                      if (adminChannelCountryFilter !== 'ALL' && cCode !== adminChannelCountryFilter) {
-                        return false;
-                      }
-                      if (!channelSearch) return true;
-                      const q = channelSearch.toLowerCase();
-                      return c.name.toLowerCase().includes(q) ||
-                        c.accountNumber.toLowerCase().includes(q) ||
-                        (c.accountHolder && c.accountHolder.toLowerCase().includes(q));
-                    })
-                    .map((channel) => {
-                      const isCopied = copiedChannelId === channel.id;
-                      const cCode = channel.countryCode || (channel.accountNumber?.startsWith('+237') || channel.name?.toLowerCase().includes('cameroun') || channel.name?.toLowerCase().includes('orange') ? 'CM' : 'TG');
-                      const isCameroon = cCode === 'CM';
-
-                      return (
-                        <div
-                          key={channel.id}
-                          className={`rounded-2xl border p-4.5 transition-all space-y-3 relative ${
-                            channel.isActive
-                              ? isCameroon 
-                                ? 'bg-slate-900/90 border-emerald-500/40 shadow-md hover:border-emerald-500/70'
-                                : 'bg-slate-900/90 border-amber-500/40 shadow-md hover:border-amber-500/70'
-                              : 'bg-slate-950/60 border-slate-800/80 opacity-75'
-                          }`}
-                        >
-                          {/* Top Row: Operator & Country & Status Badge */}
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <span className={`text-base leading-none`}>
-                                  {isCameroon ? '🇨🇲' : '🇹🇬'}
-                                </span>
-                                <h4 className="text-sm sm:text-base font-black text-white">{channel.name}</h4>
-                              </div>
-                              <div className="flex items-center gap-2 text-xs">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                                  isCameroon 
-                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
-                                    : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                                }`}>
-                                  {isCameroon ? 'Cameroun (+237)' : 'Togo (+228)'}
-                                </span>
-                                {channel.accountHolder && (
-                                  <span className="text-slate-400 text-[11px]">
-                                    Titulaire : <strong className="text-slate-200">{channel.accountHolder}</strong>
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Status Pill */}
-                            <span className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 shrink-0 ${
-                              channel.isActive
-                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                                : 'bg-slate-800 border-slate-700 text-slate-400'
-                            }`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${channel.isActive ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
-                              <span>{channel.isActive ? 'Actif' : 'Inactif'}</span>
-                            </span>
-                          </div>
-
-                          {/* Phone Number Display Box */}
-                          <div className="bg-slate-950 border border-slate-800/90 rounded-xl p-3 flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Numéro de Recharge</p>
-                              <p className={`text-base font-mono font-black tracking-wide ${isCameroon ? 'text-emerald-400' : 'text-amber-400'}`}>
-                                {channel.accountNumber}
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleCopyChannelNumber(channel.id, channel.accountNumber)}
-                              className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-lg border border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer"
-                              title="Copier le numéro"
-                            >
-                              {isCopied ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-300" />}
-                              <span>{isCopied ? "Copié !" : "Copier"}</span>
-                            </button>
-                          </div>
-
-                          {/* Instructions note if present */}
-                          {channel.instructions && (
-                            <div className="bg-slate-950/50 rounded-xl p-2.5 text-xs text-slate-300 border border-slate-800/60 space-y-0.5">
-                              <p className="text-[10px] uppercase font-bold text-slate-400">Instructions :</p>
-                              <p className="text-[11px] text-slate-300 leading-relaxed">{channel.instructions}</p>
-                            </div>
-                          )}
-
-                          {/* Action Buttons Row */}
-                          <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
-                            {/* Toggle Active / Inactive */}
-                            <button
-                              type="button"
-                              onClick={() => handleToggleChannelStatus(channel.id, channel.isActive, channel.name)}
-                              className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center space-x-1.5 ${
-                                channel.isActive
-                                  ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30'
-                                  : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                              }`}
-                            >
-                              <Power className="w-3 h-3" />
-                              <span>{channel.isActive ? "Désactiver" : "Activer"}</span>
-                            </button>
-
-                            <div className="flex items-center space-x-2">
-                              {/* Edit Button */}
-                              <button
-                                type="button"
-                                onClick={() => handleEditChannel(channel)}
-                                className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-600 transition-all cursor-pointer flex items-center space-x-1"
-                              >
-                                <Edit2 className="w-3.5 h-3.5 text-amber-400" />
-                                <span>Modifier</span>
-                              </button>
-
-                              {/* Delete Button */}
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteChannel(channel)}
-                                className="bg-rose-950/60 hover:bg-rose-900 text-rose-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-rose-800/50 transition-all cursor-pointer flex items-center space-x-1"
-                              >
-                                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                                <span>Supprimer</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-            </div>
-
-          </div>
-        )}
 
       </main>
 
@@ -4923,6 +4554,169 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-md"
               >
                 Confirmer la suppression
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT ANNOUNCEMENT */}
+      {editingAnn && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-lg w-full relative space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <Edit2 className="w-5 h-5 text-amber-600" />
+                <h3 className="text-base font-bold text-slate-900">Modifier l'annonce officielle</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingAnn(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditAnnouncement} className="space-y-4">
+              <div>
+                <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
+                  Titre de l'annonce *
+                </label>
+                <input
+                  type="text"
+                  value={editAnnTitle}
+                  onChange={(e) => setEditAnnTitle(e.target.value)}
+                  className="w-full bg-slate-50 text-slate-900 text-sm font-bold p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
+                  Photo / Visuel de l'annonce
+                </label>
+                {editAnnImageUrl ? (
+                  <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 h-40">
+                    <img
+                      src={editAnnImageUrl}
+                      alt="Aperçu"
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setEditAnnImageUrl('')}
+                      className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-lg shadow-md cursor-pointer"
+                      title="Supprimer la photo"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+                    <div className="flex flex-col items-center justify-center pt-4 pb-4">
+                      <Plus className="w-6 h-6 text-slate-400 mb-1" />
+                      <p className="text-xs font-bold text-slate-700">Changer la photo</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">PNG, JPG, WEBP (Max 5 Mo)</p>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleEditAnnImageChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-slate-700 text-xs uppercase font-bold mb-1.5">
+                  Contenu complet de l'annonce *
+                </label>
+                <textarea
+                  rows={5}
+                  value={editAnnContent}
+                  onChange={(e) => setEditAnnContent(e.target.value)}
+                  className="w-full bg-slate-50 text-slate-900 font-normal p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white leading-relaxed text-sm"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingAnn(null)}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all shadow-md cursor-pointer"
+                >
+                  Enregistrer les modifications
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: PURGE ALL USERS, DEPOSITS & WITHDRAWALS */}
+      {showPurgeModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-rose-600/40 rounded-3xl p-6 max-w-md w-full relative space-y-4 shadow-2xl">
+            <div className="flex items-center space-x-3 text-rose-500">
+              <div className="p-3 bg-rose-500/10 rounded-2xl border border-rose-500/20">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Purger les données utilisateurs</h3>
+                <p className="text-xs text-rose-300/80 font-mono">Action irréversible</p>
+              </div>
+            </div>
+
+            <div className="bg-rose-950/30 border border-rose-900/50 rounded-2xl p-4 text-xs text-rose-200 leading-relaxed space-y-2">
+              <p className="font-semibold text-rose-100">
+                Cette opération supprimera définitivement :
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-slate-300">
+                <li>Tous les comptes des utilisateurs enregistrés</li>
+                <li>Tous les dépôts (en attente et approuvés)</li>
+                <li>Tous les retraits</li>
+                <li>Tous les investissements et commissions actifs</li>
+              </ul>
+              <p className="text-[11px] text-amber-300 pt-1">
+                🛡️ <strong>Sécurité :</strong> Les comptes administrateurs seront conservés pour vous permettre de garder l'accès au panneau.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3 pt-2">
+              <button
+                type="button"
+                disabled={isPurgingData}
+                onClick={() => setShowPurgeModal(false)}
+                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={isPurgingData}
+                onClick={handlePurgeUsersDepositsWithdrawals}
+                className="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg flex items-center space-x-2 cursor-pointer disabled:opacity-50"
+              >
+                {isPurgingData ? (
+                  <>
+                    <RotateCw className="w-4 h-4 animate-spin" />
+                    <span>Purge en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Confirmer la suppression</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

@@ -62,7 +62,7 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
           OPÉRATIONS RAPIDES
         </h3>
         <span className="text-[10px] font-bold uppercase font-mono px-2.5 py-0.5 rounded-full text-amber-800 bg-amber-100">
-          NUTRIEN
+          AIRPODS
         </span>
       </div>
 

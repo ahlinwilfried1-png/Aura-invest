@@ -19,6 +19,7 @@ import {
   deleteSystemConfig,
   buyProductInvestment,
   submitDepositRequest,
+  checkoutDeposit,
   submitWithdrawalRequest,
   submitSupportTicket,
   replySupportTicket,
@@ -101,6 +102,13 @@ interface AppContextType {
   buyInvestment: (productId: string, quantity?: number) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string };
   claimDailyEarning: (investmentId: string) => { success: boolean; error?: string };
   requestDeposit: (amount: number, method: any, transactionId: string, screenshotUrl: string | null) => { success: boolean; error?: string };
+  initiateDepositCheckout: (params: {
+    amount: number;
+    country: string;
+    countryCode: string;
+    method: string;
+    phoneNumber: string;
+  }) => Promise<{ success: boolean; error?: string; redirectUrl?: string; deposit?: DepositRequest }>;
   requestWithdrawal: (amount: number, network: any, accountNumber: string) => { success: boolean; error?: string };
   saveWithdrawalAccount: (accountName: string, accountNumber: string, pin: string, network?: string, country?: string, isAdminOverride?: boolean) => Promise<{ success: boolean; error?: string }>;
   sendAdminDirectMessage: (userId: string, message: string) => Promise<{ success: boolean; error?: string }>;
@@ -135,8 +143,10 @@ interface AppContextType {
   deleteDrawRecord: (recordId: string) => void;
   addTicketsToUser: (userId: string, count: number) => void;
   addAnnouncement: (data: { title: string; content: string; imageUrl?: string }) => void;
+  updateAnnouncement: (id: string, data: { title: string; content: string; imageUrl?: string }) => void;
   deleteAnnouncement: (id: string) => void;
   markAnnouncementAsRead: (id: string) => void;
+  purgeAllUsersDepositsWithdrawals: () => Promise<{ success: boolean; message?: string; error?: string }>;
   addFaq: (question: string, answer: string, category?: string) => void;
   updateFaq: (id: string, question: string, answer: string, category?: string) => void;
   deleteFaq: (id: string) => void;
@@ -210,7 +220,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const defaultAdminUsers: User[] = [
     {
       id: 'usr-admin-principal-2026',
-      name: 'Administrateur Principal (Nutrien)',
+      name: 'Administrateur Principal (AirPods)',
       phone: '+22891902026',
       whatsapp: '+22891902026',
       country: 'Togo',
@@ -223,7 +233,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       role: 'admin',
       referralCode: 'ADMIN2026',
       referredByCode: null,
-      withdrawalAccountName: 'ADMINISTRATION OFFICIELLE NUTRIEN',
+      withdrawalAccountName: 'ADMINISTRATION OFFICIELLE AIRPODS',
       withdrawalAccountNumber: '91902026',
       withdrawalPinHash: JSON.stringify({
         pwd_hash: 'd8e3b1c4a7f05926',
@@ -248,7 +258,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       role: 'admin',
       referralCode: 'ADMIN01',
       referredByCode: null,
-      withdrawalAccountName: 'ADMINISTRATION NUTRIEN',
+      withdrawalAccountName: 'ADMINISTRATION AIRPODS',
       withdrawalAccountNumber: '97194059',
       withdrawalPinHash: JSON.stringify({ pwd: 'admin123', pin: '0000', net: 'TMoney', cty: 'TG' })
     },
@@ -516,7 +526,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           name: 'TMoney (Togocom)',
           countryCode: 'TG',
           accountNumber: '+228 90 00 00 00',
-          accountHolder: 'Service Recharge Nutrien Togo',
+          accountHolder: 'Service Recharge AirPods Togo',
           instructions: 'Effectuez le transfert vers ce numéro TMoney puis saisissez la référence de transaction.',
           isActive: true,
           order: 1,
@@ -527,7 +537,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           name: 'Moov Money (Flooz)',
           countryCode: 'TG',
           accountNumber: '+228 99 00 00 00',
-          accountHolder: 'Service Recharge Nutrien Togo',
+          accountHolder: 'Service Recharge AirPods Togo',
           instructions: 'Effectuez le transfert vers ce numéro Moov Money Flooz puis saisissez la référence de transaction.',
           isActive: true,
           order: 2,
@@ -543,7 +553,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           name: 'MTN Mobile Money (MoMo Cameroun)',
           countryCode: 'CM',
           accountNumber: '+237 677 45 12 89',
-          accountHolder: 'Service Recharge Nutrien Cameroun',
+          accountHolder: 'Service Recharge AirPods Cameroun',
           instructions: 'Effectuez le transfert vers ce numéro MTN MoMo (677451289) puis saisissez l\'ID de transaction.',
           isActive: true,
           order: 3,
@@ -554,7 +564,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           name: 'Orange Money (OM Cameroun)',
           countryCode: 'CM',
           accountNumber: '+237 688 96 98 68',
-          accountHolder: 'Service Recharge Nutrien Cameroun',
+          accountHolder: 'Service Recharge AirPods Cameroun',
           instructions: 'Effectuez le transfert vers ce numéro Orange Money (688969868) puis saisissez l\'ID de transaction.',
           isActive: true,
           order: 4,
@@ -582,7 +592,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         name: 'TMoney (Togocom)',
         countryCode: 'TG',
         accountNumber: '+228 90 00 00 00',
-        accountHolder: 'Service Recharge Nutrien Togo',
+        accountHolder: 'Service Recharge AirPods Togo',
         instructions: 'Effectuez le transfert vers ce numéro TMoney puis saisissez la référence de transaction.',
         isActive: true,
         order: 1,
@@ -593,7 +603,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         name: 'Moov Money (Flooz)',
         countryCode: 'TG',
         accountNumber: '+228 99 00 00 00',
-        accountHolder: 'Service Recharge Nutrien Togo',
+        accountHolder: 'Service Recharge AirPods Togo',
         instructions: 'Effectuez le transfert vers ce numéro Moov Money Flooz puis saisissez la référence de transaction.',
         isActive: true,
         order: 2,
@@ -604,7 +614,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         name: 'MTN Mobile Money (MoMo Cameroun)',
         countryCode: 'CM',
         accountNumber: '+237 677 45 12 89',
-        accountHolder: 'Service Recharge Nutrien Cameroun',
+        accountHolder: 'Service Recharge AirPods Cameroun',
         instructions: 'Effectuez le transfert vers ce numéro MTN MoMo (677451289) puis saisissez l\'ID de transaction.',
         isActive: true,
         order: 3,
@@ -615,7 +625,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         name: 'Orange Money (OM Cameroun)',
         countryCode: 'CM',
         accountNumber: '+237 688 96 98 68',
-        accountHolder: 'Service Recharge Nutrien Cameroun',
+        accountHolder: 'Service Recharge AirPods Cameroun',
         instructions: 'Effectuez le transfert vers ce numéro Orange Money (688969868) puis saisissez l\'ID de transaction.',
         isActive: true,
         order: 4,
@@ -682,6 +692,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       let dbTickets: SupportTicket[] | null = null;
       let dbCommissions: CommissionHistory[] | null = null;
       let dbBonusRows: any[] | null = null;
+      let sysAnnouncements: Announcement[] | null = null;
 
       const master = await fetchAllTablesMaster(force);
       if (master) {
@@ -702,23 +713,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         dbTickets = master.tickets || [];
         dbCommissions = master.commissions || [];
         dbBonusRows = master.bonus_codes || [];
-
-        // Check if client has local records that aren't on server and rehydrate
-        try {
-          const rawLocalUsers = safeGetLocalStorage('fintech_users');
-          if (rawLocalUsers) {
-            const localUsers: User[] = JSON.parse(rawLocalUsers);
-            const serverUserIds = new Set((master.users || []).map((u: any) => u.id));
-            const missingUsers = Array.isArray(localUsers) ? localUsers.filter(u => u && u.id && !serverUserIds.has(u.id)) : [];
-            if (missingUsers.length > 0) {
-              fetch('/api/admin/rehydrate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ users: missingUsers })
-              }).catch(() => {});
-            }
-          }
-        } catch (_) {}
+        if (master.announcements && Array.isArray(master.announcements)) {
+          sysAnnouncements = master.announcements;
+        }
       } else {
         const [
           u, p, i, d, w, pr, t, c, b
@@ -861,7 +858,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Process Bonus Codes & System Configs
       if (dbBonusRows && Array.isArray(dbBonusRows)) {
         const realBonus: BonusCode[] = [];
-        let sysAnnouncements: Announcement[] | null = null;
         let sysFaqs: FaqItem[] | null = null;
         let sysWheel: WheelConfig | null = null;
         let sysDraws: DrawRecord[] | null = null;
@@ -932,6 +928,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setAnnouncements(sysAnnouncements);
           safeSetLocalStorage('fintech_announcements', sysAnnouncements);
         }
+
+        // Fetch announcements directly from dedicated central endpoint
+        try {
+          fetch('/api/announcements')
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.success && Array.isArray(data.announcements)) {
+                setAnnouncements(data.announcements);
+                safeSetLocalStorage('fintech_announcements', data.announcements);
+              }
+            })
+            .catch(() => {});
+        } catch (_) {}
         if (sysFaqs) {
           setFaqs(sysFaqs);
           safeSetLocalStorage('fintech_faqs', sysFaqs);
@@ -1654,6 +1663,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
+  const initiateDepositCheckout = async (params: {
+    amount: number;
+    country: string;
+    countryCode: string;
+    method: string;
+    phoneNumber: string;
+  }): Promise<{ success: boolean; error?: string; redirectUrl?: string; deposit?: DepositRequest }> => {
+    if (!currentUser) return { success: false, error: "Non connecté. Veuillez vous connecter." };
+    if (!params.amount || isNaN(params.amount) || params.amount < 1000) {
+      return { success: false, error: "Le montant minimum de recharge est de 1 000 CFA." };
+    }
+    if (!params.method || !params.method.trim()) {
+      return { success: false, error: "Veuillez choisir un moyen de paiement." };
+    }
+    const cleanPhone = (params.phoneNumber || '').trim();
+    if (!cleanPhone || cleanPhone.length < 6) {
+      return { success: false, error: "Veuillez renseigner un numéro de téléphone valide." };
+    }
+
+    const res = await checkoutDeposit({
+      userId: currentUser.id,
+      amount: params.amount,
+      country: params.country,
+      countryCode: params.countryCode,
+      method: params.method,
+      phoneNumber: cleanPhone
+    });
+
+    if (res.success && res.deposit) {
+      setDeposits(prev => {
+        const filtered = prev.filter(d => d.id !== res.deposit.id);
+        const updated = [res.deposit, ...filtered];
+        safeSetLocalStorage('fintech_deposits', updated);
+        return updated;
+      });
+      setTimeout(() => {
+        fetchAndSyncAllFromSupabase(true);
+      }, 400);
+    }
+
+    return res;
+  };
+
   const saveWithdrawalAccount = async (
     accountName: string,
     accountNumber: string,
@@ -1740,7 +1792,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       userName: userName,
       userPhone: userPhone || undefined,
       subject: "Message de l'Administration",
-      message: "Message direct du Support Client Nutrien.",
+      message: "Message direct du Support Client AirPods.",
       reply: message.trim(),
       status: 'closed',
       createdAt: nowIso,
@@ -2261,7 +2313,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         userPhone: maskedPhone,
         amount: wth.amount,
         network: wth.network || 'Mobile Money',
-        message: 'Retrait validé et payé avec succès par Nutrien.',
+        message: 'Retrait validé et payé avec succès par AirPods.',
         imageUrl: null,
         createdAt: new Date().toISOString().split('T')[0],
         isVerified: true,
@@ -2423,7 +2475,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isBlocked: false,
         createdAt: new Date().toISOString(),
         role: 'user',
-        referralCode: 'NUTRIEN'
+        referralCode: 'AIRPODS'
       };
       
       const rawPhone = (user.phone || '').trim();
@@ -2438,12 +2490,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const validAmount = Number(amount) > 0 ? Number(amount) : 2000;
       const validNetwork = (network || 'Mobile Money').trim();
-      const validMessage = (message || '').trim() || `Retrait reçu avec succès via ${validNetwork}. Merci Nutrien !`;
+      const validMessage = (message || '').trim() || `Retrait reçu avec succès via ${validNetwork}. Merci AirPods !`;
 
       const newProof: WithdrawalProof = {
         id: 'proof-' + Date.now(),
         userId: user.id,
-        userName: user.name || 'Membre Nutrien',
+        userName: user.name || 'Membre AirPods',
         userPhone: maskedPhone,
         amount: validAmount,
         network: validNetwork,
@@ -2478,13 +2530,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     updateItem('withdrawal_proofs', { ...data, status: nextStatus, isVerified: nextStatus === 'approved' }, proofId);
   };
 
-  const addAnnouncement = (data: { title: string; content: string; imageUrl?: string }) => {
-    const now = new Date();
-    const pad = (n: number) => (n < 10 ? '0' + n : n);
-    const formattedDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-    
+  const addAnnouncement = async (data: { title: string; content: string; imageUrl?: string }) => {
+    const formattedDate = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
     const newAnn: Announcement = {
-      id: `ann-${Date.now()}`,
+      id: `ann-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
       title: data.title.trim(),
       content: data.content.trim(),
       imageUrl: data.imageUrl?.trim() || null,
@@ -2493,30 +2542,113 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setAnnouncements(prev => {
-      const updated = [newAnn, ...prev];
+      const updated = [newAnn, ...prev.filter(a => a.id !== newAnn.id)];
       safeSetLocalStorage('fintech_announcements', updated);
-      saveSystemConfig('__SYS_ANNOUNCEMENTS__', updated);
+      saveSystemConfig('__SYS_ANNOUNCEMENTS__', updated).catch(() => {});
       return updated;
     });
+
+    try {
+      const res = await fetch('/api/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAnn)
+      });
+      const resJson = await res.json();
+      if (resJson && resJson.success && Array.isArray(resJson.announcements)) {
+        setAnnouncements(resJson.announcements);
+        safeSetLocalStorage('fintech_announcements', resJson.announcements);
+      }
+    } catch (err) {
+      console.warn('[Add Announcement API Error]:', err);
+    }
 
     const notifMsg = `📢 Nouvel avis officiel : ${data.title.trim()}`;
     sendGlobalNotification(notifMsg);
   };
 
-  const deleteAnnouncement = (id: string) => {
+  const updateAnnouncement = async (id: string, data: { title: string; content: string; imageUrl?: string }) => {
+    setAnnouncements(prev => {
+      const updated = prev.map(a => a.id === id ? {
+        ...a,
+        title: data.title.trim(),
+        content: data.content.trim(),
+        imageUrl: data.imageUrl?.trim() || null
+      } : a);
+      safeSetLocalStorage('fintech_announcements', updated);
+      saveSystemConfig('__SYS_ANNOUNCEMENTS__', updated).catch(() => {});
+      return updated;
+    });
+
+    try {
+      const res = await fetch('/api/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          title: data.title.trim(),
+          content: data.content.trim(),
+          imageUrl: data.imageUrl?.trim() || null
+        })
+      });
+      const resJson = await res.json();
+      if (resJson && resJson.success && Array.isArray(resJson.announcements)) {
+        setAnnouncements(resJson.announcements);
+        safeSetLocalStorage('fintech_announcements', resJson.announcements);
+      }
+    } catch (err) {
+      console.warn('[Update Announcement API Error]:', err);
+    }
+  };
+
+  const deleteAnnouncement = async (id: string) => {
     setAnnouncements(prev => {
       const updated = prev.filter(a => a.id !== id);
       safeSetLocalStorage('fintech_announcements', updated);
-      saveSystemConfig('__SYS_ANNOUNCEMENTS__', updated);
+      saveSystemConfig('__SYS_ANNOUNCEMENTS__', updated).catch(() => {});
       return updated;
     });
+
+    try {
+      const res = await fetch(`/api/announcements/${id}`, { method: 'DELETE' });
+      const resJson = await res.json();
+      if (resJson && resJson.success && Array.isArray(resJson.announcements)) {
+        setAnnouncements(resJson.announcements);
+        safeSetLocalStorage('fintech_announcements', resJson.announcements);
+      }
+    } catch (err) {
+      console.warn('[Delete Announcement API Error]:', err);
+    }
+  };
+
+  const purgeAllUsersDepositsWithdrawals = async (): Promise<{ success: boolean; message?: string; error?: string }> => {
+    try {
+      const res = await fetch('/api/admin/purge-users-deposits-withdrawals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const resJson = await res.json();
+      if (resJson && resJson.success) {
+        // Clear local storage copies
+        safeSetLocalStorage('fintech_deposits', []);
+        safeSetLocalStorage('fintech_withdrawals', []);
+        setDeposits([]);
+        setWithdrawals([]);
+        setUserInvestments([]);
+        // Re-sync with master server
+        await fetchAndSyncAllFromSupabase(true);
+        return { success: true, message: resJson.message };
+      }
+      return { success: false, error: resJson?.error || 'Erreur lors de la purge.' };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Erreur de connexion au serveur.' };
+    }
   };
 
   const markAnnouncementAsRead = (id: string) => {
     setAnnouncements(prev => {
       const updated = prev.map(a => a.id === id ? { ...a, isNew: false } : a);
       safeSetLocalStorage('fintech_announcements', updated);
-      saveSystemConfig('__SYS_ANNOUNCEMENTS__', updated);
       return updated;
     });
   };
@@ -2682,6 +2814,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       buyInvestment,
       claimDailyEarning,
       requestDeposit,
+      initiateDepositCheckout,
       requestWithdrawal,
       saveWithdrawalAccount,
       sendAdminDirectMessage,
@@ -2715,8 +2848,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteDrawRecord,
       addTicketsToUser,
       addAnnouncement,
+      updateAnnouncement,
       deleteAnnouncement,
       markAnnouncementAsRead,
+      purgeAllUsersDepositsWithdrawals,
       addFaq,
       updateFaq,
       deleteFaq,
