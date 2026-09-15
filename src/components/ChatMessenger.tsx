@@ -134,80 +134,80 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-112px)] sm:h-[calc(100vh-120px)] max-w-3xl mx-auto bg-white relative font-sans">
+    <div className="flex flex-col h-[calc(100vh-112px)] sm:h-[calc(100vh-120px)] max-w-3xl mx-auto bg-[#0d0417] text-white relative font-sans">
       
       {/* 1. CHAT HEADER / SUPPORT BAR */}
-      <div className="sticky top-0 bg-white/95 backdrop-blur-md px-4 py-3 border-b border-slate-200/80 flex items-center justify-between z-20 shadow-2xs">
+      <div className="sticky top-0 bg-[#120422]/95 backdrop-blur-md px-4 py-3 border-b border-pink-500/20 flex items-center justify-between z-20 shadow-md">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-slate-950 font-black shadow-md shadow-amber-500/20">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-white font-black shadow-md border border-pink-300/30">
             <TrendingUp className="w-5 h-5 stroke-[2.5px]" />
           </div>
 
           <div>
-            <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
-              Service Client <span className="text-amber-700">AirPods</span>
+            <h3 className="text-sm sm:text-base font-black text-white tracking-tight">
+              Service Client <span className="text-pink-400">AirPods</span>
             </h3>
-            <p className="text-[11px] text-slate-500 font-medium">Assistance instantanée VIP • Réponse en 5 min</p>
+            <p className="text-[11px] text-pink-300/70 font-medium">Assistance instantanée VIP • Réponse en 5 min</p>
           </div>
         </div>
       </div>
 
       {/* 2. CONVERSATION CANVAS AREA */}
-      <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 space-y-6 bg-white pb-36">
+      <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 space-y-6 bg-[#0d0417] pb-36">
         
         {/* Date Divider Badge */}
         <div className="flex justify-center my-2">
-          <span className="text-[11px] font-mono font-bold text-slate-400 px-3 py-1 rounded-full uppercase tracking-wider">
+          <span className="text-[11px] font-mono font-bold text-pink-300/60 bg-[#1a082b] border border-pink-500/20 px-3 py-1 rounded-full uppercase tracking-wider">
             Aujourd'hui • Communication Officielle
           </span>
         </div>
 
         {/* REQ / REFERENCE IMAGE EXACT REPLICATION: SEAMLESS TEXT FLOW DIRECTLY ON BACKGROUND */}
-        <div className="max-w-2xl mx-auto space-y-6 text-slate-900 font-sans text-sm sm:text-base leading-relaxed py-2">
+        <div className="max-w-2xl mx-auto space-y-6 text-white font-sans text-sm sm:text-base leading-relaxed py-2 bg-[#1a082b] p-4 sm:p-6 rounded-3xl border border-pink-500/25 shadow-lg">
           
           {/* Header Line with Emojis */}
-          <div className="space-y-3 font-medium text-slate-900">
-            <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center space-x-2">
+          <div className="space-y-3 font-medium text-white">
+            <h2 className="text-base sm:text-lg font-black text-white flex items-center space-x-2">
               <span>🎧✨</span> <span>AirPods — Avancez vers la réalisation de vos rêves !</span>
             </h2>
 
-            <div className="py-2 flex items-center space-x-2 text-slate-800 font-medium">
+            <div className="py-2 flex items-center space-x-2 text-pink-200 font-medium">
               <span>💸 Code de réduction du jour :</span>
-              <span className="font-mono font-black text-amber-800 text-sm bg-amber-100/70 px-2.5 py-1 rounded-md select-all">
+              <span className="font-mono font-black text-pink-300 text-sm bg-pink-500/20 border border-pink-500/30 px-2.5 py-1 rounded-md select-all">
                 649138
               </span>
             </div>
 
-            <p className="text-slate-800 text-sm sm:text-base leading-relaxed">
+            <p className="text-pink-100/90 text-sm sm:text-base leading-relaxed">
               Chaque effort est un pas vers le succès, chaque acte de persévérance renforce votre potentiel pour l'avenir.
             </p>
           </div>
 
-          <p className="text-slate-800 text-sm sm:text-base leading-relaxed">
+          <p className="text-pink-200/90 text-sm sm:text-base leading-relaxed">
             Chez AirPods, nous croyons que les opportunités appartiennent à ceux qui osent agir. Grâce à une participation active, à l'apprentissage continu et au partage d'expériences, vous pouvez non seulement vous épanouir personnellement, mais aussi grandir aux côtés de votre équipe pour bâtir ensemble un avenir meilleur.
           </p>
 
-          <p className="text-slate-900 font-bold text-sm sm:text-base leading-relaxed flex items-start space-x-2">
+          <p className="text-white font-bold text-sm sm:text-base leading-relaxed flex items-start space-x-2">
             <span className="text-lg">🌟</span>
             <span>Le succès n'attend pas les hésitants ; il appartient à ceux qui ont le courage de faire le premier pas.</span>
           </p>
 
-          <p className="text-slate-800 text-sm sm:text-base leading-relaxed">
+          <p className="text-pink-200/90 text-sm sm:text-base leading-relaxed">
             Avançons main dans la main : restons confiants, déterminés à atteindre nos objectifs et créateurs de valeur par l'action.
           </p>
 
-          <p className="font-extrabold text-amber-800 text-sm sm:text-base flex items-center space-x-2 pt-2">
+          <p className="font-extrabold text-pink-400 text-sm sm:text-base flex items-center space-x-2 pt-2">
             <span className="text-lg">💪</span>
             <span>Rejoignez AirPods et ouvrez la voie à un avenir brillant !</span>
           </p>
 
           {/* Bullet Points Section */}
           <div className="space-y-3 pt-4 text-xs sm:text-sm">
-            <p className="font-bold text-slate-900 flex items-center space-x-2">
+            <p className="font-bold text-white flex items-center space-x-2">
               <span>💡</span> <span>Pourquoi choisir AirPods ?</span>
             </p>
 
-            <ul className="space-y-2.5 pl-1 text-slate-800 font-medium">
+            <ul className="space-y-2.5 pl-1 text-pink-200/90 font-medium">
               <li className="flex items-start space-x-2.5">
                 <span className="text-base leading-none">📈</span>
                 <span>Rendements stables et fiables au quotidien</span>
@@ -220,7 +220,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
 
               <li className="flex items-start space-x-2.5">
                 <span className="text-base leading-none">💰</span>
-                <span>Commissions de parrainage jusqu'à <strong className="text-amber-800 font-black">20 %</strong></span>
+                <span>Commissions de parrainage jusqu'à <strong className="text-pink-300 font-black">20 %</strong></span>
               </li>
 
               <li className="flex items-start space-x-2.5">
@@ -236,7 +236,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
           </div>
 
           {/* Message Timestamp */}
-          <div className="flex justify-end items-center space-x-1 pt-2 text-[10px] text-slate-400 font-mono font-medium">
+          <div className="flex justify-end items-center space-x-1 pt-2 text-[10px] text-pink-300/60 font-mono font-medium">
             <span>09:34</span>
           </div>
         </div>
@@ -252,27 +252,27 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
               {/* User Message (Hidden only if it's an admin direct transmission message) */}
               {!isAdminDirect && tkt.message && (
                 <div className="flex flex-col items-end animate-fadeIn">
-                  <div className="max-w-md space-y-1.5 text-right">
+                  <div className="max-w-md space-y-1.5 text-right bg-[#1a082b] border border-pink-500/30 p-3.5 rounded-2xl rounded-tr-none shadow-md">
                     {tkt.subject && tkt.subject !== "Message Chat Support" && (
-                      <span className="text-[10px] uppercase font-mono font-black text-amber-800 block">
+                      <span className="text-[10px] uppercase font-mono font-black text-pink-400 block">
                         {tkt.subject}
                       </span>
                     )}
 
                     {/* Attached Image if present */}
                     {tkt.imageUrl && (
-                      <div className="rounded-2xl overflow-hidden max-h-56 max-w-xs mb-2">
+                      <div className="rounded-2xl overflow-hidden max-h-56 max-w-xs mb-2 border border-pink-500/30">
                         <img src={tkt.imageUrl} alt="Pièce jointe" className="w-full h-full object-cover" />
                       </div>
                     )}
 
-                    <p className="text-xs sm:text-sm font-semibold text-slate-900 leading-relaxed whitespace-pre-wrap">
+                    <p className="text-xs sm:text-sm font-semibold text-white leading-relaxed whitespace-pre-wrap">
                       {tkt.message}
                     </p>
 
-                    <div className="flex items-center justify-end space-x-1 text-[9px] font-mono text-slate-400 font-bold">
+                    <div className="flex items-center justify-end space-x-1 text-[9px] font-mono text-pink-300/60 font-bold">
                       <span>{formatTime(tkt.createdAt)}</span>
-                      <CheckCheck className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5px]" />
+                      <CheckCheck className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5px]" />
                     </div>
                   </div>
                 </div>
@@ -281,20 +281,20 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
               {/* Admin or Support Reply */}
               {adminReplyText ? (
                 <div className="flex items-start space-x-3 max-w-xl animate-fadeIn py-2">
-                  <div className="w-8 h-8 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center flex-shrink-0 font-black text-xs shadow-xs">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-white flex items-center justify-center flex-shrink-0 font-black text-xs shadow-md border border-pink-300/30">
                     ADM
                   </div>
 
-                  <div className="space-y-1 text-xs sm:text-sm text-slate-900 font-medium leading-relaxed">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 font-mono block">
+                  <div className="space-y-1 text-xs sm:text-sm text-white font-medium leading-relaxed">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-pink-400 font-mono block">
                       Administration AirPods
                     </span>
 
-                    <p className="whitespace-pre-wrap text-slate-800 bg-amber-50/60 p-3 rounded-2xl border border-amber-200/60">
+                    <p className="whitespace-pre-wrap text-pink-100 bg-[#1a082b] p-3 rounded-2xl border border-pink-500/30 shadow-md">
                       {adminReplyText}
                     </p>
 
-                    <div className="text-[9px] text-slate-400 font-mono font-medium pt-0.5">
+                    <div className="text-[9px] text-pink-300/60 font-mono font-medium pt-0.5">
                       <span>{formatTime(tkt.replyCreatedAt || tkt.createdAt)}</span>
                     </div>
                   </div>
@@ -310,20 +310,20 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
 
       {/* 3. ATTACHED IMAGE PREVIEW BAR */}
       {selectedImage && (
-        <div className="fixed bottom-[108px] sm:bottom-[114px] left-0 right-0 z-30 bg-white border-t border-amber-200 px-4 py-2 flex items-center justify-between animate-fadeIn max-w-3xl mx-auto shadow-md rounded-t-2xl">
+        <div className="fixed bottom-[108px] sm:bottom-[114px] left-0 right-0 z-30 bg-[#1a082b] border-t border-pink-500/30 px-4 py-2 flex items-center justify-between animate-fadeIn max-w-3xl mx-auto shadow-xl rounded-t-2xl">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-xl overflow-hidden border border-slate-300 relative shadow-xs">
+            <div className="w-12 h-12 rounded-xl overflow-hidden border border-pink-500/40 relative shadow-xs">
               <img src={selectedImage} alt="Aperçu" className="w-full h-full object-cover" />
             </div>
             <div>
-              <span className="text-xs font-bold text-slate-900 block">Image prête à l'envoi</span>
-              <span className="text-[10px] text-emerald-600 font-medium">Capture d'écran / Pièce jointe</span>
+              <span className="text-xs font-bold text-white block">Image prête à l'envoi</span>
+              <span className="text-[10px] text-emerald-400 font-medium">Capture d'écran / Pièce jointe</span>
             </div>
           </div>
           <button 
             type="button" 
             onClick={() => setSelectedImage(null)}
-            className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
+            className="p-1.5 rounded-full bg-[#120422] hover:bg-pink-500/20 text-pink-300 transition-colors cursor-pointer"
             title="Supprimer la photo"
           >
             <X className="w-4 h-4" />
@@ -332,7 +332,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
       )}
 
       {/* 4. MESSENGER INPUT BAR (FIXED AT BOTTOM OF SCREEN WITH ZERO GAP) */}
-      <form onSubmit={handleSendMessage} className="fixed bottom-[52px] sm:bottom-[56px] left-0 right-0 bg-white/95 backdrop-blur-md px-3 sm:px-4 py-2.5 border-t border-slate-200/90 z-30 shadow-lg">
+      <form onSubmit={handleSendMessage} className="fixed bottom-[52px] sm:bottom-[56px] left-0 right-0 bg-[#120422]/95 backdrop-blur-md px-3 sm:px-4 py-2.5 border-t border-pink-500/20 z-30 shadow-lg">
         <div className="max-w-3xl mx-auto flex items-center space-x-2 sm:space-x-3">
           
           {/* Image Attachment Icon Button */}
@@ -345,9 +345,9 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
             id="chat-file-input"
           />
           <button 
-            type="button"
+            type="button" 
             onClick={() => fileInputRef.current?.click()}
-            className="p-2.5 rounded-2xl hover:bg-slate-100 text-slate-400 hover:text-amber-600 transition-colors cursor-pointer flex-shrink-0"
+            className="p-2.5 rounded-2xl hover:bg-pink-500/20 text-pink-300 hover:text-white transition-colors cursor-pointer flex-shrink-0"
             title="Ajouter une image"
             id="chat-attach-image-btn"
           >
@@ -360,7 +360,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
             placeholder="Écrire un message..."
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            className="flex-grow bg-slate-100/90 hover:bg-slate-100 focus:bg-white border border-slate-200/90 focus:border-amber-500 outline-none rounded-2xl py-2.5 px-4 text-xs sm:text-sm font-medium text-slate-900 transition-all placeholder:text-slate-400"
+            className="flex-grow bg-[#1a082b] hover:bg-[#200a35] focus:bg-[#200a35] border border-pink-500/30 focus:border-pink-400 outline-none rounded-2xl py-2.5 px-4 text-xs sm:text-sm font-medium text-white transition-all placeholder:text-pink-300/40"
             id="chat-input-field"
           />
 
@@ -370,8 +370,8 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
             disabled={(!inputText.trim() && !selectedImage) || isSending}
             className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
               (inputText.trim() || selectedImage) && !isSending
-                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20 scale-100'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed scale-95'
+                ? 'bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white shadow-md border border-pink-300/30 scale-100'
+                : 'bg-[#1a082b] text-pink-300/30 border border-pink-500/20 cursor-not-allowed scale-95'
             }`}
             id="chat-send-btn"
           >

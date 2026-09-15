@@ -125,21 +125,21 @@ export const TeamView: React.FC<TeamViewProps> = ({
       user: u,
       level: 1 as const,
       badgeText: 'Niveau 1 (15%)',
-      badgeClass: 'bg-emerald-500/10 text-emerald-700 border border-emerald-500/30'
+      badgeClass: 'bg-pink-500/20 text-pink-300 border border-pink-500/30'
     }));
 
     const l2 = level2Users.map(u => ({
       user: u,
       level: 2 as const,
       badgeText: 'Niveau 2 (2%)',
-      badgeClass: 'bg-sky-500/10 text-sky-700 border border-sky-500/30'
+      badgeClass: 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
     }));
 
     const l3 = level3Users.map(u => ({
       user: u,
       level: 3 as const,
       badgeText: 'Niveau 3 (1%)',
-      badgeClass: 'bg-amber-500/10 text-amber-700 border border-amber-500/30'
+      badgeClass: 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
     }));
 
     return [...l1, ...l2, ...l3].map(item => {
@@ -226,31 +226,31 @@ export const TeamView: React.FC<TeamViewProps> = ({
   );
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn pb-8 font-sans text-slate-800">
+    <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn pb-8 font-sans text-white">
       {/* 1. EN-TÊTE PRINCIPAL */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 rounded-3xl p-5 sm:p-6 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="bg-gradient-to-br from-[#1a082b] via-[#260c3d] to-[#120422] rounded-3xl p-5 sm:p-6 text-white shadow-xl relative overflow-hidden border border-pink-500/30">
+        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-pink-500/15 rounded-full blur-3xl pointer-events-none" />
         
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center space-x-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-bold font-mono">
+            <div className="inline-flex items-center space-x-2 bg-pink-500/20 text-pink-300 border border-pink-500/30 px-3 py-1 rounded-full text-xs font-bold font-mono">
               <Sparkles className="w-3.5 h-3.5" />
               <span>PROGRAMME D'AFFILIATION MULTI-NIVEAUX</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
               <span>Mon Équipe & Filleuls</span>
             </h2>
-            <p className="text-xs text-slate-300 leading-relaxed max-w-md">
+            <p className="text-xs text-pink-200/80 leading-relaxed max-w-md">
               Percevez des commissions instantanées sur 3 niveaux (15% • 2% • 1%) chaque fois qu'un membre de votre équipe souscrit une offre VIP.
             </p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 text-center sm:text-right border border-white/10 min-w-[130px] w-full sm:w-auto">
-            <span className="text-[10px] uppercase font-mono tracking-wider font-extrabold text-emerald-300 block">
+          <div className="bg-[#120422]/80 backdrop-blur-md rounded-2xl p-3.5 text-center sm:text-right border border-pink-500/30 min-w-[130px] w-full sm:w-auto shadow-md">
+            <span className="text-[10px] uppercase font-mono tracking-wider font-extrabold text-pink-300 block">
               COMMISSIONS TOTALES
             </span>
-            <span className="text-xl sm:text-2xl font-black text-emerald-400 font-mono block">
-              {formatAmount(totalCommissionsAmount)} <span className="text-xs font-sans text-emerald-300">FCFA</span>
+            <span className="text-xl sm:text-2xl font-black text-pink-400 font-mono block">
+              {formatAmount(totalCommissionsAmount)} <span className="text-xs font-sans text-pink-300">FCFA</span>
             </span>
           </div>
         </div>
@@ -258,101 +258,101 @@ export const TeamView: React.FC<TeamViewProps> = ({
 
       {/* 2. STATISTIQUES RÉSUMÉES DU RÉSEAU */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 text-center shadow-xs">
-          <div className="flex items-center justify-center space-x-1.5 text-slate-500 text-xs mb-1">
-            <Users className="w-3.5 h-3.5 text-blue-600" />
+        <div className="bg-[#1a082b] border border-pink-500/25 rounded-2xl p-3.5 text-center shadow-md">
+          <div className="flex items-center justify-center space-x-1.5 text-pink-300 text-xs mb-1">
+            <Users className="w-3.5 h-3.5 text-pink-400" />
             <span className="font-bold">Total Filleuls</span>
           </div>
-          <div className="text-2xl font-black text-slate-900 font-mono">
+          <div className="text-2xl font-black text-white font-mono">
             {totalSponsoredCount}
           </div>
-          <div className="text-[10px] text-slate-400 font-medium">
+          <div className="text-[10px] text-pink-300/60 font-medium">
             Sur vos 3 niveaux
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 text-center shadow-xs">
-          <div className="flex items-center justify-center space-x-1.5 text-emerald-700 text-xs mb-1">
-            <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+        <div className="bg-[#1a082b] border border-pink-500/25 rounded-2xl p-3.5 text-center shadow-md">
+          <div className="flex items-center justify-center space-x-1.5 text-emerald-400 text-xs mb-1">
+            <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
             <span className="font-bold">Filleuls Actifs</span>
           </div>
-          <div className="text-2xl font-black text-emerald-600 font-mono">
+          <div className="text-2xl font-black text-emerald-400 font-mono">
             {activeCount}
           </div>
-          <div className="text-[10px] text-emerald-600/80 font-medium">
+          <div className="text-[10px] text-emerald-400/80 font-medium">
             Offre VIP activée
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 text-center shadow-xs">
-          <div className="flex items-center justify-center space-x-1.5 text-slate-500 text-xs mb-1">
-            <UserX className="w-3.5 h-3.5 text-slate-400" />
+        <div className="bg-[#1a082b] border border-pink-500/25 rounded-2xl p-3.5 text-center shadow-md">
+          <div className="flex items-center justify-center space-x-1.5 text-pink-300/70 text-xs mb-1">
+            <UserX className="w-3.5 h-3.5 text-pink-300/50" />
             <span className="font-bold">Inactifs</span>
           </div>
-          <div className="text-2xl font-black text-slate-500 font-mono">
+          <div className="text-2xl font-black text-pink-200/60 font-mono">
             {inactiveCount}
           </div>
-          <div className="text-[10px] text-slate-400 font-medium">
+          <div className="text-[10px] text-pink-300/50 font-medium">
             En attente d'achat
           </div>
         </div>
       </div>
 
       {/* 3. CODE & LIEN DE PARRAINAGE OFFICIEL */}
-      <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-4">
+      <div className="bg-[#1a082b] border border-pink-500/25 rounded-3xl p-5 shadow-md space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center border border-pink-500/30">
               <Share2 className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-slate-900">Inviter des amis</h3>
-              <p className="text-[11px] text-slate-500">Partagez votre code ou lien unique pour enregistrer vos filleuls</p>
+              <h3 className="text-sm font-black text-white">Inviter des amis</h3>
+              <p className="text-[11px] text-pink-300/70">Partagez votre code ou lien unique pour enregistrer vos filleuls</p>
             </div>
           </div>
         </div>
 
         {/* Code de parrainage */}
-        <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200/80 rounded-2xl gap-2">
+        <div className="flex items-center justify-between p-3 bg-[#120422] border border-pink-500/30 rounded-2xl gap-2">
           <div>
-            <span className="text-[10px] font-extrabold uppercase font-mono text-slate-400 block">
+            <span className="text-[10px] font-extrabold uppercase font-mono text-pink-300/60 block">
               VOTRE CODE DE PARRAINAGE :
             </span>
-            <span className="text-base sm:text-lg font-black text-slate-900 font-mono tracking-wider">
+            <span className="text-base sm:text-lg font-black text-white font-mono tracking-wider">
               {currentUser.referralCode || 'INDISPONIBLE'}
             </span>
           </div>
           <button
             onClick={handleCopyCode}
-            className="bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs"
+            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 active:scale-95 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer shadow-md border border-pink-300/30"
           >
-            {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
             <span>{copiedCode ? 'COPIÉ' : 'COPIER CODE'}</span>
           </button>
         </div>
 
         {/* Lien complet */}
-        <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200/80 rounded-2xl gap-2">
+        <div className="flex items-center justify-between p-3 bg-[#120422] border border-pink-500/30 rounded-2xl gap-2">
           <div className="overflow-hidden pr-2">
-            <span className="text-[10px] font-extrabold uppercase font-mono text-slate-400 block">
+            <span className="text-[10px] font-extrabold uppercase font-mono text-pink-300/60 block">
               LIEN D'INVITATION DIRECT :
             </span>
-            <span className="text-xs font-mono font-medium text-slate-700 truncate block">
+            <span className="text-xs font-mono font-medium text-pink-200 truncate block">
               {referralUrl}
             </span>
           </div>
           <button
             onClick={handleCopyLink}
-            className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all flex items-center space-x-1.5 flex-shrink-0 cursor-pointer shadow-xs"
+            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 active:scale-95 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all flex items-center space-x-1.5 flex-shrink-0 cursor-pointer shadow-md border border-pink-300/30"
           >
-            {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
             <span>{copiedLink ? 'COPIÉ' : 'COPIER LIEN'}</span>
           </button>
         </div>
 
         {/* Partage réseaux sociaux */}
         <div>
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block font-mono mb-2">
+          <span className="text-[10px] font-extrabold text-pink-300/70 uppercase tracking-wider block font-mono mb-2">
             PARTAGE RAPIDE EN 1 CLIC :
           </span>
           <div className="grid grid-cols-5 gap-2">
@@ -426,12 +426,12 @@ export const TeamView: React.FC<TeamViewProps> = ({
       </div>
 
       {/* 4. STRUCTURE DES NIVEAUX D'AFFILIATION */}
-      <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-4">
+      <div className="bg-[#1a082b] border border-pink-500/25 rounded-3xl p-5 shadow-md space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block font-mono">
+          <span className="text-xs font-extrabold text-pink-300 uppercase tracking-wider block font-mono">
             RÉPARTITION PAR NIVEAU
           </span>
-          <span className="text-[11px] text-slate-500 font-medium">Commissions automatiques</span>
+          <span className="text-[11px] text-pink-300/60 font-medium">Commissions automatiques</span>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
@@ -440,17 +440,17 @@ export const TeamView: React.FC<TeamViewProps> = ({
             onClick={() => setSelectedLevelFilter(selectedLevelFilter === 1 ? 'ALL' : 1)}
             className={`p-3.5 rounded-2xl text-center space-y-1 transition-all cursor-pointer border ${
               selectedLevelFilter === 1
-                ? 'bg-emerald-500/10 border-emerald-500 ring-2 ring-emerald-500/20'
-                : 'bg-slate-50 hover:bg-slate-100 border-slate-200/60'
+                ? 'bg-pink-500/20 border-pink-500 ring-2 ring-pink-500/30'
+                : 'bg-[#120422] hover:bg-[#1f0734] border-pink-500/20'
             }`}
           >
-            <span className="inline-block bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-full font-mono">
+            <span className="inline-block bg-pink-500/20 text-pink-300 border border-pink-500/30 text-[10px] font-black px-2 py-0.5 rounded-full font-mono">
               NIVEAU 1 (15%)
             </span>
-            <div className="text-2xl font-black text-slate-900 font-mono">
+            <div className="text-2xl font-black text-white font-mono">
               {level1Users.length}
             </div>
-            <span className="text-[10px] font-medium text-slate-500 block">Filleuls directs</span>
+            <span className="text-[10px] font-medium text-pink-300/60 block">Filleuls directs</span>
           </button>
 
           {/* NIVEAU 2 */}
@@ -458,17 +458,17 @@ export const TeamView: React.FC<TeamViewProps> = ({
             onClick={() => setSelectedLevelFilter(selectedLevelFilter === 2 ? 'ALL' : 2)}
             className={`p-3.5 rounded-2xl text-center space-y-1 transition-all cursor-pointer border ${
               selectedLevelFilter === 2
-                ? 'bg-sky-500/10 border-sky-500 ring-2 ring-sky-500/20'
-                : 'bg-slate-50 hover:bg-slate-100 border-slate-200/60'
+                ? 'bg-purple-500/20 border-purple-500 ring-2 ring-purple-500/30'
+                : 'bg-[#120422] hover:bg-[#1f0734] border-pink-500/20'
             }`}
           >
-            <span className="inline-block bg-sky-100 text-sky-800 text-[10px] font-black px-2 py-0.5 rounded-full font-mono">
+            <span className="inline-block bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-black px-2 py-0.5 rounded-full font-mono">
               NIVEAU 2 (2%)
             </span>
-            <div className="text-2xl font-black text-slate-900 font-mono">
+            <div className="text-2xl font-black text-white font-mono">
               {level2Users.length}
             </div>
-            <span className="text-[10px] font-medium text-slate-500 block">Filleuls de N1</span>
+            <span className="text-[10px] font-medium text-pink-300/60 block">Filleuls de N1</span>
           </button>
 
           {/* NIVEAU 3 */}
@@ -476,37 +476,37 @@ export const TeamView: React.FC<TeamViewProps> = ({
             onClick={() => setSelectedLevelFilter(selectedLevelFilter === 3 ? 'ALL' : 3)}
             className={`p-3.5 rounded-2xl text-center space-y-1 transition-all cursor-pointer border ${
               selectedLevelFilter === 3
-                ? 'bg-amber-500/10 border-amber-500 ring-2 ring-amber-500/20'
-                : 'bg-slate-50 hover:bg-slate-100 border-slate-200/60'
+                ? 'bg-rose-500/20 border-rose-500 ring-2 ring-rose-500/30'
+                : 'bg-[#120422] hover:bg-[#1f0734] border-pink-500/20'
             }`}
           >
-            <span className="inline-block bg-amber-100 text-amber-800 text-[10px] font-black px-2 py-0.5 rounded-full font-mono">
+            <span className="inline-block bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-black px-2 py-0.5 rounded-full font-mono">
               NIVEAU 3 (1%)
             </span>
-            <div className="text-2xl font-black text-slate-900 font-mono">
+            <div className="text-2xl font-black text-white font-mono">
               {level3Users.length}
             </div>
-            <span className="text-[10px] font-medium text-slate-500 block">Filleuls de N2</span>
+            <span className="text-[10px] font-medium text-pink-300/60 block">Filleuls de N2</span>
           </button>
         </div>
       </div>
 
       {/* 5. LISTE DÉTAILLÉE DES FILLEULS AVEC STATUTS & RECHERCHE */}
-      <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-slate-100">
+      <div className="bg-[#1a082b] border border-pink-500/25 rounded-3xl p-5 shadow-md space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-pink-500/20">
           <div className="flex items-center space-x-2">
-            <Users className="w-5 h-5 text-emerald-600" />
-            <h3 className="text-sm sm:text-base font-black text-slate-900">
+            <Users className="w-5 h-5 text-pink-400" />
+            <h3 className="text-sm sm:text-base font-black text-white">
               Liste de mes filleuls ({filteredReferrals.length} / {allReferralItems.length})
             </h3>
           </div>
 
           {/* Filtres de statut */}
-          <div className="flex items-center space-x-1.5 bg-slate-100 p-1 rounded-xl text-xs font-bold w-full sm:w-auto justify-between sm:justify-start">
+          <div className="flex items-center space-x-1.5 bg-[#120422] p-1 rounded-xl text-xs font-bold w-full sm:w-auto justify-between sm:justify-start border border-pink-500/20">
             <button
               onClick={() => setSelectedStatusFilter('ALL')}
               className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                selectedStatusFilter === 'ALL' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                selectedStatusFilter === 'ALL' ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md' : 'text-pink-300/70 hover:text-white'
               }`}
             >
               Tous ({allReferralItems.length})
@@ -514,7 +514,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
             <button
               onClick={() => setSelectedStatusFilter('ACTIVE')}
               className={`px-2.5 py-1 rounded-lg transition-all flex items-center space-x-1 cursor-pointer ${
-                selectedStatusFilter === 'ACTIVE' ? 'bg-emerald-600 text-white shadow-xs' : 'text-emerald-700 hover:text-emerald-900'
+                selectedStatusFilter === 'ACTIVE' ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md' : 'text-emerald-400 hover:text-emerald-300'
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-current" />
@@ -523,7 +523,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
             <button
               onClick={() => setSelectedStatusFilter('INACTIVE')}
               className={`px-2.5 py-1 rounded-lg transition-all flex items-center space-x-1 cursor-pointer ${
-                selectedStatusFilter === 'INACTIVE' ? 'bg-slate-700 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                selectedStatusFilter === 'INACTIVE' ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md' : 'text-pink-300/70 hover:text-white'
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-current" />
@@ -534,26 +534,26 @@ export const TeamView: React.FC<TeamViewProps> = ({
 
         {/* Barre de recherche dans les filleuls */}
         <div className="relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-pink-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Rechercher par numéro de téléphone ou nom..."
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-[#120422] border border-pink-500/30 rounded-xl text-xs font-medium text-white placeholder:text-pink-300/40 focus:outline-none focus:border-pink-400 transition-all"
           />
         </div>
 
         {/* Contenu de la liste des filleuls */}
         {filteredReferrals.length === 0 ? (
-          <div className="py-10 text-center text-slate-500 text-xs space-y-2">
-            <Users className="w-10 h-10 text-slate-300 mx-auto" />
-            <p className="font-bold text-slate-800 text-sm">
+          <div className="py-10 text-center text-pink-300/70 text-xs space-y-2">
+            <Users className="w-10 h-10 text-pink-400/40 mx-auto" />
+            <p className="font-bold text-white text-sm">
               {allReferralItems.length === 0 
                 ? "Aucun filleul enregistré pour le moment" 
                 : "Aucun filleul ne correspond à vos filtres"}
             </p>
-            <p className="text-slate-500 max-w-xs mx-auto text-[11px]">
+            <p className="text-pink-200/60 max-w-xs mx-auto text-[11px]">
               {allReferralItems.length === 0 
                 ? "Partagez votre lien de parrainage ou votre code avec vos contacts pour bâtir votre réseau et toucher des gains quotidiens !"
                 : "Essayez de réinitialiser vos critères de recherche ou vos filtres de niveau."}
@@ -565,14 +565,14 @@ export const TeamView: React.FC<TeamViewProps> = ({
                   setSelectedStatusFilter('ALL');
                   setSearchQuery('');
                 }}
-                className="mt-2 text-emerald-600 font-bold text-xs underline cursor-pointer"
+                className="mt-2 text-pink-400 font-bold text-xs underline cursor-pointer"
               >
                 Réinitialiser les filtres
               </button>
             )}
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-pink-500/20">
             {filteredReferrals.map((ref, idx) => {
               const regDate = ref.user.createdAt ? new Date(ref.user.createdAt) : new Date();
               const formattedDate = regDate.toLocaleDateString('fr-FR', {
@@ -588,34 +588,34 @@ export const TeamView: React.FC<TeamViewProps> = ({
               return (
                 <div
                   key={ref.user.id || idx}
-                  className="py-4 space-y-3 hover:bg-slate-50/60 transition-all rounded-2xl px-2 sm:px-3"
+                  className="py-4 space-y-3 hover:bg-[#120422]/50 transition-all rounded-2xl px-2 sm:px-3"
                 >
                   {/* Ligne 1: Identifiant, Badges niveau & Statut actif */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center space-x-3">
                       <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-xs font-mono flex-shrink-0 ${
                         ref.isActive 
-                          ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' 
-                          : 'bg-slate-100 text-slate-500 border border-slate-200'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                          : 'bg-[#120422] text-pink-300/60 border border-pink-500/20'
                       }`}>
                         {ref.user.name ? ref.user.name.charAt(0).toUpperCase() : 'U'}
                       </div>
                       
                       <div>
                         <div className="flex items-center space-x-2">
-                          <span className="font-black text-slate-900 text-sm sm:text-base">
+                          <span className="font-black text-white text-sm sm:text-base">
                             {ref.user.phone || ref.user.name}
                           </span>
                           {ref.user.name && ref.user.phone && ref.user.name !== ref.user.phone && (
-                            <span className="text-xs text-slate-500 font-medium hidden sm:inline">
+                            <span className="text-xs text-pink-300/70 font-medium hidden sm:inline">
                               ({ref.user.name})
                             </span>
                           )}
                         </div>
 
-                        <div className="flex items-center space-x-2 text-[11px] text-slate-500 mt-0.5">
+                        <div className="flex items-center space-x-2 text-[11px] text-pink-300/60 mt-0.5">
                           <span className="flex items-center space-x-1">
-                            <Clock className="w-3 h-3 text-slate-400" />
+                            <Clock className="w-3 h-3 text-pink-400" />
                             <span>Inscrit le {formattedDate} à {formattedTime}</span>
                           </span>
                         </div>
@@ -630,13 +630,13 @@ export const TeamView: React.FC<TeamViewProps> = ({
 
                       {/* Badge Statut Actif / Inactif */}
                       {ref.isActive ? (
-                        <span className="inline-flex items-center space-x-1 bg-emerald-500/10 text-emerald-700 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full font-mono">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="inline-flex items-center space-x-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full font-mono">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                           <span>ACTIF {ref.user.vipLevel ? `(VIP ${ref.user.vipLevel})` : '(Investisseur)'}</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center space-x-1 bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-bold px-2 py-0.5 rounded-full font-mono">
-                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                        <span className="inline-flex items-center space-x-1 bg-[#120422] text-pink-300/60 border border-pink-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full font-mono">
+                          <span className="w-1.5 h-1.5 rounded-full bg-pink-300/40" />
                           <span>INACTIF (Non investi)</span>
                         </span>
                       )}
@@ -644,21 +644,21 @@ export const TeamView: React.FC<TeamViewProps> = ({
                   </div>
 
                   {/* Ligne 2: Montant investi par le filleul et Commissions générées pour vous */}
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100/80 bg-slate-50/50 p-2.5 rounded-xl text-xs">
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-pink-500/20 bg-[#120422]/70 p-2.5 rounded-xl text-xs">
                     <div>
-                      <span className="text-[10px] uppercase font-mono font-bold text-slate-400 block">
+                      <span className="text-[10px] uppercase font-mono font-bold text-pink-300/60 block">
                         Investissement Filleul
                       </span>
-                      <span className="font-mono font-black text-slate-800 text-xs sm:text-sm">
+                      <span className="font-mono font-black text-white text-xs sm:text-sm">
                         {formatAmount(ref.totalInvested)} FCFA
                       </span>
                     </div>
 
                     <div className="text-right">
-                      <span className="text-[10px] uppercase font-mono font-bold text-emerald-700 block">
+                      <span className="text-[10px] uppercase font-mono font-bold text-pink-400 block">
                         Votre commission générée
                       </span>
-                      <span className="font-mono font-black text-emerald-600 text-xs sm:text-sm">
+                      <span className="font-mono font-black text-pink-400 text-xs sm:text-sm">
                         +{formatAmount(ref.totalCommission)} FCFA
                       </span>
                     </div>
@@ -671,15 +671,15 @@ export const TeamView: React.FC<TeamViewProps> = ({
       </div>
 
       {/* 6. FONCTIONNEMENT DU PROGRAMME D'AFFILIATION */}
-      <div className="bg-slate-50 border border-slate-200/80 rounded-3xl p-5 space-y-2.5">
-        <div className="flex items-center space-x-2 text-slate-900 font-extrabold text-sm sm:text-base">
-          <HelpCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+      <div className="bg-[#1a082b] border border-pink-500/25 rounded-3xl p-5 space-y-2.5">
+        <div className="flex items-center space-x-2 text-white font-extrabold text-sm sm:text-base">
+          <HelpCircle className="w-5 h-5 text-pink-400 flex-shrink-0" />
           <h3>Règles et Fonctionnement des Commissions</h3>
         </div>
-        <p className="text-xs text-slate-600 leading-relaxed font-medium">
+        <p className="text-xs text-pink-200/90 leading-relaxed font-medium">
           Chaque nouvel utilisateur qui s'inscrit avec votre code ou lien est automatiquement et exclusivement lié à votre compte dans la base de données Supabase.
         </p>
-        <ul className="text-xs text-slate-600 space-y-1.5 list-disc pl-4 font-medium">
+        <ul className="text-xs text-pink-200/80 space-y-1.5 list-disc pl-4 font-medium">
           <li><strong>Niveau 1 (Direct) :</strong> 15% du montant à chaque souscription VIP ou recharge de vos filleuls directs.</li>
           <li><strong>Niveau 2 :</strong> 2% de commission sur les filleuls parrainés par vos membres de Niveau 1.</li>
           <li><strong>Niveau 3 :</strong> 1% de commission sur les filleuls de Niveau 3.</li>
@@ -689,13 +689,13 @@ export const TeamView: React.FC<TeamViewProps> = ({
 
       {/* 7. HISTORIQUE DES DERNIÈRES COMMISSIONS */}
       {commissions.filter(c => c.referrerId === currentUser.id).length > 0 && (
-        <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-3">
-          <div className="flex items-center space-x-2 text-xs font-black text-slate-900 uppercase font-mono">
-            <ArrowUpRight className="w-4 h-4 text-emerald-600" />
+        <div className="bg-[#1a082b] border border-pink-500/25 rounded-3xl p-5 shadow-md space-y-3">
+          <div className="flex items-center space-x-2 text-xs font-black text-pink-400 uppercase font-mono">
+            <ArrowUpRight className="w-4 h-4 text-pink-400" />
             <span>Historique des commissions perçues</span>
           </div>
 
-          <div className="space-y-2 max-h-56 overflow-y-auto pr-1 divide-y divide-slate-100">
+          <div className="space-y-2 max-h-56 overflow-y-auto pr-1 divide-y divide-pink-500/20">
             {commissions
               .filter(c => c.referrerId === currentUser.id)
               .map(comm => (
@@ -704,12 +704,12 @@ export const TeamView: React.FC<TeamViewProps> = ({
                   className="py-2.5 flex justify-between items-center text-xs first:pt-0"
                 >
                   <div>
-                    <span className="font-bold text-slate-900 block">{comm.refereeName}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="font-bold text-white block">{comm.refereeName}</span>
+                    <span className="text-[10px] text-pink-300/60 font-mono">
                       Niveau {comm.level} • {new Date(comm.createdAt).toLocaleDateString('fr-FR')} à {new Date(comm.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
-                  <span className="font-black text-emerald-600 font-mono text-sm">
+                  <span className="font-black text-pink-400 font-mono text-sm">
                     +{formatAmount(comm.amount)} FCFA
                   </span>
                 </div>

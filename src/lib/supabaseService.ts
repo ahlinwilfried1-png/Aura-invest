@@ -381,7 +381,7 @@ export async function checkoutDeposit(payload: {
   countryCode: string;
   method: string;
   phoneNumber: string;
-}): Promise<{ success: boolean; error?: string; deposit?: any; redirectUrl?: string }> {
+}): Promise<{ success: boolean; error?: string; deposit?: any; paymentUrl?: string; redirectUrl?: string }> {
   try {
     const res = await resilientFetch('/api/deposits/checkout', {
       method: 'POST',
@@ -398,7 +398,7 @@ export async function checkoutDeposit(payload: {
     console.warn('[Deposit Checkout Client Warning]:', err);
   }
 
-  // Resilient fallback: create deposit directly and provide server redirect
+  // Resilient fallback: create deposit directly and provide exact payment URL
   const trackingCode = 'DEP-' + Math.floor(100000 + Math.random() * 900000);
   const fallbackDep = {
     id: 'dep-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 7),
@@ -415,10 +415,12 @@ export async function checkoutDeposit(payload: {
     createdAt: new Date().toISOString()
   };
   await upsertItem('deposits', fallbackDep);
+  const exactPaymentGatewayUrl = 'https://soccopay.com/pay_link.php?id=108d608fd7c949fce11acb78537955ac';
   return {
     success: true,
     deposit: fallbackDep,
-    redirectUrl: `/api/pay-redirect/${fallbackDep.id}`
+    paymentUrl: exactPaymentGatewayUrl,
+    redirectUrl: exactPaymentGatewayUrl
   };
 }
 

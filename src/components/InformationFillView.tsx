@@ -61,30 +61,30 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
   };
 
   return (
-    <div className="animate-fadeIn max-w-2xl mx-auto space-y-5 pb-24 text-slate-900">
+    <div className="animate-fadeIn max-w-2xl mx-auto space-y-5 pb-24 text-white font-sans">
       {/* 1. Top Header */}
       <div className="flex items-center justify-between py-2 px-1">
         <button
           onClick={onBack}
-          className="p-2 -ml-2 text-slate-800 hover:text-black transition-transform active:scale-95 cursor-pointer flex items-center space-x-1"
+          className="p-2 -ml-2 text-pink-300 hover:text-white transition-transform active:scale-95 cursor-pointer flex items-center space-x-1"
           aria-label="Retour"
         >
           <ArrowLeft className="w-6 h-6 stroke-[2.5]" />
         </button>
-        <h1 className="text-base sm:text-lg font-extrabold text-slate-900 text-center tracking-tight flex-1">
+        <h1 className="text-base sm:text-lg font-extrabold text-white text-center tracking-tight flex-1">
           Page de remplissage des informations
         </h1>
         <div className="w-8" />
       </div>
 
       {/* 2. Intro Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-xs space-y-2">
+      <div className="bg-gradient-to-r from-pink-900/60 via-purple-900/60 to-pink-900/60 border border-pink-500/30 rounded-2xl p-4 sm:p-5 text-white shadow-lg space-y-2">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-5 h-5 text-amber-400" />
+          <div className="w-8 h-8 rounded-xl bg-pink-500/20 border border-pink-500/30 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-5 h-5 text-pink-400" />
           </div>
           <div>
-            <span className="text-xs font-mono uppercase tracking-wider text-amber-300 block font-bold">
+            <span className="text-xs font-mono uppercase tracking-wider text-pink-300 block font-bold">
               Formulaire Sécurisé
             </span>
             <h2 className="text-sm sm:text-base font-extrabold leading-snug">
@@ -92,16 +92,16 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
             </h2>
           </div>
         </div>
-        <p className="text-xs text-slate-200 leading-relaxed font-medium pt-1">
+        <p className="text-xs text-pink-100/90 leading-relaxed font-medium pt-1">
           Remplissez soigneusement vos données ci-dessous. Vos informations permettent de valider vos retraits automatiques et d'assurer la gestion sécurisée de votre compte.
         </p>
       </div>
 
       {/* 3. Link Sharing Tool */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-2.5 shadow-2xs">
+      <div className="bg-[#1a082b] border border-pink-500/25 rounded-2xl p-4 space-y-2.5 shadow-md">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
-            <Sparkles className="w-4 h-4 text-amber-500" />
+          <span className="text-xs font-bold text-pink-200 flex items-center space-x-1.5">
+            <Sparkles className="w-4 h-4 text-pink-400" />
             <span>Lien direct vers ce formulaire de remplissage :</span>
           </span>
         </div>
@@ -110,11 +110,11 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
             type="text"
             readOnly
             value={fillLink}
-            className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-700 select-all outline-none"
+            className="flex-1 bg-[#120422] border border-pink-500/30 rounded-xl px-3 py-2 text-xs font-mono text-pink-200 select-all outline-none"
           />
           <button
             onClick={handleCopyLink}
-            className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 shrink-0 cursor-pointer shadow-2xs"
+            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 shrink-0 cursor-pointer shadow-md"
           >
             <Copy className="w-3.5 h-3.5" />
             <span>{copiedLink ? 'Copié !' : 'Copier'}</span>
@@ -123,15 +123,15 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
       </div>
 
       {/* 4. Form Container */}
-      <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 space-y-4 shadow-2xs">
-        <h3 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-wide border-b border-slate-100 pb-2">
+      <form onSubmit={handleSubmit} className="bg-[#1a082b] border border-pink-500/25 rounded-2xl p-4 sm:p-6 space-y-4 shadow-md">
+        <h3 className="text-xs sm:text-sm font-bold text-pink-300 uppercase tracking-wide border-b border-pink-500/20 pb-2">
           Coordonnées Personnelles & Paiement
         </h3>
 
         {/* Nom complet */}
         <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-700 flex items-center space-x-1">
-            <User className="w-3.5 h-3.5 text-slate-500" />
+          <label className="text-xs font-bold text-pink-200/90 flex items-center space-x-1">
+            <User className="w-3.5 h-3.5 text-pink-400" />
             <span>Nom complet *</span>
           </label>
           <input
@@ -140,15 +140,15 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             placeholder="Ex: Koffi Konan Paul"
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-900 outline-none focus:border-slate-900 transition-colors"
+            className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white placeholder:text-pink-300/40 outline-none focus:border-pink-400 transition-colors"
           />
         </div>
 
         {/* Téléphone & WhatsApp */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 flex items-center space-x-1">
-              <Phone className="w-3.5 h-3.5 text-slate-500" />
+            <label className="text-xs font-bold text-pink-200/90 flex items-center space-x-1">
+              <Phone className="w-3.5 h-3.5 text-pink-400" />
               <span>Numéro de Téléphone *</span>
             </label>
             <input
@@ -157,13 +157,13 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               placeholder="Ex: 0707070707"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-slate-900 outline-none focus:border-slate-900 transition-colors"
+              className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-white placeholder:text-pink-300/40 outline-none focus:border-pink-400 transition-colors"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 flex items-center space-x-1">
-              <Phone className="w-3.5 h-3.5 text-emerald-600" />
+            <label className="text-xs font-bold text-pink-200/90 flex items-center space-x-1">
+              <Phone className="w-3.5 h-3.5 text-emerald-400" />
               <span>Numéro WhatsApp *</span>
             </label>
             <input
@@ -172,25 +172,25 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
               value={formData.whatsapp}
               onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
               placeholder="Ex: +22890909090"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-slate-900 outline-none focus:border-slate-900 transition-colors"
+              className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-white placeholder:text-pink-300/40 outline-none focus:border-pink-400 transition-colors"
             />
           </div>
         </div>
 
         {/* Pays */}
         <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-700 flex items-center space-x-1">
-            <Globe className="w-3.5 h-3.5 text-slate-500" />
+          <label className="text-xs font-bold text-pink-200/90 flex items-center space-x-1">
+            <Globe className="w-3.5 h-3.5 text-pink-400" />
             <span>Pays de résidence *</span>
           </label>
           <select
             required
             value={formData.country}
             onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-900 outline-none focus:border-slate-900 transition-colors"
+            className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white outline-none focus:border-pink-400 transition-colors"
           >
             {ALLOWED_COUNTRIES.map(c => (
-              <option key={c.code} value={c.name}>
+              <option key={c.code} value={c.name} className="bg-[#120422] text-white">
                 {c.flag} {c.name} ({c.prefix})
               </option>
             ))}
@@ -200,26 +200,26 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
         {/* Payment Network & Account */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 flex items-center space-x-1">
-              <CreditCard className="w-3.5 h-3.5 text-slate-500" />
+            <label className="text-xs font-bold text-pink-200/90 flex items-center space-x-1">
+              <CreditCard className="w-3.5 h-3.5 text-pink-400" />
               <span>Moyen de paiement préféré</span>
             </label>
             <select
               value={formData.paymentNetwork}
               onChange={(e) => setFormData({ ...formData, paymentNetwork: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-900 outline-none focus:border-slate-900 transition-colors"
+              className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white outline-none focus:border-pink-400 transition-colors"
             >
-              <option value="Orange Money">Orange Money</option>
-              <option value="MTN Money">MTN Money</option>
-              <option value="Moov Money">Moov Money</option>
-              <option value="Mixx By Yas">Mixx By Yas</option>
-              <option value="Wave">Wave</option>
+              <option value="Orange Money" className="bg-[#120422] text-white">Orange Money</option>
+              <option value="MTN Money" className="bg-[#120422] text-white">MTN Money</option>
+              <option value="Moov Money" className="bg-[#120422] text-white">Moov Money</option>
+              <option value="Mixx By Yas" className="bg-[#120422] text-white">Mixx By Yas</option>
+              <option value="Wave" className="bg-[#120422] text-white">Wave</option>
             </select>
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 flex items-center space-x-1">
-              <CreditCard className="w-3.5 h-3.5 text-amber-600" />
+            <label className="text-xs font-bold text-pink-200/90 flex items-center space-x-1">
+              <CreditCard className="w-3.5 h-3.5 text-pink-400" />
               <span>Numéro de compte pour les retraits</span>
             </label>
             <input
@@ -228,7 +228,7 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
               value={formData.paymentAccount}
               onChange={(e) => setFormData({ ...formData, paymentAccount: e.target.value })}
               placeholder="Ex: 07070707"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-slate-900 outline-none focus:border-slate-900 transition-colors"
+              className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-white placeholder:text-pink-300/40 outline-none focus:border-pink-400 transition-colors"
             />
           </div>
         </div>
@@ -236,32 +236,32 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
         {/* CNI & Email Optional */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700">Numéro de CNI / Pièce d'identité (Optionnel)</label>
+            <label className="text-xs font-bold text-pink-200/90">Numéro de CNI / Pièce d'identité (Optionnel)</label>
             <input
               type="text"
               value={formData.idNumber}
               onChange={(e) => setFormData({ ...formData, idNumber: e.target.value })}
               placeholder="Ex: C009827189"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-900 outline-none focus:border-slate-900"
+              className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white placeholder:text-pink-300/40 outline-none focus:border-pink-400"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700">Adresse Email (Optionnel)</label>
+            <label className="text-xs font-bold text-pink-200/90">Adresse Email (Optionnel)</label>
             <input
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="Ex: exemple@mail.com"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-900 outline-none focus:border-slate-900"
+              className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs font-medium text-white placeholder:text-pink-300/40 outline-none focus:border-pink-400"
             />
           </div>
         </div>
 
         {/* Status indicator */}
         {isSaved && (
-          <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl flex items-center space-x-2 text-xs font-bold">
-            <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
+          <div className="bg-pink-500/20 border border-pink-500/40 text-pink-200 p-3 rounded-xl flex items-center space-x-2 text-xs font-bold">
+            <CheckCircle2 className="w-4 h-4 text-pink-400 shrink-0" />
             <span>Vos données sont validées et enregistrées dans la base de données.</span>
           </div>
         )}
@@ -269,9 +269,9 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
         {/* Submit Button */}
         <button
           type="submit"
-          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm py-3 rounded-xl transition-all shadow-2xs flex items-center justify-center space-x-2 cursor-pointer active:scale-[0.99]"
+          className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-extrabold text-xs sm:text-sm py-3 rounded-xl transition-all shadow-md flex items-center justify-center space-x-2 cursor-pointer active:scale-[0.99] border border-pink-300/30"
         >
-          <Send className="w-4 h-4 text-amber-400" />
+          <Send className="w-4 h-4 text-pink-200" />
           <span>Valider et enregistrer les informations</span>
         </button>
       </form>

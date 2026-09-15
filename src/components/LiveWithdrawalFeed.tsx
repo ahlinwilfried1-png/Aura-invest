@@ -125,21 +125,21 @@ export const LiveWithdrawalFeed: React.FC<LiveWithdrawalFeedProps> = ({ withdraw
 
   return (
     <div className="w-full flex justify-end mb-1">
-      <div className="w-full max-w-[175px] sm:max-w-[190px] bg-white text-slate-800 rounded-lg p-1.5 border border-emerald-200/90 shadow-2xs relative overflow-hidden">
+      <div className="w-full max-w-[175px] sm:max-w-[190px] bg-[#1a082b] text-white rounded-lg p-1.5 border border-pink-500/30 shadow-md relative overflow-hidden">
         {/* Header Row: Indicator Dot + Live Badge + Time */}
-        <div className="flex items-center justify-between text-[8px] font-mono mb-1 pb-0.5 border-b border-slate-100">
+        <div className="flex items-center justify-between text-[8px] font-mono mb-1 pb-0.5 border-b border-pink-500/20">
           <div className="flex items-center space-x-1">
             <span className="relative flex h-1.5 w-1.5 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-pink-500"></span>
             </span>
-            <span className="font-extrabold text-emerald-800 uppercase tracking-tight flex items-center gap-0.5 text-[7.5px]">
-              <Zap className="w-2 h-2 text-amber-500 fill-amber-500 inline shrink-0" />
+            <span className="font-extrabold text-pink-300 uppercase tracking-tight flex items-center gap-0.5 text-[7.5px]">
+              <Zap className="w-2 h-2 text-pink-400 fill-pink-400 inline shrink-0" />
               <span>RETRAIT EN DIRECT</span>
             </span>
           </div>
 
-          <span className="text-slate-400 font-sans text-[7.5px] font-medium">
+          <span className="text-pink-300/60 font-sans text-[7.5px] font-medium">
             {current.timeAgo}
           </span>
         </div>
@@ -158,23 +158,23 @@ export const LiveWithdrawalFeed: React.FC<LiveWithdrawalFeedProps> = ({ withdraw
               {/* User Handle & Network */}
               <div className="flex flex-col truncate pr-1 min-w-0">
                 <div className="flex items-center space-x-1">
-                  <span className="font-extrabold text-slate-900 truncate text-[8.5px]">
+                  <span className="font-extrabold text-white truncate text-[8.5px]">
                     {current.handle}
                   </span>
                   {current.vipBadge && (
-                    <span className="bg-amber-50 text-amber-700 font-mono text-[7px] font-black px-1 py-0 rounded border border-amber-200 shrink-0">
+                    <span className="bg-pink-500/20 text-pink-300 font-mono text-[7px] font-black px-1 py-0 rounded border border-pink-500/30 shrink-0">
                       {current.vipBadge}
                     </span>
                   )}
                 </div>
-                <div className="flex items-center space-x-0.5 text-[7.5px] text-emerald-700 font-semibold truncate">
-                  <CheckCircle2 className="w-2 h-2 text-emerald-600 shrink-0" />
+                <div className="flex items-center space-x-0.5 text-[7.5px] text-pink-300 font-semibold truncate">
+                  <CheckCircle2 className="w-2 h-2 text-pink-400 shrink-0" />
                   <span className="truncate">{current.statusText} • {current.network}</span>
                 </div>
               </div>
 
               {/* Amount Pill */}
-              <div className="shrink-0 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded text-emerald-800 font-black font-mono text-[8.5px] text-right shadow-2xs">
+              <div className="shrink-0 bg-[#120422] border border-pink-500/30 px-1.5 py-0.5 rounded text-pink-400 font-black font-mono text-[8.5px] text-right shadow-xs">
                 +{amountFormatted} XOF
               </div>
             </motion.div>

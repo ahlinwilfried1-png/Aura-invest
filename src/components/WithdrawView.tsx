@@ -199,56 +199,63 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
   const isAccountLinked = Boolean(currentUser.withdrawalAccountNumber || currentUser.withdrawalAccountName);
 
   return (
-    <div className="animate-fadeIn max-w-xl mx-auto space-y-4 pb-4 text-slate-900 font-sans">
+    <div className="animate-fadeIn max-w-xl mx-auto space-y-4 pb-12 text-pink-50 font-sans">
       {/* 1. En-tête (Header) */}
       <div className="flex items-center justify-between py-2 px-1">
         <button
           onClick={onBack}
-          className="p-1.5 -ml-1 text-slate-800 hover:text-black transition-transform active:scale-95 cursor-pointer"
+          className="p-1.5 -ml-1 text-pink-300 hover:text-white transition-transform active:scale-95 cursor-pointer"
           aria-label="Retour"
         >
           <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
         </button>
 
-        <h1 className="text-base sm:text-lg font-bold text-slate-900 text-center tracking-tight">
+        <h1 className="text-base sm:text-lg font-black text-white text-center tracking-tight">
           Retirer
         </h1>
 
-        <div className="w-9" />
+        <button
+          type="button"
+          onClick={() => setShowHistoryModal(true)}
+          className="p-1.5 text-pink-300 hover:text-white cursor-pointer"
+          aria-label="Historique"
+        >
+          <History className="w-5 h-5" />
+        </button>
       </div>
 
       {/* 2. Solde disponible & Section Compte de retrait */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-100/80 space-y-3.5">
+      <div className="bg-[#1a082b] rounded-2xl p-4 sm:p-5 shadow-xl border border-pink-500/25 space-y-3.5">
         <div className="flex items-center justify-between">
-          <span className="text-xs sm:text-sm font-bold text-slate-800">
+          <span className="text-xs sm:text-sm font-bold text-pink-200">
             Solde disponible
           </span>
-          <span className="text-base sm:text-lg font-black text-red-600 font-sans">
+          <span className="text-base sm:text-lg font-black text-pink-400 font-mono">
             XAF {currentUser.balance.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
           </span>
         </div>
 
-        {/* Carte jaune/orange de compte de retrait */}
+        {/* Carte VIP rose-violette de compte de retrait */}
         {isAccountLinked ? (
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#FFD034] via-[#FFB823] to-[#FFA012] p-4 text-slate-950 shadow-xs space-y-2">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 p-4 text-white shadow-lg space-y-2 border border-pink-400/40">
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-amber-950/10 border border-amber-950/20 flex items-center justify-center shrink-0">
-                  <CreditCard className="w-5 h-5 text-slate-950 stroke-[2.2]" />
+                <div className="w-8 h-8 rounded-lg bg-black/20 border border-white/20 flex items-center justify-center shrink-0">
+                  <CreditCard className="w-5 h-5 text-white stroke-[2.2]" />
                 </div>
                 <div>
                   <div className="text-sm sm:text-base font-extrabold tracking-tight flex items-center gap-1.5">
                     <span>{currentUser.withdrawalAccountName || currentUser.name}</span>
                     {currentUser.withdrawalCountry && (
-                      <span className="text-xs bg-amber-950/15 px-1.5 py-0.5 rounded font-mono font-bold">
+                      <span className="text-xs bg-black/20 px-1.5 py-0.5 rounded font-mono font-bold">
                         {ALLOWED_COUNTRIES.find(c => c.code === currentUser.withdrawalCountry)?.flag || '🇹🇬'}
                       </span>
                     )}
                   </div>
-                  <div className="text-xs sm:text-sm font-mono font-bold text-slate-900 flex items-center gap-2">
+                  <div className="text-xs sm:text-sm font-mono font-bold text-pink-100 flex items-center gap-2">
                     <span>{currentUser.withdrawalAccountNumber || currentUser.phone}</span>
                     {currentUser.withdrawalNetwork && (
-                      <span className="bg-amber-950 text-amber-300 font-sans text-[10px] px-2 py-0.5 rounded-full font-extrabold">
+                      <span className="bg-black/30 text-white font-sans text-[10px] px-2 py-0.5 rounded-full font-extrabold border border-white/20">
                         {currentUser.withdrawalNetwork}
                       </span>
                     )}
@@ -260,15 +267,15 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
                 onClick={() => {
                   onShowToast('err', "Votre compte bancaire/retrait est verrouillé définitivement. Modification impossible.");
                 }}
-                className="text-[10px] font-extrabold bg-amber-950/15 text-slate-950 px-2.5 py-1 rounded-lg flex items-center space-x-1 cursor-pointer hover:bg-amber-950/20 transition-colors border border-amber-950/20"
+                className="text-[10px] font-extrabold bg-black/25 text-white px-2.5 py-1 rounded-lg flex items-center space-x-1 cursor-pointer hover:bg-black/30 transition-colors border border-white/20"
                 title="Compte lié verrouillé"
               >
-                <Lock className="w-3 h-3 text-amber-900" />
+                <Lock className="w-3 h-3 text-pink-200" />
                 <span>Verrouillé</span>
               </button>
             </div>
 
-            <div className="text-[11px] font-semibold text-amber-950/80 tracking-wide pt-1 flex items-center justify-between">
+            <div className="text-[11px] font-semibold text-pink-100/90 tracking-wide pt-1 flex items-center justify-between">
               <span>Compte de retrait actif</span>
               {currentUser.withdrawalNetwork && (
                 <span className="font-extrabold">{currentUser.withdrawalNetwork}</span>
@@ -276,11 +283,11 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
             </div>
           </div>
         ) : (
-          <div className="rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/50 p-4 text-center space-y-2">
-            <p className="text-xs font-bold text-amber-900">
+          <div className="rounded-2xl border-2 border-dashed border-pink-500/40 bg-pink-950/20 p-4 text-center space-y-2">
+            <p className="text-xs font-bold text-pink-200">
               Aucun compte de retrait lié
             </p>
-            <p className="text-[11px] text-amber-800">
+            <p className="text-[11px] text-pink-300/80">
               Enregistrez vos coordonnées pour recevoir vos gains directement.
             </p>
             <button
@@ -291,7 +298,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
                   setShowBindModal(true);
                 }
               }}
-              className="mt-1 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-extrabold px-4 py-2 rounded-xl shadow-xs transition-all inline-flex items-center space-x-1.5 cursor-pointer"
+              className="mt-1 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-xs font-extrabold px-4 py-2 rounded-xl shadow-md transition-all inline-flex items-center space-x-1.5 cursor-pointer border border-pink-400/40"
             >
               <PlusCircle className="w-4 h-4" />
               <span>Ajouter un compte</span>
@@ -300,29 +307,27 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
         )}
 
         <div className="text-center pt-1">
-          <span className="text-xs font-semibold text-slate-600 block">
-            Montant minimum de retrait : <strong className="text-amber-700 font-bold">1 000 FCFA</strong> (Frais : 15%)
+          <span className="text-xs font-semibold text-pink-300/80 block">
+            Montant minimum de retrait : <strong className="text-pink-400 font-bold">1 000 FCFA</strong> (Frais : 15%)
           </span>
         </div>
       </div>
 
       {/* 3. Demande de retrait */}
       <div className="space-y-2.5 pt-1">
-        <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight flex items-center justify-between">
+        <h2 className="text-sm sm:text-base font-bold text-white tracking-tight flex items-center justify-between">
           <span>Demande de retrait</span>
           {isAccountLinked && (
-            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full font-mono">
+            <span className="text-[10px] bg-pink-500/20 text-pink-300 font-extrabold px-2 py-0.5 rounded-full font-mono border border-pink-500/30">
               Compte récepteur lié
             </span>
           )}
         </h2>
 
-        {/* Demande de retrait form */}
-
         <form onSubmit={handleWithdrawSubmit} className="space-y-3.5">
           {/* Champ de saisie avec XAF à gauche */}
-          <div className="bg-white rounded-2xl p-3 sm:p-3.5 flex items-center space-x-3 shadow-xs border border-slate-200/90 focus-within:border-amber-500 transition-colors">
-            <span className="text-slate-900 font-black text-sm sm:text-base pr-3 border-r border-slate-200 select-none">
+          <div className="bg-[#1a082b] rounded-2xl p-3 sm:p-3.5 flex items-center space-x-3 shadow-xl border border-pink-500/25 focus-within:border-pink-400 transition-colors">
+            <span className="text-pink-300 font-black text-sm sm:text-base pr-3 border-r border-pink-500/25 select-none">
               XAF
             </span>
             <input
@@ -332,14 +337,14 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
               value={wthAmount}
               onChange={(e) => setWthAmount(e.target.value)}
               placeholder="Entrez le montant du retrait"
-              className="w-full text-slate-900 font-bold text-xs sm:text-sm outline-none bg-transparent placeholder:text-slate-400 placeholder:font-normal"
+              className="w-full text-white font-bold text-xs sm:text-sm outline-none bg-transparent placeholder:text-pink-300/40 placeholder:font-normal font-mono"
             />
           </div>
 
-          {/* Champ Code PIN Obligatoire (masqué / jamais en clair) */}
-          <div className="bg-white rounded-2xl p-3 sm:p-3.5 flex items-center space-x-3 shadow-xs border border-slate-200/90 focus-within:border-amber-500 transition-colors">
-            <div className="flex items-center space-x-1.5 text-slate-900 font-black text-xs sm:text-sm pr-3 border-r border-slate-200 select-none shrink-0">
-              <LockKeyhole className="w-4 h-4 text-emerald-600 stroke-[2.2]" />
+          {/* Champ Code PIN Obligatoire */}
+          <div className="bg-[#1a082b] rounded-2xl p-3 sm:p-3.5 flex items-center space-x-3 shadow-xl border border-pink-500/25 focus-within:border-pink-400 transition-colors">
+            <div className="flex items-center space-x-1.5 text-pink-300 font-black text-xs sm:text-sm pr-3 border-r border-pink-500/25 select-none shrink-0">
+              <LockKeyhole className="w-4 h-4 text-pink-400 stroke-[2.2]" />
               <span>PIN</span>
             </div>
             <input
@@ -349,14 +354,14 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
               value={wthPin}
               onChange={(e) => setWthPin(e.target.value)}
               placeholder="Code PIN de retrait obligatoire (ex: 1234)"
-              className="w-full text-slate-900 font-mono font-bold text-xs sm:text-sm outline-none bg-transparent placeholder:text-slate-400 placeholder:font-sans placeholder:font-normal"
+              className="w-full text-white font-mono font-bold text-xs sm:text-sm outline-none bg-transparent placeholder:text-pink-300/40 placeholder:font-sans placeholder:font-normal"
             />
           </div>
 
-          {/* Grand bouton orange/jaune Retrait */}
+          {/* Grand bouton rose/violet Retrait */}
           <button
             type="submit"
-            className="w-full py-3.5 bg-gradient-to-r from-[#FFC233] via-[#FFAF1A] to-[#FF9914] text-slate-950 font-extrabold text-sm sm:text-base rounded-full shadow-xs hover:brightness-105 active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center space-x-2"
+            className="w-full py-3.5 bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-extrabold text-sm sm:text-base rounded-full shadow-lg shadow-pink-600/40 active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center space-x-2 border border-pink-400/40"
           >
             <LockKeyhole className="w-4 h-4 stroke-[2.5]" />
             <span>Valider le Retrait</span>
@@ -365,38 +370,38 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
       </div>
 
       {/* 4. Règles de retrait */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-100/80 space-y-3.5 text-xs sm:text-sm text-slate-800 leading-relaxed font-sans">
-        <p className="font-medium text-slate-800">
-          <strong className="font-extrabold text-slate-900">Règles de retrait :</strong> Le montant minimum de retrait est de 1 000 XAF, limité à 2 retraits par jour.
+      <div className="bg-[#1a082b] rounded-2xl p-4 sm:p-5 shadow-xl border border-pink-500/25 space-y-3.5 text-xs sm:text-sm text-pink-200/90 leading-relaxed font-sans">
+        <p className="font-medium text-pink-200">
+          <strong className="font-extrabold text-white">Règles de retrait :</strong> Le montant minimum de retrait est de 1 000 XAF, limité à 2 retraits par jour.
         </p>
 
-        <p className="font-medium text-slate-800">
-          <strong className="font-extrabold text-slate-900">Heures de traitement des retraits :</strong> De 08h00 à 17h00
+        <p className="font-medium text-pink-200">
+          <strong className="font-extrabold text-white">Heures de traitement des retraits :</strong> De 08h00 à 17h00
         </p>
 
-        <p className="font-medium text-slate-700">
+        <p className="font-medium text-pink-300/80">
           Afin de garantir un traitement efficace de vos transactions, le montant minimum de retrait est fixé à 1 000 XAF.
         </p>
 
-        <p className="font-medium text-slate-700">
+        <p className="font-medium text-pink-300/80">
           Nous nous engageons à vous offrir une expérience de retrait rapide et sécurisée.
         </p>
       </div>
 
       {/* MODAL: LIAISON DU COMPTE DE RETRAIT */}
       {showBindModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl p-5 sm:p-6 max-w-md w-full space-y-4 relative shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-gradient-to-b from-[#1f0a33] to-[#120521] rounded-3xl p-5 sm:p-6 max-w-md w-full space-y-4 relative shadow-2xl border border-pink-500/30 text-pink-50">
+            <div className="flex items-center justify-between border-b border-pink-500/25 pb-3">
               <div className="flex items-center space-x-2">
-                <CreditCard className="w-5 h-5 text-amber-600" />
-                <h3 className="text-base font-bold text-slate-900">
+                <CreditCard className="w-5 h-5 text-pink-400" />
+                <h3 className="text-base font-bold text-white">
                   Compte de retrait
                 </h3>
               </div>
               <button
                 onClick={() => setShowBindModal(false)}
-                className="p-1 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 cursor-pointer"
+                className="p-1 rounded-full bg-pink-500/20 text-pink-300 hover:text-white cursor-pointer border border-pink-500/30"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -405,7 +410,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
             <form onSubmit={handleSaveAccount} className="space-y-3.5 text-xs sm:text-sm">
               {/* Choix du pays */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-pink-200 mb-1">
                   Pays de votre compte Mobile Money
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
@@ -418,8 +423,8 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
                         onClick={() => handleCountrySelect(c.code)}
                         className={`flex items-center space-x-1.5 px-2.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                           isSel
-                            ? 'bg-amber-100 border-amber-500 text-slate-950 font-black'
-                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                            ? 'bg-gradient-to-r from-pink-600 to-purple-600 border-pink-400 text-white font-black shadow-md'
+                            : 'bg-[#240c3c] border-pink-500/20 text-pink-200 hover:bg-[#320f50]'
                         }`}
                       >
                         <span className="text-sm">{c.flag}</span>
@@ -432,7 +437,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
 
               {/* Choix du réseau Mobile Money pour ce pays */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-pink-200 mb-1">
                   Moyen de réseau ({currentBindCountry.name})
                 </label>
                 <div className="flex flex-wrap gap-1.5">
@@ -445,8 +450,8 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
                         onClick={() => setBindNetwork(net)}
                         className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer border ${
                           isSel
-                            ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-xs'
-                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                            ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white border-pink-400 shadow-md'
+                            : 'bg-[#240c3c] border-pink-500/20 text-pink-200 hover:bg-[#320f50]'
                         }`}
                       >
                         {net}
@@ -457,7 +462,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-pink-200 mb-1">
                   Nom complet (Titulaire du compte)
                 </label>
                 <input
@@ -465,33 +470,33 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
                   value={bindName}
                   onChange={(e) => setBindName(e.target.value)}
                   placeholder="Ex: Jean Dupont"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold outline-none focus:border-amber-500"
+                  className="w-full bg-[#250d3c] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-white font-bold outline-none focus:border-pink-400"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-pink-200 mb-1">
                   Numéro de retrait Mobile Money ({bindNetwork})
                 </label>
-                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 focus-within:border-amber-500">
-                  <span className="text-xs font-bold font-mono text-amber-600 mr-2 shrink-0">{currentBindCountry.prefix}</span>
+                <div className="flex items-center bg-[#250d3c] border border-pink-500/30 rounded-xl px-3.5 py-2 focus-within:border-pink-400">
+                  <span className="text-xs font-bold font-mono text-pink-400 mr-2 shrink-0">{currentBindCountry.prefix}</span>
                   <input
                     type="tel"
                     value={bindPhone}
                     onChange={(e) => setBindPhone(e.target.value)}
                     placeholder="Ex: 0701020304"
-                    className="w-full bg-transparent text-slate-900 font-mono font-bold outline-none text-xs sm:text-sm"
+                    className="w-full bg-transparent text-white font-mono font-bold outline-none text-xs sm:text-sm"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                <label className="block text-xs font-bold text-pink-200 mb-1 flex items-center justify-between">
                   <span>Code PIN de sécurité</span>
-                  <span className="text-[10px] text-amber-800 font-semibold flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-emerald-600" /> Chiffré & Masqué
+                  <span className="text-[10px] text-pink-300 font-semibold flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-pink-400" /> Chiffré & Masqué
                   </span>
                 </label>
                 <input
@@ -500,19 +505,19 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
                   value={bindPin}
                   onChange={(e) => setBindPin(e.target.value)}
                   placeholder="**** (Ex: 1234)"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-mono font-bold outline-none focus:border-amber-500"
+                  className="w-full bg-[#250d3c] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-white font-mono font-bold outline-none focus:border-pink-400"
                   required
                 />
               </div>
 
-              <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-2.5 text-[11px] text-amber-900 leading-snug">
-                <LockKeyhole className="w-3.5 h-3.5 text-amber-700 inline-block mr-1 -mt-0.5" />
+              <div className="bg-[#240c3c] border border-pink-500/25 rounded-xl p-2.5 text-[11px] text-pink-300 leading-snug">
+                <LockKeyhole className="w-3.5 h-3.5 text-pink-400 inline-block mr-1 -mt-0.5" />
                 Votre code PIN est crypté et sécurisé. Il ne sera jamais affiché à l'écran.
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 bg-gradient-to-r from-[#FFC233] to-[#FF9914] text-slate-950 font-extrabold text-sm rounded-full shadow-xs hover:brightness-105 active:scale-[0.99] transition-all cursor-pointer"
+                className="w-full py-3 bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 text-white font-extrabold text-sm rounded-full shadow-lg shadow-pink-600/40 hover:brightness-105 active:scale-[0.99] transition-all cursor-pointer border border-pink-400/40"
               >
                 Valider
               </button>
@@ -523,8 +528,8 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
 
       {/* MODAL: HISTORIQUE DES RETRAITS */}
       {showHistoryModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col relative shadow-xl overflow-hidden">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-gradient-to-b from-[#1f0a33] to-[#120521] rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col relative shadow-2xl border border-pink-500/30 overflow-hidden text-pink-50">
             <WithdrawalHistoryView
               withdrawals={withdrawals}
               currentUser={currentUser}

@@ -34,23 +34,23 @@ export const FaqView: React.FC<FaqViewProps> = ({
   };
 
   return (
-    <div className="animate-fadeIn max-w-2xl mx-auto space-y-6 pb-24 text-slate-900 font-sans">
+    <div className="animate-fadeIn max-w-2xl mx-auto space-y-6 pb-24 text-white font-sans">
       {/* Header */}
-      <div className="flex items-center justify-between py-2 px-1 border-b border-slate-200/60 pb-4">
+      <div className="flex items-center justify-between py-2 px-1 border-b border-pink-500/20 pb-4">
         <button
           onClick={onBack}
-          className="p-2 -ml-2 text-slate-800 hover:text-amber-600 transition-transform active:scale-95 cursor-pointer flex items-center space-x-1"
+          className="p-2 -ml-2 text-pink-300 hover:text-pink-100 transition-transform active:scale-95 cursor-pointer flex items-center space-x-1"
           aria-label="Retour"
         >
           <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
           <span className="text-xs font-bold hidden sm:inline">Retour</span>
         </button>
         <div className="text-center">
-          <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center space-x-2">
-            <HelpCircle className="w-5 h-5 text-teal-600 stroke-[2.5]" />
+          <h1 className="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center justify-center space-x-2">
+            <HelpCircle className="w-5 h-5 text-pink-400 stroke-[2.5]" />
             <span>Foire Aux Questions</span>
           </h1>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">
+          <p className="text-xs text-pink-300/70 font-medium mt-0.5">
             Réponses instantanées à toutes vos préoccupations
           </p>
         </div>
@@ -58,19 +58,19 @@ export const FaqView: React.FC<FaqViewProps> = ({
       </div>
 
       {/* Banner / Intro */}
-      <div className="bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 rounded-3xl p-5 text-white shadow-md relative overflow-hidden">
-        <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-20 pointer-events-none">
-          <HelpCircle className="w-36 h-36" />
+      <div className="bg-gradient-to-r from-pink-900/50 via-purple-950 to-[#1a082b] rounded-3xl p-5 text-white shadow-lg border border-pink-500/30 relative overflow-hidden">
+        <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-15 pointer-events-none">
+          <HelpCircle className="w-36 h-36 text-pink-400" />
         </div>
         <div className="relative z-10 space-y-2">
-          <div className="inline-flex items-center space-x-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+          <div className="inline-flex items-center space-x-1.5 bg-pink-500/20 border border-pink-500/30 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider text-pink-300">
+            <Sparkles className="w-3.5 h-3.5 text-pink-300" />
             <span>Assistance Instantanée 24/7</span>
           </div>
           <h2 className="text-base sm:text-lg font-black leading-snug">
             Comment pouvons-nous vous aider aujourd'hui ?
           </h2>
-          <p className="text-xs text-teal-50 font-medium leading-relaxed max-w-md">
+          <p className="text-xs text-pink-200/80 font-medium leading-relaxed max-w-md">
             Trouvez rapidement des réponses claires sur la souscription VIP, les recharges Mobile Money, les retraits express et le parrainage.
           </p>
         </div>
@@ -78,18 +78,18 @@ export const FaqView: React.FC<FaqViewProps> = ({
 
       {/* Search Bar */}
       <div className="relative">
-        <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+        <Search className="w-5 h-5 text-pink-400 absolute left-4 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Rechercher une question (ex: retrait, dépôt, parrainage...)"
-          className="w-full bg-slate-100/90 focus:bg-white border border-slate-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 rounded-2xl pl-11 pr-4 py-3.5 text-sm font-semibold text-slate-900 outline-none transition-all placeholder:text-slate-400 placeholder:font-normal shadow-2xs"
+          className="w-full bg-[#1a082b] focus:bg-[#200a35] border border-pink-500/30 focus:border-pink-400 focus:ring-2 focus:ring-pink-500/20 rounded-2xl pl-11 pr-4 py-3.5 text-sm font-semibold text-white outline-none transition-all placeholder:text-pink-300/40 placeholder:font-normal shadow-md"
         />
         {searchTerm && (
           <button
             onClick={() => setSearchTerm('')}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 hover:text-slate-600 bg-slate-200 rounded-full w-5 h-5 flex items-center justify-center"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-pink-300 hover:text-white bg-[#120422] border border-pink-500/30 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer"
           >
             ✕
           </button>
@@ -105,10 +105,10 @@ export const FaqView: React.FC<FaqViewProps> = ({
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer ${
+                className={`px-4 py-2 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer border ${
                   isSelected
-                    ? 'bg-teal-600 text-white shadow-xs scale-105'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md border-pink-400 scale-105'
+                    : 'bg-[#1a082b] border-pink-500/20 text-pink-300 hover:bg-[#250b3f]'
                 }`}
               >
                 {cat}
@@ -121,10 +121,10 @@ export const FaqView: React.FC<FaqViewProps> = ({
       {/* FAQs Accordion List */}
       <div className="space-y-3">
         {filteredFaqs.length === 0 ? (
-          <div className="text-center py-12 bg-slate-50 rounded-3xl border border-dashed border-slate-200 p-6 space-y-3">
-            <HelpCircle className="w-10 h-10 text-slate-300 mx-auto" />
-            <p className="text-sm font-bold text-slate-700">Aucune question trouvée</p>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          <div className="text-center py-12 bg-[#1a082b] rounded-3xl border border-pink-500/20 p-6 space-y-3 shadow-md">
+            <HelpCircle className="w-10 h-10 text-pink-400/40 mx-auto" />
+            <p className="text-sm font-bold text-white">Aucune question trouvée</p>
+            <p className="text-xs text-pink-300/70 max-w-sm mx-auto">
               Essayez avec d'autres mots clés ou contactez directement le support client.
             </p>
           </div>
@@ -134,29 +134,29 @@ export const FaqView: React.FC<FaqViewProps> = ({
             return (
               <div
                 key={faq.id}
-                className={`bg-white rounded-2xl border transition-all duration-200 overflow-hidden ${
+                className={`bg-[#1a082b] rounded-2xl border transition-all duration-200 overflow-hidden shadow-md ${
                   isExpanded
-                    ? 'border-teal-500/50 shadow-md ring-1 ring-teal-500/20'
-                    : 'border-slate-200/80 shadow-2xs hover:border-slate-300'
+                    ? 'border-pink-500/60 ring-1 ring-pink-500/30'
+                    : 'border-pink-500/25 hover:border-pink-500/40'
                 }`}
               >
                 <button
                   onClick={() => toggleExpand(faq.id)}
                   className="w-full text-left p-4.5 flex items-start justify-between space-x-3 cursor-pointer select-none"
                 >
-                  <div className="space-y-1 pr-2">
+                  <div className="space-y-1.5 pr-2">
                     {faq.category && (
-                      <span className="inline-block px-2.5 py-0.5 bg-teal-50 text-teal-700 text-[10px] font-black uppercase tracking-wider rounded-md">
+                      <span className="inline-block px-2.5 py-0.5 bg-pink-950/60 border border-pink-500/30 text-pink-300 text-[10px] font-black uppercase tracking-wider rounded-md font-mono">
                         {faq.category}
                       </span>
                     )}
-                    <h3 className="text-sm font-extrabold text-slate-900 leading-snug">
+                    <h3 className="text-sm font-extrabold text-white leading-snug">
                       {faq.question}
                     </h3>
                   </div>
                   <div
                     className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-transform duration-200 ${
-                      isExpanded ? 'bg-teal-600 text-white rotate-180' : 'bg-slate-100 text-slate-500'
+                      isExpanded ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white rotate-180' : 'bg-[#120422] border border-pink-500/30 text-pink-300'
                     }`}
                   >
                     <ChevronDown className="w-4 h-4 stroke-[2.5]" />
@@ -164,7 +164,7 @@ export const FaqView: React.FC<FaqViewProps> = ({
                 </button>
 
                 {isExpanded && (
-                  <div className="px-4.5 pb-4.5 pt-1 text-xs text-slate-700 font-medium leading-relaxed border-t border-slate-100 bg-slate-50/50">
+                  <div className="px-4.5 pb-4.5 pt-2 text-xs text-pink-100/90 font-medium leading-relaxed border-t border-pink-500/20 bg-[#120422]/60">
                     <p className="whitespace-pre-line">{faq.answer}</p>
                   </div>
                 )}
@@ -176,21 +176,21 @@ export const FaqView: React.FC<FaqViewProps> = ({
 
       {/* Support Callout Banner */}
       {onOpenSupport && (
-        <div className="bg-slate-900 rounded-3xl p-5 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+        <div className="bg-gradient-to-r from-[#1a082b] via-[#240b3b] to-[#1a082b] border border-pink-500/30 rounded-3xl p-5 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
           <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-teal-500 text-slate-950 flex items-center justify-center shrink-0 font-bold">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-pink-500 to-purple-600 text-white flex items-center justify-center shrink-0 font-bold shadow-md">
               <MessageCircle className="w-6 h-6 stroke-[2.2]" />
             </div>
             <div>
               <h4 className="text-sm font-extrabold text-white">Vous n'avez pas trouvé votre réponse ?</h4>
-              <p className="text-xs text-slate-300 font-normal mt-0.5">
+              <p className="text-xs text-pink-200/80 font-normal mt-0.5">
                 Notre équipe du service client répond instantanément en direct sur le chat.
               </p>
             </div>
           </div>
           <button
             onClick={onOpenSupport}
-            className="w-full sm:w-auto px-5 py-3 bg-teal-500 hover:bg-teal-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 cursor-pointer shrink-0 text-center"
+            className="w-full sm:w-auto px-5 py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 cursor-pointer shrink-0 text-center shadow-md border border-pink-300/30"
           >
             Contacter le support
           </button>

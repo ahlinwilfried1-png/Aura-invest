@@ -238,45 +238,50 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col font-sans select-none antialiased relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-[#1b062b] via-[#120422] to-[#0c0216] flex flex-col font-sans select-none antialiased relative overflow-hidden text-white">
       
+      {/* Ambient glowing background accents */}
+      <div className="absolute -top-32 -left-32 w-80 h-80 bg-pink-600/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/3 -right-32 w-80 h-80 bg-purple-600/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-fuchsia-600/15 rounded-full blur-3xl pointer-events-none" />
+
       {/* Background AirPods Audio Product Image Layer */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20 pointer-events-none transform scale-105"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15 pointer-events-none transform scale-105 mix-blend-luminosity"
         style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=1200&auto=format&fit=crop&q=80')` }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/75 to-slate-900/95 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#1b062b]/85 via-[#120422]/80 to-[#0c0216]/95 pointer-events-none" />
 
       {/* HEADER SECTION (FEATURING AIRPODS BACKDROP) */}
       <div className="relative text-white pt-8 pb-14 px-5 shadow-md overflow-hidden min-h-[170px] flex flex-col justify-center">
         {/* AirPods Audio Atmosphere Background Image */}
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat transform scale-100 transition-all duration-300 opacity-80"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transform scale-100 transition-all duration-300 opacity-30 mix-blend-luminosity"
           style={{ backgroundImage: `url('https://images.unsplash.com/photo-1572536147248-ac59a8abfa4b?w=1200&auto=format&fit=crop&q=80')` }}
         />
-        {/* Subtle dark gradient overlay to ensure text contrast while keeping the image clear */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-slate-900/60" />
+        {/* Rose-violet gradient overlay to ensure text contrast */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#160626] via-[#1b062b]/85 to-[#240b3c]/90" />
         
         {/* Top Header Bar: Logo & Centered Title */}
         <div className="relative z-10 flex items-center justify-between mb-4">
           {/* Logo "AirPods" on Top Left */}
           <div className="flex items-center space-x-2">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/30 backdrop-blur-xs flex items-center justify-center text-amber-300 font-black text-sm tracking-tight border border-amber-400/40 shadow-xs">
-              <Headphones className="w-5 h-5 text-amber-300 stroke-[2.5px]" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-white font-black text-sm tracking-tight border border-pink-300/40 shadow-md shadow-pink-500/25">
+              <Headphones className="w-5 h-5 text-white stroke-[2.5px]" />
             </div>
-            <span className="text-2xl font-black tracking-tight text-white drop-shadow-xs">
+            <span className="text-2xl font-black tracking-tight text-white drop-shadow-sm">
               AirPods
             </span>
           </div>
 
           {/* Centered Title */}
-          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white text-center flex-1 pr-12">
+          <h1 className="text-lg sm:text-xl font-black tracking-tight text-white text-center flex-1 pr-12">
             {mode === 'register' ? 'Inscription' : mode === 'login' ? 'Connexion' : 'Mot de passe oublié'}
           </h1>
         </div>
 
         {/* Header Subtitle text */}
-        <p className="relative z-10 text-xs sm:text-sm font-medium text-emerald-100 max-w-sm leading-relaxed tracking-wide">
+        <p className="relative z-10 text-xs sm:text-sm font-medium text-pink-200/90 max-w-sm leading-relaxed tracking-wide">
           {mode === 'register' 
             ? 'Fournissez vos informations pour enregistrer votre compte'
             : mode === 'login'
@@ -285,8 +290,8 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
         </p>
       </div>
 
-      {/* FORM SECTION (ELEGANT WHITE CARD WITH ROUNDED TOP CORNERS) */}
-      <div className="relative z-10 flex-1 bg-white -mt-6 rounded-t-[32px] px-5 sm:px-8 pt-7 pb-10 shadow-2xl max-w-md w-full mx-auto flex flex-col justify-between border-t border-emerald-100">
+      {/* FORM SECTION (ROSE-VIOLET ELEGANT CARD WITH ROUNDED TOP CORNERS) */}
+      <div className="relative z-10 flex-1 bg-[#160626]/95 backdrop-blur-xl -mt-6 rounded-t-[32px] px-5 sm:px-8 pt-7 pb-10 shadow-2xl max-w-md w-full mx-auto flex flex-col justify-between border-t border-x border-pink-500/30 text-white">
         
         <AnimatePresence mode="wait">
           {/* ========================================================= */}
@@ -303,9 +308,9 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
             >
               {/* Alert Messages */}
               {errorMsg && (
-                <div className="bg-red-50 border border-red-200 p-3.5 rounded-2xl flex flex-col space-y-2 text-xs text-red-700 animate-fadeIn font-medium">
+                <div className="bg-pink-950/80 border border-pink-500/60 p-3.5 rounded-2xl flex flex-col space-y-2 text-xs text-pink-100 animate-fadeIn font-medium">
                   <div className="flex items-center space-x-2.5">
-                    <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                    <AlertCircle className="w-4 h-4 text-pink-400 shrink-0" />
                     <span>{errorMsg}</span>
                   </div>
                   {errorMsg.toLowerCase().includes('déjà un compte') && (
@@ -316,7 +321,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                         setLoginPhone(regPhone);
                         setErrorMsg(null);
                       }}
-                      className="self-start text-[11px] font-black text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-3 py-1 rounded-xl transition-colors cursor-pointer ml-6"
+                      className="self-start text-[11px] font-black text-white bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 px-3 py-1 rounded-xl transition-colors cursor-pointer ml-6 shadow-sm border border-pink-300/30"
                     >
                       → Se connecter maintenant
                     </button>
@@ -325,8 +330,8 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
               )}
 
               {successMsg && (
-                <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl flex items-center space-x-2.5 text-xs text-emerald-800 animate-fadeIn font-bold">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <div className="bg-emerald-950/80 border border-emerald-500/60 p-3.5 rounded-2xl flex items-center space-x-2.5 text-xs text-emerald-200 animate-fadeIn font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>{successMsg}</span>
                 </div>
               )}
@@ -335,26 +340,26 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                 
                 {/* 1. Téléphone */}
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-800">
+                  <label className="block text-xs font-bold text-pink-200 tracking-wide">
                     Téléphone
                   </label>
                   
-                  <div className="flex items-center bg-[#f4f5f8] rounded-2xl px-3.5 py-3 border border-transparent focus-within:border-emerald-500 focus-within:bg-white transition-all">
+                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
                     {/* Indicatif pays selector */}
-                    <div className="relative flex items-center pr-2 border-r border-slate-200/80 mr-2 shrink-0">
+                    <div className="relative flex items-center pr-2 border-r border-pink-500/30 mr-2 shrink-0">
                       <select
                         value={countryPrefix}
                         onChange={(e) => handleCountryChange(e.target.value)}
-                        className="bg-transparent text-xs font-bold text-slate-800 outline-none pr-4 cursor-pointer appearance-none"
+                        className="bg-transparent text-xs font-black text-pink-100 outline-none pr-4 cursor-pointer appearance-none"
                         id="reg-country-prefix"
                       >
                         {COUNTRIES.map(c => (
-                          <option key={c.code} value={c.prefix}>
+                          <option key={c.code} value={c.prefix} className="bg-[#1a082b] text-white font-semibold">
                             {c.flag} {c.prefix} ({c.name})
                           </option>
                         ))}
                       </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-0 pointer-events-none" />
+                      <ChevronDown className="w-3.5 h-3.5 text-pink-300 absolute right-0 pointer-events-none" />
                     </div>
 
                     {/* Champ de saisie numéro */}
@@ -363,7 +368,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                       placeholder="Veuillez entrer le numéro de télép..."
                       value={regPhone}
                       onChange={(e) => setRegPhone(e.target.value)}
-                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400"
+                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40"
                       id="reg-phone-input"
                       required
                     />
@@ -372,24 +377,24 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
 
                 {/* 2. Mot de passe */}
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-800">
+                  <label className="block text-xs font-bold text-pink-200 tracking-wide">
                     Mot de passe
                   </label>
 
-                  <div className="flex items-center bg-[#f4f5f8] rounded-2xl px-3.5 py-3 border border-transparent focus-within:border-emerald-500 focus-within:bg-white transition-all relative">
+                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all relative shadow-inner">
                     <input
                       type={showRegPassword ? "text" : "password"}
                       placeholder="Veuillez entrer le mot de passe"
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
-                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 pr-8"
+                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40 pr-8"
                       id="reg-password-input"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowRegPassword(!showRegPassword)}
-                      className="absolute right-3.5 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                      className="absolute right-3.5 text-pink-300 hover:text-white p-1 cursor-pointer transition-colors"
                       title={showRegPassword ? "Masquer" : "Afficher"}
                     >
                       {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -399,24 +404,24 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
 
                 {/* 3. Confirmer le mot de passe */}
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-800">
-                    Mot de passe
+                  <label className="block text-xs font-bold text-pink-200 tracking-wide">
+                    Confirmer le mot de passe
                   </label>
 
-                  <div className="flex items-center bg-[#f4f5f8] rounded-2xl px-3.5 py-3 border border-transparent focus-within:border-emerald-500 focus-within:bg-white transition-all relative">
+                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all relative shadow-inner">
                     <input
                       type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Veuillez entrer le mot de passe"
+                      placeholder="Veuillez confirmer le mot de passe"
                       value={regConfirmPassword}
                       onChange={(e) => setRegConfirmPassword(e.target.value)}
-                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 pr-8"
+                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40 pr-8"
                       id="reg-confirm-password-input"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3.5 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                      className="absolute right-3.5 text-pink-300 hover:text-white p-1 cursor-pointer transition-colors"
                       title={showConfirmPassword ? "Masquer" : "Afficher"}
                     >
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -427,12 +432,12 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                   {regConfirmPassword.length > 0 && (
                     <div className="pt-0.5 text-[11px] font-medium">
                       {regPassword === regConfirmPassword ? (
-                        <span className="text-emerald-600 flex items-center space-x-1">
+                        <span className="text-emerald-400 flex items-center space-x-1">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Les mots de passe correspondent</span>
                         </span>
                       ) : (
-                        <span className="text-amber-600 flex items-center space-x-1">
+                        <span className="text-pink-400 flex items-center space-x-1 font-semibold">
                           <XCircle className="w-3.5 h-3.5" />
                           <span>Les mots de passe ne correspondent pas</span>
                         </span>
@@ -443,27 +448,27 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
 
                 {/* 4. Code d'invitation */}
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-800">
+                  <label className="block text-xs font-bold text-pink-200 tracking-wide">
                     Code d'invitation
                   </label>
 
-                  <div className="flex items-center bg-[#f4f5f8] rounded-2xl px-3.5 py-3 border border-transparent focus-within:border-emerald-500 focus-within:bg-white transition-all">
+                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
                     <input
                       type="text"
                       placeholder="97194059"
                       value={regReferrer}
                       onChange={(e) => setRegReferrer(e.target.value)}
-                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400"
+                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40"
                       id="reg-referrer-input"
                     />
                   </div>
                 </div>
 
-                {/* Grand Bouton Vert: S'inscrire */}
+                {/* Bouton Rose-Violet : S'inscrire */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 bg-[#046A38] hover:bg-[#03542c] active:scale-[0.99] text-white font-bold text-sm sm:text-base rounded-2xl shadow-sm cursor-pointer transition-all flex items-center justify-center space-x-2 mt-4"
+                  className="w-full py-3.5 bg-gradient-to-r from-pink-500 via-fuchsia-600 to-purple-600 hover:from-pink-400 hover:via-fuchsia-500 hover:to-purple-500 active:scale-[0.99] text-white font-black text-sm sm:text-base rounded-2xl shadow-lg shadow-pink-600/30 cursor-pointer transition-all flex items-center justify-center space-x-2 border border-pink-300/35 mt-4"
                   id="reg-submit-btn"
                 >
                   {loading ? (
@@ -476,7 +481,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
 
               {/* Link Se connecter */}
               <div className="text-center pt-2">
-                <span className="text-xs text-slate-600">Vous avez déjà un compte ? </span>
+                <span className="text-xs text-pink-200/80">Vous avez déjà un compte ? </span>
                 <button
                   type="button"
                   onClick={() => {
@@ -484,7 +489,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                     setErrorMsg(null);
                     setSuccessMsg(null);
                   }}
-                  className="text-xs font-bold text-[#046A38] hover:underline cursor-pointer"
+                  className="text-xs font-black text-pink-300 hover:text-white underline underline-offset-4 cursor-pointer transition-colors"
                   id="switch-to-login-btn"
                 >
                   Se connecter
@@ -492,23 +497,23 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
               </div>
 
               {/* Logo AirPods en bas de la page d'inscription */}
-              <div className="pt-5 border-t border-slate-100 mt-5 flex flex-col items-center justify-center text-center space-y-2">
-                <div className="p-3 bg-amber-50/90 rounded-2xl border border-amber-200 flex items-center justify-center space-x-3 w-full shadow-2xs">
+              <div className="pt-5 border-t border-pink-500/20 mt-5 flex flex-col items-center justify-center text-center space-y-2">
+                <div className="p-3 bg-[#240b3c]/80 rounded-2xl border border-pink-500/30 flex items-center justify-center space-x-3 w-full shadow-md">
                   {/* AirPods Headphones SVG Logo Icon */}
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-slate-950 flex items-center justify-center shrink-0 shadow-xs border border-amber-400/40">
-                    <Headphones className="w-6 h-6 stroke-[2.5px] text-slate-950" />
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-pink-500 via-fuchsia-600 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-sm border border-pink-300/40">
+                    <Headphones className="w-6 h-6 stroke-[2.5px] text-white" />
                   </div>
                   <div className="text-left min-w-0">
                     <div className="flex items-center space-x-1.5">
-                      <span className="text-base font-black tracking-tight text-slate-900">AirPods</span>
-                      <span className="text-[10px] font-black text-amber-900 bg-amber-200/80 px-1.5 py-0.2 rounded font-mono">Official</span>
+                      <span className="text-base font-black tracking-tight text-white">AirPods</span>
+                      <span className="text-[10px] font-black text-pink-100 bg-pink-500/40 px-1.5 py-0.5 rounded font-mono border border-pink-400/40">Official</span>
                     </div>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate">
+                    <p className="text-[10px] font-bold text-pink-200/80 uppercase tracking-wider truncate">
                       AirPods Official • Audio Premium & FinTech
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] text-slate-400 font-medium">
+                <span className="text-[10px] text-pink-300/60 font-medium">
                   © AirPods — Plateforme Officielle Certifiée
                 </span>
               </div>
@@ -529,8 +534,8 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
             >
               {/* Alert Messages */}
               {errorMsg && (
-                <div className="bg-red-50 border border-red-200 p-3.5 rounded-2xl flex items-center space-x-2.5 text-xs text-red-700 animate-fadeIn font-medium">
-                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                <div className="bg-pink-950/80 border border-pink-500/60 p-3.5 rounded-2xl flex items-center space-x-2.5 text-xs text-pink-100 animate-fadeIn font-medium">
+                  <AlertCircle className="w-4 h-4 text-pink-400 shrink-0" />
                   <span>{errorMsg}</span>
                 </div>
               )}
@@ -539,26 +544,26 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                 
                 {/* 1. Téléphone */}
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-800">
+                  <label className="block text-xs font-bold text-pink-200 tracking-wide">
                     Téléphone
                   </label>
 
-                  <div className="flex items-center bg-[#f4f5f8] rounded-2xl px-3.5 py-3 border border-transparent focus-within:border-emerald-500 focus-within:bg-white transition-all">
+                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
                     {/* Indicatif pays selector */}
-                    <div className="relative flex items-center pr-2 border-r border-slate-200/80 mr-2 shrink-0">
+                    <div className="relative flex items-center pr-2 border-r border-pink-500/30 mr-2 shrink-0">
                       <select
                         value={countryPrefix}
                         onChange={(e) => handleCountryChange(e.target.value)}
-                        className="bg-transparent text-xs font-bold text-slate-800 outline-none pr-4 cursor-pointer appearance-none"
+                        className="bg-transparent text-xs font-black text-pink-100 outline-none pr-4 cursor-pointer appearance-none"
                         id="login-country-prefix"
                       >
                         {COUNTRIES.map(c => (
-                          <option key={c.code} value={c.prefix}>
+                          <option key={c.code} value={c.prefix} className="bg-[#1a082b] text-white font-semibold">
                             {c.flag} {c.prefix} ({c.name})
                           </option>
                         ))}
                       </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-0 pointer-events-none" />
+                      <ChevronDown className="w-3.5 h-3.5 text-pink-300 absolute right-0 pointer-events-none" />
                     </div>
 
                     {/* Champ de saisie numéro */}
@@ -567,7 +572,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                       placeholder="Veuillez entrer le numéro de télép..."
                       value={loginPhone}
                       onChange={(e) => setLoginPhone(e.target.value)}
-                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400"
+                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40"
                       id="login-phone-input"
                       required
                     />
@@ -576,24 +581,24 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
 
                 {/* 2. Mot de passe */}
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-800">
+                  <label className="block text-xs font-bold text-pink-200 tracking-wide">
                     Mot de passe
                   </label>
 
-                  <div className="flex items-center bg-[#f4f5f8] rounded-2xl px-3.5 py-3 border border-transparent focus-within:border-emerald-500 focus-within:bg-white transition-all relative">
+                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all relative shadow-inner">
                     <input
                       type={showLoginPassword ? "text" : "password"}
                       placeholder="Veuillez entrer le mot de passe"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 pr-8"
+                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40 pr-8"
                       id="login-password-input"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowLoginPassword(!showLoginPassword)}
-                      className="absolute right-3.5 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                      className="absolute right-3.5 text-pink-300 hover:text-white p-1 cursor-pointer transition-colors"
                       title={showLoginPassword ? "Masquer" : "Afficher"}
                     >
                       {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -601,13 +606,11 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                   </div>
                 </div>
 
-
-
-                {/* Grand Bouton Vert: SE CONNECTER */}
+                {/* Bouton Rose-Violet : SE CONNECTER */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 bg-[#046A38] hover:bg-[#03542c] active:scale-[0.99] text-white font-bold text-sm sm:text-base rounded-2xl shadow-sm cursor-pointer transition-all flex items-center justify-center space-x-2 mt-2"
+                  className="w-full py-3.5 bg-gradient-to-r from-pink-500 via-fuchsia-600 to-purple-600 hover:from-pink-400 hover:via-fuchsia-500 hover:to-purple-500 active:scale-[0.99] text-white font-black text-sm sm:text-base rounded-2xl shadow-lg shadow-pink-600/30 cursor-pointer transition-all flex items-center justify-center space-x-2 border border-pink-300/35 mt-2"
                   id="login-submit-btn"
                 >
                   {loading ? (
@@ -620,7 +623,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
 
               {/* Link S'inscrire */}
               <div className="text-center pt-2">
-                <span className="text-xs text-slate-600">Vous n'avez pas encore de compte ? </span>
+                <span className="text-xs text-pink-200/80">Vous n'avez pas encore de compte ? </span>
                 <button
                   type="button"
                   onClick={() => {
@@ -628,7 +631,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                     setErrorMsg(null);
                     setSuccessMsg(null);
                   }}
-                  className="text-xs font-bold text-[#046A38] hover:underline cursor-pointer"
+                  className="text-xs font-black text-pink-300 hover:text-white underline underline-offset-4 cursor-pointer transition-colors"
                   id="switch-to-register-btn"
                 >
                   S'inscrire
@@ -636,23 +639,23 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
               </div>
 
               {/* Logo AirPods en bas de la page de connexion */}
-              <div className="pt-5 border-t border-slate-100 mt-5 flex flex-col items-center justify-center text-center space-y-2">
-                <div className="p-3 bg-amber-50/90 rounded-2xl border border-amber-200 flex items-center justify-center space-x-3 w-full shadow-2xs">
+              <div className="pt-5 border-t border-pink-500/20 mt-5 flex flex-col items-center justify-center text-center space-y-2">
+                <div className="p-3 bg-[#240b3c]/80 rounded-2xl border border-pink-500/30 flex items-center justify-center space-x-3 w-full shadow-md">
                   {/* AirPods Headphones SVG Logo Icon */}
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-slate-950 flex items-center justify-center shrink-0 shadow-xs border border-amber-400/40">
-                    <Headphones className="w-6 h-6 stroke-[2.5px] text-slate-950" />
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-pink-500 via-fuchsia-600 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-sm border border-pink-300/40">
+                    <Headphones className="w-6 h-6 stroke-[2.5px] text-white" />
                   </div>
                   <div className="text-left min-w-0">
                     <div className="flex items-center space-x-1.5">
-                      <span className="text-base font-black tracking-tight text-slate-900">AirPods</span>
-                      <span className="text-[10px] font-black text-amber-900 bg-amber-200/80 px-1.5 py-0.2 rounded font-mono">Official</span>
+                      <span className="text-base font-black tracking-tight text-white">AirPods</span>
+                      <span className="text-[10px] font-black text-pink-100 bg-pink-500/40 px-1.5 py-0.5 rounded font-mono border border-pink-400/40">Official</span>
                     </div>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate">
+                    <p className="text-[10px] font-bold text-pink-200/80 uppercase tracking-wider truncate">
                       AirPods Official • Audio Premium & FinTech
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] text-slate-400 font-medium">
+                <span className="text-[10px] text-pink-300/60 font-medium">
                   © AirPods — Plateforme Officielle Certifiée
                 </span>
               </div>
@@ -673,16 +676,16 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
             >
               {/* Alert Messages */}
               {errorMsg && (
-                <div className="bg-red-50 border border-red-200 p-3.5 rounded-2xl flex items-center space-x-2.5 text-xs text-red-700 animate-fadeIn font-medium">
-                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                <div className="bg-pink-950/80 border border-pink-500/60 p-3.5 rounded-2xl flex items-center space-x-2.5 text-xs text-pink-100 animate-fadeIn font-medium">
+                  <AlertCircle className="w-4 h-4 text-pink-400 shrink-0" />
                   <span>{errorMsg}</span>
                 </div>
               )}
 
               {forgotSuccess && (
-                <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-xs text-emerald-800 leading-relaxed font-medium animate-fadeIn space-y-2">
-                  <div className="flex items-center space-x-1.5 font-bold text-emerald-900">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <div className="bg-emerald-950/80 border border-emerald-500/60 p-4 rounded-2xl text-xs text-emerald-200 leading-relaxed font-medium animate-fadeIn space-y-2">
+                  <div className="flex items-center space-x-1.5 font-bold text-emerald-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                     <span>Demande enregistrée</span>
                   </div>
                   <p>{forgotSuccess}</p>
@@ -691,25 +694,25 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
 
               <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-800">
+                  <label className="block text-xs font-bold text-pink-200 tracking-wide">
                     Numéro de Téléphone
                   </label>
 
-                  <div className="flex items-center bg-[#f4f5f8] rounded-2xl px-3.5 py-3 border border-transparent focus-within:border-emerald-500 focus-within:bg-white transition-all">
-                    <div className="relative flex items-center pr-2 border-r border-slate-200/80 mr-2 shrink-0">
+                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
+                    <div className="relative flex items-center pr-2 border-r border-pink-500/30 mr-2 shrink-0">
                       <select
                         value={countryPrefix}
                         onChange={(e) => handleCountryChange(e.target.value)}
-                        className="bg-transparent text-xs font-bold text-slate-800 outline-none pr-4 cursor-pointer appearance-none"
+                        className="bg-transparent text-xs font-black text-pink-100 outline-none pr-4 cursor-pointer appearance-none"
                         id="forgot-country-prefix"
                       >
                         {COUNTRIES.map(c => (
-                          <option key={c.code} value={c.prefix}>
+                          <option key={c.code} value={c.prefix} className="bg-[#1a082b] text-white font-semibold">
                             {c.flag} {c.prefix} ({c.name})
                           </option>
                         ))}
                       </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-0 pointer-events-none" />
+                      <ChevronDown className="w-3.5 h-3.5 text-pink-300 absolute right-0 pointer-events-none" />
                     </div>
 
                     <input
@@ -717,7 +720,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                       placeholder="Veuillez entrer le numéro de télép..."
                       value={forgotPhone}
                       onChange={(e) => setForgotPhone(e.target.value)}
-                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400"
+                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40"
                       id="forgot-phone-input"
                       required
                     />
@@ -727,7 +730,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 bg-[#046A38] hover:bg-[#03542c] active:scale-[0.99] text-white font-bold text-sm sm:text-base rounded-2xl shadow-sm cursor-pointer transition-all flex items-center justify-center space-x-2 mt-2"
+                  className="w-full py-3.5 bg-gradient-to-r from-pink-500 via-fuchsia-600 to-purple-600 hover:from-pink-400 hover:via-fuchsia-500 hover:to-purple-500 active:scale-[0.99] text-white font-black text-sm sm:text-base rounded-2xl shadow-lg shadow-pink-600/30 cursor-pointer transition-all flex items-center justify-center space-x-2 border border-pink-300/35 mt-2"
                   id="forgot-submit-btn"
                 >
                   {loading ? (
@@ -746,7 +749,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                     setErrorMsg(null);
                     setForgotSuccess(null);
                   }}
-                  className="text-xs font-bold text-[#046A38] hover:underline cursor-pointer flex items-center justify-center space-x-1 mx-auto"
+                  className="text-xs font-black text-pink-300 hover:text-white underline underline-offset-4 cursor-pointer flex items-center justify-center space-x-1 mx-auto transition-colors"
                   id="back-to-login-btn"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />

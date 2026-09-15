@@ -166,29 +166,29 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
   const sliceColors = ['#dc2626', '#16a34a', '#2563eb', '#d97706', '#9333ea', '#0284c7', '#c026d3', '#059669'];
 
   return (
-    <div className="w-full max-w-xl mx-auto space-y-6 font-sans pb-10">
+    <div className="w-full max-w-xl mx-auto space-y-6 font-sans pb-10 text-white">
       
       {/* 1. TICKET STATUS & WHEEL GAME CONTAINER */}
-      <div className="space-y-5 text-center relative bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-6 shadow-sm">
+      <div className="space-y-5 text-center relative bg-[#1a082b] border border-pink-500/30 rounded-3xl p-4 sm:p-6 shadow-xl">
         
         {/* WhatsApp Channel Header Banner */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 bg-emerald-50/80 border border-emerald-200/90 rounded-2xl text-left">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl text-left">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-xs">
               <MessageCircle className="w-5 h-5 fill-white text-white" />
             </div>
             <div>
-              <div className="text-[10px] font-black uppercase tracking-wider text-emerald-800">
+              <div className="text-[10px] font-black uppercase tracking-wider text-emerald-400">
                 Canal WhatsApp Officiel
               </div>
-              <div className="text-xs sm:text-sm font-extrabold text-slate-900">
+              <div className="text-xs sm:text-sm font-extrabold text-white">
                 Rejoindre la chaîne WhatsApp
               </div>
             </div>
           </div>
 
           <a
-            href="https://chat.whatsapp.com/Ib2sSp6KvCBA8W5ORBxSMe?s=cl&p=a&ilr=4"
+            href="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full sm:w-auto bg-[#25D366] hover:bg-[#20ba5a] active:scale-[0.98] text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-1.5 shrink-0 shadow-xs"
@@ -200,20 +200,20 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
 
         {/* Header & Ticket Counter */}
         <div className="space-y-2 pt-1">
-          <div className="inline-flex items-center space-x-1.5 bg-amber-500/10 text-amber-700 border border-amber-500/20 px-3.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+          <div className="inline-flex items-center space-x-1.5 bg-pink-500/20 text-pink-300 border border-pink-500/30 px-3.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider font-mono">
+            <Sparkles className="w-3.5 h-3.5 text-pink-400" />
             <span>TIRAGE AU SORT INSTANTANÉ</span>
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
             Roue de la Chance VIP
           </h2>
 
           {/* Ticket Balance Pill */}
-          <div className="inline-flex items-center space-x-2 bg-slate-900 text-white px-4 py-2 rounded-2xl shadow-xs border border-slate-800">
-            <Ticket className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-medium text-slate-300">Vos tickets disponibles :</span>
-            <span className="text-sm font-black font-mono text-amber-400">{availableTickets} ticket(s)</span>
+          <div className="inline-flex items-center space-x-2 bg-[#120422] text-white px-4 py-2 rounded-2xl shadow-inner border border-pink-500/30">
+            <Ticket className="w-4 h-4 text-pink-400" />
+            <span className="text-xs font-medium text-pink-200/80">Vos tickets disponibles :</span>
+            <span className="text-sm font-black font-mono text-pink-300">{availableTickets} ticket(s)</span>
           </div>
         </div>
 
@@ -333,8 +333,8 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
 
         {/* Win Message */}
         {winMessage && (
-          <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl p-3.5 text-xs font-extrabold animate-fadeIn flex items-center justify-center space-x-2 shadow-2xs">
-            <Trophy className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
+          <div className="bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 rounded-2xl p-3.5 text-xs font-extrabold animate-fadeIn flex items-center justify-center space-x-2 shadow-md">
+            <Trophy className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
             <span>{winMessage}</span>
           </div>
         )}
@@ -343,7 +343,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
         <button
           onClick={handleSpin}
           disabled={isSpinning}
-          className="w-full py-4 bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-700 hover:brightness-105 active:scale-[0.99] text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl transition-all shadow-md disabled:opacity-50 cursor-pointer flex items-center justify-center space-x-2"
+          className="w-full py-4 bg-gradient-to-r from-pink-500 via-pink-600 to-purple-600 hover:from-pink-400 hover:to-purple-500 active:scale-[0.99] text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl transition-all shadow-lg disabled:opacity-50 cursor-pointer flex items-center justify-center space-x-2 border border-pink-300/30"
         >
           <RotateCw className={`w-4 h-4 text-white ${isSpinning ? 'animate-spin' : ''}`} />
           <span>
@@ -357,20 +357,20 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
       </div>
 
       {/* 2. FLUX EN DIRECT DES PARTICIPANTS */}
-      <div className="bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-2xs">
+      <div className="bg-[#1a082b] border border-pink-500/25 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-md">
         {/* Header Row */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="flex items-center justify-between border-b border-pink-500/20 pb-3">
           <div className="flex items-center space-x-2">
             <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-pink-500"></span>
             </span>
-            <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 tracking-wider uppercase">
+            <h3 className="text-xs sm:text-sm font-extrabold text-white tracking-wider uppercase">
               FLUX EN DIRECT DES PARTICIPANTS
             </h3>
           </div>
 
-          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-black px-2.5 py-1 rounded-full flex items-center space-x-1 shrink-0">
+          <div className="bg-pink-950/60 border border-pink-500/30 text-pink-300 text-[10px] font-black px-2.5 py-1 rounded-full flex items-center space-x-1 shrink-0">
             <span>DIRECT</span>
             <span className="text-xs">🎡</span>
           </div>
@@ -379,34 +379,34 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
         {/* Dynamic Live Winners Feed List */}
         <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
           {combinedFeed.length === 0 ? (
-            <div className="py-8 text-center text-xs text-slate-500 font-medium">
+            <div className="py-8 text-center text-xs text-pink-300/60 font-medium">
               Aucune participation enregistrée pour le moment. Soyez le premier à tenter votre chance !
             </div>
           ) : (
             combinedFeed.map((rec) => (
               <div
                 key={rec.id}
-                className="p-3 bg-slate-50/70 hover:bg-slate-100/80 rounded-2xl border border-slate-200/60 flex items-center justify-between gap-3 transition-all"
+                className="p-3 bg-[#120422] hover:bg-[#1a082b] rounded-2xl border border-pink-500/20 flex items-center justify-between gap-3 transition-all"
               >
                 {/* Left Icon Badge */}
-                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 border border-amber-500/20">
+                <div className="w-9 h-9 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center shrink-0 border border-pink-500/30">
                   <Gift className="w-4.5 h-4.5" />
                 </div>
 
                 {/* Middle Info */}
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs sm:text-sm font-black text-slate-900 font-mono tracking-tight">
+                  <div className="text-xs sm:text-sm font-black text-white font-mono tracking-tight">
                     {rec.userPhone}
                   </div>
-                  <div className="text-[11px] font-medium text-slate-500 truncate flex items-center space-x-1 pt-0.5">
-                    <span className="text-slate-700 font-semibold">{rec.action}</span>
+                  <div className="text-[11px] font-medium text-pink-200/70 truncate flex items-center space-x-1 pt-0.5">
+                    <span className="text-pink-100 font-semibold">{rec.action}</span>
                     <span>•</span>
-                    <span className="text-slate-400 font-mono">{getRelativeTime(rec.createdAt)}</span>
+                    <span className="text-pink-300/60 font-mono">{getRelativeTime(rec.createdAt)}</span>
                   </div>
                 </div>
 
                 {/* Right Prize Pill */}
-                <div className="bg-emerald-600 text-white font-black text-xs px-3 py-1 rounded-xl shadow-2xs shrink-0 font-mono">
+                <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-black text-xs px-3 py-1 rounded-xl shadow-md shrink-0 font-mono border border-pink-300/30">
                   {rec.prizeLabel}
                 </div>
               </div>
@@ -416,20 +416,20 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
       </div>
 
       {/* 3. COMMENT OBTENIR DES TICKETS DE TIRAGE ? */}
-      <div className="bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-5 space-y-4 shadow-2xs">
-        <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
-          <div className="w-7 h-7 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+      <div className="bg-[#1a082b] border border-pink-500/25 rounded-3xl p-4 sm:p-5 space-y-4 shadow-md">
+        <div className="flex items-center space-x-2 border-b border-pink-500/20 pb-3">
+          <div className="w-7 h-7 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center shrink-0 border border-pink-500/30">
             <HelpCircle className="w-4 h-4" />
           </div>
-          <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 tracking-wider uppercase">
+          <h3 className="text-xs sm:text-sm font-extrabold text-white tracking-wider uppercase">
             COMMENT OBTENIR DES TICKETS DE TIRAGE ?
           </h3>
         </div>
 
-        <div className="space-y-3 text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+        <div className="space-y-3 text-xs sm:text-sm text-pink-200/90 leading-relaxed font-medium">
           {/* Step 1 */}
           <div className="flex items-start space-x-3">
-            <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
+            <div className="w-6 h-6 rounded-full bg-pink-500/20 text-pink-300 font-black text-xs flex items-center justify-center shrink-0 mt-0.5 border border-pink-500/30">
               1
             </div>
             <div>
@@ -439,21 +439,21 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
 
           {/* Step 2 */}
           <div className="flex items-start space-x-3">
-            <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
+            <div className="w-6 h-6 rounded-full bg-pink-500/20 text-pink-300 font-black text-xs flex items-center justify-center shrink-0 mt-0.5 border border-pink-500/30">
               2
             </div>
             <div>
-              Chaque fois qu'un filleul direct (Niveau 1) active un plan d'investissement VIP, vous débloquez <strong className="text-slate-900">1 ticket gratuit</strong>.
+              Chaque fois qu'un filleul direct (Niveau 1) active un plan d'investissement VIP, vous débloquez <strong className="text-white">1 ticket gratuit</strong>.
             </div>
           </div>
 
           {/* Step 3 */}
           <div className="flex items-start space-x-3">
-            <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
+            <div className="w-6 h-6 rounded-full bg-pink-500/20 text-pink-300 font-black text-xs flex items-center justify-center shrink-0 mt-0.5 border border-pink-500/30">
               3
             </div>
             <div>
-              Tous les gains remportés sur la roue sont <strong className="text-emerald-700">directement crédités sur votre solde principal</strong> et retirables immédiatement !
+              Tous les gains remportés sur la roue sont <strong className="text-emerald-400">directement crédités sur votre solde principal</strong> et retirables immédiatement !
             </div>
           </div>
         </div>
@@ -461,7 +461,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
         <div className="pt-2">
           <button
             onClick={handleCopyReferralLink}
-            className="w-full bg-amber-500 hover:bg-amber-400 active:scale-[0.99] text-slate-950 font-black text-xs sm:text-sm py-3.5 rounded-2xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-2xs"
+            className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 active:scale-[0.99] text-white font-black text-xs sm:text-sm py-3.5 rounded-2xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md border border-pink-300/30"
           >
             <Share2 className="w-4 h-4" />
             <span>COPIER MON LIEN DE PARRAINAGE</span>
@@ -470,31 +470,31 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
       </div>
 
       {/* 4. CANAL WHATSAPP OFFICIEL POUR LES TIRAGES AU SORT */}
-      <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-700 text-white rounded-3xl p-4 sm:p-5 shadow-2xs space-y-3.5">
+      <div className="bg-gradient-to-br from-[#1a082b] via-[#250b3f] to-[#120422] border border-pink-500/30 text-white rounded-3xl p-4 sm:p-5 shadow-lg space-y-3.5">
         <div className="flex items-start space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0">
-            <MessageCircle className="w-5 h-5 fill-white text-white" />
+          <div className="w-10 h-10 rounded-2xl bg-pink-500/20 text-pink-400 flex items-center justify-center shrink-0 border border-pink-500/30">
+            <MessageCircle className="w-5 h-5 fill-pink-400 text-pink-400" />
           </div>
           <div className="space-y-1 min-w-0 flex-1">
-            <div className="text-[10px] font-black uppercase tracking-wider text-emerald-200">
+            <div className="text-[10px] font-black uppercase tracking-wider text-pink-300">
               Résultats & Lots du Tirage
             </div>
-            <h4 className="text-sm sm:text-base font-extrabold tracking-tight leading-snug">
+            <h4 className="text-sm sm:text-base font-extrabold tracking-tight leading-snug text-white">
               Chaîne WhatsApp Officielle des Tirages
             </h4>
-            <p className="text-xs text-emerald-100 font-medium leading-relaxed">
+            <p className="text-xs text-pink-200/80 font-medium leading-relaxed">
               Suivez la publication quotidienne des gagnants, les événements spéciaux de tirage au sort et les codes bonus exclusifs sur notre chaîne.
             </p>
           </div>
         </div>
 
         <a
-          href="https://chat.whatsapp.com/Ib2sSp6KvCBA8W5ORBxSMe?s=cl&p=a&ilr=4"
+          href="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full bg-white hover:bg-emerald-50 active:scale-[0.99] text-emerald-800 font-extrabold text-xs sm:text-sm py-3.5 rounded-2xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-xs"
+          className="w-full bg-[#25D366] hover:bg-[#20ba5a] active:scale-[0.99] text-white font-extrabold text-xs sm:text-sm py-3.5 rounded-2xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md"
         >
-          <MessageCircle className="w-4 h-4 fill-emerald-700 text-emerald-700" />
+          <MessageCircle className="w-4 h-4 fill-white text-white" />
           <span>REJOINDRE LA CHAÎNE WHATSAPP</span>
         </a>
       </div>

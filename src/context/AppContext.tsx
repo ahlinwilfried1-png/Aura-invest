@@ -327,12 +327,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   });
 
+  const syncOfficialProductData = (list: InvestmentProduct[]): InvestmentProduct[] => {
+    const officialMap = new Map(OFFICIAL_INVESTMENT_PRODUCTS.map(p => [p.id, p]));
+    return list.map(item => {
+      const official = officialMap.get(item.id);
+      if (official) {
+        return {
+          ...item,
+          name: official.name,
+          image: official.image,
+          description: official.description,
+          badge: item.badge || official.badge,
+          color: item.color || official.color
+        };
+      }
+      return item;
+    });
+  };
+
   const [products, setProducts] = useState<InvestmentProduct[]>(() => {
     const data = safeGetLocalStorage('fintech_products');
     if (data) {
       try {
         const parsed = deduplicateById<InvestmentProduct>(JSON.parse(data));
-        if (parsed.length > 0) return parsed;
+        if (parsed.length > 0) return syncOfficialProductData(parsed);
       } catch (_) {}
     }
     return OFFICIAL_INVESTMENT_PRODUCTS;
@@ -797,7 +815,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Process Products: DB is the authoritative single source of truth
       if (dbProducts && dbProducts.length > 0) {
-        const dedupedProducts = deduplicateById(dbProducts);
+        const dedupedProducts = syncOfficialProductData(deduplicateById(dbProducts));
         setProducts(dedupedProducts);
         safeSetLocalStorage('fintech_products', dedupedProducts);
       } else {

@@ -26,28 +26,28 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
       id: 'recharger',
       label: 'Recharger',
       icon: CreditCard,
-      color: 'bg-amber-500 text-slate-950 shadow-amber-500/20',
+      color: 'bg-gradient-to-br from-pink-500 to-rose-600 text-white shadow-pink-500/30',
       action: onRecharger
     },
     {
       id: 'retirer',
       label: 'Retirer',
       icon: ArrowUpRight,
-      color: 'bg-slate-900 text-amber-400 shadow-slate-900/20',
+      color: 'bg-gradient-to-br from-purple-600 to-indigo-700 text-white shadow-purple-500/30',
       action: onRetirer
     },
     {
       id: 'pointage',
       label: 'Pointage',
       icon: Calendar,
-      color: 'bg-amber-400 text-slate-950 shadow-amber-400/20',
+      color: 'bg-gradient-to-br from-fuchsia-500 to-pink-600 text-white shadow-fuchsia-500/30',
       action: onPointage
     },
     {
       id: 'annonces',
       label: 'Annonces',
       icon: Bell,
-      color: 'bg-blue-600 text-white shadow-blue-600/20',
+      color: 'bg-gradient-to-br from-violet-600 to-purple-800 text-white shadow-violet-500/30',
       action: onAnnonces,
       unreadCount: unreadAnnouncementsCount || (hasUnreadAnnouncements ? 1 : 0),
       hasBadge: hasUnreadAnnouncements
@@ -58,10 +58,10 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
     <div className="w-full space-y-3">
       {/* Section Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 font-mono">
+        <h3 className="text-xs font-black uppercase tracking-wider text-pink-100 font-mono">
           OPÉRATIONS RAPIDES
         </h3>
-        <span className="text-[10px] font-bold uppercase font-mono px-2.5 py-0.5 rounded-full text-amber-800 bg-amber-100">
+        <span className="text-[10px] font-bold uppercase font-mono px-2.5 py-0.5 rounded-full text-pink-300 bg-pink-500/20 border border-pink-500/30">
           AIRPODS
         </span>
       </div>
@@ -75,21 +75,21 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
             <button
               key={op.id}
               onClick={op.action}
-              className="flex flex-col items-center justify-center space-y-1.5 p-1.5 sm:p-2.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:border-amber-400 hover:shadow-sm active:scale-95 transition-all cursor-pointer group min-w-0"
+              className="flex flex-col items-center justify-center space-y-1.5 p-2 sm:p-3 bg-gradient-to-b from-[#210c37] to-[#150524] rounded-2xl border border-pink-500/25 shadow-lg shadow-black/40 hover:border-pink-400 active:scale-95 transition-all cursor-pointer group min-w-0"
             >
               <div
-                className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl ${op.color} flex items-center justify-center group-hover:scale-105 transition-all shadow-xs shrink-0 relative`}
+                className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl ${op.color} flex items-center justify-center group-hover:scale-105 transition-all shadow-md shrink-0 relative`}
               >
                 <Icon className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.25]" />
                 {displayCount > 0 ? (
-                  <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white font-black text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-white animate-bounce shadow-xs z-10">
+                  <span className="absolute -top-1.5 -right-1.5 bg-pink-600 text-white font-black text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-[#150524] animate-bounce shadow-xs z-10">
                     {displayCount}
                   </span>
                 ) : op.hasBadge ? (
-                  <span className="absolute -top-1 -right-1 bg-red-600 w-3.5 h-3.5 rounded-full border-2 border-white animate-pulse" />
+                  <span className="absolute -top-1 -right-1 bg-pink-600 w-3.5 h-3.5 rounded-full border-2 border-[#150524] animate-pulse" />
                 ) : null}
               </div>
-              <span className="text-[11px] sm:text-xs md:text-sm font-black text-slate-900 group-hover:text-amber-700 transition-colors text-center leading-tight whitespace-nowrap overflow-visible">
+              <span className="text-[11px] sm:text-xs md:text-sm font-black text-pink-100 group-hover:text-pink-300 transition-colors text-center leading-tight whitespace-nowrap overflow-visible">
                 {op.label}
               </span>
             </button>

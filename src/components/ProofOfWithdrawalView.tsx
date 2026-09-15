@@ -135,20 +135,20 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
   };
 
   return (
-    <div className="animate-fadeIn max-w-3xl mx-auto space-y-6 pb-4 px-3 sm:px-0">
+    <div className="animate-fadeIn max-w-3xl mx-auto space-y-6 pb-4 px-3 sm:px-0 text-white font-sans">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 left-4 sm:left-auto z-50 max-w-md p-4 rounded-2xl bg-emerald-600 text-white shadow-xl flex items-center space-x-3 animate-fadeIn font-bold text-xs sm:text-sm">
+        <div className="fixed top-4 right-4 left-4 sm:left-auto z-50 max-w-md p-4 rounded-2xl bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-xl flex items-center space-x-3 animate-fadeIn font-bold text-xs sm:text-sm border border-pink-300/30">
           <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Top Header / Navigation */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+      <div className="flex items-center justify-between pb-3 border-b border-pink-500/20">
         <button
           onClick={onBack}
-          className="flex items-center space-x-2 text-slate-700 hover:text-amber-600 transition-colors font-extrabold text-xs sm:text-sm cursor-pointer"
+          className="flex items-center space-x-2 text-pink-300 hover:text-white transition-colors font-extrabold text-xs sm:text-sm cursor-pointer"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Retour</span>
@@ -156,7 +156,7 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
 
         <button
           onClick={() => setShowSubmitModal(true)}
-          className="bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-105 text-slate-950 font-black text-xs sm:text-sm px-4 py-2.5 rounded-full shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer"
+          className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-black text-xs sm:text-sm px-4 py-2.5 rounded-full shadow-md flex items-center space-x-1.5 transition-all cursor-pointer border border-pink-300/30"
         >
           <Plus className="w-4 h-4 stroke-[3]" />
           <span>Ajouter une preuve</span>
@@ -164,16 +164,16 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
       </div>
 
       {/* Hero Banner Header */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-5 sm:p-7 text-white space-y-3 shadow-md relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
-        <div className="flex items-center space-x-2 text-amber-400 font-mono text-xs uppercase font-extrabold tracking-wider">
+      <div className="bg-gradient-to-br from-[#1a082b] via-[#24083a] to-[#120422] border border-pink-500/30 rounded-3xl p-5 sm:p-7 text-white space-y-3 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="flex items-center space-x-2 text-pink-400 font-mono text-xs uppercase font-extrabold tracking-wider">
           <ShieldCheck className="w-4 h-4" />
           <span>Transparence & Sécurité</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
           Preuves de Retrait
         </h1>
-        <p className="text-xs sm:text-sm text-slate-300 font-medium max-w-xl leading-relaxed">
+        <p className="text-xs sm:text-sm text-pink-200/80 font-medium max-w-xl leading-relaxed">
           Découvrez en temps réel les témoignages et preuves de paiement réelles soumises par les membres de la communauté AirPods.
         </p>
       </div>
@@ -181,17 +181,17 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
       {/* Vertical Feed of Proofs */}
       <div className="space-y-4">
         {allProofs.length === 0 ? (
-          <div className="bg-white rounded-3xl p-10 text-center border border-slate-200 shadow-2xs space-y-3">
-            <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto text-amber-800">
+          <div className="bg-[#1a082b] rounded-3xl p-10 text-center border border-pink-500/25 shadow-md space-y-3">
+            <div className="w-14 h-14 bg-pink-500/20 border border-pink-500/30 rounded-2xl flex items-center justify-center mx-auto text-pink-400">
               <ImageIcon className="w-7 h-7" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">Aucune preuve publiée pour le moment</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            <h3 className="text-base font-bold text-white">Aucune preuve publiée pour le moment</h3>
+            <p className="text-xs text-pink-200/60 max-w-sm mx-auto">
               Soyez le premier à partager votre preuve de paiement avec la communauté !
             </p>
             <button
               onClick={() => setShowSubmitModal(true)}
-              className="mt-2 inline-flex items-center space-x-2 px-5 py-2.5 bg-amber-500 text-slate-950 font-extrabold text-xs rounded-full shadow-xs hover:bg-amber-400 cursor-pointer"
+              className="mt-2 inline-flex items-center space-x-2 px-5 py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-extrabold text-xs rounded-full shadow-md hover:from-pink-400 hover:to-purple-500 cursor-pointer border border-pink-300/30"
             >
               <Plus className="w-4 h-4" />
               <span>Publier ma preuve</span>
@@ -201,26 +201,26 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
           allProofs.map((proof) => (
             <div
               key={proof.id}
-              className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs space-y-4 hover:border-amber-400 transition-all relative overflow-hidden"
+              className="bg-[#1a082b] rounded-3xl p-5 sm:p-6 border border-pink-500/25 shadow-md space-y-4 hover:border-pink-500/50 transition-all relative overflow-hidden"
             >
               {/* Top row: User name, phone, date & verified badge */}
-              <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
+              <div className="flex items-start justify-between gap-2 border-b border-pink-500/20 pb-3">
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
-                    <span className="font-black text-slate-900 text-sm sm:text-base">{proof.userName}</span>
-                    <span className="bg-emerald-100 text-emerald-800 font-mono text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 border border-emerald-200">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    <span className="font-black text-white text-sm sm:text-base">{proof.userName}</span>
+                    <span className="bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 border border-emerald-500/30">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                       <span>Vérifié</span>
                     </span>
                   </div>
-                  <div className="flex items-center space-x-3 text-xs text-slate-500 font-mono">
+                  <div className="flex items-center space-x-3 text-xs text-pink-300/60 font-mono">
                     <span className="flex items-center space-x-1">
-                      <PhoneCall className="w-3 h-3 text-slate-400" />
+                      <PhoneCall className="w-3 h-3 text-pink-400" />
                       <span>{proof.userPhone.includes('****') ? proof.userPhone : `${proof.userPhone.slice(0, 3)}****${proof.userPhone.slice(-2)}`}</span>
                     </span>
                     <span>•</span>
                     <span className="flex items-center space-x-1">
-                      <Calendar className="w-3 h-3 text-slate-400" />
+                      <Calendar className="w-3 h-3 text-pink-400" />
                       <span>{proof.createdAt}</span>
                     </span>
                   </div>
@@ -228,10 +228,10 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
 
                 {/* Amount */}
                 <div className="text-right">
-                  <div className="font-mono font-black text-emerald-600 text-base sm:text-xl tracking-tight">
+                  <div className="font-mono font-black text-pink-400 text-base sm:text-xl tracking-tight">
                     +{(Number(proof.amount) || 0).toLocaleString('fr-FR')} XAF
                   </div>
-                  <span className="text-[10px] font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md inline-block uppercase">
+                  <span className="text-[10px] font-bold text-pink-300 bg-[#120422] border border-pink-500/20 px-2 py-0.5 rounded-md inline-block uppercase">
                     {proof.network}
                   </span>
                 </div>
@@ -239,8 +239,8 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
 
               {/* Message / Commentaire */}
               {proof.message && (
-                <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-100 text-xs sm:text-sm text-slate-800 leading-relaxed font-medium flex items-start space-x-2">
-                  <MessageSquare className="w-4 h-4 text-amber-800 flex-shrink-0 mt-0.5" />
+                <div className="bg-[#120422] rounded-2xl p-3.5 border border-pink-500/20 text-xs sm:text-sm text-pink-100 leading-relaxed font-medium flex items-start space-x-2">
+                  <MessageSquare className="w-4 h-4 text-pink-400 flex-shrink-0 mt-0.5" />
                   <p className="italic">"{proof.message}"</p>
                 </div>
               )}
@@ -248,19 +248,19 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
               {/* Proof Image */}
               {proof.imageUrl && (
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+                  <span className="text-[10px] font-mono font-bold text-pink-300/60 uppercase tracking-wider block">
                     Capture d'écran de confirmation
                   </span>
                   <div
                     onClick={() => setSelectedImage(proof.imageUrl)}
-                    className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 group cursor-pointer max-h-72 flex items-center justify-center"
+                    className="relative rounded-2xl overflow-hidden border border-pink-500/30 bg-[#120422] group cursor-pointer max-h-72 flex items-center justify-center"
                   >
                     <img
                       src={proof.imageUrl}
                       alt="Preuve de retrait"
                       className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                     />
-                    <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold space-x-1.5">
+                    <div className="absolute inset-0 bg-[#0d0417]/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold space-x-1.5">
                       <Eye className="w-4 h-4" />
                       <span>Agrandir l'image</span>
                     </div>
@@ -274,18 +274,18 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
 
       {/* MODAL: SUBMIT PROOF FORM */}
       {showSubmitModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl p-5 sm:p-6 max-w-md w-full relative space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 bg-[#0d0417]/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-[#1a082b] border border-pink-500/30 text-white rounded-3xl p-5 sm:p-6 max-w-md w-full relative space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-pink-500/20 pb-3">
               <div className="flex items-center space-x-2">
-                <ShieldCheck className="w-5 h-5 text-amber-600" />
-                <h3 className="text-base font-bold text-slate-900">
+                <ShieldCheck className="w-5 h-5 text-pink-400" />
+                <h3 className="text-base font-bold text-white">
                   Publier une Preuve de Retrait
                 </h3>
               </div>
               <button
                 onClick={() => setShowSubmitModal(false)}
-                className="p-1 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 cursor-pointer"
+                className="p-1.5 rounded-full bg-[#120422] text-pink-300 hover:text-white border border-pink-500/30 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -293,7 +293,7 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
 
             <form onSubmit={handleSubmit} className="space-y-3.5 text-xs sm:text-sm">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">
+                <label className="block font-bold text-pink-200 mb-1">
                   Montant reçu (XAF)
                 </label>
                 <input
@@ -302,13 +302,13 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
                   value={amount}
                   onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
                   placeholder="Ex: 25000"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 font-mono font-bold text-slate-900 outline-none focus:border-amber-500"
+                  className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 font-mono font-bold text-white placeholder:text-pink-300/40 outline-none focus:border-pink-400"
                   required
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">
+                <label className="block font-bold text-pink-200 mb-1">
                   Votre commentaire / Avis (optionnel)
                 </label>
                 <textarea
@@ -316,17 +316,17 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Partagez votre expérience avec AirPods..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 outline-none focus:border-amber-500"
+                  className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-white placeholder:text-pink-300/40 outline-none focus:border-pink-400"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">
+                <label className="block font-bold text-pink-200 mb-1">
                   Capture d'écran de la preuve (Image / URL)
                 </label>
                 <div className="space-y-2">
-                  <label className="w-full bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-300 rounded-xl p-3 flex items-center justify-center space-x-2 text-slate-600 font-medium cursor-pointer transition-colors">
-                    <Upload className="w-4 h-4 text-amber-600" />
+                  <label className="w-full bg-[#120422] hover:bg-[#200a35] border border-dashed border-pink-500/40 rounded-xl p-3 flex items-center justify-center space-x-2 text-pink-200 font-medium cursor-pointer transition-colors">
+                    <Upload className="w-4 h-4 text-pink-400" />
                     <span>Téléverser une image</span>
                     <input
                       type="file"
@@ -336,26 +336,26 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
                     />
                   </label>
 
-                  <div className="text-center text-[10px] text-slate-400 font-bold uppercase">Ou coller l'URL de l'image</div>
+                  <div className="text-center text-[10px] text-pink-300/60 font-bold uppercase">Ou coller l'URL de l'image</div>
 
                   <input
                     type="url"
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
                     placeholder="https://example.com/preuve.jpg"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 outline-none focus:border-amber-500 text-xs"
+                    className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2 text-white placeholder:text-pink-300/40 outline-none focus:border-pink-400 text-xs"
                   />
                 </div>
               </div>
 
               {/* Privacy Notice */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[11px] text-amber-900 leading-tight">
+              <div className="bg-pink-500/20 border border-pink-500/30 rounded-xl p-2.5 text-[11px] text-pink-200 leading-tight">
                 🔒 <strong>Confidentialité garantie :</strong> Votre numéro de téléphone sera automatiquement masqué (ex: +237 65****589) pour protéger vos données personnelles.
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-sm rounded-full shadow-xs hover:brightness-105 active:scale-[0.99] transition-all cursor-pointer"
+                className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-black text-sm rounded-full shadow-md active:scale-[0.99] transition-all cursor-pointer border border-pink-300/30"
               >
                 Publier instantanément
               </button>
@@ -368,12 +368,12 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
       {selectedImage && (
         <div
           onClick={() => setSelectedImage(null)}
-          className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn cursor-pointer"
+          className="fixed inset-0 bg-[#0d0417]/95 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn cursor-pointer"
         >
           <div className="relative max-w-2xl w-full max-h-[90vh] flex items-center justify-center">
             <button
               onClick={() => setSelectedImage(null)}
-              className="absolute -top-10 right-0 text-white font-bold text-sm bg-slate-800/80 px-3 py-1 rounded-full flex items-center space-x-1"
+              className="absolute -top-10 right-0 text-white font-bold text-sm bg-[#1a082b] border border-pink-500/40 px-3 py-1 rounded-full flex items-center space-x-1"
             >
               <X className="w-4 h-4" />
               <span>Fermer</span>
@@ -381,7 +381,7 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
             <img
               src={selectedImage}
               alt="Preuve grand format"
-              className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-slate-700"
+              className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-pink-500/30"
             />
           </div>
         </div>

@@ -32,27 +32,32 @@
   }
 }
 
-/* Global Serif Font Application for All Elements */
+/* Global Font Application */
 html, body, button, input, textarea, select, table, th, td, h1, h2, h3, h4, h5, h6, p, span, a, div, li, ul, ol, nav, form, label, option {
-  font-family: "Roboto Serif", Georgia, Cambria, "Times New Roman", Times, serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
 body {
-  font-family: "Roboto Serif", Georgia, Cambria, "Times New Roman", Times, serif;
-  background-color: #f8fafc;
-  color: #0f172a;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #0d0417;
+  color: #fce7f3;
   overflow-x: hidden;
   font-size: 15px;
   line-height: 1.6;
   font-weight: 400;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(219, 39, 119, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(147, 51, 234, 0.15) 0px, transparent 50%);
+  background-attachment: fixed;
 }
 
 h1, h2, h3, h4, h5, h6, .font-heading, .font-display {
-  font-family: "Roboto Serif", Georgia, Cambria, "Times New Roman", Times, serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   letter-spacing: -0.015em;
+  color: #ffffff;
 }
 
 /* Base title typography standardizations */
@@ -74,29 +79,48 @@ h3 {
   line-height: 1.35;
 }
 
-/* Immersive UI Special Styling Classes */
-.gold-glow {
-  box-shadow: 0 0 20px rgba(212, 175, 55, 0.25);
+/* Immersive Rose-Violet UI Special Styling Classes */
+.rose-glow {
+  box-shadow: 0 0 25px rgba(236, 72, 153, 0.35);
 }
-.gold-text {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+.purple-glow {
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.35);
+}
+.rose-gradient-text {
+  background: linear-gradient(135deg, #f472b6 0%, #c084fc 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 .card-gradient {
-  background: #ffffff;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+  background: linear-gradient(145deg, #1d0a2f 0%, #130620 100%);
+  border: 1px solid rgba(236, 72, 153, 0.22);
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.6), 0 0 20px rgba(168, 85, 247, 0.08);
 }
 .glass-nav {
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(226, 232, 240, 0.8);
+  background: rgba(18, 6, 32, 0.96);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(236, 72, 153, 0.25);
 }
 .stat-ring {
   border: 2px solid transparent;
-  border-top-color: #f59e0b;
-  border-right-color: #f59e0b;
+  border-top-color: #ec4899;
+  border-right-color: #a855f7;
+}
+
+/* Custom scrollbar in rose-violet tones */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0d0417;
+}
+::-webkit-scrollbar-thumb {
+  background: #3b145a;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #db2777;
 }
 
 /* Hide scrollbar defaults */

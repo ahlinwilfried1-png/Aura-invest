@@ -46,7 +46,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
     <div className="min-h-screen bg-[#f8faf7] text-slate-900 flex flex-col relative overflow-hidden font-sans">
       {/* Floating WhatsApp Sticky Action */}
       <a 
-        href="https://chat.whatsapp.com/Ib2sSp6KvCBA8W5ORBxSMe?s=cl&p=a&ilr=4" 
+        href="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M" 
         target="_blank" 
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 z-50 bg-[#25D366] hover:bg-[#20ba5a] text-white p-4 rounded-full shadow-2xl shadow-green-600/30 flex items-center justify-center transition-transform hover:scale-110 group cursor-pointer"
@@ -173,7 +173,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
           {/* Header Badge */}
           <div className="text-center mb-8">
             <div className="inline-block bg-[#0e3d1c] border-2 border-amber-400 text-white font-black text-xs sm:text-base md:text-lg uppercase px-6 sm:px-10 py-2.5 rounded-full shadow-lg tracking-wider font-mono">
-              PRIX ET REVENUS AIRPODS POUR UN CYCLE DE 365 JOURS
+              PRIX ET REVENUS OFFICIELS AIRPODS
             </div>
             <p className="text-slate-600 text-xs sm:text-sm mt-3 font-medium">
               Chaque formule génère des intérêts crédités automatiquement toutes les 24 heures sur le solde disponible.
@@ -204,7 +204,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                   <th className="py-4 px-6 text-center">
                     <span className="inline-flex items-center space-x-1 justify-center">
                       <Calendar className="w-4 h-4 text-emerald-800" />
-                      <span>CYCLE DE PROFIT (VIP)</span>
+                      <span>STATUT OFFICIEL</span>
                     </span>
                   </th>
                   <th className="py-4 px-6 text-right">
@@ -222,7 +222,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                     name: 'VIP NIVEAU 1 (AirPods 2)', 
                     price: 2500, 
                     daily: 168, 
-                    cycle: '365 jours', 
+                    cycle: 'Actif', 
                     total: 61320, 
                     icon: <Sparkles className="w-5 h-5 text-emerald-600 fill-emerald-500/20" />,
                     bgBadge: 'bg-emerald-800 text-white'
@@ -231,7 +231,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                     name: 'VIP NIVEAU 2 (AirPods 3)', 
                     price: 6000, 
                     daily: 360, 
-                    cycle: '365 jours', 
+                    cycle: 'Actif', 
                     total: 131400, 
                     icon: <Crown className="w-5 h-5 text-amber-500 fill-amber-400/20" />,
                     bgBadge: 'bg-blue-800 text-white',
@@ -241,7 +241,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                     name: 'VIP NIVEAU 3 (AirPods 4 ANC)', 
                     price: 15000, 
                     daily: 744, 
-                    cycle: '365 jours', 
+                    cycle: 'Actif', 
                     total: 271560, 
                     icon: <Gem className="w-5 h-5 text-purple-600 fill-purple-400/20" />,
                     bgBadge: 'bg-purple-900 text-white'
@@ -250,7 +250,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                     name: 'VIP NIVEAU 4 (AirPods Pro)', 
                     price: 32000, 
                     daily: 1584, 
-                    cycle: '365 jours', 
+                    cycle: 'Actif', 
                     total: 578160, 
                     icon: <Star className="w-5 h-5 text-slate-500 fill-slate-300" />,
                     bgBadge: 'bg-slate-800 text-white'
@@ -259,7 +259,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                     name: 'VIP NIVEAU 6 (AirPods Pro 2 USB-C)', 
                     price: 70000, 
                     daily: 3840, 
-                    cycle: '365 jours', 
+                    cycle: 'Actif', 
                     total: 1401600, 
                     icon: <Layers className="w-5 h-5 text-amber-600 fill-amber-400" />,
                     bgBadge: 'bg-amber-800 text-white',
@@ -269,7 +269,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                     name: 'VIP NIVEAU 7 (AirPods Pro 2 MagSafe)', 
                     price: 250000, 
                     daily: 13800, 
-                    cycle: '365 jours', 
+                    cycle: 'Actif', 
                     total: 5037000, 
                     icon: <Gem className="w-5 h-5 text-sky-500 fill-sky-300" />,
                     bgBadge: 'bg-sky-900 text-white',
@@ -279,7 +279,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                     name: 'VIP PARTENAIRE (AirPods Max Silver)', 
                     price: 500000, 
                     daily: 28800, 
-                    cycle: '365 jours', 
+                    cycle: 'Actif', 
                     total: 10512000, 
                     icon: <Shield className="w-5 h-5 text-amber-700 fill-amber-600/30" />,
                     bgBadge: 'bg-amber-950 text-amber-200',
@@ -289,7 +289,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                     name: 'VIP PARTENAIRE (AirPods Max Space Gray)', 
                     price: 1000000, 
                     daily: 60000, 
-                    cycle: '365 jours', 
+                    cycle: 'Actif', 
                     total: 22198650, 
                     icon: <ShieldCheck className="w-5 h-5 text-slate-600 fill-slate-300" />,
                     bgBadge: 'bg-slate-900 text-white',
@@ -334,14 +334,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
           {/* Mobile Card List with exact plans */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
             {[
-              { name: 'VIP NIVEAU 1 (AirPods 2)', price: 2500, daily: 168, cycle: '365 jours', total: 61320, icon: <Sparkles className="w-5 h-5 text-emerald-600" /> },
-              { name: 'VIP NIVEAU 2 (AirPods 3)', price: 6000, daily: 360, cycle: '365 jours', total: 131400, icon: <Crown className="w-5 h-5 text-amber-500" /> },
-              { name: 'VIP NIVEAU 3 (AirPods 4 ANC)', price: 15000, daily: 744, cycle: '365 jours', total: 271560, icon: <Gem className="w-5 h-5 text-purple-600" /> },
-              { name: 'VIP NIVEAU 4 (AirPods Pro)', price: 32000, daily: 1584, cycle: '365 jours', total: 578160, icon: <Star className="w-5 h-5 text-slate-500" /> },
-              { name: 'VIP NIVEAU 6 (AirPods Pro 2 USB-C)', price: 70000, daily: 3840, cycle: '365 jours', total: 1401600, icon: <Layers className="w-5 h-5 text-amber-600" /> },
-              { name: 'VIP NIVEAU 7 (AirPods Pro 2 MagSafe)', price: 250000, daily: 13800, cycle: '365 jours', total: 5037000, icon: <Gem className="w-5 h-5 text-sky-500" /> },
-              { name: 'VIP PARTENAIRE (AirPods Max Silver)', price: 500000, daily: 28800, cycle: '365 jours', total: 10512000, icon: <Shield className="w-5 h-5 text-amber-700" /> },
-              { name: 'VIP PARTENAIRE (AirPods Max Space Gray)', price: 1000000, daily: 60000, cycle: '365 jours', total: 22198650, icon: <ShieldCheck className="w-5 h-5 text-slate-700" /> },
+              { name: 'VIP NIVEAU 1 (AirPods 2)', price: 2500, daily: 168, total: 61320, icon: <Sparkles className="w-5 h-5 text-emerald-600" /> },
+              { name: 'VIP NIVEAU 2 (AirPods 3)', price: 6000, daily: 360, total: 131400, icon: <Crown className="w-5 h-5 text-amber-500" /> },
+              { name: 'VIP NIVEAU 3 (AirPods 4 ANC)', price: 15000, daily: 744, total: 271560, icon: <Gem className="w-5 h-5 text-purple-600" /> },
+              { name: 'VIP NIVEAU 4 (AirPods Pro)', price: 32000, daily: 1584, total: 578160, icon: <Star className="w-5 h-5 text-slate-500" /> },
+              { name: 'VIP NIVEAU 6 (AirPods Pro 2 USB-C)', price: 70000, daily: 3840, total: 1401600, icon: <Layers className="w-5 h-5 text-amber-600" /> },
+              { name: 'VIP NIVEAU 7 (AirPods Pro 2 MagSafe)', price: 250000, daily: 13800, total: 5037000, icon: <Gem className="w-5 h-5 text-sky-500" /> },
+              { name: 'VIP PARTENAIRE (AirPods Max Silver)', price: 500000, daily: 28800, total: 10512000, icon: <Shield className="w-5 h-5 text-amber-700" /> },
+              { name: 'VIP PARTENAIRE (AirPods Max Space Gray)', price: 1000000, daily: 60000, total: 22198650, icon: <ShieldCheck className="w-5 h-5 text-slate-700" /> },
             ].map((item, idx) => (
               <div key={idx} className="bg-white border-2 border-emerald-900/20 rounded-2xl p-4 shadow-md space-y-3">
                 <div className="flex items-center justify-between">
@@ -352,7 +352,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                     <span className="font-black text-slate-900 text-sm">{item.name}</span>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                    365j
+                    VIP
                   </span>
                 </div>
                 
@@ -410,9 +410,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                     2
                   </div>
                   <div>
-                    <h4 className="font-black text-emerald-950 text-sm uppercase font-mono">DURÉE :</h4>
+                    <h4 className="font-black text-emerald-950 text-sm uppercase font-mono">REVENUS :</h4>
                     <p className="text-xs sm:text-sm text-slate-700 font-semibold mt-0.5">
-                      365 jours pour tous les modèles.
+                      Gains crédités automatiquement toutes les 24h sur votre solde.
                     </p>
                   </div>
                 </div>

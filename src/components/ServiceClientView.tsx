@@ -10,32 +10,32 @@ interface ServiceClientViewProps {
 
 export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
   onBack,
-  telegramUrl = "https://chat.whatsapp.com/Ib2sSp6KvCBA8W5ORBxSMe?s=cl&p=a&ilr=4",
-  whatsappServiceUrl = "https://chat.whatsapp.com/Ib2sSp6KvCBA8W5ORBxSMe?s=cl&p=a&ilr=4",
-  whatsappChannelUrl = "https://chat.whatsapp.com/Ib2sSp6KvCBA8W5ORBxSMe?s=cl&p=a&ilr=4"
+  telegramUrl = "https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M",
+  whatsappServiceUrl = "https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M",
+  whatsappChannelUrl = "https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
 }) => {
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 pb-20 font-sans animate-fadeIn">
+    <div className="min-h-screen bg-[#0d0417] text-white pb-20 font-sans animate-fadeIn">
       
       {/* 1. Header with back arrow and title */}
-      <div className="sticky top-0 bg-white border-b border-slate-200/80 px-4 py-3.5 flex items-center justify-between z-30 shadow-2xs">
+      <div className="sticky top-0 bg-[#120422] border-b border-pink-500/20 px-4 py-3.5 flex items-center justify-between z-30 shadow-md">
         <button
           onClick={onBack}
-          className="p-1.5 -ml-1 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all cursor-pointer"
+          className="p-1.5 -ml-1 text-pink-300 hover:text-white hover:bg-pink-500/20 rounded-full transition-all cursor-pointer"
           title="Retour"
         >
           <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
         </button>
 
-        <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight text-center flex-1 pr-6">
+        <h1 className="text-base sm:text-lg font-bold text-white tracking-tight text-center flex-1 pr-6">
           Service client
         </h1>
       </div>
 
       <div className="max-w-md mx-auto px-4 py-4 space-y-6">
 
-        {/* 2. Channels List Card (Clean white rounded box matching screenshot) */}
-        <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs space-y-4">
+        {/* 2. Channels List Card */}
+        <div className="bg-[#1a082b] border border-pink-500/25 rounded-3xl p-4 sm:p-5 shadow-lg space-y-4">
           
           {/* Row 1: Telegram Channel */}
           <div className="flex items-center justify-between gap-3 py-1">
@@ -43,7 +43,7 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
               <div className="w-11 h-11 rounded-full bg-[#0088cc] text-white flex items-center justify-center shrink-0 shadow-xs">
                 <Send className="w-5 h-5 -ml-0.5" />
               </div>
-              <span className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+              <span className="text-xs sm:text-sm font-bold text-white truncate">
                 Chaîne de télégramme
               </span>
             </div>
@@ -52,7 +52,7 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
               href={telegramUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-[#E60000] hover:bg-red-700 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
+              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer active:scale-95 shrink-0 border border-pink-300/30"
             >
               Commencer
             </a>
@@ -64,7 +64,7 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
               <div className="w-11 h-11 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-xs">
                 <MessageCircle className="w-6 h-6 fill-white text-[#25D366]" />
               </div>
-              <span className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+              <span className="text-xs sm:text-sm font-bold text-white truncate">
                 WhatsApp Service
               </span>
             </div>
@@ -73,7 +73,7 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
               href={whatsappServiceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-[#E60000] hover:bg-red-700 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
+              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer active:scale-95 shrink-0 border border-pink-300/30"
             >
               Commencer
             </a>
@@ -85,7 +85,7 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
               <div className="w-11 h-11 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-xs">
                 <MessageCircle className="w-6 h-6 fill-white text-[#25D366]" />
               </div>
-              <span className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+              <span className="text-xs sm:text-sm font-bold text-white truncate">
                 chaîne WhatsApp
               </span>
             </div>
@@ -94,7 +94,7 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
               href={whatsappChannelUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-[#E60000] hover:bg-red-700 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
+              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer active:scale-95 shrink-0 border border-pink-300/30"
             >
               Commencer
             </a>
@@ -103,51 +103,51 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
         </div>
 
         {/* 3. "Règles du client" Section */}
-        <div className="bg-white rounded-3xl p-5 shadow-xs space-y-4">
+        <div className="bg-[#1a082b] border border-pink-500/25 rounded-3xl p-5 shadow-lg space-y-4">
           
           {/* Centered section title with lines */}
           <div className="flex items-center justify-center space-x-3 py-1">
-            <div className="h-[1px] bg-slate-200 flex-1 max-w-[60px]" />
-            <h2 className="text-xs sm:text-sm font-bold text-slate-700 tracking-tight">
+            <div className="h-[1px] bg-pink-500/30 flex-1 max-w-[60px]" />
+            <h2 className="text-xs sm:text-sm font-bold text-pink-300 tracking-tight">
               Règles du client
             </h2>
-            <div className="h-[1px] bg-slate-200 flex-1 max-w-[60px]" />
+            <div className="h-[1px] bg-pink-500/30 flex-1 max-w-[60px]" />
           </div>
 
-          {/* Rules items list matching screenshot layout and exact text */}
-          <div className="space-y-4 text-xs sm:text-sm font-medium text-slate-800 leading-relaxed">
+          {/* Rules items list matching layout and exact text */}
+          <div className="space-y-4 text-xs sm:text-sm font-medium text-pink-200/90 leading-relaxed">
             
             {/* Rule 1 */}
             <div className="flex items-start space-x-2.5">
-              <div className="w-5 h-5 bg-[#5A88B3] text-white font-bold text-[11px] rounded flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+              <div className="w-5 h-5 bg-pink-500/25 border border-pink-500/40 text-pink-300 font-bold text-[11px] rounded flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
                 1
               </div>
-              <p className="text-slate-900">
+              <p className="text-white">
                 Horaires du service : de 9h30 à 21h30 tous les jours. Nous sommes là pour vous aider à tout moment.
               </p>
             </div>
 
             {/* Rule 2 */}
             <div className="flex items-start space-x-2.5">
-              <div className="w-5 h-5 bg-[#5A88B3] text-white font-bold text-[11px] rounded flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+              <div className="w-5 h-5 bg-pink-500/25 border border-pink-500/40 text-pink-300 font-bold text-[11px] rounded flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
                 2
               </div>
-              <p className="text-slate-900">
+              <p className="text-white">
                 Pour toute question concernant notre plateforme, veuillez contacter notre service client en ligne.
               </p>
             </div>
 
             {/* Notice paragraph */}
-            <p className="text-slate-800 pt-1 leading-relaxed">
+            <p className="text-pink-200/80 pt-1 leading-relaxed">
               Si notre service client en ligne ne répond pas immédiatement à votre message, veuillez patienter.
             </p>
 
             {/* Rule 3 */}
             <div className="flex items-start space-x-2.5 pt-1">
-              <div className="w-5 h-5 bg-[#5A88B3] text-white font-bold text-[11px] rounded flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+              <div className="w-5 h-5 bg-pink-500/25 border border-pink-500/40 text-pink-300 font-bold text-[11px] rounded flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
                 3
               </div>
-              <p className="text-slate-900">
+              <p className="text-white">
                 Problèmes de dépôt : si votre dépôt n'apparaît pas sur votre compte, veuillez envoyer le reçu de paiement au service client dès que possible. Quel que soit le problème rencontré lors de l'utilisation de la plateforme.
               </p>
             </div>

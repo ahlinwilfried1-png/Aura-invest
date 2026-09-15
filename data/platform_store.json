@@ -6,18 +6,23 @@
       "phone": "+22891902026",
       "whatsapp": "+22891902026",
       "country": "Togo",
-      "balance": 5000000,
+      "balance": 395,
       "dailyEarnings": 250000,
-      "totalEarnings": 15000000,
+      "totalEarnings": 15014915,
       "vipLevel": 8,
       "isBlocked": false,
-      "createdAt": "2026-08-26T00:00:00.000Z",
+      "createdAt": "2026-09-03T10:36:32.730528+00:00",
       "role": "admin",
       "referralCode": "ADMIN2026",
       "referredByCode": null,
       "withdrawalAccountName": "ADMINISTRATION OFFICIELLE NUTRIEN",
       "withdrawalAccountNumber": "91902026",
-      "withdrawalPinHash": "{\"pwd_hash\":\"061aca842ac8eba353c7210d2de50edff949e22297578d957653f70f3339f411\",\"salt\":\"d8e3b1c4a7f05926\",\"pin_hash\":\"bb4dea4662b8f0835b68faf963a28fb33ec3af548c15e73abd33669809a7d216\",\"net\":\"TMoney\",\"cty\":\"TG\"}"
+      "withdrawalPinHash": "{\"pwd\":\"123456\",\"pin\":\"\",\"network\":\"{\\\"pwd_hash\\\":\\\"061aca842ac8eba353c7210d2de50edff949e22297578d957653f70f3339f411\\\",\\\"salt\\\":\\\"d8e3b1c4a7f05926\\\",\\\"pin_hash\\\":\\\"bb4dea4662b8f0835b68faf963a28fb33ec3af548c15e73abd33669809a7d216\\\",\\\"net\\\":\\\"TMoney\\\",\\\"cty\\\":\\\"TG\\\"}\",\"country\":\"TG\"}",
+      "drawTickets": 6,
+      "withdrawalNetwork": "TMoney",
+      "withdrawalCountry": "TG",
+      "referralsCount": 0,
+      "teamBenefits": 0
     },
     {
       "id": "usr-admin-master",
@@ -25,18 +30,23 @@
       "phone": "+22897194059",
       "whatsapp": "+22897194059",
       "country": "Togo",
-      "balance": 5000000,
+      "balance": 0,
       "dailyEarnings": 250000,
       "totalEarnings": 15000000,
       "vipLevel": 8,
       "isBlocked": false,
-      "createdAt": "2026-01-01T00:00:00.000Z",
+      "createdAt": "2026-09-03T10:36:32.730528+00:00",
       "role": "admin",
       "referralCode": "ADMIN01",
       "referredByCode": null,
       "withdrawalAccountName": "ADMINISTRATION NUTRIEN",
       "withdrawalAccountNumber": "97194059",
-      "withdrawalPinHash": "{\"pwd_hash\":\"68f5732f71f15e27cb55c2a49c1a74be2c82bd890413d0eb46d81d027ea4771e\",\"salt\":\"d8e3b1c4a7f05926\",\"pin_hash\":\"78299f684c65d68d08fe5d9075510d0f75622ce73281a4c85917d533f8c6f2ed\",\"net\":\"TMoney\",\"cty\":\"TG\"}"
+      "withdrawalPinHash": "{\"pwd_hash\":\"68f5732f71f15e27cb55c2a49c1a74be2c82bd890413d0eb46d81d027ea4771e\",\"salt\":\"d8e3b1c4a7f05926\",\"pin_hash\":\"78299f684c65d68d08fe5d9075510d0f75622ce73281a4c85917d533f8c6f2ed\",\"net\":\"TMoney\",\"cty\":\"TG\"}",
+      "drawTickets": 0,
+      "withdrawalNetwork": "TMoney",
+      "withdrawalCountry": "TG",
+      "referralsCount": 0,
+      "teamBenefits": 0
     },
     {
       "id": "usr-admin-sec-9920",
@@ -44,18 +54,23 @@
       "phone": "+22890554433",
       "whatsapp": "+22890554433",
       "country": "Togo",
-      "balance": 2500000,
+      "balance": 0,
       "dailyEarnings": 100000,
       "totalEarnings": 5000000,
       "vipLevel": 8,
       "isBlocked": false,
-      "createdAt": "2026-08-25T00:00:00.000Z",
+      "createdAt": "2026-09-03T10:36:32.730528+00:00",
       "role": "admin",
       "referralCode": "ADMIN02",
       "referredByCode": null,
       "withdrawalAccountName": "ADMINISTRATION SECURISEE",
       "withdrawalAccountNumber": "90554433",
-      "withdrawalPinHash": "{\"pwd_hash\":\"88c92e6b47cc4823036ec1ab924fcdb3c92db21b18fd6486aaa10e72a2f336a8\",\"salt\":\"d8e3b1c4a7f05926\",\"pin_hash\":\"bb4dea4662b8f0835b68faf963a28fb33ec3af548c15e73abd33669809a7d216\",\"net\":\"TMoney\",\"cty\":\"TG\"}"
+      "withdrawalPinHash": "{\"pwd_hash\":\"88c92e6b47cc4823036ec1ab924fcdb3c92db21b18fd6486aaa10e72a2f336a8\",\"salt\":\"d8e3b1c4a7f05926\",\"pin_hash\":\"bb4dea4662b8f0835b68faf963a28fb33ec3af548c15e73abd33669809a7d216\",\"net\":\"TMoney\",\"cty\":\"TG\"}",
+      "drawTickets": 0,
+      "withdrawalNetwork": "TMoney",
+      "withdrawalCountry": "TG",
+      "referralsCount": 0,
+      "teamBenefits": 0
     },
     {
       "id": "usr-5120441",
@@ -92,10 +107,10 @@
       "totalGain": 61320,
       "isActive": true,
       "image": "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80",
-      "description": "Pack de démarrage officiel AirPods 2 - Rendement quotidien garanti sur 365 jours.",
+      "description": "Pack de démarrage officiel AirPods 2 - Rendement quotidien garanti.",
       "order": 1,
       "badge": "Populaire",
-      "color": "from-amber-950/40 via-amber-900/10 to-transparent border-amber-500/20"
+      "color": "from-pink-950/60 via-purple-900/30 to-fuchsia-950/40 border-pink-500/30"
     },
     {
       "id": "vip-2-elite",
@@ -109,7 +124,7 @@
       "description": "Pack officiel AirPods 3 - Technologie audio spatiale & rendement quotidien garanti.",
       "order": 2,
       "badge": "Recommandé",
-      "color": "from-emerald-950/40 via-emerald-900/10 to-transparent border-emerald-500/20"
+      "color": "from-purple-950/60 via-fuchsia-900/30 to-pink-950/40 border-purple-500/30"
     },
     {
       "id": "vip-3-premium",
@@ -123,7 +138,7 @@
       "description": "Pack officiel AirPods 4 avec réduction active du bruit & profit journalier continu.",
       "order": 3,
       "badge": "Rentable",
-      "color": "from-blue-950/40 via-blue-900/10 to-transparent border-blue-500/20"
+      "color": "from-fuchsia-950/60 via-pink-900/30 to-purple-950/40 border-fuchsia-500/30"
     },
     {
       "id": "vip-4-platinum",
@@ -137,7 +152,7 @@
       "description": "Pack Platinum AirPods Pro - Performance audio professionnelle et revenus passifs.",
       "order": 4,
       "badge": "Haute Performance",
-      "color": "from-purple-950/40 via-purple-900/10 to-transparent border-purple-500/20"
+      "color": "from-violet-950/60 via-purple-900/30 to-pink-950/40 border-violet-500/30"
     },
     {
       "id": "vip-6-or",
@@ -151,7 +166,7 @@
       "description": "Pack Investisseur Or AirPods Pro 2 USB-C avec puce H2 haute performance.",
       "order": 5,
       "badge": "Investisseur Or",
-      "color": "from-amber-950/40 via-yellow-900/10 to-transparent border-yellow-500/30"
+      "color": "from-pink-950/60 via-fuchsia-900/30 to-violet-950/40 border-pink-500/40"
     },
     {
       "id": "vip-7-saphir",
@@ -165,7 +180,7 @@
       "description": "Pack Privilège Saphir AirPods Pro MagSafe - Rendement maximal à fort volume.",
       "order": 6,
       "badge": "Privilège Saphir",
-      "color": "from-sky-950/40 via-cyan-900/10 to-transparent border-cyan-500/30"
+      "color": "from-purple-950/60 via-violet-900/30 to-pink-950/40 border-purple-500/40"
     },
     {
       "id": "vip-partenaire-bronze",
@@ -175,11 +190,11 @@
       "duration": 365,
       "totalGain": 10512000,
       "isActive": true,
-      "image": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800&auto=format&fit=crop&q=80",
+      "image": "https://images.unsplash.com/photo-1613040809024-b4ef7ba99bc3?w=800&auto=format&fit=crop&q=80",
       "description": "Partenariat VIP AirPods Max Silver - Casque circum-auriculaire haute fidélité.",
       "order": 7,
       "badge": "Partenaire Bronze",
-      "color": "from-orange-950/40 via-amber-900/10 to-transparent border-orange-500/30"
+      "color": "from-pink-950/50 via-purple-900/30 to-fuchsia-950/40 border-pink-500/30"
     },
     {
       "id": "vip-partenaire-argent",
@@ -189,15 +204,44 @@
       "duration": 365,
       "totalGain": 22198650,
       "isActive": true,
-      "image": "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=800&auto=format&fit=crop&q=80",
+      "image": "https://images.unsplash.com/photo-1628202926206-c63a34b1618f?w=800&auto=format&fit=crop&q=80",
       "description": "Partenariat Prestige AirPods Max Édition Spéciale - Gains automatisés d'élite.",
       "order": 8,
       "badge": "Partenaire Argent",
-      "color": "from-slate-950/40 via-slate-800/10 to-transparent border-slate-400/40"
+      "color": "from-fuchsia-950/50 via-violet-900/30 to-purple-950/40 border-fuchsia-500/40"
     }
   ],
   "investments": [],
-  "deposits": [],
+  "deposits": [
+    {
+      "id": "dep-mu2gipev-lxqlb",
+      "userId": "usr-admin-principal-2026",
+      "userName": "Administrateur Principal (Nutrien)",
+      "userPhone": "+228 91902026",
+      "amount": 15000,
+      "method": "TMoney (Togo)",
+      "transactionId": "DEP-290490",
+      "screenshotUrl": null,
+      "status": "pending",
+      "country": "Togo",
+      "countryCode": "TG",
+      "createdAt": "2026-09-15T09:15:59.143Z"
+    },
+    {
+      "id": "dep-mu2h4wue-lxegt",
+      "userId": "usr-admin-principal-2026",
+      "userName": "Administrateur Principal (Nutrien)",
+      "userPhone": "+228 91902026",
+      "amount": 15000,
+      "method": "TMoney (Togo)",
+      "transactionId": "DEP-716182",
+      "screenshotUrl": null,
+      "status": "pending",
+      "country": "Togo",
+      "countryCode": "TG",
+      "createdAt": "2026-09-15T09:33:15.206Z"
+    }
+  ],
   "withdrawals": [],
   "withdrawal_proofs": [],
   "tickets": [
@@ -1066,7 +1110,7 @@
           "updatedAt": "2026-09-14T09:35:11.677Z"
         }
       ],
-      "createdAt": "2026-09-14T09:35:11.7+00:00"
+      "createdAt": "2026-09-14T09:35:30.461+00:00"
     }
   ],
   "announcements": [
@@ -1089,5 +1133,5 @@
     }
   ],
   "paymentGatewayUrl": "https://soccopay.com/pay_link.php?id=108d608fd7c949fce11acb78537955ac",
-  "lastSaved": "2026-09-14T09:35:33.761Z"
+  "lastSaved": "2026-09-15T09:50:34.346Z"
 }

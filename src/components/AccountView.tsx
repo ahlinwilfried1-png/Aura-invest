@@ -236,20 +236,20 @@ export const AccountView: React.FC<AccountViewProps> = ({
 
   // Render Sub-Page Header with Back Button
   const renderHeader = (title: string) => (
-    <div className="flex items-center space-x-3 pb-3 border-b border-slate-200/80 mb-5">
+    <div className="flex items-center space-x-3 pb-3 border-b border-pink-500/25 mb-5 text-white">
       <button
         onClick={() => setActiveSubPage(null)}
-        className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer"
+        className="p-2 rounded-xl bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 transition-all cursor-pointer border border-pink-500/30"
         title="Retour à Mon compte"
       >
         <ArrowLeft className="w-5 h-5" />
       </button>
-      <h2 className="text-lg sm:text-xl font-black text-slate-900">{title}</h2>
+      <h2 className="text-lg sm:text-xl font-black text-white">{title}</h2>
     </div>
   );
 
   return (
-    <div className="max-w-xl mx-auto space-y-6 animate-fadeIn pb-4 font-sans text-slate-800">
+    <div className="max-w-xl mx-auto space-y-6 animate-fadeIn pb-12 font-sans text-pink-50">
       {/* ========================================================= */}
       {/* SUB-PAGE 0: MAIN ACCOUNT HUB (When activeSubPage === null) */}
       {/* ========================================================= */}
@@ -259,26 +259,24 @@ export const AccountView: React.FC<AccountViewProps> = ({
           {currentUser.role === 'admin' && (
             <div 
               onClick={() => onToggleAdmin && onToggleAdmin()}
-              className="bg-gradient-to-br from-red-600 via-red-700 to-rose-800 text-white rounded-3xl p-4 sm:p-5 shadow-lg border border-red-500 relative overflow-hidden cursor-pointer group transition-all transform hover:-translate-y-0.5"
+              className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-pink-700 via-fuchsia-700 to-purple-800 p-4 sm:p-5 text-white shadow-xl border border-pink-400/40 cursor-pointer group hover:brightness-105 transition-all"
             >
-              {/* Background Glow */}
               <div className="absolute top-0 right-0 -mt-6 -mr-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
-
-              <div className="relative z-10 space-y-3.5">
-                {/* Header */}
+              
+              <div className="relative z-10 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2.5">
-                    <div className="w-10 h-10 rounded-2xl bg-white text-red-600 flex items-center justify-center font-black shadow-md shrink-0">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-2xl bg-white/20 text-white flex items-center justify-center font-black shadow-md shrink-0 border border-white/20">
                       <ShieldCheck className="w-6 h-6 stroke-[2.5]" />
                     </div>
                     <div>
                       <div className="flex items-center space-x-2">
                         <h3 className="text-sm sm:text-base font-black text-white tracking-tight">Panneau d'Administration</h3>
-                        <span className="bg-white/20 text-white text-[9px] font-mono px-2 py-0.5 rounded-full uppercase font-extrabold tracking-wider border border-white/20">
-                          SUPABASE DIRECT
+                        <span className="bg-pink-500/30 text-pink-100 text-[9px] font-mono px-2 py-0.5 rounded-full uppercase font-extrabold tracking-wider border border-pink-300/30">
+                          PRO
                         </span>
                       </div>
-                      <p className="text-[11px] text-red-100 font-medium">Gestion centrale, utilisateurs, transactions & chat</p>
+                      <p className="text-[11px] text-pink-100 font-medium">Gestion centrale, utilisateurs, transactions & chat</p>
                     </div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-white/80 group-hover:translate-x-1 transition-transform" />
@@ -286,27 +284,27 @@ export const AccountView: React.FC<AccountViewProps> = ({
 
                 {/* Real-time stats pills */}
                 <div className="grid grid-cols-4 gap-1.5 pt-1 text-center font-mono">
-                  <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2 border border-white/10">
+                  <div className="bg-black/25 backdrop-blur-xs rounded-xl p-2 border border-white/10">
                     <div className="text-xs sm:text-sm font-black text-white">{users.length || 1}</div>
-                    <div className="text-[9px] text-red-100 font-sans font-semibold">Comptes</div>
+                    <div className="text-[9px] text-pink-200 font-sans font-semibold">Comptes</div>
                   </div>
-                  <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2 border border-white/10">
-                    <div className="text-xs sm:text-sm font-black text-amber-300">
+                  <div className="bg-black/25 backdrop-blur-xs rounded-xl p-2 border border-white/10">
+                    <div className="text-xs sm:text-sm font-black text-pink-300">
                       {deposits.filter(d => d.status === 'pending').length}
                     </div>
-                    <div className="text-[9px] text-red-100 font-sans font-semibold">Dépôts att.</div>
+                    <div className="text-[9px] text-pink-200 font-sans font-semibold">Dépôts att.</div>
                   </div>
-                  <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2 border border-white/10">
-                    <div className="text-xs sm:text-sm font-black text-amber-300">
+                  <div className="bg-black/25 backdrop-blur-xs rounded-xl p-2 border border-white/10">
+                    <div className="text-xs sm:text-sm font-black text-pink-300">
                       {withdrawals.filter(w => w.status === 'pending').length}
                     </div>
-                    <div className="text-[9px] text-red-100 font-sans font-semibold">Retraits att.</div>
+                    <div className="text-[9px] text-pink-200 font-sans font-semibold">Retraits att.</div>
                   </div>
-                  <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2 border border-white/10">
+                  <div className="bg-black/25 backdrop-blur-xs rounded-xl p-2 border border-white/10">
                     <div className="text-xs sm:text-sm font-black text-emerald-300">
                       {tickets.filter(t => t.status === 'open').length}
                     </div>
-                    <div className="text-[9px] text-red-100 font-sans font-semibold">Messages</div>
+                    <div className="text-[9px] text-pink-200 font-sans font-semibold">Messages</div>
                   </div>
                 </div>
 
@@ -318,7 +316,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                       e.stopPropagation();
                       if (onToggleAdmin) onToggleAdmin();
                     }}
-                    className="flex-1 bg-white hover:bg-slate-100 active:scale-98 text-red-700 font-black text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center space-x-1.5 shadow-sm cursor-pointer"
+                    className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 active:scale-98 text-white font-black text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center space-x-1.5 shadow-md cursor-pointer border border-pink-300/40"
                   >
                     <LockKeyhole className="w-3.5 h-3.5 stroke-[2.5]" />
                     <span>Ouvrir le Panneau Admin</span>
@@ -327,8 +325,8 @@ export const AccountView: React.FC<AccountViewProps> = ({
                     type="button"
                     onClick={handleManualAdminSync}
                     disabled={isSyncingAdmin}
-                    className="bg-white/20 hover:bg-white/30 text-white font-bold text-xs py-2.5 px-3 rounded-xl transition-all flex items-center space-x-1.5 border border-white/20 cursor-pointer disabled:opacity-50 shrink-0"
-                    title="Synchroniser immédiatement avec Supabase"
+                    className="bg-black/30 hover:bg-black/40 text-white font-bold text-xs py-2.5 px-3 rounded-xl transition-all flex items-center space-x-1.5 border border-white/20 cursor-pointer disabled:opacity-50 shrink-0"
+                    title="Synchroniser immédiatement"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isSyncingAdmin ? 'animate-spin' : ''}`} />
                     <span className="text-[10px] font-mono uppercase">{isSyncingAdmin ? 'Sync...' : 'Sync'}</span>
@@ -338,96 +336,96 @@ export const AccountView: React.FC<AccountViewProps> = ({
             </div>
           )}
 
-          {/* 1. Top Header Card: "Mon portefeuille" AirPods Official style (White theme) */}
+          {/* 1. Top Header Card: "Mon portefeuille" in Rose-Violet Theme */}
           <div 
-            className="py-3 px-1 relative overflow-hidden space-y-4 text-slate-900"
+            className="py-4 px-4 relative overflow-hidden space-y-4 text-pink-50 bg-[#1a082b] rounded-3xl border border-pink-500/25 shadow-xl"
           >
             {/* AirPods Badge & User Info */}
             <div className="flex items-center justify-between pb-1">
               <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
-                  <Wallet className="w-4 h-4" />
+                <div className="w-9 h-9 rounded-full bg-pink-500/20 border border-pink-500/30 text-pink-300 flex items-center justify-center font-bold">
+                  <Wallet className="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <h3 className="text-base sm:text-lg font-black text-slate-900">Mon portefeuille</h3>
-                  <div className="text-[11px] text-slate-500 font-medium flex items-center space-x-1.5">
+                  <h3 className="text-base sm:text-lg font-black text-white">Mon portefeuille</h3>
+                  <div className="text-[11px] text-pink-200/80 font-medium flex items-center space-x-1.5">
                     <span>{currentUser.phone}</span>
                     <span>•</span>
-                    <span className="font-bold text-slate-700 flex items-center space-x-1">
+                    <span className="font-bold text-pink-200 flex items-center space-x-1">
                       <span>{userCountry.flag}</span>
                       <span>{userCountry.name}</span>
                     </span>
                   </div>
                 </div>
               </div>
-              <div className="bg-emerald-50 px-2.5 py-1 rounded-full flex items-center space-x-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-black font-mono text-emerald-700 uppercase tracking-widest">AirPods Official</span>
+              <div className="bg-pink-500/20 border border-pink-500/30 px-2.5 py-1 rounded-full flex items-center space-x-1.5">
+                <span className="w-2 h-2 rounded-full bg-pink-400 animate-pulse" />
+                <span className="text-[10px] font-black font-mono text-pink-300 uppercase tracking-widest">AirPods Official</span>
               </div>
             </div>
 
             {/* Balance ("Équilibre") */}
             <div className="relative z-10 pt-0.5">
-              <div className="text-xs sm:text-sm text-slate-600 font-medium flex items-baseline space-x-2">
+              <div className="text-xs sm:text-sm text-pink-200/90 font-medium flex items-baseline space-x-2">
                 <span>Équilibre disponible:</span>
-                <span className="text-2xl sm:text-3xl font-black text-amber-600 tracking-tight font-mono">
-                  {currentUser.balance.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} <span className="text-xs font-sans text-amber-700">FCFA</span>
+                <span className="text-2xl sm:text-3xl font-black text-pink-400 tracking-tight font-mono">
+                  {currentUser.balance.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} <span className="text-xs font-sans text-pink-300 font-bold">FCFA</span>
                 </span>
               </div>
             </div>
 
-            {/* 6 Grid items (2 rows x 3 cols) - clean & borderless */}
-            <div className="grid grid-cols-3 gap-y-3.5 gap-x-2 pt-3.5 text-center font-mono">
+            {/* 6 Grid items (2 rows x 3 cols) */}
+            <div className="grid grid-cols-3 gap-y-3.5 gap-x-2 pt-3 text-center font-mono border-t border-pink-500/20">
               <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-black text-slate-900">
+                <div className="text-sm sm:text-base font-black text-white">
                   {myInvestments.reduce((acc, inv) => acc + (inv.claimsHistory ? inv.claimsHistory.filter(c => new Date(c).toDateString() === new Date().toDateString()).length * inv.dailyGain : 0), 0)}
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 leading-tight">
+                <div className="text-[10px] sm:text-[11px] font-medium text-pink-300/80 leading-tight">
                   Revenu du jour (FCFA)
                 </div>
               </div>
 
               <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-black text-amber-600">
+                <div className="text-sm sm:text-base font-black text-pink-400">
                   {myInvestments.reduce((acc, inv) => acc + (inv.totalGain || 0), 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 leading-tight">
+                <div className="text-[10px] sm:text-[11px] font-medium text-pink-300/80 leading-tight">
                   Revenu cumulé (FCFA)
                 </div>
               </div>
 
               <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-black text-slate-900">
+                <div className="text-sm sm:text-base font-black text-white">
                   {myWithdrawals.filter(w => new Date(w.createdAt).toDateString() === new Date().toDateString()).reduce((acc, w) => acc + w.amount, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 leading-tight">
+                <div className="text-[10px] sm:text-[11px] font-medium text-pink-300/80 leading-tight">
                   Retiré aujourd'hui (FCFA)
                 </div>
               </div>
 
               <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-black text-emerald-600">
+                <div className="text-sm sm:text-base font-black text-emerald-400">
                   {myWithdrawals.filter(w => w.status === 'approved').reduce((acc, w) => acc + w.amount, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 leading-tight">
+                <div className="text-[10px] sm:text-[11px] font-medium text-pink-300/80 leading-tight">
                   Retraits totaux (FCFA)
                 </div>
               </div>
 
               <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-black text-sky-600">
+                <div className="text-sm sm:text-base font-black text-purple-300">
                   {currentUser.referralsCount || 0}
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 leading-tight">
+                <div className="text-[10px] sm:text-[11px] font-medium text-pink-300/80 leading-tight">
                   Taille de l'équipe
                 </div>
               </div>
 
               <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-black text-amber-600">
+                <div className="text-sm sm:text-base font-black text-pink-400">
                   {currentUser.teamBenefits || 0}
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 leading-tight">
+                <div className="text-[10px] sm:text-[11px] font-medium text-pink-300/80 leading-tight">
                   Avantages équipe (FCFA)
                 </div>
               </div>
@@ -436,161 +434,161 @@ export const AccountView: React.FC<AccountViewProps> = ({
 
           {/* 2. Framed Cards for key actions (Commande, Lier carte bancaire, Rechargement enregistré, Retrait enregistré) */}
           <div className="space-y-2.5 pt-1">
-            {/* Commande (déplacée depuis la barre de navigation) */}
+            {/* Commande */}
             <div 
               onClick={() => setActiveSubPage('order_history')}
-              className="bg-white hover:bg-slate-50/90 border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs cursor-pointer flex items-center justify-between transition-all group"
+              className="bg-[#1a082b] hover:bg-[#240c3c] border border-pink-500/25 rounded-2xl p-3.5 sm:p-4 shadow-xl cursor-pointer flex items-center justify-between transition-all group"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-700 flex items-center justify-center font-bold shrink-0 group-hover:bg-amber-500 group-hover:text-white transition-all">
+                <div className="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center font-bold shrink-0 group-hover:bg-gradient-to-r group-hover:from-pink-600 group-hover:to-purple-600 group-hover:text-white transition-all border border-pink-500/30">
                   <ShoppingBag className="w-5 h-5 stroke-[2.2]" />
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs sm:text-sm font-extrabold text-slate-900 block">Commande</span>
+                    <span className="text-xs sm:text-sm font-extrabold text-white block">Commande</span>
                     {myInvestments.length > 0 && (
-                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full border border-emerald-300">
+                      <span className="bg-pink-500/20 text-pink-300 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full border border-pink-500/30">
                         {myInvestments.length} active{myInvestments.length > 1 ? 's' : ''}
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Consulter mes commandes, achats & gains quotidiens</span>
+                  <span className="text-[10px] sm:text-[11px] text-pink-300/80 font-medium">Consulter mes commandes, achats & gains quotidiens</span>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-amber-600 transition-colors" />
+              <ChevronRight className="w-4 h-4 text-pink-400 group-hover:translate-x-0.5 transition-transform" />
             </div>
 
             {/* Lier carte bancaire */}
             <div 
               onClick={() => setActiveSubPage('link_card')}
-              className="bg-white hover:bg-slate-50/90 border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs cursor-pointer flex items-center justify-between transition-all group"
+              className="bg-[#1a082b] hover:bg-[#240c3c] border border-pink-500/25 rounded-2xl p-3.5 sm:p-4 shadow-xl cursor-pointer flex items-center justify-between transition-all group"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-10 h-10 rounded-xl bg-teal-500/10 text-teal-600 flex items-center justify-center font-bold shrink-0 group-hover:bg-teal-500 group-hover:text-white transition-all">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold shrink-0 group-hover:bg-gradient-to-r group-hover:from-pink-600 group-hover:to-purple-600 group-hover:text-white transition-all border border-purple-500/30">
                   <CreditCard className="w-5 h-5 stroke-[2.2]" />
                 </div>
                 <div>
-                  <span className="text-xs sm:text-sm font-extrabold text-slate-900 block">Lier carte bancaire</span>
-                  <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Coordonnées de retrait & RIB bancaire</span>
+                  <span className="text-xs sm:text-sm font-extrabold text-white block">Lier carte bancaire</span>
+                  <span className="text-[10px] sm:text-[11px] text-pink-300/80 font-medium">Coordonnées de retrait & RIB bancaire</span>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-teal-600 transition-colors" />
+              <ChevronRight className="w-4 h-4 text-pink-400 group-hover:translate-x-0.5 transition-transform" />
             </div>
 
             {/* Rechargement enregistré */}
             <div 
               onClick={() => setActiveSubPage('deposit_history')}
-              className="bg-white hover:bg-slate-50/90 border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs cursor-pointer flex items-center justify-between transition-all group"
+              className="bg-[#1a082b] hover:bg-[#240c3c] border border-pink-500/25 rounded-2xl p-3.5 sm:p-4 shadow-xl cursor-pointer flex items-center justify-between transition-all group"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center font-bold shrink-0 group-hover:bg-sky-500 group-hover:text-white transition-all">
+                <div className="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center font-bold shrink-0 group-hover:bg-gradient-to-r group-hover:from-pink-600 group-hover:to-purple-600 group-hover:text-white transition-all border border-pink-500/30">
                   <ArrowUpRight className="w-5 h-5 stroke-[2.2]" />
                 </div>
                 <div>
-                  <span className="text-xs sm:text-sm font-extrabold text-slate-900 block">Rechargement enregistré</span>
-                  <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Historique de tous vos dépôts</span>
+                  <span className="text-xs sm:text-sm font-extrabold text-white block">Rechargement enregistré</span>
+                  <span className="text-[10px] sm:text-[11px] text-pink-300/80 font-medium">Historique de tous vos dépôts</span>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-sky-600 transition-colors" />
+              <ChevronRight className="w-4 h-4 text-pink-400 group-hover:translate-x-0.5 transition-transform" />
             </div>
 
             {/* Retrait enregistré */}
             <div 
               onClick={() => setActiveSubPage('withdraw_history')}
-              className="bg-white hover:bg-slate-50/90 border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs cursor-pointer flex items-center justify-between transition-all group"
+              className="bg-[#1a082b] hover:bg-[#240c3c] border border-pink-500/25 rounded-2xl p-3.5 sm:p-4 shadow-xl cursor-pointer flex items-center justify-between transition-all group"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold shrink-0 group-hover:bg-rose-500 group-hover:text-white transition-all">
+                <div className="w-10 h-10 rounded-xl bg-fuchsia-500/20 text-fuchsia-300 flex items-center justify-center font-bold shrink-0 group-hover:bg-gradient-to-r group-hover:from-pink-600 group-hover:to-purple-600 group-hover:text-white transition-all border border-fuchsia-500/30">
                   <ArrowDownLeft className="w-5 h-5 stroke-[2.2]" />
                 </div>
                 <div>
-                  <span className="text-xs sm:text-sm font-extrabold text-slate-900 block">Retrait enregistré</span>
-                  <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Historique de vos retraits</span>
+                  <span className="text-xs sm:text-sm font-extrabold text-white block">Retrait enregistré</span>
+                  <span className="text-[10px] sm:text-[11px] text-pink-300/80 font-medium">Historique de vos retraits</span>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-rose-600 transition-colors" />
+              <ChevronRight className="w-4 h-4 text-pink-400 group-hover:translate-x-0.5 transition-transform" />
             </div>
           </div>
 
           {/* 3. Navigation items group */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-2 shadow-2xs divide-y divide-slate-100 mt-3">
-            {/* Code cadeau (Replaces Argent gratuit) */}
+          <div className="bg-[#1a082b] border border-pink-500/25 rounded-2xl p-2 shadow-xl divide-y divide-pink-500/15 mt-3">
+            {/* Code cadeau */}
             <div 
               onClick={() => {
                 setBonusFeedback(null);
                 setActiveSubPage('code_cadeau');
               }}
-              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
+              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-pink-500/10 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center shrink-0 border border-pink-500/30">
                   <Gift className="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <span className="text-xs sm:text-sm font-bold text-slate-900 block">Code cadeau</span>
-                  <span className="text-[10px] text-slate-500 font-medium">Entrer un code cadeau ou coupon bonus</span>
+                  <span className="text-xs sm:text-sm font-bold text-white block">Code cadeau</span>
+                  <span className="text-[10px] text-pink-300/80 font-medium">Entrer un code cadeau ou coupon bonus</span>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
+              <ChevronRight className="w-4 h-4 text-pink-400" />
             </div>
 
             {/* Tirage au sort */}
             <div 
               onClick={() => setActiveSubPage('bonus')}
-              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
+              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-pink-500/10 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-600 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0 border border-purple-500/30">
                   <Sparkles className="w-4.5 h-4.5" />
                 </div>
-                <span className="text-xs sm:text-sm font-semibold text-slate-900">Tirage au sort</span>
+                <span className="text-xs sm:text-sm font-semibold text-white">Tirage au sort</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
+              <ChevronRight className="w-4 h-4 text-pink-400" />
             </div>
 
             {/* Modifier le mot de passe */}
             <div 
               onClick={() => setActiveSubPage('security')}
-              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
+              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-pink-500/10 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-orange-500/15 text-orange-600 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center shrink-0 border border-pink-500/30">
                   <Lock className="w-4.5 h-4.5" />
                 </div>
-                <span className="text-xs sm:text-sm font-semibold text-slate-900">Modifier le mot de passe</span>
+                <span className="text-xs sm:text-sm font-semibold text-white">Modifier le mot de passe</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
+              <ChevronRight className="w-4 h-4 text-pink-400" />
             </div>
 
             {/* À propos d'AirPods */}
             <div 
               onClick={() => setActiveSubPage('profile')}
-              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
+              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-pink-500/10 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0 border border-purple-500/30">
                   <Info className="w-4.5 h-4.5" />
                 </div>
-                <span className="text-xs sm:text-sm font-semibold text-slate-900">À propos</span>
+                <span className="text-xs sm:text-sm font-semibold text-white">À propos</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
+              <ChevronRight className="w-4 h-4 text-pink-400" />
             </div>
 
             {/* Foire Aux Questions (FAQ) */}
             <div 
               onClick={() => setActiveSubPage('faq')}
-              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl"
+              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-pink-500/10 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-teal-500/15 text-teal-600 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-fuchsia-500/20 text-fuchsia-300 flex items-center justify-center shrink-0 border border-fuchsia-500/30">
                   <HelpCircle className="w-4.5 h-4.5 stroke-[2.2]" />
                 </div>
                 <div>
-                  <span className="text-xs sm:text-sm font-semibold text-slate-900 block">Foire Aux Questions (FAQ)</span>
-                  <span className="text-[10px] text-slate-500 font-medium">Réponses instantanées à vos questions</span>
+                  <span className="text-xs sm:text-sm font-semibold text-white block">Foire Aux Questions (FAQ)</span>
+                  <span className="text-[10px] text-pink-300/80 font-medium">Réponses instantanées à vos questions</span>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
+              <ChevronRight className="w-4 h-4 text-pink-400" />
             </div>
 
             {/* Service Client (Chat Support) */}
@@ -602,27 +600,27 @@ export const AccountView: React.FC<AccountViewProps> = ({
                   setActiveSubPage('support');
                 }
               }}
-              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-xl relative"
+              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-pink-500/10 transition-colors rounded-xl relative"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-600 flex items-center justify-center shrink-0 relative">
+                <div className="w-9 h-9 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center shrink-0 relative border border-pink-500/30">
                   <Headphones className="w-4.5 h-4.5" />
                   {unreadChatCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-600 text-white font-black text-[9px] min-w-[16px] h-[16px] px-1 rounded-full flex items-center justify-center border-2 border-white animate-bounce shadow-xs">
+                    <span className="absolute -top-1 -right-1 bg-pink-600 text-white font-black text-[9px] min-w-[16px] h-[16px] px-1 rounded-full flex items-center justify-center border-2 border-[#1a082b] animate-bounce shadow-xs">
                       {unreadChatCount}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs sm:text-sm font-semibold text-slate-900">Service Client (Chat)</span>
+                  <span className="text-xs sm:text-sm font-semibold text-white">Service Client (Chat)</span>
                   {unreadChatCount > 0 && (
-                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                    <span className="bg-pink-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
                       Nouveau message ({unreadChatCount})
                     </span>
                   )}
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
+              <ChevronRight className="w-4 h-4 text-pink-400" />
             </div>
 
             {/* Panneau Administratif (RÉSERVÉ UNIQUEMENT AUX ADMINISTRATEURS) */}
@@ -635,31 +633,31 @@ export const AccountView: React.FC<AccountViewProps> = ({
                     onShowToast('info', "Accès au panneau d'administration");
                   }
                 }}
-                className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-red-500/10 transition-colors rounded-xl border border-red-200/60 bg-red-50/40"
+                className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-pink-600/20 transition-colors rounded-xl border border-pink-500/40 bg-pink-950/40"
               >
                 <div className="flex items-center space-x-3.5">
-                  <div className="w-9 h-9 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs border border-pink-400/40">
                     <LockKeyhole className="w-4.5 h-4.5 stroke-[2.5]" />
                   </div>
                   <div>
-                    <span className="text-xs sm:text-sm font-bold text-slate-900 block">Panneau Administratif</span>
-                    <span className="text-[10px] font-semibold text-red-800">Gestion globale du site & utilisateurs</span>
+                    <span className="text-xs sm:text-sm font-bold text-white block">Panneau Administratif</span>
+                    <span className="text-[10px] font-semibold text-pink-300">Gestion globale du site & utilisateurs</span>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-red-700" />
+                <ChevronRight className="w-4 h-4 text-pink-300" />
               </div>
             )}
 
             {/* Se déconnecter */}
             <div 
               onClick={onLogout}
-              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-red-50/50 transition-colors rounded-xl"
+              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-red-500/15 transition-colors rounded-xl"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-red-500/15 text-red-600 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-red-500/20 text-red-300 flex items-center justify-center shrink-0 border border-red-500/30">
                   <LogOut className="w-4.5 h-4.5" />
                 </div>
-                <span className="text-xs sm:text-sm font-semibold text-red-600">Se déconnecter</span>
+                <span className="text-xs sm:text-sm font-semibold text-red-400">Se déconnecter</span>
               </div>
               <ChevronRight className="w-4 h-4 text-red-400" />
             </div>
@@ -675,15 +673,15 @@ export const AccountView: React.FC<AccountViewProps> = ({
           {renderHeader('Code cadeau')}
 
           {/* Clean, modern framed card */}
-          <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-2xs space-y-5">
+          <div className="bg-[#1a082b] border border-pink-500/25 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto">
+              <div className="w-12 h-12 rounded-2xl bg-pink-500/20 text-pink-300 border border-pink-500/30 flex items-center justify-center mx-auto">
                 <Gift className="w-6 h-6 stroke-[2.2]" />
               </div>
-              <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
+              <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
                 Obtenir ma récompense
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-sm mx-auto">
+              <p className="text-xs sm:text-sm text-pink-200/80 leading-relaxed max-w-sm mx-auto">
                 Saisissez votre code cadeau ou coupon privilège ci-dessous pour débloquer votre bonus instantané.
               </p>
             </div>
@@ -691,7 +689,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
             {/* Input Form */}
             <div className="space-y-3.5 pt-1">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 tracking-wide uppercase font-mono block">
+                <label className="text-xs font-bold text-pink-200 tracking-wide uppercase font-mono block">
                   Code Cadeau / Coupon
                 </label>
                 <input
@@ -707,17 +705,17 @@ export const AccountView: React.FC<AccountViewProps> = ({
                       handleValidateCode();
                     }
                   }}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl px-4 py-3 text-sm font-mono font-bold text-slate-900 uppercase tracking-widest outline-none transition-all placeholder:text-slate-400 placeholder:font-normal placeholder:tracking-normal"
+                  className="w-full bg-[#120422] border border-pink-500/30 focus:border-pink-400 focus:bg-[#1a082b] rounded-xl px-4 py-3 text-sm font-mono font-bold text-white uppercase tracking-widest outline-none transition-all placeholder:text-pink-300/40 placeholder:font-normal placeholder:tracking-normal"
                 />
               </div>
 
               <button
                 onClick={handleValidateCode}
                 disabled={!bonusInput.trim()}
-                className={`w-full py-3.5 rounded-xl text-sm sm:text-base font-extrabold transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-xs ${
+                className={`w-full py-3.5 rounded-xl text-sm sm:text-base font-extrabold transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md ${
                   bonusInput.trim() 
-                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.99]' 
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white active:scale-[0.99] border border-pink-300/40' 
+                    : 'bg-pink-950/40 border border-pink-500/20 text-pink-300/40 cursor-not-allowed'
                 }`}
               >
                 <Check className="w-4 h-4 stroke-[3]" />
@@ -729,19 +727,19 @@ export const AccountView: React.FC<AccountViewProps> = ({
             {bonusFeedback && (
               <div className={`p-4 rounded-xl border text-xs sm:text-sm flex items-start space-x-3 animate-fadeIn ${
                 bonusFeedback.type === 'success' 
-                  ? 'bg-emerald-50 border-emerald-200/80 text-emerald-900' 
+                  ? 'bg-emerald-950/50 border-emerald-500/50 text-emerald-200' 
                   : bonusFeedback.type === 'used'
-                  ? 'bg-amber-50 border-amber-200/80 text-amber-900'
-                  : 'bg-rose-50 border-rose-200/80 text-rose-900'
+                  ? 'bg-amber-950/50 border-amber-500/50 text-amber-200'
+                  : 'bg-rose-950/50 border-rose-500/50 text-rose-200'
               }`}>
                 {bonusFeedback.type === 'success' && (
-                  <Sparkles className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <Sparkles className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                 )}
                 {bonusFeedback.type === 'used' && (
-                  <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <Info className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                 )}
                 {bonusFeedback.type === 'error' && (
-                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
                 )}
                 <div className="space-y-0.5 font-medium">
                   <p className="font-bold">
@@ -758,31 +756,31 @@ export const AccountView: React.FC<AccountViewProps> = ({
           </div>
 
           {/* WhatsApp Channel Banner for Gift Codes */}
-          <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-700 text-white rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5">
+          <div className="bg-gradient-to-br from-pink-800 via-purple-800 to-indigo-900 text-white rounded-2xl p-4 sm:p-5 shadow-xl border border-pink-500/30 space-y-3.5">
             <div className="flex items-start space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0 border border-white/20">
                 <MessageCircle className="w-5 h-5 fill-white text-white" />
               </div>
               <div className="space-y-1 min-w-0 flex-1">
-                <div className="text-[10px] font-black uppercase tracking-wider text-emerald-200">
+                <div className="text-[10px] font-black uppercase tracking-wider text-pink-200">
                   Codes Cadeaux & Privilèges
                 </div>
                 <h4 className="text-sm sm:text-base font-extrabold tracking-tight leading-snug">
                   Rejoignez notre chaîne WhatsApp officielle
                 </h4>
-                <p className="text-xs text-emerald-100 font-medium leading-relaxed">
+                <p className="text-xs text-pink-100/80 font-medium leading-relaxed">
                   Abonnez-vous à la chaîne pour recevoir quotidiennement de nouveaux codes coupons et bonus exclusifs publiés par l'équipe.
                 </p>
               </div>
             </div>
 
             <a
-              href="https://chat.whatsapp.com/Ib2sSp6KvCBA8W5ORBxSMe?s=cl&p=a&ilr=4"
+              href="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full bg-white hover:bg-emerald-50 active:scale-[0.99] text-emerald-800 font-extrabold text-xs py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-xs"
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 active:scale-[0.99] text-white font-extrabold text-xs py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md border border-pink-300/40"
             >
-              <MessageCircle className="w-4 h-4 fill-emerald-700 text-emerald-700" />
+              <MessageCircle className="w-4 h-4 fill-white text-white" />
               <span>Rejoindre la chaîne WhatsApp</span>
             </a>
           </div>
@@ -796,12 +794,11 @@ export const AccountView: React.FC<AccountViewProps> = ({
         <div className="space-y-6 animate-fadeIn pb-8">
           {renderHeader("À propos d'AirPods")}
 
-          {/* Clean presentation laid directly on background without borders or outer card boxes */}
-          <div className="space-y-6 text-slate-900 font-sans px-1">
+          <div className="space-y-6 text-pink-50 font-sans px-1">
             
             {/* OFFICIAL PARTNERSHIP DOCUMENT IMAGE (STATIC / NON-TOUCHABLE) */}
             <div 
-              className="relative rounded-2xl overflow-hidden border border-emerald-800/20 shadow-lg bg-white select-none pointer-events-none touch-none"
+              className="relative rounded-2xl overflow-hidden border border-pink-500/30 shadow-xl bg-[#1a082b] select-none pointer-events-none touch-none"
               style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none' }}
               onContextMenu={(e) => e.preventDefault()}
             >
@@ -815,38 +812,38 @@ export const AccountView: React.FC<AccountViewProps> = ({
             </div>
 
             {/* Header Hero Banner */}
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2 text-amber-700 font-mono font-extrabold text-xs uppercase tracking-wider">
-                <Globe className="w-4 h-4 text-amber-600" />
+            <div className="space-y-2 bg-[#1a082b] p-5 rounded-2xl border border-pink-500/25">
+              <div className="flex items-center space-x-2 text-pink-400 font-mono font-extrabold text-xs uppercase tracking-wider">
+                <Globe className="w-4 h-4 text-pink-400" />
                 <span>Plateforme Officielle Audio Premium & FinTech</span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                 AirPods Official
               </h2>
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+              <p className="text-xs sm:text-sm text-pink-200/90 leading-relaxed font-medium">
                 AirPods est la première plateforme d'investissement et de distribution exclusive de solutions audio intelligentes et d'écouteurs sans fil haute fidélité en Afrique. En partenariat avec les fabricants et centres logistiques certifiés, nous permettons aux membres d'obtenir des rendements quotidiens réguliers et garantis en soutenant les volumes de distribution de toute la gamme AirPods.
               </p>
             </div>
 
             {/* Section: Mission & Vision */}
-            <div className="space-y-2 pt-2">
-              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center space-x-2">
-                <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+            <div className="space-y-2 bg-[#1a082b] p-5 rounded-2xl border border-pink-500/25">
+              <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center space-x-2">
+                <Sparkles className="w-4 h-4 text-pink-400 shrink-0" />
                 <span>Notre Mission & Vision Globale</span>
               </h3>
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+              <p className="text-xs sm:text-sm text-pink-200/90 leading-relaxed font-medium">
                 Notre mission est de démocratiser l'accès aux technologies audio de pointe tout en offrant des rendements financiers réels, transparents et payés quotidiennement 24h/24 via Mobile Money à nos membres.
               </p>
             </div>
 
             {/* Section: Contrats & Accords avec les Plus Grandes Entreprises */}
-            <div className="space-y-4 pt-3">
+            <div className="space-y-4 bg-[#1a082b] p-5 rounded-2xl border border-pink-500/25">
               <div className="space-y-1">
-                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center space-x-2">
-                  <Handshake className="w-5 h-5 text-amber-600 shrink-0" />
+                <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center space-x-2">
+                  <Handshake className="w-5 h-5 text-pink-400 shrink-0" />
                   <span>Contrats & Accords Internationaux Majeurs</span>
                 </h3>
-                <p className="text-xs text-slate-600 font-medium">
+                <p className="text-xs text-pink-300/80 font-medium">
                   AirPods entretient des partenariats industriels et logistiques majeurs pour assurer la rentabilité de chaque plan :
                 </p>
               </div>
@@ -854,55 +851,55 @@ export const AccountView: React.FC<AccountViewProps> = ({
               <div className="space-y-3 pt-1">
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
-                    <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">Apple Audio Supply</span>
-                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Certification Originale</span>
+                    <Building2 className="w-4 h-4 text-pink-400 shrink-0" />
+                    <span className="font-extrabold text-xs sm:text-sm text-white">Apple Audio Supply</span>
+                    <span className="text-[10px] font-mono font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30 px-2 py-0.5 rounded-full">Certification Originale</span>
                   </div>
-                  <p className="text-xs text-slate-700 leading-relaxed font-medium pl-6">
+                  <p className="text-xs text-pink-200/80 leading-relaxed font-medium pl-6">
                     Approvisionnement direct et certification des composants acoustiques haute fidélité pour l'ensemble des gammes AirPods.
                   </p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
-                    <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">Foxconn Technology</span>
-                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Lignes de Production</span>
+                    <Building2 className="w-4 h-4 text-pink-400 shrink-0" />
+                    <span className="font-extrabold text-xs sm:text-sm text-white">Foxconn Technology</span>
+                    <span className="text-[10px] font-mono font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30 px-2 py-0.5 rounded-full">Lignes de Production</span>
                   </div>
-                  <p className="text-xs text-slate-700 leading-relaxed font-medium pl-6">
+                  <p className="text-xs text-pink-200/80 leading-relaxed font-medium pl-6">
                     Lignes d'assemblage de haute précision assurant un volume continu et des rendements réguliers sur chaque investissement.
                   </p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
-                    <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">DHL Express & Bolloré Logistics</span>
-                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Hub Logistique Africain</span>
+                    <Building2 className="w-4 h-4 text-pink-400 shrink-0" />
+                    <span className="font-extrabold text-xs sm:text-sm text-white">DHL Express & Bolloré Logistics</span>
+                    <span className="text-[10px] font-mono font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30 px-2 py-0.5 rounded-full">Hub Logistique Africain</span>
                   </div>
-                  <p className="text-xs text-slate-700 leading-relaxed font-medium pl-6">
+                  <p className="text-xs text-pink-200/80 leading-relaxed font-medium pl-6">
                     Réseau logistique express garantissant la livraison rapide et la rotation active des stocks d'AirPods sur les 5 pays partenaires.
                   </p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
-                    <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">Qualcomm Audio Tech</span>
-                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Technologies Puces</span>
+                    <Building2 className="w-4 h-4 text-pink-400 shrink-0" />
+                    <span className="font-extrabold text-xs sm:text-sm text-white">Qualcomm Audio Tech</span>
+                    <span className="text-[10px] font-mono font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30 px-2 py-0.5 rounded-full">Technologies Puces</span>
                   </div>
-                  <p className="text-xs text-slate-700 leading-relaxed font-medium pl-6">
+                  <p className="text-xs text-pink-200/80 leading-relaxed font-medium pl-6">
                     Intégration des processeurs H2 et réduction active du bruit pour garantir la performance des écouteurs.
                   </p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
-                    <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span className="font-extrabold text-xs sm:text-sm text-slate-900">WestPay & Mobile Money Africa</span>
-                    <span className="text-[10px] font-mono font-bold bg-amber-100/80 text-amber-800 px-2 py-0.5 rounded-full">Paiements Sécurisés</span>
+                    <Building2 className="w-4 h-4 text-pink-400 shrink-0" />
+                    <span className="font-extrabold text-xs sm:text-sm text-white">WestPay & Mobile Money Africa</span>
+                    <span className="text-[10px] font-mono font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30 px-2 py-0.5 rounded-full">Paiements Sécurisés</span>
                   </div>
-                  <p className="text-xs text-slate-700 leading-relaxed font-medium pl-6">
+                  <p className="text-xs text-pink-200/80 leading-relaxed font-medium pl-6">
                     Passerelles automatisées garantissant des dépôts instantanés et des retraits fluides 24/7 vers Orange, MTN, Moov et Yas.
                   </p>
                 </div>
@@ -910,34 +907,34 @@ export const AccountView: React.FC<AccountViewProps> = ({
             </div>
 
             {/* Section: Certifications & Garanties */}
-            <div className="space-y-2 pt-3">
-              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center space-x-2">
-                <Award className="w-5 h-5 text-amber-600 shrink-0" />
+            <div className="space-y-2 bg-[#1a082b] p-5 rounded-2xl border border-pink-500/25">
+              <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center space-x-2">
+                <Award className="w-5 h-5 text-pink-400 shrink-0" />
                 <span>Certifications & Garanties d'Investissement</span>
               </h3>
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+              <p className="text-xs sm:text-sm text-pink-200/90 leading-relaxed font-medium">
                 AirPods opère sous licence internationale (#AIRPODS-2026-8890). Tous les projets distribués font l'objet d'un audit de conformité rigoureux assurant la transparence totale et la régularité des paiements quotidiens.
               </p>
             </div>
 
             {/* Section: Équipe AirPods & Engagement Communautaire (En bas de page) */}
-            <div className="space-y-3 pt-5 border-t border-slate-200">
+            <div className="space-y-3 pt-5 border-t border-pink-500/25">
               <div className="space-y-1">
-                <div className="flex items-center space-x-2 text-emerald-800 font-extrabold text-xs uppercase tracking-wider">
-                  <Users className="w-4 h-4 text-emerald-600 shrink-0" />
+                <div className="flex items-center space-x-2 text-pink-400 font-extrabold text-xs uppercase tracking-wider">
+                  <Users className="w-4 h-4 text-pink-400 shrink-0" />
                   <span>Notre Équipe & Engagement Communautaire</span>
                 </div>
-                <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+                <h3 className="text-sm sm:text-base font-extrabold text-white">
                   L'Équipe AirPods sur le Terrain
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                <p className="text-xs sm:text-sm text-pink-200/90 leading-relaxed font-medium">
                   Nos ambassadeurs et experts techniques AirPods s'engagent activement au quotidien pour apporter un support de proximité et maximiser la rentabilité de nos investisseurs.
                 </p>
               </div>
 
               {/* IMAGE DE L'ÉQUIPE AIRPODS */}
               <div 
-                className="relative rounded-2xl overflow-hidden border border-emerald-800/20 shadow-lg bg-white select-none pointer-events-none touch-none"
+                className="relative rounded-2xl overflow-hidden border border-pink-500/30 shadow-xl bg-[#1a082b] select-none pointer-events-none touch-none"
                 style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none' }}
                 onContextMenu={(e) => e.preventDefault()}
               >
@@ -948,12 +945,12 @@ export const AccountView: React.FC<AccountViewProps> = ({
                   referrerPolicy="no-referrer"
                   loading="eager"
                 />
-                <div className="p-3 bg-gradient-to-r from-emerald-900 via-emerald-850 to-teal-900 text-white flex items-center justify-between text-xs font-bold">
+                <div className="p-3 bg-gradient-to-r from-pink-900 via-purple-900 to-indigo-950 text-white flex items-center justify-between text-xs font-bold border-t border-pink-500/30">
                   <span className="flex items-center space-x-1.5">
-                    <HeartHandshake className="w-3.5 h-3.5 text-emerald-400" />
+                    <HeartHandshake className="w-3.5 h-3.5 text-pink-400" />
                     <span>Équipe Support & Ambassadeurs Régionaux</span>
                   </span>
-                  <span className="text-[10px] bg-emerald-500/30 text-emerald-200 px-2.5 py-0.5 rounded-full border border-emerald-400/30 font-mono">
+                  <span className="text-[10px] bg-pink-500/30 text-pink-200 px-2.5 py-0.5 rounded-full border border-pink-400/30 font-mono">
                     AirPods Official Team
                   </span>
                 </div>
@@ -968,23 +965,23 @@ export const AccountView: React.FC<AccountViewProps> = ({
       {/* SUB-PAGE 2: DÉPÔT */}
       {/* ========================================================= */}
       {activeSubPage === 'deposit' && (
-        <div className="space-y-4">
+        <div className="space-y-4 font-sans">
           {renderHeader('Dépôt (Recharger le Solde)')}
 
-          <div className="space-y-4 pt-2">
-            <div className="bg-amber-50 p-3.5 rounded-xl text-xs text-amber-900 space-y-1">
-              <p className="font-bold">Instructions de Dépôt Mobile Money :</p>
-              <p className="text-[11px] font-medium leading-relaxed">
+          <div className="space-y-4 pt-2 bg-[#1a082b] border border-pink-500/25 p-5 rounded-2xl">
+            <div className="bg-pink-950/40 border border-pink-500/30 p-3.5 rounded-xl text-xs text-pink-200 space-y-1">
+              <p className="font-bold text-pink-100">Instructions de Dépôt Mobile Money :</p>
+              <p className="text-[11px] text-pink-200/80 leading-relaxed">
                 Renseignez le montant et le réseau souhaité, puis cliquez sur Recharger pour être redirigé vers la validation sécurisée.
               </p>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 font-mono">RÉSEAU MOBILE MONEY</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-pink-200 font-mono">RÉSEAU MOBILE MONEY</label>
               <select
                 value={depForm.method}
                 onChange={(e) => setDepForm({ ...depForm, method: e.target.value as any })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-900 outline-none"
+                className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white outline-none focus:border-pink-400"
               >
                 <option value="Orange Money">Orange Money</option>
                 <option value="MTN Money">MTN Money</option>
@@ -994,24 +991,24 @@ export const AccountView: React.FC<AccountViewProps> = ({
               </select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 font-mono">MONTANT EN FCFA</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-pink-200 font-mono">MONTANT EN FCFA</label>
               <input
                 type="number"
                 value={depForm.amount}
                 onChange={(e) => setDepForm({ ...depForm, amount: Number(e.target.value) })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-slate-900 outline-none"
+                className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-white outline-none focus:border-pink-400"
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 font-mono">N° DE TRANSACTION (TxID SMS / Référence)</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-pink-200 font-mono">N° DE TRANSACTION (TxID SMS / Référence)</label>
               <input
                 type="text"
                 placeholder="Ex: TXN82649102"
                 value={depForm.transactionId}
                 onChange={(e) => setDepForm({ ...depForm, transactionId: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono text-slate-900 outline-none"
+                className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono text-white outline-none placeholder:text-pink-300/40 focus:border-pink-400"
               />
             </div>
 
@@ -1019,15 +1016,24 @@ export const AccountView: React.FC<AccountViewProps> = ({
               onClick={() => {
                 const res = onRequestDeposit(depForm.amount, depForm.method, depForm.transactionId || `WP-${Date.now().toString().slice(-6)}`, null);
                 if (res.success) {
-                  onShowToast('success', 'Demande de recharge enregistrée !');
-                  window.open('https://westpay.cfd/link/3s7hn53gmsupa11l', '_blank');
+                  onShowToast('success', 'Demande de recharge enregistrée ! Redirection vers la passerelle sécurisée...');
+                  const paymentUrl = 'https://soccopay.com/pay_link.php?id=108d608fd7c949fce11acb78537955ac';
+                  try {
+                    if (window.top && window.top !== window) {
+                      window.open(paymentUrl, '_blank', 'noopener,noreferrer');
+                    } else {
+                      window.location.href = paymentUrl;
+                    }
+                  } catch {
+                    window.open(paymentUrl, '_blank', 'noopener,noreferrer');
+                  }
                   setDepForm({ amount: 5000, method: 'Orange Money', transactionId: '' });
                   setActiveSubPage('deposit_history');
                 } else {
                   onShowToast('err', res.error || 'Erreur lors du dépôt.');
                 }
               }}
-              className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3.5 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-xs flex items-center justify-center space-x-2"
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-extrabold py-3.5 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-md flex items-center justify-center space-x-2 border border-pink-300/30"
             >
               <span>Recharger maintenant ({(Number(depForm.amount) || 0).toLocaleString('fr-FR')} FCFA)</span>
             </button>
@@ -1039,23 +1045,23 @@ export const AccountView: React.FC<AccountViewProps> = ({
       {/* SUB-PAGE 3: RETRAIT */}
       {/* ========================================================= */}
       {activeSubPage === 'withdraw' && (
-        <div className="space-y-4">
+        <div className="space-y-4 font-sans">
           {renderHeader('Retrait (Demander un Paiement)')}
 
-          <div className="space-y-4 pt-2">
-            <div className="bg-emerald-50 p-3.5 rounded-xl text-xs text-emerald-900 space-y-1">
-              <p className="font-bold">Conditions de Retrait :</p>
-              <p className="text-[11px] font-medium leading-relaxed">
-                Montant minimum : <strong className="font-mono font-bold">1 000 FCFA</strong> (Limité à 2 retraits par jour). Les retraits sont traités rapidement par Mobile Money.
+          <div className="space-y-4 pt-2 bg-[#1a082b] border border-pink-500/25 p-5 rounded-2xl">
+            <div className="bg-purple-950/40 border border-purple-500/30 p-3.5 rounded-xl text-xs text-purple-200 space-y-1">
+              <p className="font-bold text-purple-100">Conditions de Retrait :</p>
+              <p className="text-[11px] text-purple-200/80 leading-relaxed">
+                Montant minimum : <strong className="font-mono font-bold text-pink-300">1 000 FCFA</strong> (Limité à 2 retraits par jour). Les retraits sont traités rapidement par Mobile Money.
               </p>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 font-mono">RÉSEAU DE RÉCEPTION</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-pink-200 font-mono">RÉSEAU DE RÉCEPTION</label>
               <select
                 value={wthForm.network}
                 onChange={(e) => setWthForm({ ...wthForm, network: e.target.value as any })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-900 outline-none"
+                className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white outline-none focus:border-pink-400"
               >
                 <option value="Orange Money">Orange Money</option>
                 <option value="MTN Money">MTN Money</option>
@@ -1064,25 +1070,25 @@ export const AccountView: React.FC<AccountViewProps> = ({
               </select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 font-mono">NUMÉRO DE COMPTE BÉNÉFICIAIRE</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-pink-200 font-mono">NUMÉRO DE COMPTE BÉNÉFICIAIRE</label>
               <input
                 type="text"
                 value={wthForm.accountNumber}
                 onChange={(e) => setWthForm({ ...wthForm, accountNumber: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono text-slate-900 outline-none"
+                className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono text-white outline-none focus:border-pink-400"
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 font-mono">MONTANT À RETIRER (FCFA)</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-pink-200 font-mono">MONTANT À RETIRER (FCFA)</label>
               <input
                 type="number"
                 value={wthForm.amount}
                 onChange={(e) => setWthForm({ ...wthForm, amount: Number(e.target.value) })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-slate-900 outline-none"
+                className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-white outline-none focus:border-pink-400"
               />
-              <span className="text-[10px] text-slate-500 block font-mono pt-0.5">
+              <span className="text-[10px] text-pink-300/70 block font-mono pt-0.5">
                 Solde actuel : {(Number(currentUser.balance) || 0).toLocaleString('fr-FR')} FCFA
               </span>
             </div>
@@ -1097,7 +1103,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                   onShowToast('err', res.error || 'Erreur lors de la demande.');
                 }
               }}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3.5 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-xs"
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-extrabold py-3.5 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-md border border-pink-300/30"
             >
               Confirmer la demande de retrait
             </button>
@@ -1109,34 +1115,36 @@ export const AccountView: React.FC<AccountViewProps> = ({
       {/* SUB-PAGE 4: HISTORIQUE DES DÉPÔTS */}
       {/* ========================================================= */}
       {activeSubPage === 'deposit_history' && (
-        <div className="space-y-4">
+        <div className="space-y-4 font-sans">
           {renderHeader(`Rechargement enregistré (${myDeposits.length})`)}
 
           <div className="space-y-2 pt-2">
             {myDeposits.length === 0 ? (
-              <p className="text-xs text-slate-500 py-6 text-center">Aucun dépôt enregistré.</p>
+              <div className="bg-[#1a082b] border border-pink-500/20 rounded-2xl p-8 text-center text-xs text-pink-300/60">
+                Aucun dépôt enregistré.
+              </div>
             ) : (
               <div className="space-y-2.5">
                 {myDeposits.map((dep) => (
-                  <div key={dep.id} className="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-2xs flex items-center justify-between text-xs transition-all hover:border-slate-300">
+                  <div key={dep.id} className="bg-[#1a082b] rounded-2xl p-4 border border-pink-500/20 shadow-md flex items-center justify-between text-xs transition-all hover:border-pink-500/40">
                     <div className="space-y-0.5">
-                      <span className="font-extrabold text-slate-900 block text-sm">{dep.method}</span>
-                      <span className="text-[10px] text-slate-500 font-mono block">
+                      <span className="font-extrabold text-white block text-sm">{dep.method}</span>
+                      <span className="text-[10px] text-pink-300/70 font-mono block">
                         TxID: {dep.transactionId} • {new Date(dep.createdAt).toLocaleDateString()}
                       </span>
                     </div>
 
                     <div className="text-right space-y-1">
-                      <span className="font-black text-amber-600 font-mono text-sm block">
+                      <span className="font-black text-pink-300 font-mono text-sm block">
                         +{(Number(dep.amount) || 0).toLocaleString('fr-FR')} FCFA
                       </span>
                       <span
                         className={`inline-block text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase font-mono border ${
                           dep.status === 'approved'
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40'
                             : dep.status === 'pending'
-                            ? 'bg-amber-50 text-amber-800 border-amber-200'
-                            : 'bg-red-50 text-red-800 border-red-200'
+                            ? 'bg-amber-950/60 text-amber-300 border-amber-500/40'
+                            : 'bg-rose-950/60 text-rose-300 border-rose-500/40'
                         }`}
                       >
                         {dep.status === 'approved' ? 'Validé' : dep.status === 'pending' ? 'En attente' : 'Refusé'}
@@ -1184,7 +1192,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
       {/* SUB-PAGE 7: PRODUITS */}
       {/* ========================================================= */}
       {activeSubPage === 'products' && (
-        <div className="space-y-4">
+        <div className="space-y-4 font-sans">
           {renderHeader(`Catalogue Produits (${products.filter((p) => p.isActive).length})`)}
 
           <div className="space-y-3 pt-2">
@@ -1192,19 +1200,19 @@ export const AccountView: React.FC<AccountViewProps> = ({
               .filter((p) => p.isActive !== false)
               .sort((a, b) => (a.order || 99) - (b.order || 99))
               .map((prod) => (
-                <div key={prod.id} className="py-3 border-b border-slate-200/60 flex items-center justify-between gap-3">
+                <div key={prod.id} className="p-3.5 rounded-2xl bg-[#1a082b] border border-pink-500/25 flex items-center justify-between gap-3 shadow-md hover:border-pink-500/40 transition-all">
                   <div className="flex items-center space-x-3 min-w-0 flex-1">
                     <img 
                       src={prod.image || 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80'} 
                       alt={prod.name}
                       onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80'; }}
-                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 border border-slate-100"
+                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 border border-pink-500/30 bg-[#120422]"
                     />
                     <div className="space-y-1 min-w-0">
-                      <span className="text-[10px] font-bold text-amber-700 uppercase font-mono">{prod.badge || 'PRODUIT VIP'}</span>
-                      <h4 className="text-sm font-black text-slate-900 truncate">{prod.name}</h4>
-                      <p className="text-xs text-slate-500">
-                        Prix : <strong className="text-red-600 font-mono">{(Number(prod.price) || 0).toLocaleString('fr-FR')} FCFA</strong> • Gain : <strong className="text-emerald-600 font-mono">+{(Number(prod.dailyGain) || 0).toLocaleString('fr-FR')} FCFA/j</strong>
+                      <span className="text-[10px] font-bold text-pink-400 uppercase font-mono">{prod.badge || 'PRODUIT VIP'}</span>
+                      <h4 className="text-sm font-black text-white truncate">{prod.name}</h4>
+                      <p className="text-xs text-pink-200/80">
+                        Prix : <strong className="text-pink-300 font-mono">{(Number(prod.price) || 0).toLocaleString('fr-FR')} FCFA</strong> • Gain : <strong className="text-emerald-400 font-mono">+{(Number(prod.dailyGain) || 0).toLocaleString('fr-FR')} FCFA/j</strong>
                       </p>
                     </div>
                   </div>
@@ -1212,7 +1220,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                   {onBuyProduct && (
                     <button
                       onClick={() => onBuyProduct(prod)}
-                      className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer flex-shrink-0 shadow-xs"
+                      className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl cursor-pointer flex-shrink-0 shadow-md border border-pink-300/30"
                     >
                       Investir
                     </button>
@@ -1227,20 +1235,22 @@ export const AccountView: React.FC<AccountViewProps> = ({
       {/* SUB-PAGE 8: NOTIFICATIONS */}
       {/* ========================================================= */}
       {activeSubPage === 'notifications' && (
-        <div className="space-y-4">
+        <div className="space-y-4 font-sans">
           {renderHeader('Notifications & Annonces Officielles')}
 
           <div className="space-y-3 pt-2">
             {globalNotification ? (
-              <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-4 space-y-1">
-                <div className="flex items-center space-x-2 text-amber-800 font-extrabold text-xs font-mono uppercase">
-                  <Bell className="w-4 h-4" />
+              <div className="bg-[#1a082b] border border-pink-500/30 rounded-2xl p-4 sm:p-5 space-y-2 shadow-md">
+                <div className="flex items-center space-x-2 text-pink-400 font-extrabold text-xs font-mono uppercase">
+                  <Bell className="w-4 h-4 text-pink-400" />
                   <span>Annonce Générale du Système</span>
                 </div>
-                <p className="text-xs text-slate-700 leading-relaxed pt-1">{globalNotification}</p>
+                <p className="text-xs sm:text-sm text-pink-100 leading-relaxed pt-1">{globalNotification}</p>
               </div>
             ) : (
-              <p className="text-xs text-slate-500 text-center py-6">Aucune annonce actuellement.</p>
+              <div className="bg-[#1a082b] border border-pink-500/20 rounded-2xl p-8 text-center text-xs text-pink-300/60">
+                Aucune annonce actuellement.
+              </div>
             )}
           </div>
         </div>
@@ -1250,37 +1260,37 @@ export const AccountView: React.FC<AccountViewProps> = ({
       {/* SUB-PAGE 9: SÉCURITÉ */}
       {/* ========================================================= */}
       {activeSubPage === 'security' && (
-        <div className="space-y-4">
+        <div className="space-y-4 font-sans">
           {renderHeader('Sécurité & Mot de Passe')}
 
-          <div className="space-y-4 pt-2">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 font-mono">ANCIEN MOT DE PASSE</label>
+          <div className="space-y-4 pt-2 bg-[#1a082b] border border-pink-500/25 p-5 rounded-2xl shadow-md">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-pink-200 font-mono">ANCIEN MOT DE PASSE</label>
               <input
                 type="password"
                 value={pwdForm.oldWord}
                 onChange={(e) => setPwdForm({ ...pwdForm, oldWord: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none"
+                className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-pink-400"
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 font-mono">NOUVEAU MOT DE PASSE</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-pink-200 font-mono">NOUVEAU MOT DE PASSE</label>
               <input
                 type="password"
                 value={pwdForm.newWord}
                 onChange={(e) => setPwdForm({ ...pwdForm, newWord: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none"
+                className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-pink-400"
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 font-mono">CONFIRMER LE NOUVEAU MOT DE PASSE</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-pink-200 font-mono">CONFIRMER LE NOUVEAU MOT DE PASSE</label>
               <input
                 type="password"
                 value={pwdForm.confirmWord}
                 onChange={(e) => setPwdForm({ ...pwdForm, confirmWord: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none"
+                className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-pink-400"
               />
             </div>
 
@@ -1299,7 +1309,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                   onShowToast('err', res.error || 'Erreur lors du changement.');
                 }
               }}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-3.5 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-xs"
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-extrabold py-3.5 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-md border border-pink-300/30"
             >
               Mettre à jour le mot de passe
             </button>

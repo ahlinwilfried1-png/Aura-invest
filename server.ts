@@ -763,7 +763,7 @@ const defaultSeedProducts = [
     totalGain: 61320,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack de démarrage officiel AirPods 2 - Rendement quotidien garanti sur 365 jours.',
+    description: 'Pack de démarrage officiel AirPods 2 - Rendement quotidien garanti.',
     order: 1,
     badge: 'Populaire',
     color: 'from-amber-950/40 via-amber-900/10 to-transparent border-amber-500/20'
@@ -846,11 +846,11 @@ const defaultSeedProducts = [
     duration: 365,
     totalGain: 10512000,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1613040809024-b4ef7ba99bc3?w=800&auto=format&fit=crop&q=80',
     description: 'Partenariat VIP AirPods Max Silver - Casque circum-auriculaire haute fidélité.',
     order: 7,
     badge: 'Partenaire Bronze',
-    color: 'from-orange-950/40 via-amber-900/10 to-transparent border-orange-500/30'
+    color: 'from-pink-950/50 via-purple-900/30 to-fuchsia-950/40 border-pink-500/30'
   },
   {
     id: 'vip-partenaire-argent',
@@ -860,11 +860,11 @@ const defaultSeedProducts = [
     duration: 365,
     totalGain: 22198650,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=800&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1628202926206-c63a34b1618f?w=800&auto=format&fit=crop&q=80',
     description: 'Partenariat Prestige AirPods Max Édition Spéciale - Gains automatisés d\'élite.',
     order: 8,
     badge: 'Partenaire Argent',
-    color: 'from-slate-950/40 via-slate-800/10 to-transparent border-slate-400/40'
+    color: 'from-fuchsia-950/50 via-violet-900/30 to-purple-950/40 border-fuchsia-500/40'
   }
 ];
 
@@ -1710,16 +1710,23 @@ async function startServer() {
   // 3. DEPOSITS & WITHDRAWALS ROUTES
   // =========================================================================
 
-  // Secure Server Redirect to Payment Gateway (URL is never directly leaked as text in UI)
-  app.get('/api/pay-redirect/:depositId', (req, res) => {
+  // Secure Server Redirect to Payment Gateway (Direct unbuilt unmodified redirect)
+  const OFFICIAL_PAYMENT_GATEWAY_URL = 'https://soccopay.com/pay_link.php?id=108d608fd7c949fce11acb78537955ac';
+  
+  const handlePaymentRedirect = (_req: express.Request, res: express.Response) => {
     try {
-      const targetUrl = activePaymentGatewayUrl || process.env.PAYMENT_GATEWAY_URL || DEFAULT_PAYMENT_GATEWAY_URL;
+      const targetUrl = activePaymentGatewayUrl || process.env.PAYMENT_GATEWAY_URL || DEFAULT_PAYMENT_GATEWAY_URL || OFFICIAL_PAYMENT_GATEWAY_URL;
       return res.redirect(302, targetUrl);
     } catch (err: any) {
       console.error('[Payment Redirect Exception]:', err);
-      return res.status(500).send('Erreur de redirection vers le portail de paiement.');
+      return res.redirect(302, OFFICIAL_PAYMENT_GATEWAY_URL);
     }
-  });
+  };
+
+  app.get('/api/pay-redirect/:depositId', handlePaymentRedirect);
+  app.get('/api/pay-redirect', handlePaymentRedirect);
+  app.get('/pay-redirect/:depositId', handlePaymentRedirect);
+  app.get('/pay-redirect', handlePaymentRedirect);
 
   // Secure Online Deposit Checkout & Record Pending Status
   app.post('/api/deposits/checkout', async (req, res) => {
@@ -1774,10 +1781,13 @@ async function startServer() {
 
       console.log(`[Deposit Checkout Registered]: ID ${normDep.id}, User: ${normDep.userName} (${normDep.userPhone}), Amount: ${normDep.amount} CFA, Method: ${normDep.method}, Status: En attente`);
 
+      const targetPaymentUrl = activePaymentGatewayUrl || DEFAULT_PAYMENT_GATEWAY_URL || OFFICIAL_PAYMENT_GATEWAY_URL;
+
       return res.json({
         success: true,
         deposit: normDep,
-        redirectUrl: `/api/pay-redirect/${normDep.id}`
+        paymentUrl: targetPaymentUrl,
+        redirectUrl: targetPaymentUrl
       });
     } catch (err: any) {
       console.error('[Deposit Checkout Exception]:', err);

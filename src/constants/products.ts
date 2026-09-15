@@ -10,10 +10,10 @@ export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
     totalGain: 61320,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack de démarrage officiel AirPods 2 - Rendement quotidien garanti sur 365 jours.',
+    description: 'Pack de démarrage officiel AirPods 2 - Rendement quotidien garanti.',
     order: 1,
     badge: 'Populaire',
-    color: 'from-amber-950/40 via-amber-900/10 to-transparent border-amber-500/20'
+    color: 'from-pink-950/60 via-purple-900/30 to-fuchsia-950/40 border-pink-500/30'
   },
   {
     id: 'vip-2-elite',
@@ -27,7 +27,7 @@ export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
     description: 'Pack officiel AirPods 3 - Technologie audio spatiale & rendement quotidien garanti.',
     order: 2,
     badge: 'Recommandé',
-    color: 'from-emerald-950/40 via-emerald-900/10 to-transparent border-emerald-500/20'
+    color: 'from-purple-950/60 via-fuchsia-900/30 to-pink-950/40 border-purple-500/30'
   },
   {
     id: 'vip-3-premium',
@@ -41,7 +41,7 @@ export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
     description: 'Pack officiel AirPods 4 avec réduction active du bruit & profit journalier continu.',
     order: 3,
     badge: 'Rentable',
-    color: 'from-blue-950/40 via-blue-900/10 to-transparent border-blue-500/20'
+    color: 'from-fuchsia-950/60 via-pink-900/30 to-purple-950/40 border-fuchsia-500/30'
   },
   {
     id: 'vip-4-platinum',
@@ -55,7 +55,7 @@ export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
     description: 'Pack Platinum AirPods Pro - Performance audio professionnelle et revenus passifs.',
     order: 4,
     badge: 'Haute Performance',
-    color: 'from-purple-950/40 via-purple-900/10 to-transparent border-purple-500/20'
+    color: 'from-violet-950/60 via-purple-900/30 to-pink-950/40 border-violet-500/30'
   },
   {
     id: 'vip-6-or',
@@ -69,7 +69,7 @@ export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
     description: 'Pack Investisseur Or AirPods Pro 2 USB-C avec puce H2 haute performance.',
     order: 5,
     badge: 'Investisseur Or',
-    color: 'from-amber-950/40 via-yellow-900/10 to-transparent border-yellow-500/30'
+    color: 'from-pink-950/60 via-fuchsia-900/30 to-violet-950/40 border-pink-500/40'
   },
   {
     id: 'vip-7-saphir',
@@ -83,7 +83,7 @@ export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
     description: 'Pack Privilège Saphir AirPods Pro MagSafe - Rendement maximal à fort volume.',
     order: 6,
     badge: 'Privilège Saphir',
-    color: 'from-sky-950/40 via-cyan-900/10 to-transparent border-cyan-500/30'
+    color: 'from-purple-950/60 via-violet-900/30 to-pink-950/40 border-purple-500/40'
   },
   {
     id: 'vip-partenaire-bronze',
@@ -93,11 +93,11 @@ export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
     duration: 365,
     totalGain: 10512000,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1613040809024-b4ef7ba99bc3?w=800&auto=format&fit=crop&q=80',
     description: 'Partenariat VIP AirPods Max Silver - Casque circum-auriculaire haute fidélité.',
     order: 7,
     badge: 'Partenaire Bronze',
-    color: 'from-orange-950/40 via-amber-900/10 to-transparent border-orange-500/30'
+    color: 'from-pink-950/50 via-purple-900/30 to-fuchsia-950/40 border-pink-500/30'
   },
   {
     id: 'vip-partenaire-argent',
@@ -107,10 +107,10 @@ export const OFFICIAL_INVESTMENT_PRODUCTS: InvestmentProduct[] = [
     duration: 365,
     totalGain: 22198650,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=800&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1628202926206-c63a34b1618f?w=800&auto=format&fit=crop&q=80',
     description: 'Partenariat Prestige AirPods Max Édition Spéciale - Gains automatisés d\'élite.',
     order: 8,
     badge: 'Partenaire Argent',
-    color: 'from-slate-950/40 via-slate-800/10 to-transparent border-slate-400/40'
+    color: 'from-fuchsia-950/50 via-violet-900/30 to-purple-950/40 border-fuchsia-500/40'
   }
 ];

@@ -54,14 +54,14 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   );
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn pb-4 font-sans text-slate-800">
+    <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn pb-4 font-sans text-white">
       {/* Top Banner Overview */}
       <div className="space-y-1">
-        <div className="flex items-center space-x-2 text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-          <Package className="w-7 h-7 text-red-600 flex-shrink-0" />
+        <div className="flex items-center space-x-2 text-xl sm:text-2xl font-black text-white tracking-tight">
+          <Package className="w-7 h-7 text-pink-400 flex-shrink-0" />
           <h2>Suivi des Commandes & Investissements</h2>
         </div>
-        <p className="text-xs sm:text-sm text-slate-600 font-normal">
+        <p className="text-xs sm:text-sm text-pink-200/80 font-normal">
           Consultez vos produits souscrits et l'évolution de vos gains.
         </p>
       </div>
@@ -69,33 +69,33 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
       {/* Summary KPI Cards - Nombre de produits & Revenus collectés */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4">
         {/* Card 1: Nombre de produits */}
-        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-2xs">
+        <div className="bg-[#1a082b] border border-pink-500/25 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-md">
           <div>
-            <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold text-slate-500 tracking-wider block">
+            <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold text-pink-300 tracking-wider block">
               PRODUITS SOUSCRITS
             </span>
-            <span className="text-2xl sm:text-3xl font-black text-slate-900 font-mono mt-1 block">
+            <span className="text-2xl sm:text-3xl font-black text-white font-mono mt-1 block">
               {myInvestments.reduce((acc, inv) => acc + (inv.quantity || 1), 0)}{' '}
-              <span className="text-xs font-sans text-slate-500 font-normal">produit(s)</span>
+              <span className="text-xs font-sans text-pink-300/70 font-normal">produit(s)</span>
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center font-bold shrink-0 border border-pink-500/30">
             <Package className="w-5 h-5 stroke-[2.25]" />
           </div>
         </div>
 
         {/* Card 2: Revenus collectés */}
-        <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-2xs">
+        <div className="bg-[#1a082b] border border-pink-500/25 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-md">
           <div>
-            <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold text-emerald-800 tracking-wider block">
+            <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold text-emerald-400 tracking-wider block">
               REVENUS COLLECTÉS
             </span>
-            <span className="text-2xl sm:text-3xl font-black text-emerald-700 font-mono mt-1 block">
+            <span className="text-2xl sm:text-3xl font-black text-emerald-300 font-mono mt-1 block">
               {formatAmount(totalCollectedAmount)}{' '}
-              <span className="text-xs font-sans text-emerald-700 font-normal">FCFA</span>
+              <span className="text-xs font-sans text-emerald-400 font-normal">FCFA</span>
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-emerald-950/60 text-emerald-400 flex items-center justify-center font-bold shrink-0 border border-emerald-500/30">
             <TrendingUp className="w-5 h-5 stroke-[2.5]" />
           </div>
         </div>
@@ -103,18 +103,18 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
 
       {/* List of Orders */}
       {myInvestments.length === 0 ? (
-        <div className="bg-slate-50 border border-slate-200/80 rounded-3xl p-8 sm:p-12 text-center space-y-3">
-          <Package className="w-12 h-12 text-slate-300 mx-auto stroke-[1.5]" />
-          <h3 className="text-base font-bold text-slate-800">Aucune commande souscrite pour l'instant</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Rendez-vous sur l'onglet <strong className="text-amber-800 font-semibold">Produit</strong> pour choisir une formule d'investissement et commencer à percevoir vos revenus quotidiens.
+        <div className="bg-[#1a082b] border border-pink-500/25 rounded-3xl p-8 sm:p-12 text-center space-y-3 shadow-md">
+          <Package className="w-12 h-12 text-pink-400/40 mx-auto stroke-[1.5]" />
+          <h3 className="text-base font-bold text-white">Aucune commande souscrite pour l'instant</h3>
+          <p className="text-xs text-pink-300/70 max-w-sm mx-auto">
+            Rendez-vous sur l'onglet <strong className="text-pink-300 font-semibold">Produit</strong> pour choisir une formule d'investissement et commencer à percevoir vos revenus quotidiens.
           </p>
           {onGoToProducts && (
             <div className="pt-2">
               <button
                 type="button"
                 onClick={onGoToProducts}
-                className="inline-flex items-center space-x-2 bg-emerald-700 hover:bg-emerald-600 active:scale-95 text-white font-black text-xs px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-xs uppercase tracking-wider"
+                className="inline-flex items-center space-x-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 active:scale-95 text-white font-black text-xs px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-md uppercase tracking-wider border border-pink-300/30"
               >
                 <Package className="w-4 h-4" />
                 <span>Voir les Produits</span>
@@ -124,7 +124,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
         </div>
       ) : (
         <div className="space-y-4">
-          <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block font-mono">
+          <span className="text-xs font-extrabold text-pink-300 uppercase tracking-wider block font-mono">
             DÉTAILS DES PRODUITS SOUSCRITS ({myInvestments.length})
           </span>
 
@@ -158,33 +158,33 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
               return (
                 <div
                   key={inv.id}
-                  className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4 transition-all"
+                  className="bg-[#1a082b] border border-pink-500/25 rounded-2xl p-4 sm:p-5 shadow-md space-y-4 transition-all"
                 >
                   {/* Item Header */}
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center space-x-2">
                         <span
-                          className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase font-mono ${
+                          className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase font-mono border ${
                             isCompleted
-                              ? 'bg-slate-100 text-slate-600'
-                              : 'bg-emerald-100 text-emerald-800'
+                              ? 'bg-purple-950/60 text-purple-300 border-purple-500/30'
+                              : 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30'
                           }`}
                         >
                           {isCompleted ? 'TERMINÉ' : 'EN COURS (ACTIF)'}
                         </span>
-                        <span className="text-xs text-slate-400 font-mono">#{inv.id.slice(-6)}</span>
+                        <span className="text-xs text-pink-300/60 font-mono">#{inv.id.slice(-6)}</span>
                       </div>
-                      <h3 className="text-base sm:text-lg font-black text-slate-900 mt-1">
+                      <h3 className="text-base sm:text-lg font-black text-white mt-1">
                         {inv.productName}
                       </h3>
                     </div>
 
                     <div className="text-right">
-                      <span className="text-[10px] font-bold text-slate-400 block font-mono">
+                      <span className="text-[10px] font-bold text-pink-300/60 block font-mono">
                         MONTANT PAYÉ
                       </span>
-                      <span className="text-base sm:text-lg font-black text-red-600 font-mono">
+                      <span className="text-base sm:text-lg font-black text-pink-400 font-mono">
                         {formatAmount(inv.price)} FCFA
                       </span>
                     </div>
@@ -192,18 +192,18 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
 
                   {/* 24h Progress & Next Scheduled Credit Bar */}
                   {!isCompleted && (
-                    <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3 sm:p-4 space-y-3">
+                    <div className="bg-[#120422] border border-pink-500/25 rounded-xl p-3 sm:p-4 space-y-3">
                       <div className="flex justify-between items-center text-xs">
-                        <span className="font-extrabold text-slate-700 font-mono flex items-center space-x-1">
-                          <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                        <span className="font-extrabold text-pink-200 font-mono flex items-center space-x-1">
+                          <Zap className="w-3.5 h-3.5 text-pink-400 fill-pink-400" />
                           <span>ÉVOLUTION SUR 24 HEURES : {progressPct}%</span>
                         </span>
 
-                        <span className="font-mono text-slate-600 font-bold">
+                        <span className="font-mono text-pink-300 font-bold">
                           {isReadyToClaim ? (
-                            <span className="text-emerald-600 font-black animate-pulse">Rendement Prêt !</span>
+                            <span className="text-emerald-400 font-black animate-pulse">Rendement Prêt !</span>
                           ) : (
-                            <span className="text-slate-500">
+                            <span className="text-pink-300/70">
                               Prochain crédit : {hoursLeft.toString().padStart(2, '0')}:
                               {minutesLeft.toString().padStart(2, '0')}:
                               {secondsLeft.toString().padStart(2, '0')}
@@ -213,25 +213,25 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                       </div>
 
                       {/* Progress Track */}
-                      <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                      <div className="w-full bg-[#1a082b] rounded-full h-2.5 overflow-hidden border border-pink-500/20">
                         <div
                           className={`h-2.5 rounded-full transition-all duration-1000 ${
-                            isReadyToClaim ? 'bg-emerald-500' : 'bg-red-500'
+                            isReadyToClaim ? 'bg-emerald-400' : 'bg-gradient-to-r from-pink-500 to-purple-500'
                           }`}
                           style={{ width: `${progressPct}%` }}
                         />
                       </div>
 
-                      <div className="flex justify-between items-center text-[11px] text-slate-500 pt-1">
-                        <span>Revenu quotidien : <strong className="text-slate-800 font-mono font-bold">+{formatAmount(inv.dailyGain)} FCFA</strong></span>
-                        <span>Date de crédit prévue : <strong className="text-slate-800 font-mono">{new Date(nextClaimTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</strong></span>
+                      <div className="flex justify-between items-center text-[11px] text-pink-300/70 pt-1">
+                        <span>Revenu quotidien : <strong className="text-emerald-400 font-mono font-bold">+{formatAmount(inv.dailyGain)} FCFA</strong></span>
+                        <span>Date de crédit prévue : <strong className="text-pink-200 font-mono">{new Date(nextClaimTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</strong></span>
                       </div>
 
                       {/* Claim Button when 24h cycle complete */}
                       {isReadyToClaim && (
                         <button
                           onClick={() => onClaimDailyEarning(inv.id)}
-                          className="w-full py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center space-x-2"
+                          className="w-full py-2.5 px-4 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center space-x-2 border border-pink-300/30"
                         >
                           <Zap className="w-4 h-4 fill-white" />
                           <span>Recevoir mon revenu (+{formatAmount(inv.dailyGain)} FCFA) sur le solde principal</span>

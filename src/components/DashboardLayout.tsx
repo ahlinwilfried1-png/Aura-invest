@@ -375,19 +375,19 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col pb-16 relative overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-[#0d0417] text-pink-50 flex flex-col pb-20 relative overflow-x-hidden font-sans">
       
       {/* Toast Notification */}
       {feedbackToast && (
-        <div className={`fixed top-4 right-4 left-4 sm:left-auto z-50 max-w-md p-4 rounded-2xl shadow-xl border flex items-center space-x-3 animate-fadeIn ${
+        <div className={`fixed top-4 right-4 left-4 sm:left-auto z-50 max-w-md p-4 rounded-2xl shadow-2xl border flex items-center space-x-3 animate-fadeIn backdrop-blur-md ${
           feedbackToast.status === 'success' 
-            ? 'bg-amber-50 border-amber-300 text-amber-950' 
-            : 'bg-red-50 border-red-300 text-red-900'
+            ? 'bg-[#250d3c]/95 border-pink-500/50 text-pink-100 shadow-pink-900/40' 
+            : 'bg-[#3c0d1d]/95 border-red-500/50 text-red-100 shadow-red-900/40'
         }`}>
           {feedbackToast.status === 'success' ? (
-            <CheckCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+            <CheckCircle className="w-5 h-5 text-pink-400 flex-shrink-0" />
           ) : (
-            <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
           )}
           <span className="text-xs font-bold leading-normal">{feedbackToast.text}</span>
         </div>
@@ -436,27 +436,27 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 />
 
                 {/* 3. Carte d'accès rapide vers la page Produit */}
-                <div className="bg-gradient-to-br from-emerald-900 via-emerald-950 to-slate-950 text-white rounded-3xl p-5 sm:p-6 relative overflow-hidden shadow-md border border-emerald-800/40 space-y-3.5">
+                <div className="bg-gradient-to-br from-[#2b0c48] via-[#1c0730] to-[#120420] text-white rounded-3xl p-5 sm:p-6 relative overflow-hidden shadow-xl border border-pink-500/30 space-y-3.5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1.5 max-w-sm">
-                      <div className="inline-flex items-center space-x-1.5 bg-amber-400/20 text-amber-300 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black uppercase tracking-wider border border-amber-400/30">
-                        <Sparkles className="w-3 h-3 text-amber-300" />
+                      <div className="inline-flex items-center space-x-1.5 bg-pink-500/20 text-pink-300 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black uppercase tracking-wider border border-pink-500/30">
+                        <Sparkles className="w-3 h-3 text-pink-400" />
                         <span>Formules d'Investissement</span>
                       </div>
                       <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
                         Gamme Officielle AirPods & Revenus Quotidiens
                       </h3>
-                      <p className="text-xs text-slate-300 leading-relaxed">
+                      <p className="text-xs text-pink-200/80 leading-relaxed">
                         Découvrez tous nos plans d'adhésion VIP avec gains quotidiens garantis 24h/24 et retraits Mobile Money instantanés.
                       </p>
                     </div>
-                    <div className="w-12 h-12 rounded-2xl bg-amber-400/20 text-amber-400 flex items-center justify-center font-bold border border-amber-400/30 shrink-0">
+                    <div className="w-12 h-12 rounded-2xl bg-pink-500/20 text-pink-300 flex items-center justify-center font-bold border border-pink-500/30 shrink-0 shadow-lg shadow-pink-500/20">
                       <Package className="w-6 h-6 stroke-[2.2]" />
                     </div>
                   </div>
 
                   <div className="pt-1 flex items-center justify-between">
-                    <div className="text-xs text-emerald-200 font-mono">
+                    <div className="text-xs text-pink-300 font-mono">
                       {activeProducts.length} formules disponibles
                     </div>
                     <button
@@ -464,7 +464,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                         setSelectedProductDetail(null);
                         setActiveTab('products');
                       }}
-                      className="bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-black text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl tracking-wider transition-all cursor-pointer shadow-md flex items-center space-x-1.5 uppercase font-sans"
+                      className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 active:scale-95 text-white font-black text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl tracking-wider transition-all cursor-pointer shadow-lg shadow-pink-500/30 flex items-center space-x-1.5 uppercase font-sans border border-pink-400/30"
                     >
                       <span>VOIR LES PRODUITS</span>
                       <ChevronRight className="w-4 h-4 stroke-[3]" />
@@ -623,7 +623,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {!isAdminMode && activeTab !== 'service_client' && (
         <button
           onClick={() => setActiveTab('service_client')}
-          className="fixed bottom-20 right-4 z-30 w-12 h-12 rounded-full bg-[#E60000] hover:bg-red-700 text-white flex items-center justify-center shadow-lg shadow-red-500/30 transition-all active:scale-95 cursor-pointer border-2 border-white"
+          className="fixed bottom-20 right-4 z-30 w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 via-fuchsia-600 to-purple-700 hover:from-pink-400 hover:to-purple-600 text-white flex items-center justify-center shadow-lg shadow-pink-600/40 transition-all active:scale-95 cursor-pointer border-2 border-pink-400/50"
           title="Service Client"
         >
           <Headphones className="w-6 h-6 stroke-[2.2]" />
@@ -633,14 +633,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {/* DYNAMIC FIXED FOOTER NAVIGATION TABS MENU BAR */}
       {/* REQ ORDER: Accueil – Produit – Équipe – Chat – Mon compte */}
       {!isAdminMode && (
-        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md py-2 px-2 border-t border-slate-200/60 shadow-lg">
+        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#140624]/95 backdrop-blur-md py-2 px-2 border-t border-pink-500/20 shadow-2xl">
           <div className="max-w-md mx-auto flex justify-between items-center text-center">
             
             {/* 1. Accueil */}
             <button 
               onClick={navigateToHome}
               className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer ${
-                activeTab === 'home' ? 'text-amber-700 font-black scale-105' : 'text-slate-400 hover:text-slate-600 font-medium'
+                activeTab === 'home' ? 'text-pink-400 font-black scale-105' : 'text-pink-200/50 hover:text-pink-200 font-medium'
               }`}
             >
               <Wallet className="w-5 h-5" />
@@ -654,7 +654,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 setActiveTab('products');
               }}
               className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer ${
-                activeTab === 'products' ? 'text-amber-700 font-black scale-105' : 'text-slate-400 hover:text-slate-600 font-medium'
+                activeTab === 'products' ? 'text-pink-400 font-black scale-105' : 'text-pink-200/50 hover:text-pink-200 font-medium'
               }`}
             >
               <Package className="w-5 h-5" />
@@ -665,7 +665,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <button 
               onClick={() => setActiveTab('team')}
               className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer ${
-                activeTab === 'team' ? 'text-amber-700 font-black scale-105' : 'text-slate-400 hover:text-slate-600 font-medium'
+                activeTab === 'team' ? 'text-pink-400 font-black scale-105' : 'text-pink-200/50 hover:text-pink-200 font-medium'
               }`}
             >
               <Users className="w-5 h-5" />
@@ -679,13 +679,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 if (currentUser) markTicketsAsRead(currentUser.id);
               }}
               className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer relative ${
-                activeTab === 'chat' ? 'text-amber-700 font-black scale-105' : 'text-slate-400 hover:text-slate-600 font-medium'
+                activeTab === 'chat' ? 'text-pink-400 font-black scale-105' : 'text-pink-200/50 hover:text-pink-200 font-medium'
               }`}
             >
               <div className="relative flex items-center justify-center">
                 <MessageSquare className="w-5 h-5" />
                 {unreadChatCount > 0 && (
-                  <span className="absolute -top-1.5 -right-2.5 bg-red-600 text-white font-black text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-white animate-bounce shadow-xs">
+                  <span className="absolute -top-1.5 -right-2.5 bg-pink-600 text-white font-black text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-[#140624] animate-bounce shadow-xs">
                     {unreadChatCount}
                   </span>
                 )}
@@ -697,7 +697,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <button 
               onClick={() => setActiveTab('profile')}
               className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer ${
-                activeTab === 'profile' ? 'text-amber-700 font-black scale-105' : 'text-slate-400 hover:text-slate-600 font-medium'
+                activeTab === 'profile' ? 'text-pink-400 font-black scale-105' : 'text-pink-200/50 hover:text-pink-200 font-medium'
               }`}
             >
               <User className="w-5 h-5" />
@@ -712,34 +712,34 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       
       {/* 1. DEPOSIT MODAL WORKSPACE */}
       {depositModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full relative space-y-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-gradient-to-b from-[#1f0a33] to-[#120521] border border-pink-500/30 text-pink-50 rounded-3xl p-6 max-w-md w-full relative space-y-4 shadow-2xl">
             <button 
               onClick={() => setDepositModalOpen(false)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer"
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 hover:text-white flex items-center justify-center transition-all cursor-pointer border border-pink-500/30"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div>
-              <span className="text-[10px] font-mono font-bold uppercase text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">Recharge Mobile Money</span>
-              <h3 className="text-xl font-black text-slate-900 mt-2">Recharger votre Portefeuille</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Saisissez le montant et votre ID de transaction Mobile Money.</p>
+              <span className="text-[10px] font-mono font-bold uppercase text-pink-200 bg-pink-500/20 border border-pink-500/30 px-2.5 py-0.5 rounded-full">Recharge Mobile Money</span>
+              <h3 className="text-xl font-black text-white mt-2">Recharger votre Portefeuille</h3>
+              <p className="text-xs text-pink-200/70 mt-0.5">Saisissez le montant et votre ID de transaction Mobile Money.</p>
             </div>
 
             <form onSubmit={handleDepositSubmit} className="space-y-4 text-xs font-medium">
               <div>
-                <label className="block text-[10px] uppercase font-mono text-slate-500 mb-1 font-bold">Sélectionner l'Opérateur</label>
+                <label className="block text-[10px] uppercase font-mono text-pink-200/80 mb-1 font-bold">Sélectionner l'Opérateur</label>
                 <div className="grid grid-cols-2 gap-2">
                   {(['Orange Money', 'MTN Money', 'Moov Money', 'Mixx By Yas'] as const).map(net => (
                     <button
                       type="button"
                       key={net}
                       onClick={() => setDepMethod(net)}
-                      className={`p-2.5 rounded-xl text-center transition-all font-bold cursor-pointer ${
+                      className={`p-2.5 rounded-xl text-center transition-all font-bold cursor-pointer border ${
                         depMethod === net 
-                          ? 'bg-amber-500 text-slate-950 font-black' 
-                          : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+                          ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white font-black border-pink-400 shadow-md' 
+                          : 'bg-[#270b42] text-pink-200 hover:bg-[#340f56] border-pink-500/20'
                       }`}
                     >
                       {net}
@@ -749,44 +749,44 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               </div>
 
               {/* Account Number Box to transfer money to */}
-              <div className="p-3 bg-amber-500/10 rounded-xl space-y-1 font-mono text-[11px]">
-                <span className="text-slate-500 font-sans block text-[10px]">Numéro marchand pour le transfert ({activeModalChannel ? activeModalChannel.name : depMethod}) :</span>
-                <div className="text-slate-900 font-extrabold text-sm flex items-center justify-between">
+              <div className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-xl space-y-1 font-mono text-[11px]">
+                <span className="text-pink-200/80 font-sans block text-[10px]">Numéro marchand pour le transfert ({activeModalChannel ? activeModalChannel.name : depMethod}) :</span>
+                <div className="text-white font-extrabold text-sm flex items-center justify-between">
                   <span>{activeModalChannel ? activeModalChannel.accountNumber : '+228 90 00 00 00'}</span>
-                  <span className="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded uppercase font-bold">
+                  <span className="text-[9px] bg-pink-500/30 text-pink-200 border border-pink-500/40 px-1.5 py-0.5 rounded uppercase font-bold">
                     {activeModalChannel?.accountHolder || 'Officiel'}
                   </span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-mono text-slate-500 mb-1 font-bold">Montant à Recharger (FCFA)</label>
+                <label className="block text-[10px] uppercase font-mono text-pink-200/80 mb-1 font-bold">Montant à Recharger (FCFA)</label>
                 <input 
                   type="number" 
                   min={1000}
                   step={500}
                   value={depAmount}
                   onChange={(e) => setDepAmount(Number(e.target.value))}
-                  className="w-full bg-slate-50 outline-none rounded-xl py-2.5 px-3 text-slate-900 font-mono font-bold text-sm"
+                  className="w-full bg-[#270b42] border border-pink-500/30 outline-none rounded-xl py-2.5 px-3 text-white font-mono font-bold text-sm focus:border-pink-400"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-mono text-slate-500 mb-1 font-bold">ID / Référence de Transaction</label>
+                <label className="block text-[10px] uppercase font-mono text-pink-200/80 mb-1 font-bold">ID / Référence de Transaction</label>
                 <input 
                   type="text" 
                   placeholder="Ex: MP260806.1023.A001"
                   value={depTxId}
                   onChange={(e) => setDepTxId(e.target.value)}
-                  className="w-full bg-slate-50 outline-none rounded-xl py-2.5 px-3 text-slate-900 font-mono font-bold text-sm"
+                  className="w-full bg-[#270b42] border border-pink-500/30 outline-none rounded-xl py-2.5 px-3 text-white font-mono font-bold text-sm focus:border-pink-400"
                   required
                 />
               </div>
 
               <button 
                 type="submit"
-                className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md flex items-center justify-center space-x-1.5"
+                className="w-full py-3.5 bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-lg shadow-pink-600/30 flex items-center justify-center space-x-1.5 border border-pink-400/40"
               >
                 <span>Recharger maintenant ({(Number(depAmount) || 0).toLocaleString('fr-FR')} FCFA)</span>
               </button>
@@ -797,34 +797,34 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
       {/* 2. WITHDRAWAL MODAL WORKSPACE */}
       {withdrawModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full relative space-y-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-gradient-to-b from-[#1f0a33] to-[#120521] border border-pink-500/30 text-pink-50 rounded-3xl p-6 max-w-md w-full relative space-y-4 shadow-2xl">
             <button 
               onClick={() => setWithdrawModalOpen(false)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer"
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 hover:text-white flex items-center justify-center transition-all cursor-pointer border border-pink-500/30"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div>
-              <span className="text-[10px] font-mono font-bold uppercase text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full">Demande de Retrait</span>
-              <h3 className="text-xl font-black text-slate-900 mt-2">Retirer vers Mobile Money</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Solde actuel disponible : <strong className="text-slate-900 font-mono">{(Number(currentUser.balance) || 0).toLocaleString('fr-FR')} FCFA</strong></p>
+              <span className="text-[10px] font-mono font-bold uppercase text-pink-200 bg-pink-500/20 border border-pink-500/30 px-2.5 py-0.5 rounded-full">Demande de Retrait</span>
+              <h3 className="text-xl font-black text-white mt-2">Retirer vers Mobile Money</h3>
+              <p className="text-xs text-pink-200/70 mt-0.5">Solde actuel disponible : <strong className="text-pink-300 font-mono">{(Number(currentUser.balance) || 0).toLocaleString('fr-FR')} FCFA</strong></p>
             </div>
 
             <form onSubmit={handleWithdrawalSubmit} className="space-y-4 text-xs font-medium">
               <div>
-                <label className="block text-[10px] uppercase font-mono text-slate-500 mb-1 font-bold">Réseau de Réception</label>
+                <label className="block text-[10px] uppercase font-mono text-pink-200/80 mb-1 font-bold">Réseau de Réception</label>
                 <div className="grid grid-cols-2 gap-2">
                   {(['Orange Money', 'MTN Money', 'Moov Money', 'Mixx By Yas'] as const).map(net => (
                     <button
                       type="button"
                       key={net}
                       onClick={() => setWthNetwork(net)}
-                      className={`p-2.5 rounded-xl text-center transition-all font-bold cursor-pointer ${
+                      className={`p-2.5 rounded-xl text-center transition-all font-bold cursor-pointer border ${
                         wthNetwork === net 
-                          ? 'bg-amber-500 text-slate-950 font-black' 
-                          : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+                          ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white font-black border-pink-400 shadow-md' 
+                          : 'bg-[#270b42] text-pink-200 hover:bg-[#340f56] border-pink-500/20'
                       }`}
                     >
                       {net}
@@ -834,18 +834,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-mono text-slate-500 mb-1 font-bold">Numéro de Téléphone de Réception</label>
+                <label className="block text-[10px] uppercase font-mono text-pink-200/80 mb-1 font-bold">Numéro de Téléphone de Réception</label>
                 <input 
                   type="tel" 
                   value={wthAccount}
                   onChange={(e) => setWthAccount(e.target.value)}
-                  className="w-full bg-slate-50 outline-none rounded-xl py-2.5 px-3 text-slate-900 font-mono font-bold text-sm"
+                  className="w-full bg-[#270b42] border border-pink-500/30 outline-none rounded-xl py-2.5 px-3 text-white font-mono font-bold text-sm focus:border-pink-400"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-mono text-slate-500 mb-1 font-bold">Montant à Retirer (FCFA)</label>
+                <label className="block text-[10px] uppercase font-mono text-pink-200/80 mb-1 font-bold">Montant à Retirer (FCFA)</label>
                 <input 
                   type="number" 
                   min={1000}
@@ -853,14 +853,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   step={500}
                   value={wthAmount}
                   onChange={(e) => setWthAmount(Number(e.target.value))}
-                  className="w-full bg-slate-50 outline-none rounded-xl py-2.5 px-3 text-slate-900 font-mono font-bold text-sm"
+                  className="w-full bg-[#270b42] border border-pink-500/30 outline-none rounded-xl py-2.5 px-3 text-white font-mono font-bold text-sm focus:border-pink-400"
                   required
                 />
               </div>
 
               <button 
                 type="submit"
-                className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                className="w-full py-3.5 bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-lg shadow-pink-600/30 border border-pink-400/40"
               >
                 Confirmer le Retrait ({(Number(wthAmount) || 0).toLocaleString('fr-FR')} FCFA)
               </button>
@@ -884,11 +884,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
       {/* 5. PROMO & DRAW MODAL - ROUE DE LA CHANCE */}
       {showPromoModal && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="max-w-md w-full relative">
             <button 
               onClick={() => setShowPromoModal(false)}
-              className="absolute top-3 right-3 z-40 w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+              className="absolute top-3 right-3 z-40 w-8 h-8 rounded-full bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 hover:text-white flex items-center justify-center transition-all cursor-pointer border border-pink-500/30"
             >
               <X className="w-4 h-4" />
             </button>
@@ -902,18 +902,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
       {/* 6. PASSWORD CHANGE MODAL */}
       {showPasswordModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full relative space-y-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-gradient-to-b from-[#1f0a33] to-[#120521] border border-pink-500/30 text-pink-50 rounded-3xl p-6 max-w-md w-full relative space-y-4 shadow-2xl">
             <button 
               onClick={() => setShowPasswordModal(false)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer"
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 hover:text-white flex items-center justify-center transition-all cursor-pointer border border-pink-500/30"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div>
-              <span className="text-[10px] font-mono font-bold uppercase text-blue-800 bg-blue-100 px-2.5 py-0.5 rounded-full">Sécurité du compte</span>
-              <h3 className="text-xl font-black text-slate-900 mt-2">Modifier le mot de passe</h3>
+              <span className="text-[10px] font-mono font-bold uppercase text-pink-200 bg-pink-500/20 border border-pink-500/30 px-2.5 py-0.5 rounded-full">Sécurité du compte</span>
+              <h3 className="text-xl font-black text-white mt-2">Modifier le mot de passe</h3>
             </div>
 
             <form onSubmit={(e) => {
@@ -921,31 +921,31 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               setShowPasswordModal(false);
             }} className="space-y-4 text-xs font-medium">
               <div>
-                <label className="block text-[10px] text-slate-500 uppercase mb-1 font-bold">Ancien mot de passe</label>
+                <label className="block text-[10px] text-pink-200/80 uppercase mb-1 font-bold">Ancien mot de passe</label>
                 <input 
                   type="password" 
                   placeholder="Saisissez l'ancien mot de passe"
                   value={oldPw}
                   onChange={(e) => setOldPw(e.target.value)}
-                  className="w-full bg-slate-50 outline-none rounded-xl py-2.5 px-3 text-sm text-slate-900 font-bold"
+                  className="w-full bg-[#270b42] border border-pink-500/30 outline-none rounded-xl py-2.5 px-3 text-sm text-white font-bold focus:border-pink-400"
                   required
                 />
               </div>
               <div>
-                <label className="block text-[10px] text-slate-500 uppercase mb-1 font-bold">Nouveau mot de passe</label>
+                <label className="block text-[10px] text-pink-200/80 uppercase mb-1 font-bold">Nouveau mot de passe</label>
                 <input 
                   type="password" 
                   placeholder="Nouveau mot de passe (min. 4)"
                   value={newPw}
                   onChange={(e) => setNewPw(e.target.value)}
-                  className="w-full bg-slate-50 outline-none rounded-xl py-2.5 px-3 text-sm text-slate-900 font-bold"
+                  className="w-full bg-[#270b42] border border-pink-500/30 outline-none rounded-xl py-2.5 px-3 text-sm text-white font-bold focus:border-pink-400"
                   required
                 />
               </div>
 
               <button 
                 type="submit"
-                className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                className="w-full py-3.5 bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-lg shadow-pink-600/30 border border-pink-400/40"
               >
                 Enregistrer les modifications
               </button>
@@ -956,37 +956,37 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
       {/* 7. HISTORY / INVOICE MODAL */}
       {showHistoryModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full relative space-y-4 max-h-[85vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-gradient-to-b from-[#1f0a33] to-[#120521] border border-pink-500/30 text-pink-50 rounded-3xl p-6 max-w-md w-full relative space-y-4 max-h-[85vh] flex flex-col shadow-2xl">
             <button 
               onClick={() => setShowHistoryModal(null)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer"
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 hover:text-white flex items-center justify-center transition-all cursor-pointer border border-pink-500/30"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div>
-              <span className="text-[10px] font-mono font-bold uppercase text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-full">
+              <span className="text-[10px] font-mono font-bold uppercase text-pink-200 bg-pink-500/20 border border-pink-500/30 px-2.5 py-0.5 rounded-full">
                 {showHistoryModal === 'deposits' ? "Historique des Recharges" : showHistoryModal === 'withdrawals' ? "Historique des Retraits" : "Facture de Solde"}
               </span>
-              <h3 className="text-xl font-black text-slate-900 mt-2">
+              <h3 className="text-xl font-black text-white mt-2">
                 {showHistoryModal === 'deposits' ? "Recharger l'enregistrement" : showHistoryModal === 'withdrawals' ? "Enregistrement des retraits" : "Facture de Solde"}
               </h3>
             </div>
 
             <div className="overflow-y-auto space-y-3 pr-1 flex-1 text-xs">
               {(showHistoryModal === 'all' || showHistoryModal === 'deposits') && userRevenueLogs.map(log => (
-                <div key={log.id} className="p-3 bg-blue-50/70 rounded-xl flex items-center justify-between border border-blue-200/60">
+                <div key={log.id} className="p-3 bg-[#240c3c] rounded-xl flex items-center justify-between border border-pink-500/25">
                   <div>
-                    <div className="font-bold text-slate-900 text-sm flex items-center space-x-1.5">
-                      <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
+                    <div className="font-bold text-white text-sm flex items-center space-x-1.5">
+                      <TrendingUp className="w-3.5 h-3.5 text-pink-400" />
                       <span>Revenu 24h : {log.productName}</span>
                     </div>
-                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">{log.creditedAt ? new Date(log.creditedAt).toLocaleString('fr-FR') : 'Date inconnue'}</div>
+                    <div className="text-[10px] text-pink-300/70 font-mono mt-0.5">{log.creditedAt ? new Date(log.creditedAt).toLocaleString('fr-FR') : 'Date inconnue'}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-blue-700 text-sm">+{(Number(log.amount) || 0).toLocaleString('fr-FR')} FCFA</div>
-                    <div className="text-[9px] uppercase font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 inline-block font-mono">
+                    <div className="font-bold text-pink-300 text-sm">+{(Number(log.amount) || 0).toLocaleString('fr-FR')} FCFA</div>
+                    <div className="text-[9px] uppercase font-bold px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 inline-block font-mono border border-pink-500/30">
                       Crédit Automatique
                     </div>
                   </div>
@@ -994,14 +994,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               ))}
 
               {(showHistoryModal === 'all' || showHistoryModal === 'deposits') && userDeposits.map(dep => (
-                <div key={dep.id} className="p-3 bg-slate-50 rounded-xl flex items-center justify-between border border-slate-100">
+                <div key={dep.id} className="p-3 bg-[#240c3c] rounded-xl flex items-center justify-between border border-pink-500/25">
                   <div>
-                    <div className="font-bold text-slate-900 text-sm">Recharge Mobile Money</div>
-                    <div className="text-[10px] text-slate-500">{dep.createdAt ? new Date(dep.createdAt).toLocaleString('fr-FR') : 'Date inconnue'}</div>
+                    <div className="font-bold text-white text-sm">Recharge Mobile Money</div>
+                    <div className="text-[10px] text-pink-300/70">{dep.createdAt ? new Date(dep.createdAt).toLocaleString('fr-FR') : 'Date inconnue'}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-blue-600 text-sm">+{(Number(dep.amount) || 0).toLocaleString('fr-FR')} FCFA</div>
-                    <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${dep.status === 'approved' ? 'bg-blue-100 text-blue-800' : dep.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
+                    <div className="font-bold text-pink-300 text-sm">+{(Number(dep.amount) || 0).toLocaleString('fr-FR')} FCFA</div>
+                    <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${dep.status === 'approved' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : dep.status === 'rejected' ? 'bg-red-500/20 text-red-300 border border-red-500/40' : 'bg-pink-500/20 text-pink-300 border border-pink-500/40'}`}>
                       {dep.status === 'approved' ? 'Validé' : dep.status === 'rejected' ? 'Refusé' : 'En attente'}
                     </div>
                   </div>
@@ -1009,14 +1009,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               ))}
 
               {(showHistoryModal === 'all' || showHistoryModal === 'withdrawals') && userWithdrawals.map(wth => (
-                <div key={wth.id} className="p-3 bg-slate-50 rounded-xl flex items-center justify-between border border-slate-100">
+                <div key={wth.id} className="p-3 bg-[#240c3c] rounded-xl flex items-center justify-between border border-pink-500/25">
                   <div>
-                    <div className="font-bold text-slate-900 text-sm">Retrait Mobile Money</div>
-                    <div className="text-[10px] text-slate-500">{wth.createdAt ? new Date(wth.createdAt).toLocaleString('fr-FR') : 'Date inconnue'}</div>
+                    <div className="font-bold text-white text-sm">Retrait Mobile Money</div>
+                    <div className="text-[10px] text-pink-300/70">{wth.createdAt ? new Date(wth.createdAt).toLocaleString('fr-FR') : 'Date inconnue'}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-red-600 text-sm">-{(Number(wth.amount) || 0).toLocaleString('fr-FR')} FCFA</div>
-                    <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${wth.status === 'approved' ? 'bg-blue-100 text-blue-800' : wth.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
+                    <div className="font-bold text-purple-300 text-sm">-{(Number(wth.amount) || 0).toLocaleString('fr-FR')} FCFA</div>
+                    <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${wth.status === 'approved' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : wth.status === 'rejected' ? 'bg-red-500/20 text-red-300 border border-red-500/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'}`}>
                       {wth.status === 'approved' ? 'Payé' : wth.status === 'rejected' ? 'Refusé' : 'En traitement'}
                     </div>
                   </div>
@@ -1024,7 +1024,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               ))}
 
               {userRevenueLogs.length === 0 && userDeposits.length === 0 && userWithdrawals.length === 0 && (
-                <div className="py-8 text-center text-slate-400 font-medium">
+                <div className="py-8 text-center text-pink-300/60 font-medium">
                   Aucun enregistrement trouvé.
                 </div>
               )}

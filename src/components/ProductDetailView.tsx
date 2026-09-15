@@ -55,40 +55,40 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
   };
 
   return (
-    <div className="animate-fadeIn max-w-xl mx-auto pb-28 text-slate-900 space-y-4">
+    <div className="animate-fadeIn max-w-xl mx-auto pb-28 text-pink-50 space-y-4 font-sans">
       {/* 1. TOP HERO IMAGE HEADER MATCHING REFERENCE IMAGE */}
-      <div className="relative w-full h-64 sm:h-72 rounded-3xl overflow-hidden shadow-sm bg-slate-900">
+      <div className="relative w-full h-64 sm:h-72 rounded-3xl overflow-hidden shadow-2xl bg-[#140624] border border-pink-500/30">
         <img
-          src={product.image && product.image.trim() !== '' ? product.image : 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80'}
+          src={product.image && product.image.trim() !== '' ? product.image : 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80'}
           alt={product.name}
           className="w-full h-full object-cover object-center brightness-95"
           onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80';
+            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80';
           }}
         />
         
         {/* Top Gradient Overlay */}
-        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
 
         {/* Back Button (Circle with Arrow Left on Top-Left) */}
         <button
           onClick={onBack}
-          className="absolute top-4 left-4 w-10 h-10 rounded-full bg-white/90 backdrop-blur-md text-slate-900 flex items-center justify-center shadow-md hover:bg-white active:scale-95 transition-all cursor-pointer z-10"
+          className="absolute top-4 left-4 w-10 h-10 rounded-full bg-[#1c072c]/90 backdrop-blur-md text-pink-200 border border-pink-500/30 flex items-center justify-center shadow-lg hover:bg-pink-900/50 hover:text-white active:scale-95 transition-all cursor-pointer z-10"
           aria-label="Retour"
         >
           <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
         </button>
 
         {/* Customer Support Badge on Top-Right */}
-        <div className="absolute top-4 right-4 bg-sky-950/80 backdrop-blur-md border border-sky-400/40 text-white rounded-full pl-2 pr-3 py-1 flex items-center space-x-1.5 shadow-lg z-10">
-          <div className="w-6 h-6 rounded-full bg-sky-500 text-slate-950 flex items-center justify-center shrink-0 font-bold">
+        <div className="absolute top-4 right-4 bg-[#1f0a33]/90 backdrop-blur-md border border-pink-500/40 text-white rounded-full pl-2 pr-3 py-1 flex items-center space-x-1.5 shadow-lg z-10">
+          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 text-white flex items-center justify-center shrink-0 font-bold">
             <Headphones className="w-3.5 h-3.5" />
           </div>
           <div className="flex flex-col text-left">
-            <span className="text-[9px] font-mono font-bold tracking-tight uppercase text-sky-300 leading-none">
+            <span className="text-[9px] font-mono font-bold tracking-tight uppercase text-pink-300 leading-none">
               CUSTOMER SERVICE
             </span>
-            <span className="text-[10px] font-extrabold leading-none">
+            <span className="text-[10px] font-extrabold leading-none text-white">
               Support Center
             </span>
           </div>
@@ -96,52 +96,45 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
       </div>
 
       {/* 2. FIRST CONTAINER: PRICE & TOTAL REVENUE */}
-      <div className="py-2 px-4 text-slate-900 flex items-center justify-around bg-emerald-50/70 border border-emerald-200/60 rounded-2xl">
+      <div className="py-2.5 px-4 text-white flex items-center justify-around bg-gradient-to-r from-[#240c3c] via-[#1a072c] to-[#240c3c] border border-pink-500/30 rounded-2xl shadow-xl">
         <div className="text-center space-y-0.5">
-          <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-emerald-950">
+          <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-white">
             {(Number(product.price) || 0).toLocaleString('fr-FR')}
           </div>
-          <div className="text-xs font-bold text-slate-600 uppercase">
+          <div className="text-xs font-bold text-pink-300 uppercase">
             Prix d'adhésion (FCFA)
           </div>
         </div>
 
-        <div className="h-10 w-px bg-emerald-300/80" />
+        <div className="h-10 w-px bg-pink-500/30" />
 
         <div className="text-center space-y-0.5">
-          <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-amber-800">
+          <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-purple-300">
             {(Number(product.totalGain) || 0).toLocaleString('fr-FR')}
           </div>
-          <div className="text-xs font-bold text-slate-600 uppercase">
-            Revenu total (365 jours)
+          <div className="text-xs font-bold text-pink-300 uppercase">
+            Revenu total
           </div>
         </div>
       </div>
 
-      {/* 3. SECOND SECTION: CYCLE, QUANTITY, DAILY REVENUE (NO BOXES/BORDERS) */}
+      {/* 3. SECOND SECTION: QUANTITY, DAILY REVENUE (NO BOXES/BORDERS) */}
       <div className="py-2 px-2 space-y-3">
         <div className="flex items-center justify-between text-xs sm:text-sm font-medium py-1">
-          <span className="text-slate-800 font-semibold">Cycle d'investissement :</span>
-          <span className="font-extrabold text-emerald-800 font-mono text-sm sm:text-base">
-            365 jours
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between text-xs sm:text-sm font-medium py-1">
-          <span className="text-slate-800 font-semibold">Quantité de packs :</span>
+          <span className="text-pink-200/90 font-semibold">Quantité de packs :</span>
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="w-7 h-7 rounded-lg bg-slate-200/80 hover:bg-slate-300 text-slate-800 font-extrabold text-xs flex items-center justify-center transition-all cursor-pointer"
+              className="w-7 h-7 rounded-lg bg-[#270b42] hover:bg-[#340f56] text-pink-200 border border-pink-500/30 font-extrabold text-xs flex items-center justify-center transition-all cursor-pointer"
             >
               -
             </button>
-            <span className="font-extrabold text-slate-900 font-mono text-sm sm:text-base px-2">
+            <span className="font-extrabold text-white font-mono text-sm sm:text-base px-2">
               {quantity}
             </span>
             <button
               onClick={() => setQuantity(quantity + 1)}
-              className="w-7 h-7 rounded-lg bg-slate-200/80 hover:bg-slate-300 text-slate-800 font-extrabold text-xs flex items-center justify-center transition-all cursor-pointer"
+              className="w-7 h-7 rounded-lg bg-[#270b42] hover:bg-[#340f56] text-pink-200 border border-pink-500/30 font-extrabold text-xs flex items-center justify-center transition-all cursor-pointer"
             >
               +
             </button>
@@ -149,48 +142,44 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
         </div>
 
         <div className="flex items-center justify-between text-xs sm:text-sm font-medium py-1">
-          <span className="text-slate-800 font-semibold">Revenu quotidien (crédit chaque 24h) :</span>
-          <span className="font-extrabold text-emerald-700 font-mono text-sm sm:text-base">
+          <span className="text-pink-200/90 font-semibold">Revenu quotidien (crédit chaque 24h) :</span>
+          <span className="font-extrabold text-pink-400 font-mono text-sm sm:text-base">
             +{(Number(totalDailyGain) || 0).toLocaleString('fr-FR')} FCFA
           </span>
         </div>
       </div>
 
-      {/* 4. THIRD SECTION: PRODUCT EMOJI SUMMARY & DETAILS (TEXT LAID DIRECTLY ON BACKGROUND) */}
+      {/* 4. THIRD SECTION: PRODUCT EMOJI SUMMARY & DETAILS */}
       <div className="py-2 px-2 space-y-4">
-        <div className="space-y-2.5 text-sm sm:text-base font-bold text-slate-900 leading-relaxed font-sans">
+        <div className="space-y-2.5 text-sm sm:text-base font-bold text-white leading-relaxed font-sans">
           <div className="flex items-center space-x-2">
-            <span>🌾✨</span>
-            <span>{product.name} — Avancez vers la réalisation de vos rêves !</span>
+            <span>🎧✨</span>
+            <span className="text-pink-200">{product.name} — Avancez vers la liberté financière avec Apple AirPods !</span>
           </div>
           <div className="flex items-center space-x-2">
             <span>💰</span>
             <span>Prix : {(Number(totalPrice) || 0).toLocaleString('fr-FR')} XAF</span>
           </div>
           <div className="flex items-center space-x-2">
-            <span>📅</span>
-            <span>Durée : {product.duration} Jours</span>
-          </div>
-          <div className="flex items-center space-x-2">
             <span>📈</span>
-            <span>Revenu journalier : {(Number(totalDailyGain) || 0).toLocaleString('fr-FR')} XAF</span>
+            <span className="text-pink-300">Revenu journalier : +{(Number(totalDailyGain) || 0).toLocaleString('fr-FR')} XAF</span>
           </div>
           <div className="flex items-center space-x-2">
             <span>🏆</span>
-            <span>Revenu total : {(Number(totalGain) || 0).toLocaleString('fr-FR')} XAF</span>
+            <span className="text-purple-300">Revenu total : {(Number(totalGain) || 0).toLocaleString('fr-FR')} XAF</span>
           </div>
         </div>
 
-        <div className="pt-2 space-y-3 text-slate-800 font-medium text-xs sm:text-sm leading-relaxed">
+        <div className="pt-2 space-y-3 text-pink-200/80 font-medium text-xs sm:text-sm leading-relaxed">
           <p>
-            Chaque effort est un pas vers le succès : chaque acte de persévérance renforce votre potentiel pour l'avenir.
+            Chaque pack d'adhésion AirPods génère des dividendes passifs quotidiens garantis 24h/24, directement retirables vers tous les opérateurs Mobile Money locaux.
           </p>
 
           <p>
-            {product.description || `Chez AirPods, nous croyons que les opportunités appartiennent à ceux qui osent agir. Grâce à une participation active, à l'apprentissage continu et au partage d'expériences, vous pouvez non seulement vous épanouir personnellement, mais aussi grandir aux côtés de votre équipe pour bâtir ensemble un avenir meilleur.`}
+            {product.description || `Chez AirPods International, nous croyons que les opportunités appartiennent à ceux qui osent investir dans la technologie de pointe. Profitez de rendements stables, fiables et d'un support d'experts disponible 7j/7.`}
           </p>
 
-          <p className="font-bold text-slate-900 pt-1">
+          <p className="font-bold text-pink-300 pt-1">
             🌟 Le succès n'attend pas les hésitants ; il appartient à ceux qui ont le courage de faire le premier pas.
           </p>
 
@@ -198,17 +187,17 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
             Avançons main dans la main : restons confiants, déterminés à atteindre nos objectifs et créateurs de valeur.
           </p>
 
-          <p className="font-bold text-slate-900 pt-1">
+          <p className="font-bold text-pink-300 pt-1">
             💪 Rejoignez AirPods et ouvrez la voie à un avenir brillant !
           </p>
         </div>
       </div>
 
-      {/* 5. BOTTOM RED ACTION BUTTON MATCHING REFERENCE IMAGE */}
+      {/* 5. BOTTOM ROSE/PURPLE ACTION BUTTON */}
       <div className="pt-2">
         <button
           onClick={() => setShowConfirmModal(true)}
-          className="w-full bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white font-black text-sm sm:text-base py-3.5 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center space-x-2"
+          className="w-full bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 active:scale-[0.99] text-white font-black text-sm sm:text-base py-3.5 rounded-full shadow-lg shadow-pink-600/40 transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center space-x-2 border border-pink-400/40"
         >
           <span>Investissez maintenant</span>
         </button>
@@ -218,91 +207,86 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
       {/* CONFIRMATION MODAL BEFORE PAYMENT */}
       {/* ========================================================= */}
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-2xl border border-slate-100 relative">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-gradient-to-b from-[#1f0a33] to-[#120521] rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-2xl border border-pink-500/30 relative text-pink-50">
             
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-pink-500/25 pb-3">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-xl bg-red-100 text-red-600 flex items-center justify-center font-bold">
+                <div className="w-8 h-8 rounded-xl bg-pink-500/20 text-pink-400 border border-pink-500/30 flex items-center justify-center font-bold">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-mono font-bold uppercase text-red-600 tracking-wider block">
+                  <span className="text-[10px] font-mono font-bold uppercase text-pink-400 tracking-wider block">
                     Vérification
                   </span>
-                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+                  <h3 className="text-sm sm:text-base font-extrabold text-white">
                     Confirmation d'investissement
                   </h3>
                 </div>
               </div>
               <button
                 onClick={() => setShowConfirmModal(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer"
+                className="w-8 h-8 rounded-full bg-pink-500/20 text-pink-300 hover:text-white flex items-center justify-center transition-all cursor-pointer border border-pink-500/30"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Product Summary Table */}
-            <div className="bg-slate-50 rounded-2xl p-4 space-y-2.5 border border-slate-200/80">
+            <div className="bg-[#240c3c] rounded-2xl p-4 space-y-2.5 border border-pink-500/25">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-600 font-medium">Nom du produit</span>
-                <span className="font-extrabold text-slate-900">{product.name}</span>
+                <span className="text-pink-300 font-medium">Nom du produit</span>
+                <span className="font-extrabold text-white">{product.name}</span>
               </div>
               
               <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-600 font-medium">Prix unitaire</span>
-                <span className="font-bold text-slate-900 font-mono">{(Number(product.price) || 0).toLocaleString('fr-FR')} FCFA</span>
+                <span className="text-pink-300 font-medium">Prix unitaire</span>
+                <span className="font-bold text-white font-mono">{(Number(product.price) || 0).toLocaleString('fr-FR')} FCFA</span>
               </div>
 
               <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-600 font-medium">Quantité</span>
-                <span className="font-extrabold text-slate-900 font-mono bg-white px-2 py-0.5 rounded border border-slate-200">
+                <span className="text-pink-300 font-medium">Quantité</span>
+                <span className="font-extrabold text-white font-mono bg-[#160526] px-2 py-0.5 rounded border border-pink-500/30">
                   {quantity}
                 </span>
               </div>
 
-              <div className="flex justify-between items-center text-xs border-t border-slate-200/80 pt-2">
-                <span className="text-slate-900 font-extrabold uppercase font-mono">Montant total à payer</span>
-                <span className="font-black text-red-600 font-mono text-sm sm:text-base">
+              <div className="flex justify-between items-center text-xs border-t border-pink-500/25 pt-2">
+                <span className="text-pink-200 font-extrabold uppercase font-mono">Montant total à payer</span>
+                <span className="font-black text-pink-400 font-mono text-sm sm:text-base">
                   {(Number(totalPrice) || 0).toLocaleString('fr-FR')} FCFA
                 </span>
               </div>
 
               <div className="flex justify-between items-center text-xs pt-1">
-                <span className="text-slate-600 font-medium">Revenu quotidien prévu</span>
-                <span className="font-extrabold text-emerald-700 font-mono">+{(Number(totalDailyGain) || 0).toLocaleString('fr-FR')} FCFA / jour</span>
+                <span className="text-pink-300 font-medium">Revenu quotidien prévu</span>
+                <span className="font-extrabold text-pink-300 font-mono">+{(Number(totalDailyGain) || 0).toLocaleString('fr-FR')} FCFA / jour</span>
               </div>
 
               <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-600 font-medium">Durée du cycle</span>
-                <span className="font-bold text-slate-900 font-mono">{product.duration} Jours</span>
-              </div>
-
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-600 font-medium">Revenu total prévu</span>
-                <span className="font-black text-emerald-700 font-mono">+{(Number(totalGain) || 0).toLocaleString('fr-FR')} FCFA</span>
+                <span className="text-pink-300 font-medium">Revenu total prévu</span>
+                <span className="font-black text-purple-300 font-mono">+{(Number(totalGain) || 0).toLocaleString('fr-FR')} FCFA</span>
               </div>
             </div>
 
             {/* User Balance Check Bar */}
             <div className={`p-3.5 rounded-2xl border text-xs font-bold space-y-1 ${
               hasSufficientBalance 
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-900' 
-                : 'bg-red-50 border-red-200 text-red-900'
+                ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200' 
+                : 'bg-red-950/40 border-red-500/40 text-red-200'
             }`}>
               <div className="flex items-center justify-between">
                 <span className="flex items-center space-x-1.5">
-                  <CreditCard className="w-4 h-4 text-slate-700" />
+                  <CreditCard className="w-4 h-4 text-pink-300" />
                   <span>Votre Solde Actuel :</span>
                 </span>
                 <span className="font-mono font-black text-sm">{(Number(currentUser.balance) || 0).toLocaleString('fr-FR')} FCFA</span>
               </div>
 
               {!hasSufficientBalance && (
-                <div className="pt-1.5 flex items-start space-x-2 border-t border-red-200 text-[11px] text-red-700 leading-snug">
-                  <AlertTriangle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
+                <div className="pt-1.5 flex items-start space-x-2 border-t border-red-500/30 text-[11px] text-red-300 leading-snug">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-red-400 mt-0.5" />
                   <span>
                     Solde insuffisant. Il vous manque <strong>{(Number(totalPrice - currentUser.balance) || 0).toLocaleString('fr-FR')} FCFA</strong> pour effectuer cet achat.
                   </span>
@@ -316,7 +300,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                 <button
                   onClick={handleConfirmClick}
                   disabled={isSubmitting}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-extrabold text-xs sm:text-sm py-3 rounded-xl transition-all shadow-xs flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 active:scale-[0.99] text-white font-extrabold text-xs sm:text-sm py-3 rounded-xl transition-all shadow-lg shadow-pink-600/30 flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border border-pink-400/40"
                 >
                   {isSubmitting ? (
                     <span className="animate-pulse">Traitement en cours...</span>
@@ -333,7 +317,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                     setShowConfirmModal(false);
                     onOpenDeposit();
                   }}
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs sm:text-sm py-3 rounded-xl transition-all shadow-xs flex items-center justify-center space-x-2 cursor-pointer"
+                  className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-black text-xs sm:text-sm py-3 rounded-xl transition-all shadow-lg shadow-pink-600/30 flex items-center justify-center space-x-2 cursor-pointer border border-pink-400/40"
                 >
                   <CreditCard className="w-4 h-4" />
                   <span>Recharger mon compte (Faire un dépôt)</span>
@@ -343,7 +327,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
               <button
                 onClick={() => setShowConfirmModal(false)}
                 disabled={isSubmitting}
-                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm py-2.5 rounded-xl transition-all cursor-pointer"
+                className="w-full bg-[#270b42] hover:bg-[#340f56] text-pink-200 font-bold text-xs sm:text-sm py-2.5 rounded-xl transition-all cursor-pointer border border-pink-500/25"
               >
                 Annuler
               </button>
