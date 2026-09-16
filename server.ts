@@ -243,6 +243,20 @@ for (const [tbl, fieldList] of Object.entries(SCHEMA_DEFINITIONS)) {
   knownTableColumns.set(tbl, set);
 }
 
+// Explicit strict known columns for deposits, withdrawals, products
+knownTableColumns.set('deposits', new Set([
+  'id', 'user_id', 'user_name', 'user_phone', 'amount', 'method',
+  'transaction_id', 'screenshot_url', 'status', 'created_at'
+]));
+knownTableColumns.set('withdrawals', new Set([
+  'id', 'user_id', 'user_name', 'user_phone', 'amount', 'received_amount',
+  'network', 'account_number', 'status', 'created_at'
+]));
+knownTableColumns.set('products', new Set([
+  'id', 'name', 'price', 'daily_gain', 'duration', 'total_gain',
+  'is_active', 'image', 'description', 'order', 'badge', 'color'
+]));
+
 /**
  * Normalizes a raw Supabase database row into a clean JS Model (camelCase)
  */
@@ -353,11 +367,16 @@ function prepareDbPayload(tableName: string, jsObject: any, allowDefaults: boole
     }
   }
 
-  // Preserve any extra properties not explicitly in SCHEMA_DEFINITIONS
-  for (const k of Object.keys(jsObject)) {
-    const isMapped = mappings.some(m => m.jsKey === k || m.dbKeys.includes(k));
-    if (!isMapped && jsObject[k] !== undefined) {
-      payload[k] = jsObject[k];
+  // For strict tables (deposits, products, withdrawals), DO NOT attach unmapped arbitrary keys
+  const isStrictTable = ['deposits', 'withdrawals', 'products'].includes(tableName);
+  if (!isStrictTable) {
+    for (const k of Object.keys(jsObject)) {
+      const isMapped = mappings.some(m => m.jsKey === k || m.dbKeys.includes(k));
+      if (!isMapped && jsObject[k] !== undefined) {
+        if (!knownCols || knownCols.size === 0 || knownCols.has(k)) {
+          payload[k] = jsObject[k];
+        }
+      }
     }
   }
 
@@ -416,21 +435,39 @@ async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ succe
         const badCol = missingColMatch[1];
         delete payload[badCol];
 
-        // If it was snake_case, try camelCase, or vice versa
+        // Track and remove from knownTableColumns
+        const tableCols = knownTableColumns.get(tableName);
+        if (tableCols) {
+          tableCols.delete(badCol);
+        }
+
+        // If it was snake_case, try camelCase, or vice versa, but ONLY if different and present
         const altCol = badCol.includes('_') 
           ? badCol.replace(/_([a-z])/g, (_, l) => l.toUpperCase())
           : badCol.replace(/([A-Z])/g, '_$1').toLowerCase();
 
-        const val = item[badCol] ?? item[altCol];
-        if (val !== undefined) {
-          payload[altCol] = val;
+        if (altCol !== badCol && tableCols && tableCols.has(altCol)) {
+          const val = item[badCol] ?? item[altCol];
+          if (val !== undefined) {
+            payload[altCol] = val;
+          }
         }
         continue;
       }
 
-      // If generic failure, try raw camelCase or raw snake_case as fallback
+      // If attempt fails, strip payload down to only explicitly known columns
       if (attempt === 1) {
-        payload = { ...item };
+        const cleanPayload: Record<string, any> = {};
+        const mappings = SCHEMA_DEFINITIONS[tableName] || [];
+        for (const m of mappings) {
+          for (const dbk of m.dbKeys) {
+            if (payload[dbk] !== undefined) {
+              cleanPayload[dbk] = payload[dbk];
+              break;
+            }
+          }
+        }
+        payload = Object.keys(cleanPayload).length > 0 ? cleanPayload : payload;
       } else {
         return { success: false, error: error.message };
       }
@@ -752,119 +789,133 @@ const defaultSeedUsers = [
   }
 ];
 
-// Official 8 AirPods Investment Plans (Cycle 365 days)
+// Official 9 AirPods Investment Plans (Cycle 365 days) according to official rate chart
 const defaultSeedProducts = [
   {
     id: 'vip-1-pro',
     name: 'VIP NIVEAU 1 (AirPods 2)',
-    price: 2500,
-    dailyGain: 168,
+    price: 3000,
+    dailyGain: 400,
     duration: 365,
-    totalGain: 61320,
+    totalGain: 146000,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack de démarrage officiel AirPods 2 - Rendement quotidien garanti.',
+    description: 'Pack de démarrage officiel AirPods 2 - Rendement quotidien garanti de 400 CFA.',
     order: 1,
     badge: 'Populaire',
-    color: 'from-amber-950/40 via-amber-900/10 to-transparent border-amber-500/20'
+    color: 'from-pink-950/60 via-purple-900/30 to-fuchsia-950/40 border-pink-500/30'
   },
   {
     id: 'vip-2-elite',
     name: 'VIP NIVEAU 2 (AirPods 3)',
-    price: 6000,
-    dailyGain: 360,
+    price: 8000,
+    dailyGain: 1000,
     duration: 365,
-    totalGain: 131400,
+    totalGain: 365000,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1588423771073-b8903fbb85b5?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack officiel AirPods 3 - Technologie audio spatiale & rendement quotidien garanti.',
+    description: 'Pack officiel AirPods 3 - Technologie audio spatiale & rendement quotidien garanti de 1 000 CFA.',
     order: 2,
     badge: 'Recommandé',
-    color: 'from-emerald-950/40 via-emerald-900/10 to-transparent border-emerald-500/20'
+    color: 'from-purple-950/60 via-fuchsia-900/30 to-pink-950/40 border-purple-500/30'
   },
   {
     id: 'vip-3-premium',
     name: 'VIP NIVEAU 3 (AirPods 4 ANC)',
     price: 15000,
-    dailyGain: 744,
+    dailyGain: 2200,
     duration: 365,
-    totalGain: 271560,
+    totalGain: 803000,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack officiel AirPods 4 avec réduction active du bruit & profit journalier continu.',
+    description: 'Pack officiel AirPods 4 avec réduction active du bruit & profit quotidien garanti de 2 200 CFA.',
     order: 3,
     badge: 'Rentable',
-    color: 'from-blue-950/40 via-blue-900/10 to-transparent border-blue-500/20'
+    color: 'from-fuchsia-950/60 via-pink-900/30 to-purple-950/40 border-fuchsia-500/30'
   },
   {
     id: 'vip-4-platinum',
     name: 'VIP NIVEAU 4 (AirPods Pro)',
     price: 32000,
-    dailyGain: 1584,
+    dailyGain: 4200,
     duration: 365,
-    totalGain: 578160,
+    totalGain: 1533000,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack Platinum AirPods Pro - Performance audio professionnelle et revenus passifs.',
+    description: 'Pack Platinum AirPods Pro - Performance audio professionnelle et revenus passifs de 4 200 CFA/jour.',
     order: 4,
     badge: 'Haute Performance',
-    color: 'from-purple-950/40 via-purple-900/10 to-transparent border-purple-500/20'
+    color: 'from-violet-950/60 via-purple-900/30 to-pink-950/40 border-violet-500/30'
   },
   {
-    id: 'vip-6-or',
-    name: 'VIP NIVEAU 6 (AirPods Pro 2 USB-C)',
+    id: 'vip-5-or',
+    name: 'VIP NIVEAU 5 (AirPods Pro 2 USB-C)',
     price: 70000,
-    dailyGain: 3840,
+    dailyGain: 8600,
     duration: 365,
-    totalGain: 1401600,
+    totalGain: 3139000,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1603351154351-5e2d0600bb77?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack Investisseur Or AirPods Pro 2 USB-C avec puce H2 haute performance.',
+    description: 'Pack Investisseur Or AirPods Pro 2 USB-C avec puce H2 - Rendement quotidien de 8 600 CFA.',
     order: 5,
     badge: 'Investisseur Or',
-    color: 'from-amber-950/40 via-yellow-900/10 to-transparent border-yellow-500/30'
+    color: 'from-pink-950/60 via-fuchsia-900/30 to-violet-950/40 border-pink-500/40'
   },
   {
-    id: 'vip-7-saphir',
-    name: 'VIP NIVEAU 7 (AirPods Pro 2 MagSafe)',
-    price: 250000,
-    dailyGain: 13800,
+    id: 'vip-6-saphir',
+    name: 'VIP NIVEAU 6 (AirPods Pro 2 MagSafe)',
+    price: 100000,
+    dailyGain: 12600,
     duration: 365,
-    totalGain: 5037000,
+    totalGain: 4599000,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1610438235354-a6ae5528385c?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack Privilège Saphir AirPods Pro MagSafe - Rendement maximal à fort volume.',
+    description: 'Pack Privilège Saphir AirPods Pro MagSafe - Rendement quotidien de 12 600 CFA.',
     order: 6,
     badge: 'Privilège Saphir',
-    color: 'from-sky-950/40 via-cyan-900/10 to-transparent border-cyan-500/30'
+    color: 'from-purple-950/60 via-violet-900/30 to-pink-950/40 border-purple-500/40'
   },
   {
-    id: 'vip-partenaire-bronze',
-    name: 'VIP PARTENAIRE (AirPods Max Silver)',
-    price: 500000,
-    dailyGain: 28800,
+    id: 'vip-7-silver',
+    name: 'VIP NIVEAU 7 (AirPods Max Silver)',
+    price: 120000,
+    dailyGain: 15700,
     duration: 365,
-    totalGain: 10512000,
+    totalGain: 5730500,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1613040809024-b4ef7ba99bc3?w=800&auto=format&fit=crop&q=80',
-    description: 'Partenariat VIP AirPods Max Silver - Casque circum-auriculaire haute fidélité.',
+    description: 'Pack Prestige AirPods Max Silver - Casque haute fidélité & rendement de 15 700 CFA/jour.',
     order: 7,
-    badge: 'Partenaire Bronze',
+    badge: 'Prestige Silver',
     color: 'from-pink-950/50 via-purple-900/30 to-fuchsia-950/40 border-pink-500/30'
   },
   {
-    id: 'vip-partenaire-argent',
-    name: 'VIP PARTENAIRE (AirPods Max Space Gray)',
-    price: 1000000,
-    dailyGain: 60000,
+    id: 'vip-8-gray',
+    name: 'VIP NIVEAU 8 (AirPods Max Space Gray)',
+    price: 150000,
+    dailyGain: 20500,
     duration: 365,
-    totalGain: 22198650,
+    totalGain: 7482500,
     isActive: true,
     image: 'https://images.unsplash.com/photo-1628202926206-c63a34b1618f?w=800&auto=format&fit=crop&q=80',
-    description: 'Partenariat Prestige AirPods Max Édition Spéciale - Gains automatisés d\'élite.',
+    description: 'Pack Titane AirPods Max Space Gray - Rendement quotidien exceptionnel de 20 500 CFA.',
     order: 8,
-    badge: 'Partenaire Argent',
+    badge: 'Titane Gray',
     color: 'from-fuchsia-950/50 via-violet-900/30 to-purple-950/40 border-fuchsia-500/40'
+  },
+  {
+    id: 'vip-9-gold',
+    name: 'VIP NIVEAU 9 (AirPods Max Édition Spéciale)',
+    price: 150000,
+    dailyGain: 25000,
+    duration: 365,
+    totalGain: 9125000,
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=800&auto=format&fit=crop&q=80',
+    description: 'Pack Suprême AirPods Max Édition Spéciale - Rendement maximal d\'élite de 25 000 CFA/jour.',
+    order: 9,
+    badge: 'Suprême Gold',
+    color: 'from-amber-950/50 via-yellow-900/30 to-orange-950/40 border-amber-500/40'
   }
 ];
 
@@ -874,16 +925,12 @@ defaultSeedProducts.forEach(p => serverProductsStore.set(p.id, p));
 // Load all persistent records from disk (users, deposits, withdrawals, tickets, investments)
 loadPlatformDataFromDisk();
 
-// Ensure seeds remain present even after disk load
-defaultSeedUsers.forEach(u => {
-  if (!serverUsersStore.has(u.id)) {
-    serverUsersStore.set(u.id, u);
-  }
-});
+// Remove old obsolete product keys if any
+['vip-partenaire-bronze', 'vip-partenaire-argent', 'vip-6-or', 'vip-7-saphir'].forEach(oldId => serverProductsStore.delete(oldId));
+
+// Ensure updated official products override and take precedence
 defaultSeedProducts.forEach(p => {
-  if (!serverProductsStore.has(p.id)) {
-    serverProductsStore.set(p.id, p);
-  }
+  serverProductsStore.set(p.id, p);
 });
 savePlatformDataToDisk(true);
 
@@ -965,14 +1012,23 @@ async function syncFromSupabaseInitial() {
 
     // 6. Fetch all deposits (pending, validated, rejected)
     const { data: dbDeposits, error: depErr } = await supabaseAdmin.from('deposits').select('*').limit(10000);
+    const dbDepositIds = new Set<string>();
     if (!depErr && dbDeposits && Array.isArray(dbDeposits)) {
       dbDeposits.forEach(d => {
         if (d && d.id) {
           const norm = normalizeDbRow('deposits', d);
           serverDepositsStore.set(norm.id, norm);
+          dbDepositIds.add(norm.id);
         }
       });
       console.log(`[Supabase Sync] Successfully loaded ${dbDeposits.length} deposits from database into memory.`);
+    }
+
+    // Push any real deposits present on disk into database if not yet registered in Supabase
+    for (const [depId, dep] of serverDepositsStore.entries()) {
+      if (!dbDepositIds.has(depId)) {
+        await safeSupabaseUpsert('deposits', dep);
+      }
     }
 
     // 7. Fetch all withdrawals (pending, approved, rejected)
@@ -1526,8 +1582,8 @@ async function startServer() {
         return res.status(400).json({ success: false, error: 'Paramètres d\'achat manquants.' });
       }
 
-      // 1. Fetch product
-      const product = defaultSeedProducts.find(p => p.id === productId) || serverProductsStore.get(productId);
+      // 1. Fetch product (prioritize updated price from serverProductsStore / database)
+      const product = serverProductsStore.get(productId) || defaultSeedProducts.find(p => p.id === productId);
       if (!product) {
         return res.status(404).json({ success: false, error: 'Produit introuvable.' });
       }
@@ -2294,11 +2350,19 @@ async function startServer() {
             if (data && Array.isArray(data)) {
               isSupabaseQuotaExceeded = false;
               const normalized = data.map(item => normalizeDbRow(table, item));
+              
+              // Merge fallbackStore with Supabase authoritative data by ID
+              const mergedMap = new Map<string, any>();
+              fallbackStore.forEach((v, k) => mergedMap.set(k, v));
               normalized.forEach(item => {
                 const key = item.id || item.code;
-                if (key) fallbackStore.set(key, item);
+                if (key) {
+                  mergedMap.set(key, item);
+                  fallbackStore.set(key, item);
+                }
               });
-              return normalized;
+
+              return Array.from(mergedMap.values());
             }
             return Array.from(fallbackStore.values());
           })();
@@ -2742,6 +2806,56 @@ async function startServer() {
     }
   });
 
+  // Dedicated Products API (Authoritative DB sync for product prices & catalogue)
+  app.get('/api/products', (_req, res) => {
+    try {
+      const list = Array.from(serverProductsStore.values())
+        .sort((a: any, b: any) => (Number(a.order) || 99) - (Number(b.order) || 99));
+      return res.json({ success: true, products: list });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
+    }
+  });
+
+  const handleSaveProductRoute = async (req: express.Request, res: express.Response) => {
+    try {
+      const prodData = req.body;
+      if (!prodData || !prodData.id || !prodData.name) {
+        return res.status(400).json({ success: false, error: 'Données du produit invalides.' });
+      }
+
+      const normalized = normalizeDbRow('products', {
+        ...prodData,
+        price: Number(prodData.price) || 0,
+        dailyGain: Number(prodData.dailyGain) || 0,
+        duration: Number(prodData.duration) || 0,
+        totalGain: Number(prodData.totalGain) || (Number(prodData.dailyGain || 0) * Number(prodData.duration || 0)),
+        order: Number(prodData.order) || 99,
+        isActive: prodData.isActive !== false
+      });
+
+      serverProductsStore.set(normalized.id, normalized);
+      savePlatformDataToDisk(true);
+
+      // Persist directly to Supabase products table
+      const dbRes = await safeSupabaseUpsert('products', normalized);
+
+      // Invalidate master cache immediately so all clients and devices get the new price
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
+
+      console.log(`[Product Price & Details Saved]: ID ${normalized.id} ("${normalized.name}") -> Price: ${normalized.price} FCFA, Daily: ${normalized.dailyGain} FCFA, DB Success: ${dbRes.success}`);
+
+      return res.json({ success: true, product: normalized, dbSuccess: dbRes.success });
+    } catch (err: any) {
+      console.error('[Save Product Route Error]:', err);
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur lors de la sauvegarde du produit.' });
+    }
+  };
+
+  app.post('/api/products', handleSaveProductRoute);
+  app.put('/api/products/:id', handleSaveProductRoute);
+
   // Generic Admin Upsert / Update / Delete with Service Role Key
   app.post('/api/admin/execute', async (req, res) => {
     try {
@@ -2762,16 +2876,29 @@ async function startServer() {
         if (tableName === 'bonus_codes' && key) serverBonusCodesStore.set(key, norm);
 
         savePlatformDataToDisk(true);
-        await safeSupabaseUpsert(tableName, item);
-        return res.json({ success: true });
+        const upRes = await safeSupabaseUpsert(tableName, item);
+
+        // Invalidate master cache immediately
+        lastFetchAllData = null;
+        lastFetchAllTime = 0;
+
+        return res.json({ success: true, dbSuccess: upRes.success });
       }
 
       if (action === 'update' && idValue) {
         if (tableName === 'users' && serverUsersStore.has(idValue)) {
           serverUsersStore.set(idValue, { ...serverUsersStore.get(idValue), ...updates });
         }
+        if (tableName === 'products' && serverProductsStore.has(idValue)) {
+          serverProductsStore.set(idValue, { ...serverProductsStore.get(idValue), ...updates });
+        }
         savePlatformDataToDisk(true);
         await safeSupabaseUpdate(tableName, updates, idCol, idValue);
+
+        // Invalidate master cache immediately
+        lastFetchAllData = null;
+        lastFetchAllTime = 0;
+
         return res.json({ success: true });
       }
 
@@ -2786,6 +2913,11 @@ async function startServer() {
 
         savePlatformDataToDisk(true);
         await (supabaseAdmin.from(tableName as any) as any).delete().eq(idCol, idValue);
+
+        // Invalidate master cache immediately
+        lastFetchAllData = null;
+        lastFetchAllTime = 0;
+
         return res.json({ success: true });
       }
 
@@ -2794,6 +2926,10 @@ async function startServer() {
           await safeSupabaseUpsert(tableName, it);
         }
         savePlatformDataToDisk(true);
+
+        lastFetchAllData = null;
+        lastFetchAllTime = 0;
+
         return res.json({ success: true });
       }
 

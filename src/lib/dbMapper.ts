@@ -262,11 +262,16 @@ export function prepareForDbPayload(
     }
   }
 
-  // Preserve any extra properties not found in schema definitions
-  for (const k of Object.keys(jsObject)) {
-    const isMapped = mappings.some(m => m.jsKey === k || m.dbKeys.includes(k));
-    if (!isMapped && jsObject[k] !== undefined) {
-      payload[k] = jsObject[k];
+  // For strict tables (deposits, products, withdrawals), DO NOT attach unmapped arbitrary keys
+  const isStrictTable = ['deposits', 'withdrawals', 'products'].includes(tableName);
+  if (!isStrictTable) {
+    for (const k of Object.keys(jsObject)) {
+      const isMapped = mappings.some(m => m.jsKey === k || m.dbKeys.includes(k));
+      if (!isMapped && jsObject[k] !== undefined) {
+        if (!knownColumns || knownColumns.size === 0 || knownColumns.has(k)) {
+          payload[k] = jsObject[k];
+        }
+      }
     }
   }
 

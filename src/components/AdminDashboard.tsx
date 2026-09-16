@@ -575,9 +575,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Toast Feedback State
-  const [toast, setToast] = useState<{ status: 'success' | 'error'; text: string } | null>(null);
+  const [toast, setToast] = useState<{ status: 'success' | 'error' | 'info'; text: string } | null>(null);
 
-  const showToast = (status: 'success' | 'error', text: string) => {
+  const showToast = (status: 'success' | 'error' | 'info', text: string) => {
     setToast({ status, text });
     setTimeout(() => setToast(null), 3500);
   };
@@ -962,10 +962,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-2xl shadow-xl border flex items-center space-x-3 animate-fadeIn ${
           toast.status === 'success' 
             ? 'bg-emerald-600 border-emerald-500 text-white' 
+            : toast.status === 'info'
+            ? 'bg-blue-600 border-blue-500 text-white'
             : 'bg-red-600 border-red-500 text-white'
         }`}>
           {toast.status === 'success' ? (
             <CheckCircle className="w-5 h-5 text-white flex-shrink-0" />
+          ) : toast.status === 'info' ? (
+            <RefreshCw className="w-5 h-5 text-white flex-shrink-0 animate-spin" />
           ) : (
             <AlertCircle className="w-5 h-5 text-white flex-shrink-0" />
           )}
@@ -1564,15 +1568,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   </button>
                 </div>
 
-                <div className="relative w-full sm:w-72">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input 
-                    type="text" 
-                    placeholder="Rechercher par nom, tel, TxID..."
-                    value={depositSearch}
-                    onChange={(e) => setDepositSearch(e.target.value)}
-                    className="w-full bg-slate-900 text-xs text-white pl-9 pr-3 py-2 rounded-xl outline-none border border-slate-700/80 focus:border-red-500"
-                  />
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="relative w-full sm:w-72">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input 
+                      type="text" 
+                      placeholder="Rechercher par nom, tel, TxID..."
+                      value={depositSearch}
+                      onChange={(e) => setDepositSearch(e.target.value)}
+                      className="w-full bg-slate-900 text-xs text-white pl-9 pr-3 py-2 rounded-xl outline-none border border-slate-700/80 focus:border-red-500"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      refreshData(true);
+                      showToast('info', 'Synchronisation des dépôts avec la base de données...');
+                    }}
+                    className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center space-x-1.5"
+                    title="Actualiser les données depuis la base de données"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="hidden sm:inline">Actualiser</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1580,22 +1598,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
             {/* Deposits Table / Cards */}
             <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl overflow-hidden">
               {filteredDeposits.length === 0 ? (
-                <div className="py-12 text-center text-slate-400 text-xs font-medium">
-                  Aucun dépôt correspondant trouvé.
+                <div className="py-12 text-center text-slate-400 text-xs font-medium space-y-2">
+                  <p>Aucun dépôt enregistré dans la base de données pour ce filtre.</p>
+                  <p className="text-[11px] text-slate-500">Les dépôts réels effectués par les utilisateurs apparaissent ici automatiquement en temps réel.</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700/60">
                   {filteredDeposits.map(dep => (
                     <div key={dep.id} className="p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:bg-slate-800/50 transition-all">
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         <div className="flex items-center space-x-2">
-                          <span className="font-bold text-white text-sm">{dep.userName}</span>
-                          <span className="text-xs text-slate-400 font-mono">({dep.userPhone})</span>
+                          <span className="font-bold text-white text-sm">{dep.userName || 'Utilisateur'}</span>
+                          <span className="text-xs text-slate-400 font-mono">({dep.userPhone || 'Sans téléphone'})</span>
+                          <span className="text-[10px] bg-slate-900 text-slate-400 px-2 py-0.5 rounded font-mono">ID: {dep.userId}</span>
                         </div>
                         <div className="text-xs text-slate-300 flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <span>Moyen : <strong className="text-slate-100 font-bold">{dep.method}</strong></span>
-                          <span>TxID : <strong className="text-amber-300 font-mono font-bold">{dep.transactionId}</strong></span>
-                          <span className="text-slate-400 text-[11px]">{new Date(dep.createdAt).toLocaleString()}</span>
+                          <span>Moyen : <strong className="text-slate-100 font-bold">{dep.method || 'Non spécifié'}</strong></span>
+                          <span>Réf / TxID : <strong className="text-amber-300 font-mono font-bold">{dep.transactionId || 'Non renseignée'}</strong></span>
+                          <span className="text-slate-400 text-[11px] flex items-center gap-1">
+                            <span>📅</span>
+                            {new Date(dep.createdAt).toLocaleString('fr-FR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit'
+                            })}
+                          </span>
                         </div>
                       </div>
 
@@ -1603,6 +1633,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                         <div className="text-right">
                           <div className="font-mono font-bold text-emerald-400 text-base sm:text-lg">
                             +{(Number(dep.amount) || 0).toLocaleString('fr-FR')} FCFA
+                          </div>
+                          <div className="text-[11px] text-slate-400">
+                            Statut : <span className={
+                              dep.status === 'approved' ? 'text-emerald-400 font-bold' :
+                              dep.status === 'rejected' ? 'text-red-400 font-bold' :
+                              'text-amber-400 font-bold'
+                            }>
+                              {dep.status === 'approved' ? 'Approuvé' : dep.status === 'rejected' ? 'Refusé' : 'En attente'}
+                            </span>
                           </div>
                         </div>
 
@@ -1616,7 +1655,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                               {processingDepositIds[dep.id] ? (
                                 <span>Traitement...</span>
                               ) : (
-                                <span>Valider</span>
+                                <span>Approuver</span>
                               )}
                             </button>
                             <button 
@@ -1633,7 +1672,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                               ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
                               : 'bg-red-500/20 text-red-300 border border-red-500/30'
                           }`}>
-                            {dep.status === 'approved' ? 'Validé' : 'Refusé'}
+                            {dep.status === 'approved' ? 'Approuvé' : 'Refusé'}
                           </span>
                         )}
                       </div>
@@ -2210,14 +2249,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                       OFFICIAL_INVESTMENT_PRODUCTS.forEach(p => {
                         addOrUpdateProduct(p);
                       });
-                      showToast('success', "Les 8 packs VIP officiels ont été synchronisés et enregistrés avec succès dans la base de données !");
+                      showToast('success', "Les 9 packs VIP officiels ont été synchronisés et enregistrés avec succès dans la base de données !");
                     }}
                     type="button"
                     className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all cursor-pointer flex items-center space-x-1.5 border border-slate-600 shadow-xs"
-                    title="Restaurer et enregistrer les 8 VIP officiels"
+                    title="Restaurer et enregistrer les 9 VIP officiels"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Synchroniser VIP Officiels (8 Tiers)</span>
+                    <span>Synchroniser VIP Officiels (9 Tiers)</span>
                   </button>
 
                   <button 

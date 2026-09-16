@@ -25,10 +25,10 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
   const [formName, setFormName] = useState('');
   const [formImage, setFormImage] = useState('');
   const [formDescription, setFormDescription] = useState('');
-  const [formPrice, setFormPrice] = useState<number>(2500);
-  const [formDailyGain, setFormDailyGain] = useState<number>(168);
+  const [formPrice, setFormPrice] = useState<number>(3000);
+  const [formDailyGain, setFormDailyGain] = useState<number>(400);
   const [formDuration, setFormDuration] = useState<number>(365);
-  const [formTotalGain, setFormTotalGain] = useState<number>(61320);
+  const [formTotalGain, setFormTotalGain] = useState<number>(146000);
   const [formBadge, setFormBadge] = useState('Populaire');
   const [formOrder, setFormOrder] = useState<number>(1);
   const [formIsActive, setFormIsActive] = useState(true);
@@ -44,10 +44,10 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
     setFormName(`VIP NIVEAU ${products.length + 1} (AirPods Pro)`);
     setFormImage('https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80');
     setFormDescription('Pack officiel d\'investissement AirPods avec rendement garanti.');
-    setFormPrice(2500);
-    setFormDailyGain(168);
+    setFormPrice(3000);
+    setFormDailyGain(400);
     setFormDuration(365);
-    setFormTotalGain(61320);
+    setFormTotalGain(146000);
     setFormBadge('Nouveau');
     setFormOrder(products.length + 1);
     setFormIsActive(true);
@@ -141,12 +141,12 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
             {isResetDone ? (
               <>
                 <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-                <span>8 Plans VIP Synchronisés !</span>
+                <span>9 Plans VIP Synchronisés !</span>
               </>
             ) : (
               <>
                 <RefreshCw className="w-4 h-4 text-amber-300" />
-                <span>Restaurer les 8 VIP Officiels</span>
+                <span>Restaurer les 9 VIP Officiels</span>
               </>
             )}
           </button>

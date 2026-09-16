@@ -329,20 +329,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const syncOfficialProductData = (list: InvestmentProduct[]): InvestmentProduct[] => {
     const officialMap = new Map(OFFICIAL_INVESTMENT_PRODUCTS.map(p => [p.id, p]));
-    return list.map(item => {
+    const obsoleteIds = new Set(['vip-partenaire-bronze', 'vip-partenaire-argent']);
+    
+    // Filter out obsolete removed products
+    const cleanList = list.filter(item => !obsoleteIds.has(item.id));
+
+    const updatedList = cleanList.map(item => {
       const official = officialMap.get(item.id);
       if (official) {
         return {
+          ...official,
           ...item,
-          name: official.name,
-          image: official.image,
-          description: official.description,
+          name: item.name || official.name,
+          image: item.image || official.image,
+          description: item.description || official.description,
           badge: item.badge || official.badge,
-          color: item.color || official.color
+          color: item.color || official.color,
+          price: official.price,
+          dailyGain: official.dailyGain,
+          duration: official.duration,
+          totalGain: official.totalGain,
+          order: official.order,
+          isActive: item.isActive !== false
         };
       }
-      return item;
+      const parsedPrice = Number(item.price) || 0;
+      const parsedDaily = Number(item.dailyGain) || 0;
+      const parsedDur = Number(item.duration) || 365;
+      return {
+        ...item,
+        price: parsedPrice,
+        dailyGain: parsedDaily,
+        duration: parsedDur,
+        totalGain: Number(item.totalGain) || (parsedDaily * parsedDur),
+        isActive: item.isActive !== false
+      };
     });
+
+    // Ensure all official products are present
+    const presentIds = new Set(updatedList.map(p => p.id));
+    for (const official of OFFICIAL_INVESTMENT_PRODUCTS) {
+      if (!presentIds.has(official.id)) {
+        updatedList.push(official);
+      }
+    }
+
+    return updatedList.sort((a, b) => (a.order || 99) - (b.order || 99));
   };
 
   const [products, setProducts] = useState<InvestmentProduct[]>(() => {
@@ -2362,16 +2394,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const existing = products.find(p => p.id === prodData.id);
     let targetProduct: InvestmentProduct;
     if (existing) {
-      targetProduct = { ...existing, ...prodData } as InvestmentProduct;
-      setProducts(prev => prev.map(p => p.id === prodData.id ? targetProduct : p));
+      targetProduct = {
+        ...existing,
+        ...prodData,
+        price: Number(prodData.price) !== undefined && !isNaN(Number(prodData.price)) ? Number(prodData.price) : existing.price,
+        dailyGain: Number(prodData.dailyGain) !== undefined && !isNaN(Number(prodData.dailyGain)) ? Number(prodData.dailyGain) : existing.dailyGain,
+        duration: Number(prodData.duration) || existing.duration,
+        totalGain: Number(prodData.totalGain) || ((Number(prodData.dailyGain) || existing.dailyGain) * (Number(prodData.duration) || existing.duration)),
+        isActive: prodData.isActive !== undefined ? prodData.isActive : existing.isActive
+      } as InvestmentProduct;
+      setProducts(prev => {
+        const next = prev.map(p => p.id === prodData.id ? targetProduct : p);
+        safeSetLocalStorage('fintech_products', next);
+        return next;
+      });
     } else {
       targetProduct = {
         id: prodData.id || 'vip-' + (products.length + 1),
         name: prodData.name,
-        price: prodData.price,
-        dailyGain: prodData.dailyGain,
-        duration: prodData.duration,
-        totalGain: prodData.totalGain,
+        price: Number(prodData.price) || 0,
+        dailyGain: Number(prodData.dailyGain) || 0,
+        duration: Number(prodData.duration) || 0,
+        totalGain: Number(prodData.totalGain) || (Number(prodData.dailyGain) * Number(prodData.duration)),
         isActive: prodData.isActive ?? true,
         image: prodData.image || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80',
         description: prodData.description || 'Offre d\'investissement rentable.',
@@ -2379,9 +2423,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         badge: prodData.badge || 'Nouveau',
         color: prodData.color || 'from-amber-950/40 via-amber-900/10 to-transparent border-amber-500/20'
       };
-      setProducts(prev => [...prev, targetProduct]);
+      setProducts(prev => {
+        const next = [...prev, targetProduct];
+        safeSetLocalStorage('fintech_products', next);
+        return next;
+      });
     }
-    upsertItem('products', targetProduct);
+
+    // Persist immediately to dedicated server route, DB and trigger instant sync
+    (async () => {
+      try {
+        await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(targetProduct)
+        });
+      } catch (_) {}
+      await upsertItem('products', targetProduct);
+      fetchAndSyncAllFromSupabase(true);
+      window.dispatchEvent(new CustomEvent('fintech_products_updated', { detail: targetProduct }));
+    })();
   };
 
   const resetToOfficialProducts = async (): Promise<void> => {

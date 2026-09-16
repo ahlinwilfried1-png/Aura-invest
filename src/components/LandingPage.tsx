@@ -29,6 +29,7 @@ import {
   Leaf,
   CircleDollarSign
 } from 'lucide-react';
+import { OFFICIAL_INVESTMENT_PRODUCTS } from '../constants/products';
 
 interface LandingPageProps {
   onStart: () => void;
@@ -217,105 +218,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-sm font-semibold">
-                {[
-                  { 
-                    name: 'VIP NIVEAU 1 (AirPods 2)', 
-                    price: 2500, 
-                    daily: 168, 
-                    cycle: 'Actif', 
-                    total: 61320, 
-                    icon: <Sparkles className="w-5 h-5 text-emerald-600 fill-emerald-500/20" />,
-                    bgBadge: 'bg-emerald-800 text-white'
-                  },
-                  { 
-                    name: 'VIP NIVEAU 2 (AirPods 3)', 
-                    price: 6000, 
-                    daily: 360, 
-                    cycle: 'Actif', 
-                    total: 131400, 
-                    icon: <Crown className="w-5 h-5 text-amber-500 fill-amber-400/20" />,
-                    bgBadge: 'bg-blue-800 text-white',
-                    highlightColor: 'text-blue-900'
-                  },
-                  { 
-                    name: 'VIP NIVEAU 3 (AirPods 4 ANC)', 
-                    price: 15000, 
-                    daily: 744, 
-                    cycle: 'Actif', 
-                    total: 271560, 
-                    icon: <Gem className="w-5 h-5 text-purple-600 fill-purple-400/20" />,
-                    bgBadge: 'bg-purple-900 text-white'
-                  },
-                  { 
-                    name: 'VIP NIVEAU 4 (AirPods Pro)', 
-                    price: 32000, 
-                    daily: 1584, 
-                    cycle: 'Actif', 
-                    total: 578160, 
-                    icon: <Star className="w-5 h-5 text-slate-500 fill-slate-300" />,
-                    bgBadge: 'bg-slate-800 text-white'
-                  },
-                  { 
-                    name: 'VIP NIVEAU 6 (AirPods Pro 2 USB-C)', 
-                    price: 70000, 
-                    daily: 3840, 
-                    cycle: 'Actif', 
-                    total: 1401600, 
-                    icon: <Layers className="w-5 h-5 text-amber-600 fill-amber-400" />,
-                    bgBadge: 'bg-amber-800 text-white',
-                    highlightColor: 'text-amber-800'
-                  },
-                  { 
-                    name: 'VIP NIVEAU 7 (AirPods Pro 2 MagSafe)', 
-                    price: 250000, 
-                    daily: 13800, 
-                    cycle: 'Actif', 
-                    total: 5037000, 
-                    icon: <Gem className="w-5 h-5 text-sky-500 fill-sky-300" />,
-                    bgBadge: 'bg-sky-900 text-white',
-                    highlightColor: 'text-blue-900 font-extrabold'
-                  },
-                  { 
-                    name: 'VIP PARTENAIRE (AirPods Max Silver)', 
-                    price: 500000, 
-                    daily: 28800, 
-                    cycle: 'Actif', 
-                    total: 10512000, 
-                    icon: <Shield className="w-5 h-5 text-amber-700 fill-amber-600/30" />,
-                    bgBadge: 'bg-amber-950 text-amber-200',
-                    highlightColor: 'text-amber-900'
-                  },
-                  { 
-                    name: 'VIP PARTENAIRE (AirPods Max Space Gray)', 
-                    price: 1000000, 
-                    daily: 60000, 
-                    cycle: 'Actif', 
-                    total: 22198650, 
-                    icon: <ShieldCheck className="w-5 h-5 text-slate-600 fill-slate-300" />,
-                    bgBadge: 'bg-slate-900 text-white',
-                    highlightColor: 'text-slate-950 font-black'
-                  }
-                ].map((item, idx) => (
-                  <tr key={idx} className="hover:bg-amber-50/50 transition-colors">
+                {OFFICIAL_INVESTMENT_PRODUCTS.map((item, idx) => (
+                  <tr key={item.id || idx} className="hover:bg-amber-50/50 transition-colors">
                     <td className="py-4 px-6">
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200">
-                          {item.icon}
+                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200 text-emerald-600 font-bold text-xs">
+                          VIP {idx + 1}
                         </div>
                         <span className="font-extrabold text-slate-900 text-sm">{item.name}</span>
                       </div>
                     </td>
-                    <td className={`py-4 px-6 text-center font-bold font-mono text-base ${item.highlightColor || 'text-emerald-900'}`}>
+                    <td className="py-4 px-6 text-center font-bold font-mono text-base text-emerald-900">
                       {(Number(item.price) || 0).toLocaleString('fr-FR')}
                     </td>
-                    <td className={`py-4 px-6 text-center font-black font-mono text-base ${item.highlightColor || 'text-emerald-800'}`}>
-                      {(Number(item.daily) || 0).toLocaleString('fr-FR')}
+                    <td className="py-4 px-6 text-center font-black font-mono text-base text-emerald-700">
+                      +{(Number(item.dailyGain) || 0).toLocaleString('fr-FR')}
                     </td>
                     <td className="py-4 px-6 text-center font-bold text-slate-700">
-                      {item.cycle}
+                      {item.duration} jours
                     </td>
                     <td className="py-4 px-6 text-right font-black font-mono text-slate-950 text-base">
-                      {(Number(item.total) || 0).toLocaleString('fr-FR')}
+                      {(Number(item.totalGain) || 0).toLocaleString('fr-FR')}
                     </td>
                     <td className="py-4 px-6 text-center">
                       <button
@@ -333,41 +256,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
 
           {/* Mobile Card List with exact plans */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
-            {[
-              { name: 'VIP NIVEAU 1 (AirPods 2)', price: 2500, daily: 168, total: 61320, icon: <Sparkles className="w-5 h-5 text-emerald-600" /> },
-              { name: 'VIP NIVEAU 2 (AirPods 3)', price: 6000, daily: 360, total: 131400, icon: <Crown className="w-5 h-5 text-amber-500" /> },
-              { name: 'VIP NIVEAU 3 (AirPods 4 ANC)', price: 15000, daily: 744, total: 271560, icon: <Gem className="w-5 h-5 text-purple-600" /> },
-              { name: 'VIP NIVEAU 4 (AirPods Pro)', price: 32000, daily: 1584, total: 578160, icon: <Star className="w-5 h-5 text-slate-500" /> },
-              { name: 'VIP NIVEAU 6 (AirPods Pro 2 USB-C)', price: 70000, daily: 3840, total: 1401600, icon: <Layers className="w-5 h-5 text-amber-600" /> },
-              { name: 'VIP NIVEAU 7 (AirPods Pro 2 MagSafe)', price: 250000, daily: 13800, total: 5037000, icon: <Gem className="w-5 h-5 text-sky-500" /> },
-              { name: 'VIP PARTENAIRE (AirPods Max Silver)', price: 500000, daily: 28800, total: 10512000, icon: <Shield className="w-5 h-5 text-amber-700" /> },
-              { name: 'VIP PARTENAIRE (AirPods Max Space Gray)', price: 1000000, daily: 60000, total: 22198650, icon: <ShieldCheck className="w-5 h-5 text-slate-700" /> },
-            ].map((item, idx) => (
-              <div key={idx} className="bg-white border-2 border-emerald-900/20 rounded-2xl p-4 shadow-md space-y-3">
+            {OFFICIAL_INVESTMENT_PRODUCTS.map((item, idx) => (
+              <div key={item.id || idx} className="bg-white border-2 border-emerald-900/20 rounded-2xl p-4 shadow-md space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
-                      {item.icon}
+                    <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center font-bold text-emerald-700 text-xs">
+                      V{idx + 1}
                     </div>
                     <span className="font-black text-slate-900 text-sm">{item.name}</span>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                    VIP
+                    {item.badge || 'VIP'}
                   </span>
                 </div>
                 
                 <div className="bg-amber-50/60 rounded-xl p-3 grid grid-cols-2 gap-2 text-xs border border-amber-200/60">
                   <div>
                     <span className="text-slate-500 block text-[10px] uppercase font-bold">Prix</span>
-                    <span className="font-black font-mono text-emerald-950 text-sm">{(Number(item.price) || 0).toLocaleString('fr-FR')} FCFA</span>
+                    <span className="font-black font-mono text-emerald-950 text-sm">{(Number(item.price) || 0).toLocaleString('fr-FR')} CFA</span>
                   </div>
                   <div>
                     <span className="text-slate-500 block text-[10px] uppercase font-bold">Gain / Jour</span>
-                    <span className="font-black font-mono text-emerald-700 text-sm">+{(Number(item.daily) || 0).toLocaleString('fr-FR')} FCFA</span>
+                    <span className="font-black font-mono text-emerald-700 text-sm">+{(Number(item.dailyGain) || 0).toLocaleString('fr-FR')} CFA</span>
                   </div>
                   <div className="col-span-2 pt-1 border-t border-amber-200/60 flex justify-between items-center">
-                    <span className="text-slate-600 text-[10px] uppercase font-bold">Revenu Total :</span>
-                    <span className="font-black font-mono text-amber-900 text-sm">{(Number(item.total) || 0).toLocaleString('fr-FR')} FCFA</span>
+                    <span className="text-slate-600 text-[10px] uppercase font-bold">Revenu Total ({item.duration}j) :</span>
+                    <span className="font-black font-mono text-amber-900 text-sm">{(Number(item.totalGain) || 0).toLocaleString('fr-FR')} CFA</span>
                   </div>
                 </div>
 
