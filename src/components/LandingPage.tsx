@@ -44,9 +44,9 @@ interface LandingPageProps {
 export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, liveStats }) => {
   return (
     <div className="min-h-screen bg-[#f8faf7] text-slate-900 flex flex-col relative overflow-hidden font-sans">
-      {/* Floating WhatsApp Sticky Action */}
+      {/* Floating WhatsApp / Telegram Community Action */}
       <a 
-        href="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M" 
+        href="https://t.me/+Nml17Ji3CY8wYWQ8" 
         target="_blank" 
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 z-50 bg-[#25D366] hover:bg-[#20ba5a] text-white p-4 rounded-full shadow-2xl shadow-green-600/30 flex items-center justify-center transition-transform hover:scale-110 group cursor-pointer"
@@ -54,7 +54,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
       >
         <MessageCircle className="w-6 h-6 fill-white text-green-500" />
         <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out whitespace-nowrap text-sm font-bold pl-0 group-hover:pl-2">
-          Chaîne WhatsApp
+          Chaîne Officielle
         </span>
       </a>
 

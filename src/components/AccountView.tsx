@@ -775,13 +775,13 @@ export const AccountView: React.FC<AccountViewProps> = ({
             </div>
 
             <a
-              href="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
+              href="https://t.me/+Nml17Ji3CY8wYWQ8"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 active:scale-[0.99] text-white font-extrabold text-xs py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md border border-pink-300/40"
             >
               <MessageCircle className="w-4 h-4 fill-white text-white" />
-              <span>Rejoindre la chaîne WhatsApp</span>
+              <span>Rejoindre la chaîne officielle</span>
             </a>
           </div>
         </div>
