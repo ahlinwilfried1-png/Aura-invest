@@ -431,9 +431,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   };
 
   // Payment Gateway Config State & Handlers
-  const [paymentGatewayUrl, setPaymentGatewayUrl] = useState<string>('https://soccopay.com/pay_link.php?id=108d608fd7c949fce11acb78537955ac');
+  const [paymentGatewayUrl, setPaymentGatewayUrl] = useState<string>('https://goespay.io/pay/WMBJJ7VE');
   const [isEditingGateway, setIsEditingGateway] = useState<boolean>(false);
-  const [newGatewayUrl, setNewGatewayUrl] = useState<string>('https://soccopay.com/pay_link.php?id=108d608fd7c949fce11acb78537955ac');
+  const [newGatewayUrl, setNewGatewayUrl] = useState<string>('https://goespay.io/pay/WMBJJ7VE');
 
   useEffect(() => {
     fetch('/api/admin/config/payment-gateway')
@@ -1509,7 +1509,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                         type="url"
                         value={newGatewayUrl}
                         onChange={(e) => setNewGatewayUrl(e.target.value)}
-                        placeholder="https://soccopay.com/..."
+                        placeholder="https://goespay.io/..."
                         className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-xs font-mono text-white outline-none focus:border-amber-400"
                       />
                       <button

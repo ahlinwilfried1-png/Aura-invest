@@ -1017,7 +1017,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 const res = onRequestDeposit(depForm.amount, depForm.method, depForm.transactionId || `WP-${Date.now().toString().slice(-6)}`, null);
                 if (res.success) {
                   onShowToast('success', 'Demande de recharge enregistrée ! Redirection vers la passerelle sécurisée...');
-                  const paymentUrl = 'https://soccopay.com/pay_link.php?id=108d608fd7c949fce11acb78537955ac';
+                  const paymentUrl = 'https://goespay.io/pay/WMBJJ7VE';
                   try {
                     if (window.top && window.top !== window) {
                       window.open(paymentUrl, '_blank', 'noopener,noreferrer');

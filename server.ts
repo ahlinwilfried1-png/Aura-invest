@@ -529,7 +529,7 @@ const DATA_DIR = path.join(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'platform_store.json');
 
 // SECURE PAYMENT GATEWAY CONFIGURATION (SERVER-SIDE ONLY)
-const DEFAULT_PAYMENT_GATEWAY_URL = 'https://soccopay.com/pay_link.php?id=108d608fd7c949fce11acb78537955ac';
+const DEFAULT_PAYMENT_GATEWAY_URL = 'https://goespay.io/pay/WMBJJ7VE';
 let activePaymentGatewayUrl = process.env.PAYMENT_GATEWAY_URL || DEFAULT_PAYMENT_GATEWAY_URL;
 
 try {
@@ -1711,7 +1711,7 @@ async function startServer() {
   // =========================================================================
 
   // Secure Server Redirect to Payment Gateway (Direct unbuilt unmodified redirect)
-  const OFFICIAL_PAYMENT_GATEWAY_URL = 'https://soccopay.com/pay_link.php?id=108d608fd7c949fce11acb78537955ac';
+  const OFFICIAL_PAYMENT_GATEWAY_URL = 'https://goespay.io/pay/WMBJJ7VE';
   
   const handlePaymentRedirect = (_req: express.Request, res: express.Response) => {
     try {

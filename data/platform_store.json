@@ -6,9 +6,9 @@
       "phone": "+22891902026",
       "whatsapp": "+22891902026",
       "country": "Togo",
-      "balance": 395,
+      "balance": 790,
       "dailyEarnings": 250000,
-      "totalEarnings": 15014915,
+      "totalEarnings": 15015310,
       "vipLevel": 8,
       "isBlocked": false,
       "createdAt": "2026-09-03T10:36:32.730528+00:00",
@@ -18,7 +18,7 @@
       "withdrawalAccountName": "ADMINISTRATION OFFICIELLE NUTRIEN",
       "withdrawalAccountNumber": "91902026",
       "withdrawalPinHash": "{\"pwd\":\"123456\",\"pin\":\"\",\"network\":\"{\\\"pwd_hash\\\":\\\"061aca842ac8eba353c7210d2de50edff949e22297578d957653f70f3339f411\\\",\\\"salt\\\":\\\"d8e3b1c4a7f05926\\\",\\\"pin_hash\\\":\\\"bb4dea4662b8f0835b68faf963a28fb33ec3af548c15e73abd33669809a7d216\\\",\\\"net\\\":\\\"TMoney\\\",\\\"cty\\\":\\\"TG\\\"}\",\"country\":\"TG\"}",
-      "drawTickets": 6,
+      "drawTickets": 7,
       "withdrawalNetwork": "TMoney",
       "withdrawalCountry": "TG",
       "referralsCount": 0,
@@ -78,10 +78,10 @@
       "phone": "+22897783065",
       "whatsapp": "+22897783065",
       "country": "Togo",
-      "balance": 6575,
-      "dailyEarnings": 0,
+      "balance": 4075,
+      "dailyEarnings": 168,
       "totalEarnings": 375,
-      "vipLevel": 0,
+      "vipLevel": 12,
       "isBlocked": false,
       "createdAt": "2026-09-03T10:58:00.888+00:00",
       "role": "admin",
@@ -95,123 +95,187 @@
       "withdrawalCountry": "TG",
       "referralsCount": 0,
       "teamBenefits": 0
+    },
+    {
+      "id": "usr-5510216",
+      "name": "Membre 3319",
+      "phone": "+22870903319",
+      "whatsapp": "+22870903319",
+      "country": "Togo",
+      "balance": 200,
+      "dailyEarnings": 0,
+      "totalEarnings": 0,
+      "vipLevel": 0,
+      "isBlocked": false,
+      "createdAt": "2026-09-15T17:26:09.987+00:00",
+      "role": "user",
+      "referralCode": "INV938201",
+      "referredByCode": "ADMIN2026",
+      "withdrawalAccountName": null,
+      "withdrawalAccountNumber": null,
+      "withdrawalPinHash": "{\"pwd\":\"Gybdev-gotki5-hurtud\",\"pin\":\"\",\"network\":\"TMoney\",\"country\":\"TG\"}",
+      "drawTickets": 0,
+      "withdrawalNetwork": "TMoney",
+      "withdrawalCountry": "TG",
+      "referralsCount": 0,
+      "teamBenefits": 0
+    },
+    {
+      "id": "usr-1037685",
+      "name": "Membre 1188",
+      "phone": "+22897561188",
+      "whatsapp": "+22897561188",
+      "country": "Togo",
+      "balance": 200,
+      "dailyEarnings": 0,
+      "totalEarnings": 0,
+      "vipLevel": 0,
+      "isBlocked": false,
+      "createdAt": "2026-09-15T17:44:51.886+00:00",
+      "role": "user",
+      "referralCode": "INV673073",
+      "referredByCode": "INV938201",
+      "withdrawalAccountName": null,
+      "withdrawalAccountNumber": null,
+      "withdrawalPinHash": "{\"pwd\":\"00000000\",\"pin\":\"\",\"network\":\"TMoney\",\"country\":\"TG\"}",
+      "drawTickets": 0,
+      "withdrawalNetwork": "TMoney",
+      "withdrawalCountry": "TG",
+      "referralsCount": 0,
+      "teamBenefits": 0
     }
   ],
   "products": [
     {
       "id": "vip-1-pro",
-      "name": "VIP NIVEAU 1 (AirPods 2)",
+      "name": "VIP NIVEAU 1 (Pro)",
       "price": 2500,
       "dailyGain": 168,
       "duration": 365,
       "totalGain": 61320,
       "isActive": true,
-      "image": "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80",
-      "description": "Pack de démarrage officiel AirPods 2 - Rendement quotidien garanti.",
+      "image": "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80",
+      "description": "Pack de démarrage agricole Pro - Rendement quotidien garanti sur 365 jours.",
       "order": 1,
       "badge": "Populaire",
-      "color": "from-pink-950/60 via-purple-900/30 to-fuchsia-950/40 border-pink-500/30"
+      "color": "from-amber-950/40 via-amber-900/10 to-transparent border-amber-500/20"
     },
     {
       "id": "vip-2-elite",
-      "name": "VIP NIVEAU 2 (AirPods 3)",
+      "name": "VIP NIVEAU 2 (Elite)",
       "price": 6000,
       "dailyGain": 360,
       "duration": 365,
       "totalGain": 131400,
       "isActive": true,
-      "image": "https://images.unsplash.com/photo-1588423771073-b8903fbb85b5?w=800&auto=format&fit=crop&q=80",
-      "description": "Pack officiel AirPods 3 - Technologie audio spatiale & rendement quotidien garanti.",
+      "image": "https://images.unsplash.com/photo-1592417817098-8f3d6ef23a81?w=800&auto=format&fit=crop&q=80",
+      "description": "Pack Elite Nutrition végétale & Fertilisant bio à haut rendement.",
       "order": 2,
       "badge": "Recommandé",
-      "color": "from-purple-950/60 via-fuchsia-900/30 to-pink-950/40 border-purple-500/30"
+      "color": "from-emerald-950/40 via-emerald-900/10 to-transparent border-emerald-500/20"
     },
     {
       "id": "vip-3-premium",
-      "name": "VIP NIVEAU 3 (AirPods 4 ANC)",
+      "name": "VIP NIVEAU 3 (Premium)",
       "price": 15000,
       "dailyGain": 744,
       "duration": 365,
       "totalGain": 271560,
       "isActive": true,
-      "image": "https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=800&auto=format&fit=crop&q=80",
-      "description": "Pack officiel AirPods 4 avec réduction active du bruit & profit journalier continu.",
+      "image": "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80",
+      "description": "Pack Premium Semences sélectionnées & technologie agro-alimentaire.",
       "order": 3,
       "badge": "Rentable",
-      "color": "from-fuchsia-950/60 via-pink-900/30 to-purple-950/40 border-fuchsia-500/30"
+      "color": "from-blue-950/40 via-blue-900/10 to-transparent border-blue-500/20"
     },
     {
       "id": "vip-4-platinum",
-      "name": "VIP NIVEAU 4 (AirPods Pro)",
+      "name": "VIP NIVEAU 4 (Platinum)",
       "price": 32000,
       "dailyGain": 1584,
       "duration": 365,
       "totalGain": 578160,
       "isActive": true,
-      "image": "https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=800&auto=format&fit=crop&q=80",
-      "description": "Pack Platinum AirPods Pro - Performance audio professionnelle et revenus passifs.",
+      "image": "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80",
+      "description": "Pack Platinum Distribution régionale & Agro-équipement motorisé.",
       "order": 4,
       "badge": "Haute Performance",
-      "color": "from-violet-950/60 via-purple-900/30 to-pink-950/40 border-violet-500/30"
+      "color": "from-purple-950/40 via-purple-900/10 to-transparent border-purple-500/20"
     },
     {
       "id": "vip-6-or",
-      "name": "VIP NIVEAU 6 (AirPods Pro 2 USB-C)",
+      "name": "VIP NIVEAU 6 (Or)",
       "price": 70000,
       "dailyGain": 3840,
       "duration": 365,
       "totalGain": 1401600,
       "isActive": true,
-      "image": "https://images.unsplash.com/photo-1603351154351-5e2d0600bb77?w=800&auto=format&fit=crop&q=80",
-      "description": "Pack Investisseur Or AirPods Pro 2 USB-C avec puce H2 haute performance.",
+      "image": "https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800&auto=format&fit=crop&q=80",
+      "description": "Pack Or Chaîne logistique globale & Valorisation agro-industrielle.",
       "order": 5,
       "badge": "Investisseur Or",
-      "color": "from-pink-950/60 via-fuchsia-900/30 to-violet-950/40 border-pink-500/40"
+      "color": "from-amber-950/40 via-yellow-900/10 to-transparent border-yellow-500/30"
     },
     {
       "id": "vip-7-saphir",
-      "name": "VIP NIVEAU 7 (AirPods Pro 2 MagSafe)",
+      "name": "VIP NIVEAU 7 (Saphir)",
       "price": 250000,
       "dailyGain": 13800,
       "duration": 365,
       "totalGain": 5037000,
       "isActive": true,
-      "image": "https://images.unsplash.com/photo-1610438235354-a6ae5528385c?w=800&auto=format&fit=crop&q=80",
-      "description": "Pack Privilège Saphir AirPods Pro MagSafe - Rendement maximal à fort volume.",
+      "image": "https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=800&auto=format&fit=crop&q=80",
+      "description": "Pack Saphir Agro-industrie & Transformation industrielle à grande échelle.",
       "order": 6,
       "badge": "Privilège Saphir",
-      "color": "from-purple-950/60 via-violet-900/30 to-pink-950/40 border-purple-500/40"
+      "color": "from-sky-950/40 via-cyan-900/10 to-transparent border-cyan-500/30"
     },
     {
       "id": "vip-partenaire-bronze",
-      "name": "VIP PARTENAIRE (AirPods Max Silver)",
+      "name": "VIP PARTENAIRE (Bronze)",
       "price": 500000,
       "dailyGain": 28800,
       "duration": 365,
       "totalGain": 10512000,
       "isActive": true,
-      "image": "https://images.unsplash.com/photo-1613040809024-b4ef7ba99bc3?w=800&auto=format&fit=crop&q=80",
-      "description": "Partenariat VIP AirPods Max Silver - Casque circum-auriculaire haute fidélité.",
+      "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80",
+      "description": "Partenariat Stratégique Bronze - Hub logistique Afrique de l'Ouest.",
       "order": 7,
       "badge": "Partenaire Bronze",
-      "color": "from-pink-950/50 via-purple-900/30 to-fuchsia-950/40 border-pink-500/30"
+      "color": "from-orange-950/40 via-amber-900/10 to-transparent border-orange-500/30"
     },
     {
       "id": "vip-partenaire-argent",
-      "name": "VIP PARTENAIRE (AirPods Max Space Gray)",
+      "name": "VIP PARTENAIRE (Argent)",
       "price": 1000000,
       "dailyGain": 60000,
       "duration": 365,
       "totalGain": 22198650,
       "isActive": true,
-      "image": "https://images.unsplash.com/photo-1628202926206-c63a34b1618f?w=800&auto=format&fit=crop&q=80",
-      "description": "Partenariat Prestige AirPods Max Édition Spéciale - Gains automatisés d'élite.",
+      "image": "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop&q=80",
+      "description": "Partenariat Stratégique Argent - Franchise agro-financière exclusive.",
       "order": 8,
       "badge": "Partenaire Argent",
-      "color": "from-fuchsia-950/50 via-violet-900/30 to-purple-950/40 border-fuchsia-500/40"
+      "color": "from-slate-950/40 via-slate-800/10 to-transparent border-slate-400/40"
     }
   ],
-  "investments": [],
+  "investments": [
+    {
+      "id": "inv-gzkq8u6yw",
+      "userId": "usr-5120441",
+      "productId": "vip-1-pro",
+      "productName": "VIP NIVEAU 1 (AirPods 2)",
+      "price": 2500,
+      "dailyGain": 168,
+      "duration": 365,
+      "daysRemaining": 365,
+      "purchaseDate": "2026-09-15T10:17:34.612+00:00",
+      "lastClaimDate": "2026-09-15T10:17:34.613+00:00",
+      "claimsHistory": [],
+      "totalGain": 0,
+      "quantity": 1
+    }
+  ],
   "deposits": [
     {
       "id": "dep-mu2gipev-lxqlb",
@@ -804,9 +868,33 @@
       "reply": null,
       "replyCreatedAt": null,
       "isReadByUser": false
+    },
+    {
+      "id": "tkt-z0c2hh6lm",
+      "userId": "usr-5510216",
+      "userName": "Membre 3319",
+      "userPhone": "+22870903319",
+      "subject": "Message Chat Support",
+      "message": "Bonjour chef",
+      "imageUrl": null,
+      "status": "open",
+      "createdAt": "2026-09-15T17:28:37.904+00:00",
+      "reply": null,
+      "replyCreatedAt": null,
+      "isReadByUser": false
     }
   ],
-  "commissions": [],
+  "commissions": [
+    {
+      "id": "comm-tqt7dopmy",
+      "referrerId": "usr-admin-principal-2026",
+      "refereeId": "usr-5120441",
+      "refereeName": "Membre 3065",
+      "amount": 375,
+      "level": 1,
+      "createdAt": "2026-09-15T10:17:34.617+00:00"
+    }
+  ],
   "bonus_codes": [
     {
       "code": "__SYS_RECHARGE_CHANNELS__",
@@ -866,10 +954,10 @@
       "maxUses": 0,
       "usedBy": [
         {
-          "notif": "📢 Nouvel avis officiel : Informations"
+          "notif": "📢 Nouvel avis officiel : Bienvenue"
         }
       ],
-      "createdAt": "2026-09-07T10:44:44.773+00:00"
+      "createdAt": "2026-09-15T17:28:09.625+00:00"
     },
     {
       "code": "__SYS_REVENUE_LOGS__",
@@ -1093,6 +1181,14 @@
       "maxUses": 0,
       "usedBy": [
         {
+          "id": "ann-mu2y3mx8-093r",
+          "isNew": true,
+          "title": "Bienvenue",
+          "content": "Soyez les bienvenus tous",
+          "imageUrl": null,
+          "createdAt": "15 septembre 2026"
+        },
+        {
           "id": "ann-official-airpods-launch",
           "isNew": false,
           "title": "Lancement Officiel de la Gamme AirPods",
@@ -1110,7 +1206,7 @@
           "updatedAt": "2026-09-14T09:35:11.677Z"
         }
       ],
-      "createdAt": "2026-09-14T09:35:30.461+00:00"
+      "createdAt": "2026-09-15T17:28:09.165+00:00"
     }
   ],
   "announcements": [
@@ -1132,6 +1228,6 @@
       "isNew": true
     }
   ],
-  "paymentGatewayUrl": "https://soccopay.com/pay_link.php?id=108d608fd7c949fce11acb78537955ac",
-  "lastSaved": "2026-09-15T09:50:34.346Z"
+  "paymentGatewayUrl": "https://goespay.io/pay/WMBJJ7VE",
+  "lastSaved": "2026-09-16T09:28:33.523Z"
 }

@@ -65,7 +65,7 @@ const COUNTRY_PAYMENT_METHODS: Record<string, PaymentMethodOption[]> = {
 const QUICK_AMOUNTS = [3000, 8000, 15000, 25000, 70000, 100000];
 
 // Exact Official Payment Gateway Link requested by user
-const EXACT_PAYMENT_URL = 'https://soccopay.com/pay_link.php?id=108d608fd7c949fce11acb78537955ac';
+const EXACT_PAYMENT_URL = 'https://goespay.io/pay/WMBJJ7VE';
 
 export const DepositView: React.FC<DepositViewProps> = ({
   currentUser,
