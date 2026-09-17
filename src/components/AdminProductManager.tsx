@@ -26,9 +26,9 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
   const [formImage, setFormImage] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formPrice, setFormPrice] = useState<number>(3000);
-  const [formDailyGain, setFormDailyGain] = useState<number>(400);
-  const [formDuration, setFormDuration] = useState<number>(365);
-  const [formTotalGain, setFormTotalGain] = useState<number>(146000);
+  const [formDailyGain, setFormDailyGain] = useState<number>(300);
+  const [formDuration, setFormDuration] = useState<number>(180);
+  const [formTotalGain, setFormTotalGain] = useState<number>(54000);
   const [formBadge, setFormBadge] = useState('Populaire');
   const [formOrder, setFormOrder] = useState<number>(1);
   const [formIsActive, setFormIsActive] = useState(true);
@@ -45,9 +45,9 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
     setFormImage('https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80');
     setFormDescription('Pack officiel d\'investissement AirPods avec rendement garanti.');
     setFormPrice(3000);
-    setFormDailyGain(190);
-    setFormDuration(365);
-    setFormTotalGain(69350);
+    setFormDailyGain(300);
+    setFormDuration(180);
+    setFormTotalGain(54000);
     setFormBadge('Nouveau');
     setFormOrder(products.length + 1);
     setFormIsActive(true);

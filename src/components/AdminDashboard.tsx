@@ -2257,19 +2257,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 <div className="flex items-center space-x-2 shrink-0">
                   <button 
                     onClick={() => {
-                      deleteProduct('vip-8-gray');
-                      deleteProduct('vip-9-gold');
                       OFFICIAL_INVESTMENT_PRODUCTS.forEach(p => {
                         addOrUpdateProduct(p);
                       });
-                      showToast('success', "Les 7 packs VIP officiels ont été synchronisés et enregistrés avec succès dans la base de données !");
+                      showToast('success', "Les 9 packs VIP officiels ont été synchronisés et enregistrés avec succès dans la base de données !");
                     }}
                     type="button"
                     className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all cursor-pointer flex items-center space-x-1.5 border border-slate-600 shadow-xs"
-                    title="Restaurer et enregistrer les 7 VIP officiels"
+                    title="Restaurer et enregistrer les 9 VIP officiels"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Synchroniser VIP Officiels (7 Tiers)</span>
+                    <span>Synchroniser VIP Officiels (9 Tiers)</span>
                   </button>
 
                   <button 

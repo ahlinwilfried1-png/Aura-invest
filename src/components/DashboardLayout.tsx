@@ -294,8 +294,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const handleWithdrawalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!wthAmount || wthAmount < 1000) {
-      showToast('err', "Le montant minimum de retrait est de 1 000 FCFA.");
+    if (!wthAmount || wthAmount < 1500) {
+      showToast('err', "Le montant minimum de retrait est de 1 500 FCFA.");
       return;
     }
     if (wthAmount > currentUser.balance) {

@@ -329,7 +329,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const syncOfficialProductData = (list: InvestmentProduct[]): InvestmentProduct[] => {
     const officialMap = new Map(OFFICIAL_INVESTMENT_PRODUCTS.map(p => [p.id, p]));
-    const obsoleteIds = new Set(['vip-partenaire-bronze', 'vip-partenaire-argent', 'vip-8-gray', 'vip-9-gold']);
+    const obsoleteIds = new Set(['vip-partenaire-bronze', 'vip-partenaire-argent']);
     
     // Filter out obsolete removed products
     const cleanList = list.filter(item => !obsoleteIds.has(item.id));
@@ -355,7 +355,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       const parsedPrice = Number(item.price) || 0;
       const parsedDaily = Number(item.dailyGain) || 0;
-      const parsedDur = Number(item.duration) || 365;
+      const parsedDur = Number(item.duration) || 180;
       return {
         ...item,
         price: parsedPrice,
@@ -1791,7 +1791,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: "Impossible d'effectuer un retrait : vous devez posséder au moins un produit actif." };
     }
 
-    if (amount < 1000) return { success: false, error: "Le montant minimum de retrait est de 1 000 XAF." };
+    if (amount < 1500) return { success: false, error: "Le montant minimum de retrait est de 1 500 XOF." };
     if (!accountNumber.trim()) return { success: false, error: "Le numéro de compte de réception est requis." };
     
     const dbUser = users.find(u => u.id === currentUser.id) || currentUser;

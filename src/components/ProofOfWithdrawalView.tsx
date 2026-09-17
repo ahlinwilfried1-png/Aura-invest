@@ -294,11 +294,11 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
             <form onSubmit={handleSubmit} className="space-y-3.5 text-xs sm:text-sm">
               <div>
                 <label className="block font-bold text-pink-200 mb-1">
-                  Montant reçu (XAF)
+                  Montant reçu (XOF)
                 </label>
                 <input
                   type="number"
-                  min={1000}
+                  min={1500}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
                   placeholder="Ex: 25000"

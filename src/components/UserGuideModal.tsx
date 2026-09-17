@@ -74,7 +74,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             </div>
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">💸</span>
-              <span><strong>Retrait minimum :</strong> 1 000 FCFA</span>
+              <span><strong>Retrait minimum :</strong> 1 500 XOF (1 500 FCFA)</span>
             </div>
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">⚙️</span>

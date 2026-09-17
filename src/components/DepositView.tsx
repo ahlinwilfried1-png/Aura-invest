@@ -26,8 +26,8 @@ interface DepositViewProps {
   onShowToast: (status: 'success' | 'err', text: string) => void;
 }
 
-// Montants de recharge rapides recommandés (alignés sur les packs VIP)
-const QUICK_AMOUNTS = [3000, 5000, 10000, 20000, 70000, 100000, 250000];
+// Montants de recharge rapides recommandés (alignés sur les packs VIP Mango)
+const QUICK_AMOUNTS = [3000, 8000, 15000, 30000, 50000, 75000, 120000, 250000, 400000];
 
 export const DepositView: React.FC<DepositViewProps> = ({
   currentUser,
