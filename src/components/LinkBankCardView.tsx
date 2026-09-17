@@ -19,16 +19,10 @@ export const LinkBankCardView: React.FC<LinkBankCardViewProps> = ({
 
   const isAlreadyBound = Boolean(currentUser.withdrawalAccountName && currentUser.withdrawalAccountNumber);
 
-  const defaultCountryCode = currentUser.withdrawalCountry || (
-    currentUser.country?.toLowerCase().includes('cameroun') || 
-    currentUser.country?.toLowerCase().includes('cm') ||
-    currentUser.phone?.startsWith('+237')
-      ? 'CM' 
-      : 'TG'
-  );
-  const [countryCode, setCountryCode] = useState<string>(defaultCountryCode);
+  const defaultCountryCode = 'TG';
+  const [countryCode, setCountryCode] = useState<string>('TG');
   
-  const currentCountry = ALLOWED_COUNTRIES.find(c => c.code === countryCode) || ALLOWED_COUNTRIES[0];
+  const currentCountry = ALLOWED_COUNTRIES[0];
   
   // Networks & Card options
   const PAYMENT_NETWORKS = [
@@ -268,25 +262,9 @@ export const LinkBankCardView: React.FC<LinkBankCardViewProps> = ({
                   <Globe className="w-4 h-4 text-pink-400" />
                   <span>Pays de la Banque / Compte</span>
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {ALLOWED_COUNTRIES.map((c) => {
-                    const isSel = countryCode === c.code;
-                    return (
-                      <button
-                        key={c.code}
-                        type="button"
-                        onClick={() => handleCountryChange(c.code)}
-                        className={`flex items-center space-x-2 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                          isSel
-                            ? 'bg-gradient-to-r from-pink-500 to-purple-600 border-pink-400 text-white font-black shadow-md scale-[1.02]'
-                            : 'bg-[#120422] border-pink-500/20 text-pink-200 hover:bg-[#1f0933]'
-                        }`}
-                      >
-                        <span className="text-base">{c.flag}</span>
-                        <span className="truncate">{c.name}</span>
-                      </button>
-                    );
-                  })}
+                <div className="flex items-center space-x-2.5 px-4 py-3 rounded-xl bg-gradient-to-r from-pink-500/20 to-purple-600/20 border border-pink-500/30 text-white font-bold text-xs sm:text-sm">
+                  <span className="text-xl">🇹🇬</span>
+                  <span>Togo (+228) — Mobile Money & Réseau Bancaire</span>
                 </div>
               </div>
 

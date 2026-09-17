@@ -45,9 +45,9 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
     setFormImage('https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80');
     setFormDescription('Pack officiel d\'investissement AirPods avec rendement garanti.');
     setFormPrice(3000);
-    setFormDailyGain(400);
+    setFormDailyGain(190);
     setFormDuration(365);
-    setFormTotalGain(146000);
+    setFormTotalGain(69350);
     setFormBadge('Nouveau');
     setFormOrder(products.length + 1);
     setFormIsActive(true);

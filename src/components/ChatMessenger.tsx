@@ -220,7 +220,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
 
               <li className="flex items-start space-x-2.5">
                 <span className="text-base leading-none">💰</span>
-                <span>Commissions de parrainage jusqu'à <strong className="text-pink-300 font-black">20 %</strong></span>
+                <span>Commissions de parrainage jusqu'à <strong className="text-pink-300 font-black">10 %</strong></span>
               </li>
 
               <li className="flex items-start space-x-2.5">

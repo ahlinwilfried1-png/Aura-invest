@@ -249,14 +249,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     }
   };
 
-  // Navigation tab state (sans 'recharge_channels')
+  // Navigation tab state (avec 'channels')
   const [activeAdminTab, setActiveAdminTab] = useState<
-    'dashboard' | 'deposits' | 'withdrawals' | 'proofs' | 'users' | 'products' | 'paid_products' | 'support' | 'announcements' | 'wheel' | 'faq'
+    'dashboard' | 'deposits' | 'withdrawals' | 'proofs' | 'users' | 'products' | 'paid_products' | 'support' | 'announcements' | 'wheel' | 'faq' | 'channels'
   >('dashboard');
 
-  // Recharge Channels Admin State
-  const [channelCountryCode, setChannelCountryCode] = useState<'TG' | 'CM'>('CM');
-  const [adminChannelCountryFilter, setAdminChannelCountryFilter] = useState<'ALL' | 'TG' | 'CM'>('ALL');
+  // Recharge Channels Admin State (Exclusif Togo 🇹🇬)
+  const [channelCountryCode, setChannelCountryCode] = useState<'TG'>('TG');
+  const [adminChannelCountryFilter, setAdminChannelCountryFilter] = useState<'ALL' | 'TG'>('ALL');
   const [channelName, setChannelName] = useState('');
   const [channelNumber, setChannelNumber] = useState('');
   const [channelHolder, setChannelHolder] = useState('');
@@ -283,14 +283,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
       if (editingChannelId) {
         const res = await updateRechargeChannel(editingChannelId, {
           name: channelName.trim(),
-          countryCode: channelCountryCode,
+          countryCode: 'TG',
           accountNumber: channelNumber.trim(),
           accountHolder: channelHolder.trim(),
           instructions: channelInstructions.trim(),
           isActive: channelIsActive
         });
         if (res.success) {
-          showToast('success', `Canal (${channelCountryCode === 'CM' ? '🇨🇲 Cameroun' : '🇹🇬 Togo'}) mis à jour et synchronisé avec succès !`);
+          showToast('success', `Canal "${channelName.trim()}" (Togo 🇹🇬) mis à jour et synchronisé avec succès !`);
           setEditingChannelId(null);
           setChannelName('');
           setChannelNumber('');
@@ -303,14 +303,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
       } else {
         const res = await addRechargeChannel({
           name: channelName.trim(),
-          countryCode: channelCountryCode,
+          countryCode: 'TG',
           accountNumber: channelNumber.trim(),
           accountHolder: channelHolder.trim(),
           instructions: channelInstructions.trim(),
           isActive: channelIsActive
         });
         if (res.success) {
-          showToast('success', `Nouveau canal (${channelCountryCode === 'CM' ? '🇨🇲 Cameroun' : '🇹🇬 Togo'}) ajouté et enregistré en base de données !`);
+          showToast('success', `Nouveau canal "${channelName.trim()}" (Togo 🇹🇬) ajouté et enregistré en base de données !`);
           setChannelName('');
           setChannelNumber('');
           setChannelHolder('');
@@ -328,19 +328,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   };
 
   const handleEditChannel = (channel: RechargeChannel) => {
-    const cCode = (channel.countryCode === 'CM' || channel.countryCode === 'TG') 
-      ? channel.countryCode 
-      : (channel.accountNumber.startsWith('+237') || channel.name.toLowerCase().includes('cameroun') || channel.name.toLowerCase().includes('orange') ? 'CM' : 'TG');
-    
     setEditingChannelId(channel.id);
-    setChannelCountryCode(cCode);
+    setChannelCountryCode('TG');
     setChannelName(channel.name);
     setChannelNumber(channel.accountNumber);
     setChannelHolder(channel.accountHolder || '');
     setChannelInstructions(channel.instructions || '');
     setChannelIsActive(channel.isActive);
 
-    showToast('success', `Modification de "${channel.name}" (${cCode === 'CM' ? '🇨🇲 Cameroun' : '🇹🇬 Togo'}) - Formulaire rempli.`);
+    showToast('success', `Modification de "${channel.name}" (Togo 🇹🇬) - Formulaire rempli.`);
 
     setTimeout(() => {
       const el = document.getElementById('channel-form-container');
@@ -1094,6 +1090,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   {pendingDepositsCount}
                 </span>
               )}
+            </button>
+
+            <button
+              onClick={() => setActiveAdminTab('channels')}
+              className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap relative ${
+                activeAdminTab === 'channels'
+                  ? 'bg-red-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>Canaux</span>
+              <span className="text-[10px] opacity-80 bg-slate-200 text-slate-800 px-1.5 py-0.2 rounded ml-1 font-mono">
+                {rechargeChannels.length}
+              </span>
             </button>
 
             <button
@@ -2246,17 +2257,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 <div className="flex items-center space-x-2 shrink-0">
                   <button 
                     onClick={() => {
+                      deleteProduct('vip-8-gray');
+                      deleteProduct('vip-9-gold');
                       OFFICIAL_INVESTMENT_PRODUCTS.forEach(p => {
                         addOrUpdateProduct(p);
                       });
-                      showToast('success', "Les 9 packs VIP officiels ont été synchronisés et enregistrés avec succès dans la base de données !");
+                      showToast('success', "Les 7 packs VIP officiels ont été synchronisés et enregistrés avec succès dans la base de données !");
                     }}
                     type="button"
                     className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all cursor-pointer flex items-center space-x-1.5 border border-slate-600 shadow-xs"
-                    title="Restaurer et enregistrer les 9 VIP officiels"
+                    title="Restaurer et enregistrer les 7 VIP officiels"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Synchroniser VIP Officiels (9 Tiers)</span>
+                    <span>Synchroniser VIP Officiels (7 Tiers)</span>
                   </button>
 
                   <button 
@@ -3665,6 +3678,342 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
           </div>
         )}
 
+        {/* TAB: RECHARGE CHANNELS MANAGEMENT */}
+        {activeAdminTab === 'channels' && (
+          <div className="space-y-6 animate-fadeIn">
+            
+            {/* Header info banner */}
+            <div className="bg-gradient-to-r from-red-950/40 via-slate-900 to-slate-900 border border-red-500/30 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center border border-red-500/30">
+                    <CreditCard className="w-4 h-4" />
+                  </div>
+                  <h2 className="text-lg font-black text-white tracking-tight">
+                    Gestion des Canaux de Dépôt (Togo 🇹🇬)
+                  </h2>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Sync BDD Automatique
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                  Configurez les numéros de dépôt (TMoney, Moov Money...) utilisés par la plateforme. Les canaux activés s'affichent automatiquement sur la page de recharge des utilisateurs.
+                </p>
+              </div>
+
+              <div className="flex items-center space-x-2 shrink-0">
+                <div className="bg-slate-800/90 border border-slate-700/80 rounded-xl px-3.5 py-2 text-center">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Canaux</span>
+                  <span className="text-base font-black text-white font-mono">{rechargeChannels.length}</span>
+                </div>
+                <div className="bg-slate-800/90 border border-slate-700/80 rounded-xl px-3.5 py-2 text-center">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Canaux Actifs</span>
+                  <span className="text-base font-black text-emerald-400 font-mono">
+                    {rechargeChannels.filter(c => c.isActive !== false).length}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Form Card: Create / Edit Channel */}
+            <div id="channel-form-container" className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4 shadow-xl">
+              <div className="flex justify-between items-center pb-3 border-b border-slate-700/60">
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                    <CreditCard className="w-4 h-4 text-red-400" />
+                    <span>{editingChannelId ? 'Modifier le Canal de Dépôt' : 'Ajouter un Nouveau Canal de Dépôt'}</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {editingChannelId 
+                      ? 'Modifiez les informations du canal. Les modifications seront enregistrées en base et appliquées immédiatement.'
+                      : 'Renseignez les coordonnées de paiement à présenter aux utilisateurs lors de leurs recharges.'}
+                  </p>
+                </div>
+                {editingChannelId && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditChannel}
+                    className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                  >
+                    Annuler l'édition
+                  </button>
+                )}
+              </div>
+
+              <form onSubmit={handleSaveChannel} className="space-y-4 text-xs font-medium">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Pays (Strictement Togo 🇹🇬) */}
+                  <div>
+                    <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">
+                      Pays & Territoire
+                    </label>
+                    <div className="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl flex items-center space-x-2 text-white font-bold">
+                      <span className="text-base">🇹🇬</span>
+                      <span className="text-xs">Togo (+228)</span>
+                      <span className="ml-auto text-[10px] bg-red-500/20 text-red-300 px-2 py-0.5 rounded font-mono">Exclusif</span>
+                    </div>
+                  </div>
+
+                  {/* Nom de l'opérateur / canal */}
+                  <div>
+                    <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">
+                      Nom du Canal / Opérateur *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: TMoney (Togocom) ou Moov Money (Flooz)"
+                      value={channelName}
+                      onChange={(e) => setChannelName(e.target.value)}
+                      className="w-full bg-slate-900 text-white font-bold p-2.5 rounded-xl outline-none border border-slate-700 focus:border-red-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Numéro de compte / téléphone */}
+                  <div>
+                    <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">
+                      Numéro de dépôt / compte *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: +228 90 12 34 56"
+                      value={channelNumber}
+                      onChange={(e) => setChannelNumber(e.target.value)}
+                      className="w-full bg-slate-900 text-white font-mono font-bold p-2.5 rounded-xl outline-none border border-slate-700 focus:border-red-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Titulaire du compte */}
+                  <div>
+                    <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">
+                      Nom du titulaire du compte
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Service Recharge AirPods Togo"
+                      value={channelHolder}
+                      onChange={(e) => setChannelHolder(e.target.value)}
+                      className="w-full bg-slate-900 text-white font-bold p-2.5 rounded-xl outline-none border border-slate-700 focus:border-red-500"
+                    />
+                  </div>
+
+                  {/* Statut actif */}
+                  <div className="flex items-center pt-5">
+                    <label className="flex items-center space-x-3 cursor-pointer select-none bg-slate-900/60 border border-slate-700/80 p-2.5 rounded-xl w-full">
+                      <input
+                        type="checkbox"
+                        checked={channelIsActive}
+                        onChange={(e) => setChannelIsActive(e.target.checked)}
+                        className="w-4 h-4 rounded text-red-600 focus:ring-red-500 border-slate-700 bg-slate-800"
+                      />
+                      <span className="text-xs font-bold text-white">
+                        Activer ce canal immédiatement pour les dépôts utilisateurs
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Instructions de paiement */}
+                <div>
+                  <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">
+                    Instructions détaillées pour le dépôt (affichées à l'utilisateur)
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Ex: Composez le *145# pour effectuer le transfert vers ce numéro TMoney, puis saisissez le numéro de transaction SMS reçu..."
+                    value={channelInstructions}
+                    onChange={(e) => setChannelInstructions(e.target.value)}
+                    className="w-full bg-slate-900 text-white p-3 rounded-xl outline-none border border-slate-700 focus:border-red-500 leading-relaxed font-normal"
+                  />
+                </div>
+
+                {/* Boutons d'action */}
+                <div className="flex items-center justify-end space-x-3 pt-2">
+                  {editingChannelId && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEditChannel}
+                      className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold rounded-xl transition-all cursor-pointer"
+                    >
+                      Annuler
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={isProcessingChannel}
+                    className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow-lg transition-all cursor-pointer flex items-center space-x-2 disabled:opacity-50"
+                  >
+                    {isProcessingChannel ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Enregistrement...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4" />
+                        <span>{editingChannelId ? 'Mettre à jour le canal' : 'Enregistrer le canal'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* List of Configured Channels */}
+            <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4 shadow-xl">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 pb-3 border-b border-slate-700/60">
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                    <span>Canaux de dépôt configurés</span>
+                    <span className="text-xs bg-red-500/20 text-red-300 font-mono px-2 py-0.5 rounded-full border border-red-500/30">
+                      {rechargeChannels.length} au total
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Ces canaux sont synchronisés en direct avec la page de dépôt des utilisateurs au Togo 🇹🇬.
+                  </p>
+                </div>
+
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Rechercher un canal..."
+                    value={channelSearch}
+                    onChange={(e) => setChannelSearch(e.target.value)}
+                    className="w-full bg-slate-900 text-xs text-white pl-9 pr-3 py-2 rounded-xl border border-slate-700 outline-none focus:border-red-500"
+                  />
+                </div>
+              </div>
+
+              {rechargeChannels.length === 0 ? (
+                <div className="text-center py-12 text-slate-400 bg-slate-900/50 rounded-2xl border border-dashed border-slate-800 space-y-2">
+                  <CreditCard className="w-10 h-10 mx-auto text-slate-600 stroke-1" />
+                  <p className="text-sm font-bold text-white">Aucun canal configuré</p>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    Ajoutez votre premier canal de recharge (TMoney ou Moov Money) ci-dessus pour permettre aux utilisateurs de recharger leur compte.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {rechargeChannels
+                    .filter(c => 
+                      c.name.toLowerCase().includes(channelSearch.toLowerCase()) ||
+                      c.accountNumber.toLowerCase().includes(channelSearch.toLowerCase()) ||
+                      (c.accountHolder || '').toLowerCase().includes(channelSearch.toLowerCase()) ||
+                      (c.instructions || '').toLowerCase().includes(channelSearch.toLowerCase())
+                    )
+                    .map((channel) => (
+                      <div
+                        key={channel.id}
+                        className={`bg-slate-900 border rounded-2xl p-4.5 space-y-3 transition-all ${
+                          channel.isActive !== false
+                            ? 'border-slate-700/80 shadow-md hover:border-slate-600'
+                            : 'border-slate-800 opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-base leading-none">🇹🇬</span>
+                              <h4 className="text-sm font-black text-white">
+                                {channel.name}
+                              </h4>
+                              {channel.isActive !== false ? (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                  Actif
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-700 text-slate-400 border border-slate-600">
+                                  Inactif
+                                </span>
+                              )}
+                            </div>
+                            {channel.accountHolder && (
+                              <p className="text-xs text-slate-400 font-medium">
+                                Titulaire : <span className="text-slate-200 font-bold">{channel.accountHolder}</span>
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Statut Toggle rapide */}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleChannelStatus(channel.id, channel.isActive, channel.name)}
+                            title={channel.isActive ? "Désactiver ce canal" : "Activer ce canal"}
+                            className={`p-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                              channel.isActive !== false
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                                : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-white'
+                            }`}
+                          >
+                            <Power className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Numéro avec bouton copier */}
+                        <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-2.5 flex items-center justify-between">
+                          <div>
+                            <span className="text-[9px] uppercase font-bold text-slate-400 block font-mono">
+                              Numéro de recharge
+                            </span>
+                            <span className="text-sm font-black text-white font-mono">
+                              {channel.accountNumber}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(channel.accountNumber);
+                              setCopiedChannelId(channel.id);
+                              setTimeout(() => setCopiedChannelId(null), 2000);
+                              showToast('success', `Numéro ${channel.accountNumber} copié !`);
+                            }}
+                            className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                          >
+                            <Copy className="w-3 h-3" />
+                            <span>{copiedChannelId === channel.id ? 'Copié !' : 'Copier'}</span>
+                          </button>
+                        </div>
+
+                        {/* Instructions */}
+                        {channel.instructions && (
+                          <div className="bg-slate-950/40 rounded-xl p-2.5 border border-slate-800 text-xs text-slate-300 font-normal leading-relaxed whitespace-pre-line">
+                            <span className="text-[9px] uppercase font-bold text-slate-500 block mb-0.5">Instructions :</span>
+                            {channel.instructions}
+                          </div>
+                        )}
+
+                        {/* Actions : Éditer / Supprimer */}
+                        <div className="flex items-center justify-end space-x-2 pt-1 border-t border-slate-800">
+                          <button
+                            type="button"
+                            onClick={() => handleEditChannel(channel)}
+                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-600 transition-all cursor-pointer flex items-center space-x-1.5"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Modifier</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteChannel(channel)}
+                            className="bg-rose-950/60 hover:bg-rose-900 text-rose-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-rose-800/50 transition-all cursor-pointer flex items-center space-x-1.5"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                            <span>Supprimer</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
 
       </main>
 

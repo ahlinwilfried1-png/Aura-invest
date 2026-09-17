@@ -29,17 +29,11 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [showBindModal, setShowBindModal] = useState<boolean>(false);
 
-  // Form states for account binding
-  const defaultCountryCode = currentUser.withdrawalCountry || (
-    currentUser.country?.toLowerCase().includes('cameroun') || 
-    currentUser.country?.toLowerCase().includes('cm') ||
-    currentUser.phone?.startsWith('+237')
-      ? 'CM' 
-      : 'TG'
-  );
-  const [bindCountryCode, setBindCountryCode] = useState<string>(defaultCountryCode);
+  // Form states for account binding (Strictly Togo)
+  const defaultCountryCode = 'TG';
+  const [bindCountryCode, setBindCountryCode] = useState<string>('TG');
   
-  const currentBindCountry = ALLOWED_COUNTRIES.find(c => c.code === bindCountryCode) || ALLOWED_COUNTRIES[0];
+  const currentBindCountry = ALLOWED_COUNTRIES[0];
   const [bindNetwork, setBindNetwork] = useState<string>(
     currentUser.withdrawalNetwork || currentBindCountry.networks[0]
   );
@@ -112,7 +106,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
     }
 
     if (amountNum < 1000) {
-      onShowToast('err', "Le montant minimum de retrait est de 1 000 XAF.");
+      onShowToast('err', "Le montant minimum de retrait est de 1 000 FCFA.");
       return;
     }
 
@@ -231,7 +225,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
             Solde disponible
           </span>
           <span className="text-base sm:text-lg font-black text-pink-400 font-mono">
-            XAF {currentUser.balance.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
+            FCFA {currentUser.balance.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
           </span>
         </div>
 
@@ -325,10 +319,10 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
         </h2>
 
         <form onSubmit={handleWithdrawSubmit} className="space-y-3.5">
-          {/* Champ de saisie avec XAF à gauche */}
+          {/* Champ de saisie avec FCFA à gauche */}
           <div className="bg-[#1a082b] rounded-2xl p-3 sm:p-3.5 flex items-center space-x-3 shadow-xl border border-pink-500/25 focus-within:border-pink-400 transition-colors">
             <span className="text-pink-300 font-black text-sm sm:text-base pr-3 border-r border-pink-500/25 select-none">
-              XAF
+              FCFA
             </span>
             <input
               type="number"
@@ -372,7 +366,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
       {/* 4. Règles de retrait */}
       <div className="bg-[#1a082b] rounded-2xl p-4 sm:p-5 shadow-xl border border-pink-500/25 space-y-3.5 text-xs sm:text-sm text-pink-200/90 leading-relaxed font-sans">
         <p className="font-medium text-pink-200">
-          <strong className="font-extrabold text-white">Règles de retrait :</strong> Le montant minimum de retrait est de 1 000 XAF, limité à 2 retraits par jour.
+          <strong className="font-extrabold text-white">Règles de retrait :</strong> Le montant minimum de retrait est de 1 000 FCFA, limité à 2 retraits par jour.
         </p>
 
         <p className="font-medium text-pink-200">
@@ -380,7 +374,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
         </p>
 
         <p className="font-medium text-pink-300/80">
-          Afin de garantir un traitement efficace de vos transactions, le montant minimum de retrait est fixé à 1 000 XAF.
+          Afin de garantir un traitement efficace de vos transactions, le montant minimum de retrait est fixé à 1 000 FCFA.
         </p>
 
         <p className="font-medium text-pink-300/80">
@@ -408,30 +402,14 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
             </div>
 
             <form onSubmit={handleSaveAccount} className="space-y-3.5 text-xs sm:text-sm">
-              {/* Choix du pays */}
+              {/* Pays (Exclusif Togo) */}
               <div>
                 <label className="block text-xs font-bold text-pink-200 mb-1">
                   Pays de votre compte Mobile Money
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                  {ALLOWED_COUNTRIES.map((c) => {
-                    const isSel = bindCountryCode === c.code;
-                    return (
-                      <button
-                        key={c.code}
-                        type="button"
-                        onClick={() => handleCountrySelect(c.code)}
-                        className={`flex items-center space-x-1.5 px-2.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                          isSel
-                            ? 'bg-gradient-to-r from-pink-600 to-purple-600 border-pink-400 text-white font-black shadow-md'
-                            : 'bg-[#240c3c] border-pink-500/20 text-pink-200 hover:bg-[#320f50]'
-                        }`}
-                      >
-                        <span className="text-sm">{c.flag}</span>
-                        <span className="truncate">{c.name}</span>
-                      </button>
-                    );
-                  })}
+                <div className="flex items-center space-x-2 px-3.5 py-2.5 rounded-xl bg-[#240c3c] border border-pink-500/30 text-white font-bold text-xs">
+                  <span className="text-base">🇹🇬</span>
+                  <span>Togo (+228)</span>
                 </div>
               </div>
 

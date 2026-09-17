@@ -43,13 +43,7 @@ export const MainWalletCard: React.FC<MainWalletCardProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  const isCameroon = Boolean(
-    user.country?.toLowerCase().includes('cameroun') || 
-    user.country?.toLowerCase().includes('cm') || 
-    user.phone?.startsWith('+237') || 
-    user.withdrawalCountry === 'CM'
-  );
-  const currencySymbol = isCameroon ? 'XAF' : 'XOF';
+  const currencySymbol = 'FCFA';
 
   return (
     <div className="w-full bg-gradient-to-br from-[#270b42] via-[#1a072d] to-[#10031d] text-white rounded-3xl p-5 sm:p-6 relative overflow-hidden space-y-4 border-2 border-pink-500/30 shadow-2xl shadow-purple-950/50">

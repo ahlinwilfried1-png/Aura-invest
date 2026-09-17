@@ -9,44 +9,12 @@ export interface AllowedCountry {
 
 export const ALLOWED_COUNTRIES: AllowedCountry[] = [
   {
-    code: 'CM',
-    prefix: '+237',
-    name: 'Cameroun',
-    flag: '🇨🇲',
-    currency: 'FCFA',
-    networks: ['MTN Mobile Money', 'Orange Money']
-  },
-  {
     code: 'TG',
     prefix: '+228',
     name: 'Togo',
     flag: '🇹🇬',
     currency: 'FCFA',
     networks: ['TMoney', 'Moov Money']
-  },
-  {
-    code: 'BJ',
-    prefix: '+229',
-    name: 'Bénin',
-    flag: '🇧🇯',
-    currency: 'FCFA',
-    networks: ['MTN Mobile Money', 'Moov Money', 'Celtiis Cash']
-  },
-  {
-    code: 'BF',
-    prefix: '+226',
-    name: 'Burkina Faso',
-    flag: '🇧🇫',
-    currency: 'FCFA',
-    networks: ['Orange Money', 'Moov Money', 'Wave']
-  },
-  {
-    code: 'CI',
-    prefix: '+225',
-    name: 'Côte d’Ivoire',
-    flag: '🇨🇮',
-    currency: 'FCFA',
-    networks: ['Wave', 'Orange Money', 'MTN Mobile Money', 'Moov Money']
   }
 ];
 

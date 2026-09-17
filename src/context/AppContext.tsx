@@ -329,7 +329,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const syncOfficialProductData = (list: InvestmentProduct[]): InvestmentProduct[] => {
     const officialMap = new Map(OFFICIAL_INVESTMENT_PRODUCTS.map(p => [p.id, p]));
-    const obsoleteIds = new Set(['vip-partenaire-bronze', 'vip-partenaire-argent']);
+    const obsoleteIds = new Set(['vip-partenaire-bronze', 'vip-partenaire-argent', 'vip-8-gray', 'vip-9-gold']);
     
     // Filter out obsolete removed products
     const cleanList = list.filter(item => !obsoleteIds.has(item.id));
@@ -340,11 +340,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return {
           ...official,
           ...item,
-          name: item.name || official.name,
+          name: official.name,
           image: item.image || official.image,
-          description: item.description || official.description,
-          badge: item.badge || official.badge,
-          color: item.color || official.color,
+          description: official.description,
+          badge: official.badge,
+          color: official.color,
           price: official.price,
           dailyGain: official.dailyGain,
           duration: official.duration,
@@ -519,65 +519,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     safeRemoveLocalStorage('fintech_wellness_products');
   }, []);
 
-  // Ensure recharge channels have proper country codes and defaults for Togo & Cameroun
+  // Ensure recharge channels strictly for Togo (TG)
   const normalizeRechargeChannels = (list: RechargeChannel[]): RechargeChannel[] => {
-    const normalized = list.map(c => {
-      let countryCode = c.countryCode;
-      if (!countryCode) {
-        if (
-          c.accountNumber?.startsWith('+237') ||
-          c.name?.toLowerCase().includes('cameroun') ||
-          c.name?.toLowerCase().includes('orange money') ||
-          c.name?.toLowerCase().includes('mtn')
-        ) {
-          countryCode = 'CM';
-        } else {
-          countryCode = 'TG';
-        }
-      }
+    // Exclude foreign or Cameroon channels
+    const togoOnly = list.filter(c => {
+      if (c.countryCode && c.countryCode !== 'TG') return false;
+      if (c.id === 'rc-cm-mtn' || c.id === 'rc-cm-orange') return false;
+      if (c.accountNumber?.startsWith('+237') || c.name?.toLowerCase().includes('cameroun')) return false;
+      return true;
+    }).map(c => ({
+      ...c,
+      countryCode: 'TG'
+    }));
 
-      // Automatically migrate old placeholder or standard Cameroon numbers to official new numbers
-      if (countryCode === 'CM' || c.id === 'rc-cm-mtn' || c.id === 'rc-cm-orange') {
-        const isMtn = c.id === 'rc-cm-mtn' || c.name?.toLowerCase().includes('mtn') || c.name?.toLowerCase().includes('momo') || c.accountNumber?.includes('670 00 00 00');
-        const isOrange = c.id === 'rc-cm-orange' || c.name?.toLowerCase().includes('orange') || c.name?.toLowerCase().includes('om') || c.accountNumber?.includes('690 00 00 00');
-
-        if (isMtn) {
-          return {
-            ...c,
-            countryCode: 'CM',
-            name: c.name || 'MTN Mobile Money (MoMo Cameroun)',
-            accountNumber: '+237 677 45 12 89',
-            instructions: c.instructions || 'Effectuez le transfert vers ce numéro MTN MoMo (677451289) puis saisissez l\'ID de transaction.'
-          };
-        }
-
-        if (isOrange) {
-          return {
-            ...c,
-            countryCode: 'CM',
-            name: c.name || 'Orange Money (OM Cameroun)',
-            accountNumber: '+237 688 96 98 68',
-            instructions: c.instructions || 'Effectuez le transfert vers ce numéro Orange Money (688969868) puis saisissez l\'ID de transaction.'
-          };
-        }
-      }
-
-      return { ...c, countryCode };
-    });
-
-    const hasTG = normalized.some(c => c.countryCode === 'TG');
-    const hasCM = normalized.some(c => c.countryCode === 'CM');
-    const result = [...normalized];
-
-    if (!hasTG) {
-      result.push(
+    if (togoOnly.length === 0) {
+      return [
         {
           id: 'rc-tmoney',
           name: 'TMoney (Togocom)',
           countryCode: 'TG',
           accountNumber: '+228 90 00 00 00',
           accountHolder: 'Service Recharge AirPods Togo',
-          instructions: 'Effectuez le transfert vers ce numéro TMoney puis saisissez la référence de transaction.',
+          instructions: 'Effectuez le transfert vers ce numéro TMoney (*145#) puis saisissez la référence de transaction SMS.',
           isActive: true,
           order: 1,
           createdAt: new Date().toISOString()
@@ -588,42 +551,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           countryCode: 'TG',
           accountNumber: '+228 99 00 00 00',
           accountHolder: 'Service Recharge AirPods Togo',
-          instructions: 'Effectuez le transfert vers ce numéro Moov Money Flooz puis saisissez la référence de transaction.',
+          instructions: 'Effectuez le transfert vers ce numéro Moov Money Flooz (*155#) puis saisissez la référence de transaction SMS.',
           isActive: true,
           order: 2,
           createdAt: new Date().toISOString()
         }
-      );
+      ];
     }
 
-    if (!hasCM) {
-      result.push(
-        {
-          id: 'rc-cm-mtn',
-          name: 'MTN Mobile Money (MoMo Cameroun)',
-          countryCode: 'CM',
-          accountNumber: '+237 677 45 12 89',
-          accountHolder: 'Service Recharge AirPods Cameroun',
-          instructions: 'Effectuez le transfert vers ce numéro MTN MoMo (677451289) puis saisissez l\'ID de transaction.',
-          isActive: true,
-          order: 3,
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'rc-cm-orange',
-          name: 'Orange Money (OM Cameroun)',
-          countryCode: 'CM',
-          accountNumber: '+237 688 96 98 68',
-          accountHolder: 'Service Recharge AirPods Cameroun',
-          instructions: 'Effectuez le transfert vers ce numéro Orange Money (688969868) puis saisissez l\'ID de transaction.',
-          isActive: true,
-          order: 4,
-          createdAt: new Date().toISOString()
-        }
-      );
-    }
-
-    return deduplicateById(result);
+    return deduplicateById(togoOnly);
   };
 
   const [rechargeChannels, setRechargeChannels] = useState<RechargeChannel[]>(() => {
@@ -643,7 +579,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         countryCode: 'TG',
         accountNumber: '+228 90 00 00 00',
         accountHolder: 'Service Recharge AirPods Togo',
-        instructions: 'Effectuez le transfert vers ce numéro TMoney puis saisissez la référence de transaction.',
+        instructions: 'Effectuez le transfert vers ce numéro TMoney (*145#) puis saisissez la référence de transaction SMS.',
         isActive: true,
         order: 1,
         createdAt: new Date().toISOString()
@@ -654,31 +590,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         countryCode: 'TG',
         accountNumber: '+228 99 00 00 00',
         accountHolder: 'Service Recharge AirPods Togo',
-        instructions: 'Effectuez le transfert vers ce numéro Moov Money Flooz puis saisissez la référence de transaction.',
+        instructions: 'Effectuez le transfert vers ce numéro Moov Money Flooz (*155#) puis saisissez la référence de transaction SMS.',
         isActive: true,
         order: 2,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'rc-cm-mtn',
-        name: 'MTN Mobile Money (MoMo Cameroun)',
-        countryCode: 'CM',
-        accountNumber: '+237 677 45 12 89',
-        accountHolder: 'Service Recharge AirPods Cameroun',
-        instructions: 'Effectuez le transfert vers ce numéro MTN MoMo (677451289) puis saisissez l\'ID de transaction.',
-        isActive: true,
-        order: 3,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'rc-cm-orange',
-        name: 'Orange Money (OM Cameroun)',
-        countryCode: 'CM',
-        accountNumber: '+237 688 96 98 68',
-        accountHolder: 'Service Recharge AirPods Cameroun',
-        instructions: 'Effectuez le transfert vers ce numéro Orange Money (688969868) puis saisissez l\'ID de transaction.',
-        isActive: true,
-        order: 4,
         createdAt: new Date().toISOString()
       }
     ];
@@ -795,12 +709,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (dbUsers && dbUsers.length > 0) {
         const enrichedUsers = dbUsers.map(u => {
           const auth = parseAuthFromPinHash(u.withdrawalPinHash);
-          const isCam = (u.country && (u.country.toLowerCase().includes('cam') || u.country.toUpperCase() === 'CM')) || (u.phone && String(u.phone).startsWith('+237'));
           return {
             ...u,
-            country: isCam ? 'Cameroun' : (u.country || 'Togo'),
-            withdrawalNetwork: auth.network || u.withdrawalNetwork || (isCam ? 'MTN Mobile Money' : 'TMoney'),
-            withdrawalCountry: auth.country || u.withdrawalCountry || (isCam ? 'CM' : 'TG')
+            country: 'Togo',
+            withdrawalNetwork: auth.network || u.withdrawalNetwork || 'TMoney',
+            withdrawalCountry: 'TG'
           };
         });
         const dedupedUsers = deduplicateById(enrichedUsers);
@@ -1188,15 +1101,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // 1. First attempt authoritative fast server login endpoint
     try {
-      const serverAuth = await loginUserInDatabase(cleanPhone, word, country || (phoneInfo.isCameroon ? 'Cameroun' : 'Togo'));
+      const serverAuth = await loginUserInDatabase(cleanPhone, word, 'Togo');
       if (serverAuth && serverAuth.success && serverAuth.user) {
         const user = serverAuth.user;
         const auth = parseAuthFromPinHash(user.withdrawalPinHash);
-        const isCam = Boolean((user.country && (user.country.toLowerCase().includes('cam') || user.country.toUpperCase() === 'CM')) || user.phone?.startsWith('+237'));
         const enrichedUser: User = {
           ...user,
-          withdrawalNetwork: auth.network || user.withdrawalNetwork || (isCam ? 'MTN Mobile Money' : 'TMoney'),
-          withdrawalCountry: auth.country || user.withdrawalCountry || (isCam ? 'CM' : 'TG')
+          country: 'Togo',
+          withdrawalNetwork: auth.network || user.withdrawalNetwork || 'TMoney',
+          withdrawalCountry: 'TG'
         };
 
         setCurrentUser(enrichedUser);
@@ -1325,7 +1238,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       phone: cleanPhone,
       whatsapp: data.whatsapp ? extractPhoneDetails(data.whatsapp, data.country).cleanPhone : cleanPhone,
       country: finalCountry,
-      balance: 200, // 200 XAF/XOF bonus d'inscription
+      balance: 0, // 0 XOF bonus d'inscription
       dailyEarnings: 0,
       totalEarnings: 0,
       vipLevel: 0,
@@ -1507,7 +1420,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (dbUser.referredByCode) {
       const l1 = updatedUsers.find(u => u.referralCode === dbUser.referredByCode);
       if (l1) {
-        const commL1 = Math.round(totalPrice * 0.15); // 15% Level 1
+        const commL1 = Math.round(totalPrice * 0.10); // 10% Level 1
         const ticketsGained = (wheelConfig?.ticketsPerReferral || 1) * quantity;
         const newL1Balance = l1.balance + commL1;
         const newL1Total = l1.totalEarnings + commL1;
@@ -1538,11 +1451,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         newCommissions.push(commObj1);
         upsertItem('commissions', commObj1);
         
-        // Level 2 (2%)
+        // Level 2 (1%)
         if (l1.referredByCode) {
           const l2 = updatedUsers.find(u => u.referralCode === l1.referredByCode);
           if (l2) {
-            const commL2 = Math.round(totalPrice * 0.02);
+            const commL2 = Math.round(totalPrice * 0.01); // 1% Level 2
             const newL2Balance = l2.balance + commL2;
             const newL2Total = l2.totalEarnings + commL2;
 
@@ -2786,14 +2699,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     instructions?: string;
     isActive?: boolean;
   }): Promise<{ success: boolean; error?: string }> => {
-    const finalCountryCode = data.countryCode || (
-      data.accountNumber?.startsWith('+237') ||
-      data.name?.toLowerCase().includes('cameroun') ||
-      data.name?.toLowerCase().includes('orange money') ||
-      data.name?.toLowerCase().includes('mtn')
-        ? 'CM'
-        : 'TG'
-    );
+    const finalCountryCode = 'TG';
 
     const newChannel: RechargeChannel = {
       id: `rc-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,

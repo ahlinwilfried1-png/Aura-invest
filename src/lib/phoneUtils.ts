@@ -1,15 +1,10 @@
 /**
  * Phone Number Normalization & Country Utilities
- * Handles all 5 allowed countries:
- * - Cameroun (+237)
- * - Togo (+228)
- * - Bénin (+229)
- * - Burkina Faso (+226)
- * - Côte d’Ivoire (+225)
+ * Site exclusive to Togo (+228)
  */
 import { ALLOWED_COUNTRIES, DEFAULT_COUNTRY, AllowedCountry, getCountryByCode, getCountryByNameOrCode } from '../constants/countries';
 
-export function normalizePhoneNumber(input: string | undefined | null, defaultPrefix: string = '+237'): string {
+export function normalizePhoneNumber(input: string | undefined | null, defaultPrefix: string = '+228'): string {
   if (!input) return '';
   
   // Strip all non-digit and non-plus characters (remove spaces, parentheses, hyphens, dots)
@@ -88,7 +83,7 @@ export function extractPhoneDetails(input: string | undefined | null, countryHin
 } {
   if (!input) {
     return {
-      countryCode: 'CM',
+      countryCode: 'TG',
       isCameroon: false,
       cleanPhone: '',
       nationalDigits: '',

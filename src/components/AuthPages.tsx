@@ -11,7 +11,6 @@ import {
   AlertCircle, 
   CheckCircle2, 
   XCircle, 
-  ChevronDown,
   ArrowLeft,
   Headphones
 } from 'lucide-react';
@@ -60,9 +59,9 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
     }
   }, [initialMode]);
 
-  // Country Code State (Default +228 Togo)
-  const [countryPrefix, setCountryPrefix] = useState("+228");
-  const [countryName, setCountryName] = useState("Togo");
+  // Country Code State (Exclusively Togo +228)
+  const countryPrefix = "+228";
+  const countryName = "Togo";
 
   // Login Form State
   const [loginPhone, setLoginPhone] = useState('');
@@ -114,12 +113,8 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
     }
   }, []);
 
-  const handleCountryChange = (prefix: string) => {
-    setCountryPrefix(prefix);
-    const found = COUNTRIES.find(c => c.prefix === prefix);
-    if (found) {
-      setCountryName(found.name);
-    }
+  const handleCountryChange = (_prefix: string) => {
+    // Exclusively Togo (+228)
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -133,7 +128,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
 
     try {
       const fullPhone = normalizePhoneNumber(loginPhone, countryPrefix);
-      const selectedCountryName = countryName || (countryPrefix === '+237' ? 'Cameroun' : 'Togo');
+      const selectedCountryName = 'Togo';
       const res = await authActions.login(fullPhone, loginPassword, selectedCountryName);
 
       if (res.success) {
@@ -176,7 +171,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
       const fullPhone = normalizePhoneNumber(cleanPhone, countryPrefix);
       const rawDigits = fullPhone.replace(/\D/g, '');
       const defaultName = `Membre ${rawDigits.slice(-4)}`;
-      const selectedCountryName = countryName || (countryPrefix === '+237' ? 'Cameroun' : 'Togo');
+      const selectedCountryName = 'Togo';
 
       const res = await authActions.register({
         name: defaultName,
@@ -345,21 +340,10 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                   </label>
                   
                   <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
-                    {/* Indicatif pays selector */}
-                    <div className="relative flex items-center pr-2 border-r border-pink-500/30 mr-2 shrink-0">
-                      <select
-                        value={countryPrefix}
-                        onChange={(e) => handleCountryChange(e.target.value)}
-                        className="bg-transparent text-xs font-black text-pink-100 outline-none pr-4 cursor-pointer appearance-none"
-                        id="reg-country-prefix"
-                      >
-                        {COUNTRIES.map(c => (
-                          <option key={c.code} value={c.prefix} className="bg-[#1a082b] text-white font-semibold">
-                            {c.flag} {c.prefix} ({c.name})
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-pink-300 absolute right-0 pointer-events-none" />
+                    {/* Indicatif pays Togo */}
+                    <div className="flex items-center space-x-1 pr-2.5 border-r border-pink-500/30 mr-2 shrink-0 select-none">
+                      <span className="text-sm">🇹🇬</span>
+                      <span className="text-xs font-black text-pink-100">+228</span>
                     </div>
 
                     {/* Champ de saisie numéro */}
@@ -549,21 +533,10 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                   </label>
 
                   <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
-                    {/* Indicatif pays selector */}
-                    <div className="relative flex items-center pr-2 border-r border-pink-500/30 mr-2 shrink-0">
-                      <select
-                        value={countryPrefix}
-                        onChange={(e) => handleCountryChange(e.target.value)}
-                        className="bg-transparent text-xs font-black text-pink-100 outline-none pr-4 cursor-pointer appearance-none"
-                        id="login-country-prefix"
-                      >
-                        {COUNTRIES.map(c => (
-                          <option key={c.code} value={c.prefix} className="bg-[#1a082b] text-white font-semibold">
-                            {c.flag} {c.prefix} ({c.name})
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-pink-300 absolute right-0 pointer-events-none" />
+                    {/* Indicatif pays Togo */}
+                    <div className="flex items-center space-x-1 pr-2.5 border-r border-pink-500/30 mr-2 shrink-0 select-none">
+                      <span className="text-sm">🇹🇬</span>
+                      <span className="text-xs font-black text-pink-100">+228</span>
                     </div>
 
                     {/* Champ de saisie numéro */}
@@ -699,20 +672,10 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                   </label>
 
                   <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
-                    <div className="relative flex items-center pr-2 border-r border-pink-500/30 mr-2 shrink-0">
-                      <select
-                        value={countryPrefix}
-                        onChange={(e) => handleCountryChange(e.target.value)}
-                        className="bg-transparent text-xs font-black text-pink-100 outline-none pr-4 cursor-pointer appearance-none"
-                        id="forgot-country-prefix"
-                      >
-                        {COUNTRIES.map(c => (
-                          <option key={c.code} value={c.prefix} className="bg-[#1a082b] text-white font-semibold">
-                            {c.flag} {c.prefix} ({c.name})
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-pink-300 absolute right-0 pointer-events-none" />
+                    {/* Indicatif pays Togo */}
+                    <div className="flex items-center space-x-1 pr-2.5 border-r border-pink-500/30 mr-2 shrink-0 select-none">
+                      <span className="text-sm">🇹🇬</span>
+                      <span className="text-xs font-black text-pink-100">+228</span>
                     </div>
 
                     <input

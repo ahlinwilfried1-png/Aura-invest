@@ -21,8 +21,8 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
     phone: currentUser.phone || '',
     whatsapp: currentUser.whatsapp || '',
     country: currentUser.country || (currentUser.phone?.startsWith('+237') ? 'Cameroun' : 'Togo'),
-    paymentNetwork: 'Orange Money',
-    paymentAccount: currentUser.phone || '',
+    paymentNetwork: currentUser.withdrawalNetwork || 'TMoney (Togocom)',
+    paymentAccount: currentUser.withdrawalAccountNumber || currentUser.phone || '',
     idNumber: '',
     email: ''
   });
@@ -177,24 +177,16 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
           </div>
         </div>
 
-        {/* Pays */}
+        {/* Pays (Exclusif Togo) */}
         <div className="space-y-1">
           <label className="text-xs font-bold text-pink-200/90 flex items-center space-x-1">
             <Globe className="w-3.5 h-3.5 text-pink-400" />
             <span>Pays de résidence *</span>
           </label>
-          <select
-            required
-            value={formData.country}
-            onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-            className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white outline-none focus:border-pink-400 transition-colors"
-          >
-            {ALLOWED_COUNTRIES.map(c => (
-              <option key={c.code} value={c.name} className="bg-[#120422] text-white">
-                {c.flag} {c.name} ({c.prefix})
-              </option>
-            ))}
-          </select>
+          <div className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white flex items-center space-x-2">
+            <span className="text-base">🇹🇬</span>
+            <span>Togo (+228)</span>
+          </div>
         </div>
 
         {/* Payment Network & Account */}
@@ -209,11 +201,10 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
               onChange={(e) => setFormData({ ...formData, paymentNetwork: e.target.value })}
               className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white outline-none focus:border-pink-400 transition-colors"
             >
-              <option value="Orange Money" className="bg-[#120422] text-white">Orange Money</option>
-              <option value="MTN Money" className="bg-[#120422] text-white">MTN Money</option>
-              <option value="Moov Money" className="bg-[#120422] text-white">Moov Money</option>
-              <option value="Mixx By Yas" className="bg-[#120422] text-white">Mixx By Yas</option>
-              <option value="Wave" className="bg-[#120422] text-white">Wave</option>
+              <option value="TMoney (Togocom)" className="bg-[#120422] text-white">TMoney (Togocom)</option>
+              <option value="Moov Money (Flooz)" className="bg-[#120422] text-white">Moov Money (Flooz)</option>
+              <option value="Carte Visa / Mastercard" className="bg-[#120422] text-white">Carte Visa / Mastercard</option>
+              <option value="Virement Bancaire" className="bg-[#120422] text-white">Virement Bancaire</option>
             </select>
           </div>
 

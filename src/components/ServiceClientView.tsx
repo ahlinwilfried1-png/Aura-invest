@@ -11,8 +11,8 @@ interface ServiceClientViewProps {
 export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
   onBack,
   telegramUrl = "https://t.me/+Nml17Ji3CY8wYWQ8",
-  whatsappServiceUrl = "https://t.me/+Nml17Ji3CY8wYWQ8",
-  whatsappChannelUrl = "https://t.me/+Nml17Ji3CY8wYWQ8"
+  whatsappServiceUrl = "https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M",
+  whatsappChannelUrl = "https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
 }) => {
   return (
     <div className="min-h-screen bg-[#0d0417] text-white pb-20 font-sans animate-fadeIn">
