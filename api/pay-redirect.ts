@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 
-const OFFICIAL_PAYMENT_GATEWAY_URL = 'https://tchin.tech/pay/cm63en28qn';
+const OFFICIAL_PAYMENT_GATEWAY_URL = 'https://tchin.tech/pay/6wy9goqpge';
 
 export default function handler(req: any, res: any) {
   // Extract deposit ID if present

@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import app from '../server';
 
-const OFFICIAL_PAYMENT_GATEWAY_URL = 'https://tchin.tech/pay/cm63en28qn';
+const OFFICIAL_PAYMENT_GATEWAY_URL = 'https://tchin.tech/pay/6wy9goqpge';
 
 export default function handler(req: any, res: any) {
   // CORS & Preflight headers for cross-domain / custom domain support

@@ -1016,7 +1016,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 const res = onRequestDeposit(depForm.amount, depForm.method, depForm.transactionId || `WP-${Date.now().toString().slice(-6)}`, null);
                 if (res.success) {
                   onShowToast('success', 'Demande de recharge enregistrée ! Redirection vers la passerelle sécurisée...');
-                  const paymentUrl = 'https://goespay.io/pay/WMBJJ7VE';
+                  const paymentUrl = 'https://tchin.tech/pay/6wy9goqpge';
                   try {
                     if (window.top && window.top !== window) {
                       window.open(paymentUrl, '_blank', 'noopener,noreferrer');
@@ -1051,7 +1051,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
             <div className="bg-purple-950/40 border border-purple-500/30 p-3.5 rounded-xl text-xs text-purple-200 space-y-1">
               <p className="font-bold text-purple-100">Conditions de Retrait :</p>
               <p className="text-[11px] text-purple-200/80 leading-relaxed">
-                Montant minimum : <strong className="font-mono font-bold text-pink-300">1 500 FCFA</strong> (Limité à 2 retraits par jour). Les retraits sont traités rapidement par Mobile Money.
+                Montant minimum : <strong className="font-mono font-bold text-pink-300">1 000 FCFA</strong> (Limité à 2 retraits par jour). Les retraits sont traités rapidement par Mobile Money.
               </p>
             </div>
 

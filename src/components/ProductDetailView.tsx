@@ -25,7 +25,8 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
   const totalPrice = product.price * quantity;
   const totalDailyGain = product.dailyGain * quantity;
-  const totalGain = product.totalGain * quantity;
+  const totalGain40Days = (product.gain40Days || (product.dailyGain * (product.duration || 40))) * quantity;
+  const totalGain = (product.totalGain || (product.price * quantity + totalGain40Days));
 
   const hasSufficientBalance = (Number(currentUser.balance) || 0) >= totalPrice;
 
@@ -95,25 +96,32 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
         </div>
       </div>
 
-      {/* 2. FIRST CONTAINER: PRICE & TOTAL REVENUE */}
-      <div className="py-2.5 px-4 text-white flex items-center justify-around bg-gradient-to-r from-[#240c3c] via-[#1a072c] to-[#240c3c] border border-pink-500/30 rounded-2xl shadow-xl">
-        <div className="text-center space-y-0.5">
-          <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-white">
-            {(Number(product.price) || 0).toLocaleString('fr-FR')}
+      {/* 2. FIRST CONTAINER: STATS BOX MATCHING OFFICIAL TABLE */}
+      <div className="py-3 px-4 text-white grid grid-cols-3 gap-2 bg-gradient-to-r from-[#240c3c] via-[#1a072c] to-[#240c3c] border border-pink-500/30 rounded-2xl shadow-xl font-mono text-center">
+        <div className="space-y-0.5">
+          <div className="text-lg sm:text-xl font-black tracking-tight text-white">
+            {(Number(totalPrice) || 0).toLocaleString('fr-FR')} F
           </div>
-          <div className="text-xs font-bold text-pink-300 uppercase">
-            Prix d'adhésion (FCFA)
+          <div className="text-[10px] sm:text-xs font-bold text-pink-300 uppercase font-sans">
+            Prix
           </div>
         </div>
 
-        <div className="h-10 w-px bg-pink-500/30" />
-
-        <div className="text-center space-y-0.5">
-          <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-purple-300">
-            {(Number(product.totalGain) || 0).toLocaleString('fr-FR')}
+        <div className="space-y-0.5 border-x border-pink-500/20 px-1">
+          <div className="text-lg sm:text-xl font-black tracking-tight text-amber-400">
+            {(Number(totalGain40Days) || 0).toLocaleString('fr-FR')} F
           </div>
-          <div className="text-xs font-bold text-pink-300 uppercase">
-            Revenu total
+          <div className="text-[10px] sm:text-xs font-bold text-pink-300 uppercase font-sans">
+            Gain sur 40j
+          </div>
+        </div>
+
+        <div className="space-y-0.5">
+          <div className="text-lg sm:text-xl font-black tracking-tight text-purple-300">
+            {(Number(totalGain) || 0).toLocaleString('fr-FR')} F
+          </div>
+          <div className="text-[10px] sm:text-xs font-bold text-pink-300 uppercase font-sans">
+            Total à 40j
           </div>
         </div>
       </div>
@@ -142,53 +150,51 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
         </div>
 
         <div className="flex items-center justify-between text-xs sm:text-sm font-medium py-1">
-          <span className="text-pink-200/90 font-semibold">Revenu quotidien (crédit chaque 24h) :</span>
-          <span className="font-extrabold text-pink-400 font-mono text-sm sm:text-base">
-            +{(Number(totalDailyGain) || 0).toLocaleString('fr-FR')} FCFA
+          <span className="text-pink-200/90 font-semibold">Rendement quotidien (15% chaque 24h) :</span>
+          <span className="font-extrabold text-amber-400 font-mono text-sm sm:text-base">
+            +{(Number(totalDailyGain) || 0).toLocaleString('fr-FR')} FCFA / jour
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between text-xs sm:text-sm font-medium py-1">
+          <span className="text-pink-200/90 font-semibold">Durée du cycle énergétique :</span>
+          <span className="font-extrabold text-pink-300 font-mono text-sm sm:text-base">
+            {product.duration || 40} jours
           </span>
         </div>
       </div>
 
-      {/* 4. THIRD SECTION: PRODUCT EMOJI SUMMARY & DETAILS */}
+      {/* 4. THIRD SECTION: PRODUCT SUMMARY & DETAILS */}
       <div className="py-2 px-2 space-y-4">
         <div className="space-y-2.5 text-sm sm:text-base font-bold text-white leading-relaxed font-sans">
           <div className="flex items-center space-x-2">
-            <span>🎧✨</span>
-            <span className="text-pink-200">{product.name} — Avancez vers la liberté financière avec Apple AirPods !</span>
+            <span>☀️⚡</span>
+            <span className="text-pink-200">Formule {product.name} — PLAN Duke Energy</span>
           </div>
           <div className="flex items-center space-x-2">
             <span>💰</span>
-            <span>Prix : {(Number(totalPrice) || 0).toLocaleString('fr-FR')} XAF</span>
+            <span>Prix : {(Number(totalPrice) || 0).toLocaleString('fr-FR')} FCFA</span>
           </div>
           <div className="flex items-center space-x-2">
             <span>📈</span>
-            <span className="text-pink-300">Revenu journalier : +{(Number(totalDailyGain) || 0).toLocaleString('fr-FR')} XAF</span>
+            <span className="text-amber-300">Revenu journalier (15%) : +{(Number(totalDailyGain) || 0).toLocaleString('fr-FR')} FCFA</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span>⚡</span>
+            <span className="text-pink-300">Gain sur {product.duration || 40} jours : {(Number(totalGain40Days) || 0).toLocaleString('fr-FR')} FCFA</span>
           </div>
           <div className="flex items-center space-x-2">
             <span>🏆</span>
-            <span className="text-purple-300">Revenu total : {(Number(totalGain) || 0).toLocaleString('fr-FR')} XAF</span>
+            <span className="text-purple-300">Total à {product.duration || 40} jours : {(Number(totalGain) || 0).toLocaleString('fr-FR')} FCFA</span>
           </div>
         </div>
 
         <div className="pt-2 space-y-3 text-pink-200/80 font-medium text-xs sm:text-sm leading-relaxed">
           <p>
-            Chaque pack d'adhésion AirPods génère des dividendes passifs quotidiens garantis 24h/24, directement retirables vers tous les opérateurs Mobile Money locaux.
+            {product.description || `La formule solaire ${product.name} de Duke Energy génère un rendement quotidien garanti de 15% par jour pendant un cycle complet de 40 jours.`}
           </p>
-
           <p>
-            {product.description || `Chez AirPods International, nous croyons que les opportunités appartiennent à ceux qui osent investir dans la technologie de pointe. Profitez de rendements stables, fiables et d'un support d'experts disponible 7j/7.`}
-          </p>
-
-          <p className="font-bold text-pink-300 pt-1">
-            🌟 Le succès n'attend pas les hésitants ; il appartient à ceux qui ont le courage de faire le premier pas.
-          </p>
-
-          <p>
-            Avançons main dans la main : restons confiants, déterminés à atteindre nos objectifs et créateurs de valeur.
-          </p>
-
-          <p className="font-bold text-pink-300 pt-1">
-            💪 Rejoignez AirPods et ouvrez la voie à un avenir brillant !
+            Vos revenus sont automatiquement crédités toutes les 24 heures sur votre compte et sont immédiatement retirables via Mobile Money (TMoney, Moov Money, MTN, Orange, Wave).
           </p>
         </div>
       </div>

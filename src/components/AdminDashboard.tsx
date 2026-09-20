@@ -431,9 +431,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   };
 
   // Payment Gateway Config State & Handlers
-  const [paymentGatewayUrl, setPaymentGatewayUrl] = useState<string>('https://goespay.io/pay/WMBJJ7VE');
+  const [paymentGatewayUrl, setPaymentGatewayUrl] = useState<string>('https://tchin.tech/pay/6wy9goqpge');
   const [isEditingGateway, setIsEditingGateway] = useState<boolean>(false);
-  const [newGatewayUrl, setNewGatewayUrl] = useState<string>('https://goespay.io/pay/WMBJJ7VE');
+  const [newGatewayUrl, setNewGatewayUrl] = useState<string>('https://tchin.tech/pay/6wy9goqpge');
 
   useEffect(() => {
     fetch('/api/admin/config/payment-gateway')
@@ -1527,7 +1527,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                         type="url"
                         value={newGatewayUrl}
                         onChange={(e) => setNewGatewayUrl(e.target.value)}
-                        placeholder="https://goespay.io/..."
+                        placeholder="https://tchin.tech/pay/..."
                         className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-xs font-mono text-white outline-none focus:border-amber-400"
                       />
                       <button
@@ -2255,18 +2255,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
 
                 <div className="flex items-center space-x-2 shrink-0">
                   <button 
-                    onClick={() => {
+                    onClick={async () => {
+                      try {
+                        await fetch('/api/products/reset', { method: 'POST' });
+                      } catch (_) {}
                       OFFICIAL_INVESTMENT_PRODUCTS.forEach(p => {
                         addOrUpdateProduct(p);
                       });
-                      showToast('success', "Les 9 packs VIP officiels ont été synchronisés et enregistrés avec succès dans la base de données !");
+                      showToast('success', "Les 6 formules solaires officielles Duke Energy ont été synchronisées avec succès !");
                     }}
                     type="button"
                     className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all cursor-pointer flex items-center space-x-1.5 border border-slate-600 shadow-xs"
-                    title="Restaurer et enregistrer les 9 VIP officiels"
+                    title="Restaurer et enregistrer les 6 formules solaires Duke Energy"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Synchroniser VIP Officiels (9 Tiers)</span>
+                    <span>Synchroniser Formules Solaires (Duke Energy)</span>
                   </button>
 
                   <button 

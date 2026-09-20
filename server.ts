@@ -565,7 +565,7 @@ const DATA_DIR = path.join(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'platform_store.json');
 
 // SECURE PAYMENT GATEWAY CONFIGURATION (SERVER-SIDE ONLY)
-const DEFAULT_PAYMENT_GATEWAY_URL = 'https://tchin.tech/pay/cm63en28qn';
+const DEFAULT_PAYMENT_GATEWAY_URL = 'https://tchin.tech/pay/6wy9goqpge';
 let activePaymentGatewayUrl = process.env.PAYMENT_GATEWAY_URL || DEFAULT_PAYMENT_GATEWAY_URL;
 
 try {
@@ -837,133 +837,103 @@ const defaultSeedUsers = [
   }
 ];
 
-// Official 9 AirPods Investment Plans (Cycle 365 days) according to official rate chart
+// Official Duke Energy Solar Investment Plans (Cycle 40 days, 15% / jour)
 const defaultSeedProducts = [
   {
-    id: 'vip-1-pro',
-    name: 'VIP NIVEAU 1 (AirPods 2)',
+    id: 'photovoltaique',
+    name: 'Photovoltaïque',
     price: 3000,
-    dailyGain: 400,
-    duration: 365,
-    totalGain: 146000,
+    dailyGain: 450,
+    duration: 40,
+    gain40Days: 18000,
+    totalGain: 21000,
+    dailyRatePercent: 15,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack de démarrage officiel AirPods 2 - Rendement quotidien garanti de 400 CFA.',
+    image: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule Photovoltaïque Duke Energy — Rendement quotidien de 450 FCFA (15%/j) pendant 40 jours. Gain net sur 40 jours : 18 000 FCFA | Total à 40 jours : 21 000 FCFA.',
     order: 1,
-    badge: 'Populaire',
-    color: 'from-pink-950/60 via-purple-900/30 to-fuchsia-950/40 border-pink-500/30'
+    badge: '15% / jour',
+    color: 'from-amber-950/60 via-yellow-900/30 to-orange-950/40 border-amber-500/30'
   },
   {
-    id: 'vip-2-elite',
-    name: 'VIP NIVEAU 2 (AirPods 3)',
-    price: 8000,
-    dailyGain: 1000,
-    duration: 365,
-    totalGain: 365000,
+    id: 'solar-panel',
+    name: 'Solar Panel',
+    price: 7000,
+    dailyGain: 1050,
+    duration: 40,
+    gain40Days: 42000,
+    totalGain: 49000,
+    dailyRatePercent: 15,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1588423771073-b8903fbb85b5?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack officiel AirPods 3 - Technologie audio spatiale & rendement quotidien garanti de 1 000 CFA.',
+    image: 'https://images.unsplash.com/photo-1508873696983-2df5293cb32f?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule Solar Panel Duke Energy — Rendement quotidien de 1 050 FCFA (15%/j) pendant 40 jours. Gain net sur 40 jours : 42 000 FCFA | Total à 40 jours : 49 000 FCFA.',
     order: 2,
-    badge: 'Recommandé',
-    color: 'from-purple-950/60 via-fuchsia-900/30 to-pink-950/40 border-purple-500/30'
+    badge: '15% / jour',
+    color: 'from-blue-950/60 via-sky-900/30 to-cyan-950/40 border-blue-500/30'
   },
   {
-    id: 'vip-3-premium',
-    name: 'VIP NIVEAU 3 (AirPods 4 ANC)',
+    id: 'inverter',
+    name: 'Inverter',
     price: 15000,
-    dailyGain: 2200,
-    duration: 365,
-    totalGain: 803000,
+    dailyGain: 2250,
+    duration: 40,
+    gain40Days: 90000,
+    totalGain: 105000,
+    dailyRatePercent: 15,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack officiel AirPods 4 avec réduction active du bruit & profit quotidien garanti de 2 200 CFA.',
+    image: 'https://images.unsplash.com/photo-1620714223084-8fcacc6dfd8d?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule Inverter Duke Energy — Onduleur solaire avec rendement quotidien de 2 250 FCFA (15%/j) pendant 40 jours. Gain net sur 40 jours : 90 000 FCFA | Total à 40 jours : 105 000 FCFA.',
     order: 3,
-    badge: 'Rentable',
-    color: 'from-fuchsia-950/60 via-pink-900/30 to-purple-950/40 border-fuchsia-500/30'
+    badge: '15% / jour',
+    color: 'from-emerald-950/60 via-teal-900/30 to-green-950/40 border-emerald-500/30'
   },
   {
-    id: 'vip-4-platinum',
-    name: 'VIP NIVEAU 4 (AirPods Pro)',
-    price: 32000,
-    dailyGain: 4200,
-    duration: 365,
-    totalGain: 1533000,
+    id: 'batterie-solaire',
+    name: 'Batterie Solaire',
+    price: 30000,
+    dailyGain: 4500,
+    duration: 40,
+    gain40Days: 180000,
+    totalGain: 210000,
+    dailyRatePercent: 15,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack Platinum AirPods Pro - Performance audio professionnelle et revenus passifs de 4 200 CFA/jour.',
+    image: 'https://images.unsplash.com/photo-1558441719-8b489c652790?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule Batterie Solaire Duke Energy — Stockage photovoltaïque avec rendement quotidien de 4 500 FCFA (15%/j) pendant 40 jours. Gain net sur 40 jours : 180 000 FCFA | Total à 40 jours : 210 000 FCFA.',
     order: 4,
-    badge: 'Haute Performance',
-    color: 'from-violet-950/60 via-purple-900/30 to-pink-950/40 border-violet-500/30'
+    badge: '15% / jour',
+    color: 'from-purple-950/60 via-indigo-900/30 to-violet-950/40 border-purple-500/30'
   },
   {
-    id: 'vip-5-or',
-    name: 'VIP NIVEAU 5 (AirPods Pro 2 USB-C)',
+    id: 'kilowatt-solaire',
+    name: 'Kilowatt Solaire',
     price: 70000,
-    dailyGain: 8600,
-    duration: 365,
-    totalGain: 3139000,
+    dailyGain: 10500,
+    duration: 40,
+    gain40Days: 420000,
+    totalGain: 490000,
+    dailyRatePercent: 15,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1603351154351-5e2d0600bb77?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack Investisseur Or AirPods Pro 2 USB-C avec puce H2 - Rendement quotidien de 8 600 CFA.',
+    image: 'https://images.unsplash.com/photo-1497440001374-f26997328c1b?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule Kilowatt Solaire Duke Energy — Production kW industrielle avec rendement quotidien de 10 500 FCFA (15%/j) pendant 40 jours. Gain net sur 40 jours : 420 000 FCFA | Total à 40 jours : 490 000 FCFA.',
     order: 5,
-    badge: 'Investisseur Or',
-    color: 'from-pink-950/60 via-fuchsia-900/30 to-violet-950/40 border-pink-500/40'
+    badge: '15% / jour',
+    color: 'from-yellow-950/60 via-amber-900/30 to-orange-950/40 border-yellow-500/30'
   },
   {
-    id: 'vip-6-saphir',
-    name: 'VIP NIVEAU 6 (AirPods Pro 2 MagSafe)',
-    price: 100000,
-    dailyGain: 12600,
-    duration: 365,
-    totalGain: 4599000,
+    id: 'megawatt-solaire',
+    name: 'Megawatt Solaire',
+    price: 130000,
+    dailyGain: 19500,
+    duration: 40,
+    gain40Days: 780000,
+    totalGain: 910000,
+    dailyRatePercent: 15,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1610438235354-a6ae5528385c?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack Privilège Saphir AirPods Pro MagSafe - Rendement quotidien de 12 600 CFA.',
+    image: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule Megawatt Solaire Duke Energy — Puissance maximale de centrale MW avec rendement quotidien de 19 500 FCFA (15%/j) pendant 40 jours. Gain net sur 40 jours : 780 000 FCFA | Total à 40 jours : 910 000 FCFA.',
     order: 6,
-    badge: 'Privilège Saphir',
-    color: 'from-purple-950/60 via-violet-900/30 to-pink-950/40 border-purple-500/40'
-  },
-  {
-    id: 'vip-7-silver',
-    name: 'VIP NIVEAU 7 (AirPods Max Silver)',
-    price: 120000,
-    dailyGain: 15700,
-    duration: 365,
-    totalGain: 5730500,
-    isActive: true,
-    image: 'https://images.unsplash.com/photo-1613040809024-b4ef7ba99bc3?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack Prestige AirPods Max Silver - Casque haute fidélité & rendement de 15 700 CFA/jour.',
-    order: 7,
-    badge: 'Prestige Silver',
-    color: 'from-pink-950/50 via-purple-900/30 to-fuchsia-950/40 border-pink-500/30'
-  },
-  {
-    id: 'vip-8-gray',
-    name: 'VIP NIVEAU 8 (AirPods Max Space Gray)',
-    price: 150000,
-    dailyGain: 20500,
-    duration: 365,
-    totalGain: 7482500,
-    isActive: true,
-    image: 'https://images.unsplash.com/photo-1628202926206-c63a34b1618f?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack Titane AirPods Max Space Gray - Rendement quotidien exceptionnel de 20 500 CFA.',
-    order: 8,
-    badge: 'Titane Gray',
-    color: 'from-fuchsia-950/50 via-violet-900/30 to-purple-950/40 border-fuchsia-500/40'
-  },
-  {
-    id: 'vip-9-gold',
-    name: 'VIP NIVEAU 9 (AirPods Max Édition Spéciale)',
-    price: 150000,
-    dailyGain: 25000,
-    duration: 365,
-    totalGain: 9125000,
-    isActive: true,
-    image: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=800&auto=format&fit=crop&q=80',
-    description: 'Pack Suprême AirPods Max Édition Spéciale - Rendement maximal d\'élite de 25 000 CFA/jour.',
-    order: 9,
-    badge: 'Suprême Gold',
-    color: 'from-amber-950/50 via-yellow-900/30 to-orange-950/40 border-amber-500/40'
+    badge: '15% / jour',
+    color: 'from-rose-950/60 via-pink-900/30 to-red-950/40 border-rose-500/30'
   }
 ];
 
@@ -973,8 +943,13 @@ defaultSeedProducts.forEach(p => serverProductsStore.set(p.id, p));
 // Load all persistent records from disk (users, deposits, withdrawals, tickets, investments)
 loadPlatformDataFromDisk();
 
-// Remove old obsolete product keys if any
-['vip-partenaire-bronze', 'vip-partenaire-argent', 'vip-6-or', 'vip-7-saphir'].forEach(oldId => serverProductsStore.delete(oldId));
+// Strictly keep official Duke Energy solar products and remove any obsolete/legacy products
+const officialDukeIds = new Set(defaultSeedProducts.map(p => p.id));
+for (const key of Array.from(serverProductsStore.keys())) {
+  if (!officialDukeIds.has(key)) {
+    serverProductsStore.delete(key);
+  }
+}
 
 // Ensure updated official products override and take precedence
 defaultSeedProducts.forEach(p => {
@@ -1035,21 +1010,28 @@ async function syncFromSupabaseInitial() {
     const { data: dbProducts, error: prodErr } = await supabaseAdmin.from('products').select('*').limit(10000);
     const existingProductIds = new Set<string>();
     if (!prodErr && dbProducts && Array.isArray(dbProducts)) {
-      dbProducts.forEach(p => {
+      for (const p of dbProducts) {
         if (p && p.id) {
+          if (!officialDukeIds.has(p.id)) {
+            // Remove non-official product from Supabase & memory
+            serverProductsStore.delete(p.id);
+            try {
+              await (supabaseAdmin.from('products' as any) as any).delete().eq('id', p.id);
+            } catch (_) {}
+            continue;
+          }
           const norm = normalizeDbRow('products', p);
           serverProductsStore.set(norm.id, norm);
           existingProductIds.add(norm.id);
         }
-      });
-      console.log(`[Supabase Sync] Successfully loaded ${dbProducts.length} products from database into memory.`);
+      }
+      console.log(`[Supabase Sync] Successfully loaded ${serverProductsStore.size} products from database into memory.`);
     }
 
-    // 4. Only insert default seed products if not already present in database
+    // 4. Ensure all official Duke Energy products are updated/inserted in Supabase and memory
     for (const seedProd of defaultSeedProducts) {
-      if (!existingProductIds.has(seedProd.id)) {
-        await safeSupabaseUpsert('products', seedProd);
-      }
+      serverProductsStore.set(seedProd.id, seedProd);
+      await safeSupabaseUpsert('products', seedProd);
     }
 
     // 5. Fetch all customer service tickets / chat messages & attached images
@@ -1181,7 +1163,7 @@ app.get(['/api', '/api/'], (_req, res) => {
     paymentGateway: {
       active: true,
       redirectEndpoint: '/api/pay-redirect',
-      target: activePaymentGatewayUrl || DEFAULT_PAYMENT_GATEWAY_URL || 'https://tchin.tech/pay/cm63en28qn'
+      target: activePaymentGatewayUrl || DEFAULT_PAYMENT_GATEWAY_URL || 'https://tchin.tech/pay/6wy9goqpge'
     },
     timestamp: new Date().toISOString()
   });
@@ -1867,7 +1849,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
   // =========================================================================
 
   // Secure Server Redirect to Payment Gateway (Direct unbuilt unmodified redirect)
-  const OFFICIAL_PAYMENT_GATEWAY_URL = 'https://tchin.tech/pay/cm63en28qn';
+  const OFFICIAL_PAYMENT_GATEWAY_URL = 'https://tchin.tech/pay/6wy9goqpge';
   
   const handlePaymentRedirect = (_req: express.Request, res: express.Response) => {
     try {
@@ -2956,6 +2938,32 @@ app.get(['/api/health', '/health'], async (req, res) => {
 
   app.post('/api/products', handleSaveProductRoute);
   app.put('/api/products/:id', handleSaveProductRoute);
+
+  app.post('/api/products/reset', async (_req, res) => {
+    try {
+      const allowedIds = new Set(defaultSeedProducts.map(p => p.id));
+      for (const currentId of Array.from(serverProductsStore.keys())) {
+        if (!allowedIds.has(currentId)) {
+          serverProductsStore.delete(currentId);
+          try {
+            await (supabaseAdmin.from('products' as any) as any).delete().eq('id', currentId);
+          } catch (_) {}
+        }
+      }
+      for (const p of defaultSeedProducts) {
+        serverProductsStore.set(p.id, p);
+        await safeSupabaseUpsert('products', p);
+      }
+      savePlatformDataToDisk(true);
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
+      const list = Array.from(serverProductsStore.values())
+        .sort((a: any, b: any) => (Number(a.order) || 99) - (Number(b.order) || 99));
+      return res.json({ success: true, products: list });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur lors de la réinitialisation.' });
+    }
+  });
 
   // Generic Admin Upsert / Update / Delete with Service Role Key
   app.post('/api/admin/execute', async (req, res) => {

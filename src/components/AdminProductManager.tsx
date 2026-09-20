@@ -40,15 +40,15 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
 
   const openNewForm = () => {
     setEditingProduct(null);
-    setFormId(`vip-${products.length + 1}`);
-    setFormName(`VIP NIVEAU ${products.length + 1} (AirPods Pro)`);
-    setFormImage('https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80');
-    setFormDescription('Pack officiel d\'investissement AirPods avec rendement garanti.');
+    setFormId(`duke-formule-${products.length + 1}`);
+    setFormName(`Formule Solaire ${products.length + 1}`);
+    setFormImage('https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80');
+    setFormDescription('Formule solaire Duke Energy avec rendement quotidien de 15%/j sur 40 jours.');
     setFormPrice(3000);
-    setFormDailyGain(300);
-    setFormDuration(180);
-    setFormTotalGain(54000);
-    setFormBadge('Nouveau');
+    setFormDailyGain(450);
+    setFormDuration(40);
+    setFormTotalGain(21000);
+    setFormBadge('15% / jour');
     setFormOrder(products.length + 1);
     setFormIsActive(true);
     setIsFormOpen(true);

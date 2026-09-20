@@ -57,8 +57,10 @@ export interface InvestmentProduct {
   name: string;
   price: number;
   dailyGain: number;
-  duration: number; // in days
-  totalGain: number;
+  duration: number; // in days (40 days)
+  totalGain: number; // Total à 40 jours (21 000, 49 000, etc.)
+  gain40Days?: number; // Gain net sur 40 jours (18 000, 42 000, etc.)
+  dailyRatePercent?: number; // 15%
   isActive: boolean;
   image?: string;
   description?: string;

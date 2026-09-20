@@ -169,26 +169,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
           </div>
         </section>
 
-        {/* OFFICIAL AIRPODS PRICING TABLE SECTION */}
+        {/* OFFICIAL DUKE ENERGY PRICING TABLE SECTION */}
         <section className="py-12 px-4 sm:px-6 max-w-6xl mx-auto w-full">
           {/* Header Badge */}
           <div className="text-center mb-8">
             <div className="inline-block bg-[#0e3d1c] border-2 border-amber-400 text-white font-black text-xs sm:text-base md:text-lg uppercase px-6 sm:px-10 py-2.5 rounded-full shadow-lg tracking-wider font-mono">
-              PRIX ET REVENUS OFFICIELS AIRPODS
+              PLAN DUKE ENERGY — L'ÉNERGIE SOLAIRE À VOTRE PORTÉE
             </div>
             <p className="text-slate-600 text-xs sm:text-sm mt-3 font-medium">
-              Chaque formule génère des intérêts crédités automatiquement toutes les 24 heures sur le solde disponible.
+              Formules à 15% par jour sur 40 jours avec versement automatique chaque 24h et retraits Mobile Money 7j/7.
             </p>
           </div>
 
-          {/* Desktop Table matching the exact plans */}
+          {/* Desktop Table matching the exact plans from image */}
           <div className="hidden md:block overflow-hidden bg-white border-2 border-emerald-900/20 rounded-3xl shadow-xl">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[#fef3c7] text-[#1c1917] border-b-2 border-amber-300 text-xs uppercase font-mono font-black">
                   <th className="py-4 px-6 flex items-center space-x-2">
                     <Sparkles className="w-4 h-4 text-emerald-800" />
-                    <span>MODÈLES AIRPODS</span>
+                    <span>FORMULES</span>
                   </th>
                   <th className="py-4 px-6 text-center">
                     <span className="inline-flex items-center space-x-1 justify-center">
@@ -199,100 +199,112 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                   <th className="py-4 px-6 text-center">
                     <span className="inline-flex items-center space-x-1 justify-center">
                       <Coins className="w-4 h-4 text-amber-700" />
-                      <span>REVENU QUOTIDIEN</span>
+                      <span>REVENU / JOUR (15%)</span>
                     </span>
                   </th>
                   <th className="py-4 px-6 text-center">
                     <span className="inline-flex items-center space-x-1 justify-center">
                       <Calendar className="w-4 h-4 text-emerald-800" />
-                      <span>STATUT OFFICIEL</span>
+                      <span>GAIN SUR 40 JOURS</span>
                     </span>
                   </th>
                   <th className="py-4 px-6 text-right">
                     <span className="inline-flex items-center space-x-1 justify-end">
                       <TrendingUp className="w-4 h-4 text-emerald-800" />
-                      <span>REVENU TOTAL</span>
+                      <span>TOTAL À 40 JOURS</span>
                     </span>
                   </th>
                   <th className="py-4 px-6 text-center">ACTION</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-sm font-semibold">
-                {OFFICIAL_INVESTMENT_PRODUCTS.map((item, idx) => (
-                  <tr key={item.id || idx} className="hover:bg-amber-50/50 transition-colors">
-                    <td className="py-4 px-6">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200 text-emerald-600 font-bold text-xs">
-                          VIP {idx + 1}
+                {OFFICIAL_INVESTMENT_PRODUCTS.map((item, idx) => {
+                  const gain40 = item.gain40Days || (item.dailyGain * (item.duration || 40));
+                  const total40 = item.totalGain || (item.price + gain40);
+                  return (
+                    <tr key={item.id || idx} className="hover:bg-amber-50/50 transition-colors">
+                      <td className="py-4 px-6">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center shrink-0 border border-amber-200 text-amber-800 font-bold text-xs">
+                            #{idx + 1}
+                          </div>
+                          <span className="font-extrabold text-slate-900 text-sm">{item.name}</span>
                         </div>
-                        <span className="font-extrabold text-slate-900 text-sm">{item.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-center font-bold font-mono text-base text-emerald-900">
-                      {(Number(item.price) || 0).toLocaleString('fr-FR')}
-                    </td>
-                    <td className="py-4 px-6 text-center font-black font-mono text-base text-emerald-700">
-                      +{(Number(item.dailyGain) || 0).toLocaleString('fr-FR')}
-                    </td>
-                    <td className="py-4 px-6 text-center font-bold text-slate-700">
-                      {item.duration} jours
-                    </td>
-                    <td className="py-4 px-6 text-right font-black font-mono text-slate-950 text-base">
-                      {(Number(item.totalGain) || 0).toLocaleString('fr-FR')}
-                    </td>
-                    <td className="py-4 px-6 text-center">
-                      <button
-                        onClick={onStart}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs hover:scale-105"
-                      >
-                        Activer
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-4 px-6 text-center font-bold font-mono text-base text-emerald-900">
+                        {(Number(item.price) || 0).toLocaleString('fr-FR')} F
+                      </td>
+                      <td className="py-4 px-6 text-center font-black font-mono text-base text-emerald-700">
+                        +{(Number(item.dailyGain) || 0).toLocaleString('fr-FR')} F
+                      </td>
+                      <td className="py-4 px-6 text-center font-black font-mono text-base text-amber-800">
+                        {(Number(gain40) || 0).toLocaleString('fr-FR')} F
+                      </td>
+                      <td className="py-4 px-6 text-right font-black font-mono text-slate-950 text-base">
+                        {(Number(total40) || 0).toLocaleString('fr-FR')} F
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        <button
+                          onClick={onStart}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs hover:scale-105"
+                        >
+                          Souscrire
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
           {/* Mobile Card List with exact plans */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
-            {OFFICIAL_INVESTMENT_PRODUCTS.map((item, idx) => (
-              <div key={item.id || idx} className="bg-white border-2 border-emerald-900/20 rounded-2xl p-4 shadow-md space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center font-bold text-emerald-700 text-xs">
-                      V{idx + 1}
+            {OFFICIAL_INVESTMENT_PRODUCTS.map((item, idx) => {
+              const gain40 = item.gain40Days || (item.dailyGain * (item.duration || 40));
+              const total40 = item.totalGain || (item.price + gain40);
+              return (
+                <div key={item.id || idx} className="bg-white border-2 border-emerald-900/20 rounded-2xl p-4 shadow-md space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center font-bold text-amber-800 text-xs">
+                        #{idx + 1}
+                      </div>
+                      <span className="font-black text-slate-900 text-sm">{item.name}</span>
                     </div>
-                    <span className="font-black text-slate-900 text-sm">{item.name}</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                      {item.badge || '15% / jour'}
+                    </span>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                    {item.badge || 'VIP'}
-                  </span>
-                </div>
-                
-                <div className="bg-amber-50/60 rounded-xl p-3 grid grid-cols-2 gap-2 text-xs border border-amber-200/60">
-                  <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Prix</span>
-                    <span className="font-black font-mono text-emerald-950 text-sm">{(Number(item.price) || 0).toLocaleString('fr-FR')} CFA</span>
+                  
+                  <div className="bg-amber-50/60 rounded-xl p-3 grid grid-cols-2 gap-2 text-xs border border-amber-200/60 font-mono">
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-bold font-sans">Prix</span>
+                      <span className="font-black text-emerald-950 text-sm">{(Number(item.price) || 0).toLocaleString('fr-FR')} F</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-bold font-sans">15% / Jour</span>
+                      <span className="font-black text-emerald-700 text-sm">+{(Number(item.dailyGain) || 0).toLocaleString('fr-FR')} F</span>
+                    </div>
+                    <div className="pt-1 border-t border-amber-200/60">
+                      <span className="text-slate-600 text-[10px] uppercase font-bold font-sans block">Gain 40j :</span>
+                      <span className="font-black text-amber-900 text-sm">{(Number(gain40) || 0).toLocaleString('fr-FR')} F</span>
+                    </div>
+                    <div className="pt-1 border-t border-amber-200/60">
+                      <span className="text-slate-600 text-[10px] uppercase font-bold font-sans block">Total à 40j :</span>
+                      <span className="font-black text-slate-950 text-sm">{(Number(total40) || 0).toLocaleString('fr-FR')} F</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Gain / Jour</span>
-                    <span className="font-black font-mono text-emerald-700 text-sm">+{(Number(item.dailyGain) || 0).toLocaleString('fr-FR')} CFA</span>
-                  </div>
-                  <div className="col-span-2 pt-1 border-t border-amber-200/60 flex justify-between items-center">
-                    <span className="text-slate-600 text-[10px] uppercase font-bold">Revenu Total ({item.duration}j) :</span>
-                    <span className="font-black font-mono text-amber-900 text-sm">{(Number(item.totalGain) || 0).toLocaleString('fr-FR')} CFA</span>
-                  </div>
-                </div>
 
-                <button
-                  onClick={onStart}
-                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs"
-                >
-                  Activer ce pack
-                </button>
-              </div>
-            ))}
+                  <button
+                    onClick={onStart}
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs"
+                  >
+                    Souscrire à cette formule
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
           {/* RÉSUMÉ DU FONCTIONNEMENT */}

@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const CENTRAL_SUPABASE_URL = 'https://ykoqcaggjfhpnysvumuu.supabase.co';
 const CENTRAL_SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlrb3FjYWdnamZocG55c3Z1bXV1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4ODQyMzg5OSwiZXhwIjoyMTAzOTk5ODk5fQ.7HSpfFhr9f9ET9XytoQoz1Qe5l64ID_VcTD3HpFSItU';
-const OFFICIAL_PAYMENT_GATEWAY_URL = 'https://tchin.tech/pay/cm63en28qn';
+const OFFICIAL_PAYMENT_GATEWAY_URL = 'https://tchin.tech/pay/6wy9goqpge';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Content-Type', 'application/json');

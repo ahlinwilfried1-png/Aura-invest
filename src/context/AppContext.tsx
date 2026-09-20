@@ -352,7 +352,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const syncOfficialProductData = (list: InvestmentProduct[]): InvestmentProduct[] => {
     const officialMap = new Map(OFFICIAL_INVESTMENT_PRODUCTS.map(p => [p.id, p]));
-    const obsoleteIds = new Set(['vip-partenaire-bronze', 'vip-partenaire-argent']);
+    const obsoleteIds = new Set([
+      'vip-1-pro', 'vip-2-elite', 'vip-3-premium', 'vip-4-platinum', 'vip-5-or',
+      'vip-6-saphir', 'vip-7-silver', 'vip-8-gray', 'vip-9-gold',
+      'vip-partenaire-bronze', 'vip-partenaire-argent'
+    ]);
     
     // Filter out obsolete removed products
     const cleanList = list.filter(item => !obsoleteIds.has(item.id));
@@ -371,14 +375,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           price: official.price,
           dailyGain: official.dailyGain,
           duration: official.duration,
+          gain40Days: official.gain40Days,
           totalGain: official.totalGain,
+          dailyRatePercent: official.dailyRatePercent,
           order: official.order,
           isActive: item.isActive !== false
         };
       }
       const parsedPrice = Number(item.price) || 0;
       const parsedDaily = Number(item.dailyGain) || 0;
-      const parsedDur = Number(item.duration) || 180;
+      const parsedDur = Number(item.duration) || 40;
       return {
         ...item,
         price: parsedPrice,
@@ -2450,6 +2456,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetToOfficialProducts = async (): Promise<void> => {
+    const obsoleteIds = [
+      'vip-1-pro', 'vip-2-elite', 'vip-3-premium', 'vip-4-platinum', 'vip-5-or',
+      'vip-6-saphir', 'vip-7-silver', 'vip-8-gray', 'vip-9-gold',
+      'vip-partenaire-bronze', 'vip-partenaire-argent'
+    ];
+    for (const oldId of obsoleteIds) {
+      deleteRecord('products', oldId);
+    }
     setProducts(OFFICIAL_INVESTMENT_PRODUCTS);
     safeSetLocalStorage('fintech_products', OFFICIAL_INVESTMENT_PRODUCTS);
     for (const p of OFFICIAL_INVESTMENT_PRODUCTS) {
