@@ -1,7 +1,6 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
-import { createServer as createViteServer } from 'vite';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
@@ -1154,16 +1153,41 @@ async function syncFromSupabaseInitial() {
 }
 setTimeout(syncFromSupabaseInitial, 500);
 
-async function startServer() {
-  const app = express();
+// Global Express Application instance exported for local server, Cloud Run, and Vercel Serverless
+export const app = express();
 
-  app.use(express.json({ limit: '20mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
-  // =========================================================================
-  // API HEALTH & STATUS ROUTE
-  // =========================================================================
-  app.get('/api/health', async (req, res) => {
+// CORS & Preflight middleware so frontend on custom domains (e.g. airprods.online) communicates seamlessly
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
+// =========================================================================
+// API ROOT & HEALTH STATUS ROUTES
+// =========================================================================
+app.get(['/api', '/api/'], (_req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'AirProds API Gateway is online and active',
+    service: 'AirProds Platform Services',
+    paymentGateway: {
+      active: true,
+      redirectEndpoint: '/api/pay-redirect',
+      target: activePaymentGatewayUrl || DEFAULT_PAYMENT_GATEWAY_URL || 'https://tchin.tech/pay/cm63en28qn'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get(['/api/health', '/health'], async (req, res) => {
     try {
       const { data, error } = await supabaseAdmin.from('products').select('id').limit(1);
       res.json({
@@ -3091,13 +3115,20 @@ async function startServer() {
     }
   }
 
+export async function startServer() {
+  // If running in Vercel Serverless environment, skip background daemons and port listening
+  if (process.env.VERCEL === '1' || process.env.VERCEL_ENV) {
+    return;
+  }
+
   setInterval(runServerSideDailyRevenueDistribution, 30000);
   setTimeout(runServerSideDailyRevenueDistribution, 4000);
 
   // =========================================================================
-  // VITE MIDDLEWARE / STATIC ASSETS
+  // VITE MIDDLEWARE / STATIC ASSETS (LOCAL DEV & CLOUD RUN ONLY)
   // =========================================================================
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
@@ -3105,10 +3136,12 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
+    if (fs.existsSync(distPath)) {
+      app.use(express.static(distPath));
+      app.get('*', (_req, res) => {
+        res.sendFile(path.join(distPath, 'index.html'));
+      });
+    }
   }
 
   app.listen(PORT, '0.0.0.0', () => {
@@ -3117,4 +3150,8 @@ async function startServer() {
   });
 }
 
-startServer();
+if (!process.env.VERCEL && !process.env.VERCEL_ENV) {
+  startServer();
+}
+
+export default app;

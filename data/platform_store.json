@@ -103,7 +103,7 @@
       "whatsapp": "+22897783065",
       "country": "Togo",
       "balance": 4915,
-      "dailyEarnings": 336,
+      "dailyEarnings": 504,
       "totalEarnings": 1215,
       "vipLevel": 12,
       "isBlocked": false,
@@ -222,9 +222,9 @@
       "phone": "+237682007033",
       "whatsapp": "+237682007033",
       "country": "Cameroun",
-      "balance": 1204,
+      "balance": 1372,
       "dailyEarnings": 168,
-      "totalEarnings": 504,
+      "totalEarnings": 672,
       "vipLevel": 12,
       "isBlocked": false,
       "createdAt": "2026-09-16T12:02:55.928+00:00",
@@ -282,6 +282,54 @@
       "withdrawalAccountName": null,
       "withdrawalAccountNumber": null,
       "withdrawalPinHash": "{\"pwd\":\"lovelove\",\"pin\":\"\",\"network\":\"TMoney\",\"country\":\"TG\"}",
+      "drawTickets": 0,
+      "withdrawalNetwork": "TMoney",
+      "withdrawalCountry": "TG",
+      "referralsCount": 0,
+      "teamBenefits": 0
+    },
+    {
+      "id": "usr-3877913",
+      "name": "Membre 0326",
+      "phone": "+237652330326",
+      "whatsapp": "+237652330326",
+      "country": "Cameroun",
+      "balance": 500,
+      "dailyEarnings": 0,
+      "totalEarnings": 0,
+      "vipLevel": 0,
+      "isBlocked": false,
+      "createdAt": "2026-09-20T14:11:41.239+00:00",
+      "role": "user",
+      "referralCode": "INV828715",
+      "referredByCode": "ADMIN01",
+      "withdrawalAccountName": null,
+      "withdrawalAccountNumber": null,
+      "withdrawalPinHash": "{\"pwd\":\"love1\",\"pin\":\"\",\"network\":\"MTN Mobile Money\",\"country\":\"CM\"}",
+      "drawTickets": 0,
+      "withdrawalNetwork": "MTN Mobile Money",
+      "withdrawalCountry": "CM",
+      "referralsCount": 0,
+      "teamBenefits": 0
+    },
+    {
+      "id": "usr-5250766",
+      "name": "Membre 8055",
+      "phone": "+22898588055",
+      "whatsapp": "+22898588055",
+      "country": "Togo",
+      "balance": 500,
+      "dailyEarnings": 0,
+      "totalEarnings": 0,
+      "vipLevel": 0,
+      "isBlocked": false,
+      "createdAt": "2026-09-20T17:48:18.561+00:00",
+      "role": "user",
+      "referralCode": "INV385632",
+      "referredByCode": "ADMIN01",
+      "withdrawalAccountName": null,
+      "withdrawalAccountNumber": null,
+      "withdrawalPinHash": "{\"pwd\":\"00000000\",\"pin\":\"\",\"network\":\"TMoney\",\"country\":\"TG\"}",
       "drawTickets": 0,
       "withdrawalNetwork": "TMoney",
       "withdrawalCountry": "TG",
@@ -497,9 +545,9 @@
       "price": 2500,
       "dailyGain": 168,
       "duration": 365,
-      "daysRemaining": 362,
+      "daysRemaining": 361,
       "purchaseDate": "2026-09-16T17:56:28.643+00:00",
-      "lastClaimDate": "2026-09-19T17:56:28.643+00:00",
+      "lastClaimDate": "2026-09-20T17:56:28.643+00:00",
       "claimsHistory": [],
       "totalGain": 0,
       "quantity": 1
@@ -539,10 +587,70 @@
       "method": "TMoney (Togo)",
       "transactionId": "DEP-379435",
       "screenshotUrl": null,
+      "status": "rejected",
+      "createdAt": "2026-09-20T12:18:39.862+00:00"
+    },
+    {
+      "id": "dep-mu9sd4ty-9o0s2",
+      "userId": "usr-admin-master",
+      "userName": "Directeur Général (Admin)",
+      "userPhone": "+228 97194059",
+      "amount": 15000,
+      "method": "TMoney (Togo)",
+      "transactionId": "DEP-717998",
+      "screenshotUrl": null,
+      "status": "rejected",
+      "createdAt": "2026-09-20T12:21:57.814+00:00"
+    },
+    {
+      "id": "dep-mua450dc-c6i74",
+      "userId": "usr-5120441",
+      "userName": "Membre AirPods",
+      "userPhone": "+228 97783065",
+      "amount": 15000,
+      "method": "TMoney (Togo)",
+      "transactionId": "DEP-335227",
+      "screenshotUrl": null,
+      "status": "rejected",
+      "createdAt": "2026-09-20T17:51:34.176+00:00"
+    },
+    {
+      "id": "dep-mua431eb-ohvn3",
+      "userId": "usr-5250766",
+      "userName": "Membre AirPods",
+      "userPhone": "+228 72726779",
+      "amount": 15000,
+      "method": "TMoney (Togo)",
+      "transactionId": "DEP-172947",
+      "screenshotUrl": null,
+      "status": "rejected",
+      "createdAt": "2026-09-20T17:50:02.195+00:00"
+    },
+    {
+      "id": "dep-mua5f3jw-bwndh",
+      "userId": "usr-5250766",
+      "userName": "Membre AirPods",
+      "userPhone": "+228 98588055",
+      "amount": 15000,
+      "method": "TMoney (Togo)",
+      "transactionId": "DEP-750254",
+      "screenshotUrl": null,
+      "status": "rejected",
+      "createdAt": "2026-09-20T18:27:24.476+00:00"
+    },
+    {
+      "id": "dep-mua5syu9-2rel1",
+      "userId": "test-user-123",
+      "userName": "Membre AirPods",
+      "userPhone": "90123456",
+      "amount": 5000,
+      "method": "TMoney (Togo)",
+      "transactionId": "DEP-243082",
+      "screenshotUrl": null,
       "status": "pending",
       "country": "Togo",
       "countryCode": "TG",
-      "createdAt": "2026-09-20T12:18:39.862Z"
+      "createdAt": "2026-09-20T18:38:11.553Z"
     }
   ],
   "withdrawals": [],
@@ -1224,18 +1332,26 @@
       "maxUses": 0,
       "usedBy": [
         {
-          "id": "rev-1789762580005-inv-gzkq8u6yw-wjww",
-          "amount": 336,
+          "id": "rev-1789926688575-inv-gzkq8u6yw-dwq0",
+          "amount": 504,
           "userId": "usr-5120441",
-          "creditedAt": "2026-09-18T20:16:20.006Z",
-          "productName": "VIP NIVEAU 1 (AirPods 2) (2x 24h)",
+          "creditedAt": "2026-09-20T17:51:28.575Z",
+          "productName": "VIP NIVEAU 1 (AirPods 2) (3x 24h)",
           "investmentId": "inv-gzkq8u6yw"
         },
         {
-          "id": "rev-1789577770085-inv-gzkq8u6yw-6h64",
+          "id": "rev-1789690039869-inv-gzkq8u6yw-8crk",
           "amount": 168,
           "userId": "usr-5120441",
-          "creditedAt": "2026-09-16T16:56:10.085Z",
+          "creditedAt": "2026-09-18T00:07:19.869Z",
+          "productName": "VIP NIVEAU 1 (AirPods 2) (1x 24h)",
+          "investmentId": "inv-gzkq8u6yw"
+        },
+        {
+          "id": "rev-1789631964038-inv-gzkq8u6yw-gbsp",
+          "amount": 168,
+          "userId": "usr-5120441",
+          "creditedAt": "2026-09-17T07:59:24.038Z",
           "productName": "VIP NIVEAU 1 (AirPods 2) (1x 24h)",
           "investmentId": "inv-gzkq8u6yw"
         },
@@ -1448,7 +1564,7 @@
           "investmentId": "inv-plg58t9-mt9rvopf"
         }
       ],
-      "createdAt": "2026-09-18T20:16:20.154+00:00"
+      "createdAt": "2026-09-20T17:51:28.583+00:00"
     },
     {
       "code": "__SYS_ANNOUNCEMENTS__",
@@ -1504,5 +1620,5 @@
     }
   ],
   "paymentGatewayUrl": "https://tchin.tech/pay/cm63en28qn",
-  "lastSaved": "2026-09-20T12:18:39.862Z"
+  "lastSaved": "2026-09-20T18:38:11.553Z"
 }
