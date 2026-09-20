@@ -294,8 +294,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const handleWithdrawalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!wthAmount || wthAmount < 1500) {
-      showToast('err', "Le montant minimum de retrait est de 1 500 FCFA.");
+    if (!wthAmount || wthAmount < 1000) {
+      showToast('err', "Le montant minimum de retrait est de 1 000 FCFA.");
       return;
     }
     if (wthAmount > currentUser.balance) {
@@ -752,7 +752,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <div className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-xl space-y-1 font-mono text-[11px]">
                 <span className="text-pink-200/80 font-sans block text-[10px]">Numéro marchand pour le transfert ({activeModalChannel ? activeModalChannel.name : depMethod}) :</span>
                 <div className="text-white font-extrabold text-sm flex items-center justify-between">
-                  <span>{activeModalChannel ? activeModalChannel.accountNumber : '+228 90 00 00 00'}</span>
+                  <span>{activeModalChannel ? activeModalChannel.accountNumber : '+237 670 00 00 00'}</span>
                   <span className="text-[9px] bg-pink-500/30 text-pink-200 border border-pink-500/40 px-1.5 py-0.5 rounded uppercase font-bold">
                     {activeModalChannel?.accountHolder || 'Officiel'}
                   </span>

@@ -124,14 +124,14 @@ export const TeamView: React.FC<TeamViewProps> = ({
     const l1 = level1Users.map(u => ({
       user: u,
       level: 1 as const,
-      badgeText: 'Niveau 1 (10%)',
+      badgeText: 'Niveau 1 (20%)',
       badgeClass: 'bg-pink-500/20 text-pink-300 border border-pink-500/30'
     }));
 
     const l2 = level2Users.map(u => ({
       user: u,
       level: 2 as const,
-      badgeText: 'Niveau 2 (1%)',
+      badgeText: 'Niveau 2 (2%)',
       badgeClass: 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
     }));
 
@@ -241,7 +241,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
               <span>Mon Équipe & Filleuls</span>
             </h2>
             <p className="text-xs text-pink-200/80 leading-relaxed max-w-md">
-              Percevez des commissions instantanées sur 3 niveaux (10% • 1% • 1%) chaque fois qu'un membre de votre équipe souscrit une offre VIP.
+              Percevez des commissions instantanées sur 3 niveaux (20% • 2% • 1%) chaque fois qu'un membre de votre équipe souscrit une offre VIP.
             </p>
           </div>
 
@@ -445,7 +445,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
             }`}
           >
             <span className="inline-block bg-pink-500/20 text-pink-300 border border-pink-500/30 text-[10px] font-black px-2 py-0.5 rounded-full font-mono">
-              NIVEAU 1 (10%)
+              NIVEAU 1 (20%)
             </span>
             <div className="text-2xl font-black text-white font-mono">
               {level1Users.length}
@@ -463,7 +463,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
             }`}
           >
             <span className="inline-block bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-black px-2 py-0.5 rounded-full font-mono">
-              NIVEAU 2 (1%)
+              NIVEAU 2 (2%)
             </span>
             <div className="text-2xl font-black text-white font-mono">
               {level2Users.length}
@@ -680,8 +680,8 @@ export const TeamView: React.FC<TeamViewProps> = ({
           Chaque nouvel utilisateur qui s'inscrit avec votre code ou lien est automatiquement et exclusivement lié à votre compte dans la base de données Supabase.
         </p>
         <ul className="text-xs text-pink-200/80 space-y-1.5 list-disc pl-4 font-medium">
-          <li><strong>Niveau 1 (Direct) :</strong> 10% du montant à chaque souscription VIP ou recharge de vos filleuls directs.</li>
-          <li><strong>Niveau 2 :</strong> 1% de commission sur les filleuls parrainés par vos membres de Niveau 1.</li>
+          <li><strong>Niveau 1 (Direct) :</strong> 20% du montant à chaque souscription VIP ou recharge de vos filleuls directs.</li>
+          <li><strong>Niveau 2 :</strong> 2% de commission sur les filleuls parrainés par vos membres de Niveau 1.</li>
           <li><strong>Niveau 3 :</strong> 1% de commission sur les filleuls de Niveau 3.</li>
           <li><strong>Crédit immédiat :</strong> Les commissions sont versées automatiquement sur votre solde en FCFA et sont retirables 24h/24 par Mobile Money.</li>
         </ul>

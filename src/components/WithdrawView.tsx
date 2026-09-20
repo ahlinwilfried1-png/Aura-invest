@@ -3,7 +3,7 @@ import { ArrowLeft, CreditCard, History, X, PlusCircle, Edit3, ShieldCheck, Lock
 import { User, WithdrawalRequest } from '../types';
 import { useApp } from '../context/AppContext';
 import { WithdrawalHistoryView } from './WithdrawalHistoryView';
-import { ALLOWED_COUNTRIES } from '../constants/countries';
+import { ALLOWED_COUNTRIES, getCountryByCode, getCountryByPhone } from '../constants/countries';
 
 interface WithdrawViewProps {
   currentUser: User;
@@ -29,11 +29,14 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [showBindModal, setShowBindModal] = useState<boolean>(false);
 
-  // Form states for account binding (Strictly Togo)
-  const defaultCountryCode = 'TG';
-  const [bindCountryCode, setBindCountryCode] = useState<string>('TG');
+  // Form states for account binding
+  const userCountry = currentUser.withdrawalCountry 
+    ? getCountryByCode(currentUser.withdrawalCountry) 
+    : getCountryByPhone(currentUser.phone);
+
+  const [bindCountryCode, setBindCountryCode] = useState<string>(userCountry.code);
   
-  const currentBindCountry = ALLOWED_COUNTRIES[0];
+  const currentBindCountry = ALLOWED_COUNTRIES.find(c => c.code === bindCountryCode) || userCountry;
   const [bindNetwork, setBindNetwork] = useState<string>(
     currentUser.withdrawalNetwork || currentBindCountry.networks[0]
   );
@@ -105,8 +108,8 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
       return;
     }
 
-    if (amountNum < 1500) {
-      onShowToast('err', "Le montant minimum de retrait est de 1 500 FCFA.");
+    if (amountNum < 1000) {
+      onShowToast('err', "Le montant minimum de retrait est de 1 000 FCFA.");
       return;
     }
 
@@ -302,7 +305,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
 
         <div className="text-center pt-1">
           <span className="text-xs font-semibold text-pink-300/80 block">
-            Montant minimum de retrait : <strong className="text-pink-400 font-bold">1 500 FCFA</strong> (Frais : 15%)
+            Montant minimum de retrait : <strong className="text-pink-400 font-bold">1 000 FCFA</strong> (Frais : 15%)
           </span>
         </div>
       </div>
@@ -326,7 +329,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
             </span>
             <input
               type="number"
-              min={1500}
+              min={1000}
               max={currentUser.balance}
               value={wthAmount}
               onChange={(e) => setWthAmount(e.target.value)}
@@ -366,7 +369,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
       {/* 4. Règles de retrait */}
       <div className="bg-[#1a082b] rounded-2xl p-4 sm:p-5 shadow-xl border border-pink-500/25 space-y-3.5 text-xs sm:text-sm text-pink-200/90 leading-relaxed font-sans">
         <p className="font-medium text-pink-200">
-          <strong className="font-extrabold text-white">Règles de retrait :</strong> Le montant minimum de retrait est de 1 500 FCFA, limité à 2 retraits par jour.
+          <strong className="font-extrabold text-white">Règles de retrait :</strong> Le montant minimum de retrait est de 1 000 FCFA, limité à 2 retraits par jour.
         </p>
 
         <p className="font-medium text-pink-200">
@@ -374,7 +377,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
         </p>
 
         <p className="font-medium text-pink-300/80">
-          Afin de garantir un traitement efficace de vos transactions, le montant minimum de retrait est fixé à 1 500 FCFA.
+          Afin de garantir un traitement efficace de vos transactions, le montant minimum de retrait est fixé à 1 000 FCFA.
         </p>
 
         <p className="font-medium text-pink-300/80">
@@ -402,14 +405,31 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
             </div>
 
             <form onSubmit={handleSaveAccount} className="space-y-3.5 text-xs sm:text-sm">
-              {/* Pays (Exclusif Togo) */}
+              {/* Pays */}
               <div>
                 <label className="block text-xs font-bold text-pink-200 mb-1">
-                  Pays de votre compte Mobile Money
+                  Pays de votre compte Mobile Money / Banque
                 </label>
-                <div className="flex items-center space-x-2 px-3.5 py-2.5 rounded-xl bg-[#240c3c] border border-pink-500/30 text-white font-bold text-xs">
-                  <span className="text-base">🇹🇬</span>
-                  <span>Togo (+228)</span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {ALLOWED_COUNTRIES.map((c) => {
+                    const isSel = bindCountryCode === c.code;
+                    return (
+                      <button
+                        key={c.code}
+                        type="button"
+                        onClick={() => handleCountrySelect(c.code)}
+                        className={`flex items-center space-x-1.5 px-2.5 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                          isSel
+                            ? 'bg-pink-500/30 border-pink-400 text-white shadow-md ring-1 ring-pink-400/50'
+                            : 'bg-[#240c3c] border-pink-500/20 text-pink-200/80 hover:bg-[#320f50]'
+                        }`}
+                      >
+                        <span className="text-base">{c.flag}</span>
+                        <span className="truncate">{c.name}</span>
+                        <span className="text-[10px] font-mono text-pink-300 ml-auto">{c.prefix}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -419,7 +439,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
                   Moyen de réseau ({currentBindCountry.name})
                 </label>
                 <div className="flex flex-wrap gap-1.5">
-                  {currentBindCountry.networks.map((net) => {
+                  {[...currentBindCountry.networks, 'Carte Visa / Mastercard', 'Virement Bancaire (RIB)'].map((net) => {
                     const isSel = bindNetwork === net;
                     return (
                       <button

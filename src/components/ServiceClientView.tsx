@@ -4,15 +4,11 @@ import { ChevronLeft, Send, MessageCircle } from 'lucide-react';
 interface ServiceClientViewProps {
   onBack: () => void;
   telegramUrl?: string;
-  whatsappServiceUrl?: string;
-  whatsappChannelUrl?: string;
 }
 
 export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
   onBack,
-  telegramUrl = "https://t.me/+Nml17Ji3CY8wYWQ8",
-  whatsappServiceUrl = "https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M",
-  whatsappChannelUrl = "https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
+  telegramUrl = "https://t.me/+Nml17Ji3CY8wYWQ8"
 }) => {
   return (
     <div className="min-h-screen bg-[#0d0417] text-white pb-20 font-sans animate-fadeIn">
@@ -44,7 +40,7 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
                 <Send className="w-5 h-5 -ml-0.5" />
               </div>
               <span className="text-xs sm:text-sm font-bold text-white truncate">
-                Chaîne de télégramme
+                Chaîne officielle Telegram
               </span>
             </div>
 
@@ -54,49 +50,49 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
               rel="noopener noreferrer"
               className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer active:scale-95 shrink-0 border border-pink-300/30"
             >
-              Commencer
+              Rejoindre
             </a>
           </div>
 
-          {/* Row 2: WhatsApp Service */}
+          {/* Row 2: Telegram Group */}
           <div className="flex items-center justify-between gap-3 py-1">
             <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-11 h-11 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-xs">
-                <MessageCircle className="w-6 h-6 fill-white text-[#25D366]" />
+              <div className="w-11 h-11 rounded-full bg-[#0088cc] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Send className="w-5 h-5 -ml-0.5" />
               </div>
               <span className="text-xs sm:text-sm font-bold text-white truncate">
-                WhatsApp Service
+                Canal Telegram Communauté
               </span>
             </div>
 
             <a
-              href={whatsappServiceUrl}
+              href={telegramUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer active:scale-95 shrink-0 border border-pink-300/30"
             >
-              Commencer
+              Rejoindre
             </a>
           </div>
 
-          {/* Row 3: chaîne WhatsApp */}
+          {/* Row 3: Telegram Service */}
           <div className="flex items-center justify-between gap-3 py-1">
             <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-11 h-11 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-xs">
-                <MessageCircle className="w-6 h-6 fill-white text-[#25D366]" />
+              <div className="w-11 h-11 rounded-full bg-[#0088cc] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Send className="w-5 h-5 -ml-0.5" />
               </div>
               <span className="text-xs sm:text-sm font-bold text-white truncate">
-                chaîne WhatsApp
+                Service Client Telegram 24/7
               </span>
             </div>
 
             <a
-              href={whatsappChannelUrl}
+              href={telegramUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer active:scale-95 shrink-0 border border-pink-300/30"
             >
-              Commencer
+              Contacter
             </a>
           </div>
 

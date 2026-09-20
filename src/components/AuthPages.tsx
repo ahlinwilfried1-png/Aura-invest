@@ -12,9 +12,10 @@ import {
   CheckCircle2, 
   XCircle, 
   ArrowLeft,
-  Headphones
+  Headphones,
+  ChevronDown
 } from 'lucide-react';
-import { ALLOWED_COUNTRIES } from '../constants/countries';
+import { ALLOWED_COUNTRIES, DEFAULT_COUNTRY, AllowedCountry } from '../constants/countries';
 import { normalizePhoneNumber } from '../lib/phoneUtils';
 
 import { 
@@ -59,9 +60,10 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
     }
   }, [initialMode]);
 
-  // Country Code State (Exclusively Togo +228)
-  const countryPrefix = "+228";
-  const countryName = "Togo";
+  // Selected Country State (Togo, Bénin, Burkina Faso, Côte d'Ivoire, Cameroun)
+  const [selectedCountry, setSelectedCountry] = useState<AllowedCountry>(DEFAULT_COUNTRY);
+  const countryPrefix = selectedCountry.prefix;
+  const countryName = selectedCountry.name;
 
   // Login Form State
   const [loginPhone, setLoginPhone] = useState('');
@@ -114,7 +116,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
   }, []);
 
   const handleCountryChange = (_prefix: string) => {
-    // Exclusively Togo (+228)
+    // Exclusively Cameroun (+237)
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -127,9 +129,8 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
     setLoading(true);
 
     try {
-      const fullPhone = normalizePhoneNumber(loginPhone, countryPrefix);
-      const selectedCountryName = 'Togo';
-      const res = await authActions.login(fullPhone, loginPassword, selectedCountryName);
+      const fullPhone = normalizePhoneNumber(loginPhone, selectedCountry.prefix);
+      const res = await authActions.login(fullPhone, loginPassword, selectedCountry.name);
 
       if (res.success) {
         onSuccess();
@@ -168,16 +169,15 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
 
     setLoading(true);
     try {
-      const fullPhone = normalizePhoneNumber(cleanPhone, countryPrefix);
+      const fullPhone = normalizePhoneNumber(cleanPhone, selectedCountry.prefix);
       const rawDigits = fullPhone.replace(/\D/g, '');
       const defaultName = `Membre ${rawDigits.slice(-4)}`;
-      const selectedCountryName = 'Togo';
 
       const res = await authActions.register({
         name: defaultName,
         phone: fullPhone,
         whatsapp: fullPhone,
-        country: selectedCountryName,
+        country: selectedCountry.name,
         word: regPassword,
         referrerCode: regReferrer.trim()
       });
@@ -333,23 +333,37 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
 
               <form onSubmit={handleRegisterSubmit} className="space-y-4">
                 
-                {/* 1. Téléphone */}
+                {/* 1. Téléphone avec indicatif pays intégré devant le numéro */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-pink-200 tracking-wide">
-                    Téléphone
+                    Numéro de Téléphone
                   </label>
                   
-                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
-                    {/* Indicatif pays Togo */}
-                    <div className="flex items-center space-x-1 pr-2.5 border-r border-pink-500/30 mr-2 shrink-0 select-none">
-                      <span className="text-sm">🇹🇬</span>
-                      <span className="text-xs font-black text-pink-100">+228</span>
+                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
+                    {/* Sélecteur d'indicatif pays intégré devant le numéro */}
+                    <div className="relative flex items-center shrink-0 pr-2 border-r border-pink-500/30 mr-2.5 select-none">
+                      <select
+                        value={selectedCountry.code}
+                        onChange={(e) => {
+                          const found = ALLOWED_COUNTRIES.find(c => c.code === e.target.value);
+                          if (found) setSelectedCountry(found);
+                        }}
+                        className="appearance-none bg-transparent text-pink-100 font-black text-xs sm:text-sm outline-none cursor-pointer flex items-center pr-4 pl-0.5 focus:outline-none"
+                        title="Sélectionner l'indicatif du pays"
+                      >
+                        {ALLOWED_COUNTRIES.map((c) => (
+                          <option key={c.code} value={c.code} className="bg-[#1b052d] text-white">
+                            {c.flag} {c.prefix}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-3.5 h-3.5 text-pink-300 pointer-events-none absolute right-0" />
                     </div>
 
                     {/* Champ de saisie numéro */}
                     <input
                       type="tel"
-                      placeholder="Veuillez entrer le numéro de télép..."
+                      placeholder="Numéro de téléphone..."
                       value={regPhone}
                       onChange={(e) => setRegPhone(e.target.value)}
                       className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40"
@@ -526,23 +540,37 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
 
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 
-                {/* 1. Téléphone */}
+                {/* 1. Téléphone avec indicatif pays intégré devant le numéro */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-pink-200 tracking-wide">
-                    Téléphone
+                    Numéro de Téléphone
                   </label>
 
-                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
-                    {/* Indicatif pays Togo */}
-                    <div className="flex items-center space-x-1 pr-2.5 border-r border-pink-500/30 mr-2 shrink-0 select-none">
-                      <span className="text-sm">🇹🇬</span>
-                      <span className="text-xs font-black text-pink-100">+228</span>
+                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
+                    {/* Sélecteur d'indicatif pays intégré devant le numéro */}
+                    <div className="relative flex items-center shrink-0 pr-2 border-r border-pink-500/30 mr-2.5 select-none">
+                      <select
+                        value={selectedCountry.code}
+                        onChange={(e) => {
+                          const found = ALLOWED_COUNTRIES.find(c => c.code === e.target.value);
+                          if (found) setSelectedCountry(found);
+                        }}
+                        className="appearance-none bg-transparent text-pink-100 font-black text-xs sm:text-sm outline-none cursor-pointer flex items-center pr-4 pl-0.5 focus:outline-none"
+                        title="Sélectionner l'indicatif du pays"
+                      >
+                        {ALLOWED_COUNTRIES.map((c) => (
+                          <option key={c.code} value={c.code} className="bg-[#1b052d] text-white">
+                            {c.flag} {c.prefix}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-3.5 h-3.5 text-pink-300 pointer-events-none absolute right-0" />
                     </div>
 
                     {/* Champ de saisie numéro */}
                     <input
                       type="tel"
-                      placeholder="Veuillez entrer le numéro de télép..."
+                      placeholder="Numéro de téléphone..."
                       value={loginPhone}
                       onChange={(e) => setLoginPhone(e.target.value)}
                       className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40"
@@ -671,16 +699,30 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                     Numéro de Téléphone
                   </label>
 
-                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
-                    {/* Indicatif pays Togo */}
-                    <div className="flex items-center space-x-1 pr-2.5 border-r border-pink-500/30 mr-2 shrink-0 select-none">
-                      <span className="text-sm">🇹🇬</span>
-                      <span className="text-xs font-black text-pink-100">+228</span>
+                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
+                    {/* Sélecteur d'indicatif pays intégré devant le numéro */}
+                    <div className="relative flex items-center shrink-0 pr-2 border-r border-pink-500/30 mr-2.5 select-none">
+                      <select
+                        value={selectedCountry.code}
+                        onChange={(e) => {
+                          const found = ALLOWED_COUNTRIES.find(c => c.code === e.target.value);
+                          if (found) setSelectedCountry(found);
+                        }}
+                        className="appearance-none bg-transparent text-pink-100 font-black text-xs sm:text-sm outline-none cursor-pointer flex items-center pr-4 pl-0.5 focus:outline-none"
+                        title="Sélectionner l'indicatif du pays"
+                      >
+                        {ALLOWED_COUNTRIES.map((c) => (
+                          <option key={c.code} value={c.code} className="bg-[#1b052d] text-white">
+                            {c.flag} {c.prefix}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-3.5 h-3.5 text-pink-300 pointer-events-none absolute right-0" />
                     </div>
 
                     <input
                       type="tel"
-                      placeholder="Veuillez entrer le numéro de télép..."
+                      placeholder="Numéro de téléphone..."
                       value={forgotPhone}
                       onChange={(e) => setForgotPhone(e.target.value)}
                       className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40"

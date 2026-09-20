@@ -31,8 +31,8 @@ export const SCHEMA_DEFINITIONS: Record<string, FieldMapping[]> = {
     { jsKey: 'withdrawalAccountNumber', dbKeys: ['withdrawal_account_number', 'withdrawalAccountNumber'], defaultValue: null },
     { jsKey: 'withdrawalPinHash', dbKeys: ['withdrawal_pin_hash', 'withdrawalPinHash'], defaultValue: '' },
     { jsKey: 'drawTickets', dbKeys: ['draw_tickets', 'drawTickets'], defaultValue: 0 },
-    { jsKey: 'withdrawalNetwork', dbKeys: ['withdrawal_network', 'withdrawalNetwork'], defaultValue: 'TMoney' },
-    { jsKey: 'withdrawalCountry', dbKeys: ['withdrawal_country', 'withdrawalCountry'], defaultValue: 'TG' }
+    { jsKey: 'withdrawalNetwork', dbKeys: ['withdrawal_network', 'withdrawalNetwork'], defaultValue: 'MTN Mobile Money' },
+    { jsKey: 'withdrawalCountry', dbKeys: ['withdrawal_country', 'withdrawalCountry'], defaultValue: 'CM' }
   ],
   products: [
     { jsKey: 'id', dbKeys: ['id'] },

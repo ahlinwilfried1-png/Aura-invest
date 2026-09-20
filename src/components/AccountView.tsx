@@ -755,18 +755,18 @@ export const AccountView: React.FC<AccountViewProps> = ({
             )}
           </div>
 
-          {/* WhatsApp Channel Banner for Gift Codes */}
+          {/* Telegram Channel Banner for Gift Codes */}
           <div className="bg-gradient-to-br from-pink-800 via-purple-800 to-indigo-900 text-white rounded-2xl p-4 sm:p-5 shadow-xl border border-pink-500/30 space-y-3.5">
             <div className="flex items-start space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0 border border-white/20">
-                <MessageCircle className="w-5 h-5 fill-white text-white" />
+              <div className="w-10 h-10 rounded-xl bg-[#0088cc] flex items-center justify-center shrink-0 border border-white/20 shadow-xs">
+                <Send className="w-5 h-5 text-white -ml-0.5" />
               </div>
               <div className="space-y-1 min-w-0 flex-1">
                 <div className="text-[10px] font-black uppercase tracking-wider text-pink-200">
                   Codes Cadeaux & Privilèges
                 </div>
                 <h4 className="text-sm sm:text-base font-extrabold tracking-tight leading-snug">
-                  Rejoignez notre chaîne WhatsApp officielle
+                  Rejoignez notre chaîne Telegram officielle
                 </h4>
                 <p className="text-xs text-pink-100/80 font-medium leading-relaxed">
                   Abonnez-vous à la chaîne pour recevoir quotidiennement de nouveaux codes coupons et bonus exclusifs publiés par l'équipe.
@@ -775,13 +775,13 @@ export const AccountView: React.FC<AccountViewProps> = ({
             </div>
 
             <a
-              href="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
+              href="https://t.me/+Nml17Ji3CY8wYWQ8"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 active:scale-[0.99] text-white font-extrabold text-xs py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md border border-pink-300/40"
+              className="w-full bg-[#0088cc] hover:bg-[#0077b5] active:scale-[0.99] text-white font-extrabold text-xs py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md border border-pink-300/40"
             >
-              <MessageCircle className="w-4 h-4 fill-white text-white" />
-              <span>Rejoindre la chaîne officielle</span>
+              <Send className="w-4 h-4 -ml-0.5" />
+              <span>Rejoindre la chaîne officielle Telegram</span>
             </a>
           </div>
         </div>
@@ -987,7 +987,6 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 <option value="MTN Money">MTN Money</option>
                 <option value="Moov Money">Moov Money</option>
                 <option value="Wave">Wave</option>
-                <option value="TMoney">TMoney</option>
               </select>
             </div>
 

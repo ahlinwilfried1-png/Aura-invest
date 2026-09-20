@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, MessageCircle } from 'lucide-react';
+import { X, Send } from 'lucide-react';
 
 interface UserGuideModalProps {
   isOpen: boolean;
@@ -9,7 +9,7 @@ interface UserGuideModalProps {
 export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
-  const whatsappChannelUrl = "https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M";
+  const telegramChannelUrl = "https://t.me/+Nml17Ji3CY8wYWQ8";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 bg-[#0d0417]/85 backdrop-blur-sm animate-fadeIn">
@@ -56,13 +56,13 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
           </div>
 
           <p className="text-[11px] sm:text-xs text-pink-200 leading-snug font-normal bg-pink-500/20 p-2 rounded-xl border border-pink-500/30">
-            <span className="text-pink-400 font-bold">🔻</span> Invitez vos amis à investir et gagnez jusqu'à <strong className="text-white font-bold">10% - 1% - 1%</strong> de commissions sur les investissements.
+            <span className="text-pink-400 font-bold">🔻</span> Invitez vos amis à investir et gagnez jusqu'à <strong className="text-white font-bold">20% - 2% - 1%</strong> de commissions sur les investissements.
           </p>
 
           <div className="space-y-1.5 text-[11px] font-medium text-pink-100 bg-[#120422] p-2.5 rounded-xl border border-pink-500/20">
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">🎁</span>
-              <span><strong>Bonus d'inscription :</strong> 0 XOF</span>
+              <span><strong>Bonus d'inscription :</strong> 500 FCFA</span>
             </div>
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">🔥</span>
@@ -70,11 +70,11 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             </div>
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">💰</span>
-              <span><strong>Dépôt minimum :</strong> 2 500 FCFA</span>
+              <span><strong>Dépôt minimum :</strong> 3 000 FCFA</span>
             </div>
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">💸</span>
-              <span><strong>Retrait minimum :</strong> 1 500 XOF (1 500 FCFA)</span>
+              <span><strong>Retrait minimum :</strong> 1 000 FCFA</span>
             </div>
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">⚙️</span>
@@ -90,11 +90,11 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             </div>
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">👥</span>
-              <span><strong>Commissions parrainage :</strong> 10 % - 1 % - 1 %</span>
+              <span><strong>Commissions parrainage :</strong> 20 % - 2 % - 1 %</span>
             </div>
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">📍</span>
-              <span><strong>Pays concerné :</strong> Togo 🇹🇬 (Mobile Money TMoney & Flooz)</span>
+              <span><strong>Pays supportés :</strong> Togo 🇹🇬, Bénin 🇧🇯, Burkina Faso 🇧🇫, Côte d’Ivoire 🇨🇮, Cameroun 🇨🇲</span>
             </div>
           </div>
         </div>
@@ -102,13 +102,13 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
         {/* Footer Buttons */}
         <div className="mt-3 pt-2.5 border-t border-pink-500/20 flex items-center justify-between gap-2.5">
           <a
-            href={whatsappChannelUrl}
+            href={telegramChannelUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1 shadow-xs active:scale-95 border border-emerald-400/30"
+            className="flex-1 py-2 px-3 bg-[#0088cc] hover:bg-[#0077b5] text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1 shadow-xs active:scale-95 border border-sky-400/30"
           >
-            <MessageCircle className="w-3.5 h-3.5 fill-white text-emerald-600" />
-            <span>WhatsApp &gt;</span>
+            <Send className="w-3.5 h-3.5 -ml-0.5" />
+            <span>Telegram &gt;</span>
           </a>
 
           <button

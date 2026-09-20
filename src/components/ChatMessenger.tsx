@@ -42,7 +42,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
 
   // Filter tickets belonging to current user and sort chronologically (oldest to newest)
   const cleanCurrentPhone = (currentUser.phone || '').replace(/\s+/g, '').replace(/[^\d+]/g, '');
-  const cleanCurrentPhoneNoPrefix = cleanCurrentPhone.replace(/^\+?(228|237)/, '');
+  const cleanCurrentPhoneNoPrefix = cleanCurrentPhone.replace(/^\+?237/, '');
 
   const userTickets = [...tickets]
     .filter(t => {
@@ -52,7 +52,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
       if (currentUser.name && t.userName && t.userName.trim().toLowerCase() === currentUser.name.trim().toLowerCase()) return true;
       if (t.userPhone && t.userPhone !== 'Non renseigné') {
         const cleanTktPhone = t.userPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
-        const cleanTktPhoneNoPrefix = cleanTktPhone.replace(/^\+?(228|237)/, '');
+        const cleanTktPhoneNoPrefix = cleanTktPhone.replace(/^\+?237/, '');
         if (cleanCurrentPhone && cleanTktPhone && (cleanCurrentPhone === cleanTktPhone || cleanCurrentPhone.endsWith(cleanTktPhone) || cleanTktPhone.endsWith(cleanCurrentPhone))) {
           return true;
         }
@@ -220,7 +220,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
 
               <li className="flex items-start space-x-2.5">
                 <span className="text-base leading-none">💰</span>
-                <span>Commissions de parrainage jusqu'à <strong className="text-pink-300 font-black">10 %</strong></span>
+                <span>Commissions de parrainage multi-niveaux (<strong className="text-pink-300 font-black">20% • 2% • 1%</strong>)</span>
               </li>
 
               <li className="flex items-start space-x-2.5">

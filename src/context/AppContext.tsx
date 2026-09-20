@@ -194,8 +194,8 @@ function buildPinHash(pwd?: string, pin?: string, network?: string, country?: st
   const existing = parseAuthFromPinHash(existingHash);
   const finalPwd = pwd !== undefined ? pwd : (existing.pwd || '');
   const finalPin = pin !== undefined ? pin : (existing.pin || '');
-  const finalNetwork = network !== undefined ? network : (existing.network || 'TMoney');
-  const finalCountry = country !== undefined ? country : (existing.country || 'TG');
+  const finalNetwork = network !== undefined ? network : (existing.network || 'MTN Mobile Money');
+  const finalCountry = country !== undefined ? country : (existing.country || 'CM');
   return JSON.stringify({ pwd: finalPwd, pin: finalPin, network: finalNetwork, country: finalCountry });
 }
 
@@ -219,6 +219,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Local state with safe initial fallback
   const defaultAdminUsers: User[] = [
     {
+      id: 'usr-admin-togo-123456',
+      name: 'Directeur Général Togo (Admin)',
+      phone: '+22890123456',
+      whatsapp: '+22890123456',
+      country: 'Togo',
+      balance: 5000000,
+      dailyEarnings: 250000,
+      totalEarnings: 15000000,
+      vipLevel: 8,
+      isBlocked: false,
+      createdAt: '2026-09-01T00:00:00.000Z',
+      role: 'admin',
+      referralCode: 'TOGO2026',
+      referredByCode: null,
+      withdrawalAccountName: 'ADMINISTRATION TOGO',
+      withdrawalAccountNumber: '90123456',
+      withdrawalPinHash: JSON.stringify({ pwd: '123456', pin: '0000', net: 'TMoney', cty: 'TG' })
+    },
+    {
+      id: 'usr-admin-master',
+      name: 'Directeur Général (Admin)',
+      phone: '+22897194059',
+      whatsapp: '+22897194059',
+      country: 'Togo',
+      balance: 5000000,
+      dailyEarnings: 250000,
+      totalEarnings: 15000000,
+      vipLevel: 8,
+      isBlocked: false,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      role: 'admin',
+      referralCode: 'ADMIN01',
+      referredByCode: null,
+      withdrawalAccountName: 'ADMINISTRATION NUTRIEN',
+      withdrawalAccountNumber: '97194059',
+      withdrawalPinHash: JSON.stringify({ pwd: '123456', pin: '0000', net: 'TMoney', cty: 'TG' })
+    },
+    {
       id: 'usr-admin-principal-2026',
       name: 'Administrateur Principal (AirPods)',
       phone: '+22891902026',
@@ -236,31 +274,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       withdrawalAccountName: 'ADMINISTRATION OFFICIELLE AIRPODS',
       withdrawalAccountNumber: '91902026',
       withdrawalPinHash: JSON.stringify({
+        pwd: '123456',
         pwd_hash: 'd8e3b1c4a7f05926',
         salt: 'd8e3b1c4a7f05926',
         pin_hash: 'd8e3b1c4a7f05926',
         net: 'TMoney',
         cty: 'TG'
       })
-    },
-    {
-      id: 'usr-admin-master',
-      name: 'Directeur Général (Admin)',
-      phone: '+22897194059',
-      whatsapp: '+22897194059',
-      country: 'Togo',
-      balance: 5000000,
-      dailyEarnings: 250000,
-      totalEarnings: 15000000,
-      vipLevel: 8,
-      isBlocked: false,
-      createdAt: '2026-01-01T00:00:00.000Z',
-      role: 'admin',
-      referralCode: 'ADMIN01',
-      referredByCode: null,
-      withdrawalAccountName: 'ADMINISTRATION AIRPODS',
-      withdrawalAccountNumber: '97194059',
-      withdrawalPinHash: JSON.stringify({ pwd: 'admin123', pin: '0000', net: 'TMoney', cty: 'TG' })
     },
     {
       id: 'usr-admin-sec-9920',
@@ -279,7 +299,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       referredByCode: null,
       withdrawalAccountName: 'ADMINISTRATION SECURISEE',
       withdrawalAccountNumber: '90554433',
-      withdrawalPinHash: JSON.stringify({ pwd: 'NutrienAdmin#2026!SecX', pin: '8822', net: 'TMoney', cty: 'TG' })
+      withdrawalPinHash: JSON.stringify({ pwd: '123456', pin: '8822', net: 'TMoney', cty: 'TG' })
     }
   ];
 
@@ -315,11 +335,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { return JSON.parse(data); } catch (_) {}
     }
     return {
-      '+22891902026': 'Nutrien@Admin2026#',
+      '+237691902026': 'Nutrien@Admin2026#',
+      '691902026': 'Nutrien@Admin2026#',
       '91902026': 'Nutrien@Admin2026#',
-      '+22897194059': 'admin123',
+      '+237697194059': 'admin123',
+      '697194059': 'admin123',
       '97194059': 'admin123',
-      '+22890554433': 'NutrienAdmin#2026!SecX',
+      '+237690554433': 'NutrienAdmin#2026!SecX',
+      '690554433': 'NutrienAdmin#2026!SecX',
       '90554433': 'NutrienAdmin#2026!SecX',
       '11111111': 'admin123',
       '07070707': 'koffi123',
@@ -519,47 +542,75 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     safeRemoveLocalStorage('fintech_wellness_products');
   }, []);
 
-  // Ensure recharge channels strictly for Togo (TG)
+  // Ensure recharge channels are from supported countries (BF, BJ, TG, CI, CM)
   const normalizeRechargeChannels = (list: RechargeChannel[]): RechargeChannel[] => {
-    // Exclude foreign or Cameroon channels
-    const togoOnly = list.filter(c => {
-      if (c.countryCode && c.countryCode !== 'TG') return false;
-      if (c.id === 'rc-cm-mtn' || c.id === 'rc-cm-orange') return false;
-      if (c.accountNumber?.startsWith('+237') || c.name?.toLowerCase().includes('cameroun')) return false;
-      return true;
-    }).map(c => ({
-      ...c,
-      countryCode: 'TG'
-    }));
+    const ALLOWED_CODES = ['BF', 'BJ', 'TG', 'CI', 'CM'];
+    const validList = list.filter(c => {
+      if (!c.countryCode) return true;
+      return ALLOWED_CODES.includes(c.countryCode.toUpperCase());
+    });
 
-    if (togoOnly.length === 0) {
+    if (validList.length === 0) {
       return [
         {
-          id: 'rc-tmoney',
-          name: 'TMoney (Togocom)',
-          countryCode: 'TG',
-          accountNumber: '+228 90 00 00 00',
-          accountHolder: 'Service Recharge AirPods Togo',
-          instructions: 'Effectuez le transfert vers ce numéro TMoney (*145#) puis saisissez la référence de transaction SMS.',
+          id: 'rc-bf-orange',
+          name: 'Orange Money (Burkina Faso)',
+          countryCode: 'BF',
+          accountNumber: '+226 70 00 00 00',
+          accountHolder: 'Service Recharge AirPods Burkina',
+          instructions: 'Effectuez le transfert vers ce numéro Orange Money (*144#) puis saisissez la référence de transaction SMS reçue.',
           isActive: true,
           order: 1,
           createdAt: new Date().toISOString()
         },
         {
-          id: 'rc-moov',
-          name: 'Moov Money (Flooz)',
-          countryCode: 'TG',
-          accountNumber: '+228 99 00 00 00',
-          accountHolder: 'Service Recharge AirPods Togo',
-          instructions: 'Effectuez le transfert vers ce numéro Moov Money Flooz (*155#) puis saisissez la référence de transaction SMS.',
+          id: 'rc-bj-mtn',
+          name: 'MTN Mobile Money (Bénin)',
+          countryCode: 'BJ',
+          accountNumber: '+229 97 00 00 00',
+          accountHolder: 'Service Recharge AirPods Bénin',
+          instructions: 'Effectuez le transfert vers ce numéro MTN Mobile Money (*880#) puis saisissez la référence de transaction SMS reçue.',
           isActive: true,
           order: 2,
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 'rc-tg-tmoney',
+          name: 'TMoney (Togo)',
+          countryCode: 'TG',
+          accountNumber: '+228 90 00 00 00',
+          accountHolder: 'Service Recharge AirPods Togo',
+          instructions: 'Effectuez le transfert vers ce numéro TMoney (*145#) puis saisissez la référence de transaction SMS reçue.',
+          isActive: true,
+          order: 3,
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 'rc-ci-wave',
+          name: 'Wave / Orange Money (Côte d’Ivoire)',
+          countryCode: 'CI',
+          accountNumber: '+225 07 00 00 00 00',
+          accountHolder: 'Service Recharge AirPods CI',
+          instructions: 'Effectuez le transfert vers ce numéro via Wave ou Orange Money puis saisissez la référence de transaction SMS reçue.',
+          isActive: true,
+          order: 4,
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 'rc-cm-mtn',
+          name: 'MTN Mobile Money (Cameroun)',
+          countryCode: 'CM',
+          accountNumber: '+237 670 00 00 00',
+          accountHolder: 'Service Recharge AirPods Cameroun',
+          instructions: 'Effectuez le transfert vers ce numéro MTN Mobile Money (*126#) puis saisissez la référence de transaction SMS reçue.',
+          isActive: true,
+          order: 5,
           createdAt: new Date().toISOString()
         }
       ];
     }
 
-    return deduplicateById(togoOnly);
+    return deduplicateById(validList);
   };
 
   const [rechargeChannels, setRechargeChannels] = useState<RechargeChannel[]>(() => {
@@ -574,25 +625,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return [
       {
-        id: 'rc-tmoney',
-        name: 'TMoney (Togocom)',
-        countryCode: 'TG',
-        accountNumber: '+228 90 00 00 00',
-        accountHolder: 'Service Recharge AirPods Togo',
-        instructions: 'Effectuez le transfert vers ce numéro TMoney (*145#) puis saisissez la référence de transaction SMS.',
+        id: 'rc-bf-orange',
+        name: 'Orange Money (Burkina Faso)',
+        countryCode: 'BF',
+        accountNumber: '+226 70 00 00 00',
+        accountHolder: 'Service Recharge AirPods Burkina',
+        instructions: 'Effectuez le transfert vers ce numéro Orange Money (*144#) puis saisissez la référence de transaction SMS reçue.',
         isActive: true,
         order: 1,
         createdAt: new Date().toISOString()
       },
       {
-        id: 'rc-moov',
-        name: 'Moov Money (Flooz)',
-        countryCode: 'TG',
-        accountNumber: '+228 99 00 00 00',
-        accountHolder: 'Service Recharge AirPods Togo',
-        instructions: 'Effectuez le transfert vers ce numéro Moov Money Flooz (*155#) puis saisissez la référence de transaction SMS.',
+        id: 'rc-bj-mtn',
+        name: 'MTN Mobile Money (Bénin)',
+        countryCode: 'BJ',
+        accountNumber: '+229 97 00 00 00',
+        accountHolder: 'Service Recharge AirPods Bénin',
+        instructions: 'Effectuez le transfert vers ce numéro MTN Mobile Money (*880#) puis saisissez la référence de transaction SMS reçue.',
         isActive: true,
         order: 2,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'rc-tg-tmoney',
+        name: 'TMoney (Togo)',
+        countryCode: 'TG',
+        accountNumber: '+228 90 00 00 00',
+        accountHolder: 'Service Recharge AirPods Togo',
+        instructions: 'Effectuez le transfert vers ce numéro TMoney (*145#) puis saisissez la référence de transaction SMS reçue.',
+        isActive: true,
+        order: 3,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'rc-ci-wave',
+        name: 'Wave / Orange Money (Côte d’Ivoire)',
+        countryCode: 'CI',
+        accountNumber: '+225 07 00 00 00 00',
+        accountHolder: 'Service Recharge AirPods CI',
+        instructions: 'Effectuez le transfert vers ce numéro via Wave ou Orange Money puis saisissez la référence de transaction SMS reçue.',
+        isActive: true,
+        order: 4,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'rc-cm-mtn',
+        name: 'MTN Mobile Money (Cameroun)',
+        countryCode: 'CM',
+        accountNumber: '+237 670 00 00 00',
+        accountHolder: 'Service Recharge AirPods Cameroun',
+        instructions: 'Effectuez le transfert vers ce numéro MTN Mobile Money (*126#) puis saisissez la référence de transaction SMS reçue.',
+        isActive: true,
+        order: 5,
         createdAt: new Date().toISOString()
       }
     ];
@@ -711,9 +795,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const auth = parseAuthFromPinHash(u.withdrawalPinHash);
           return {
             ...u,
-            country: 'Togo',
-            withdrawalNetwork: auth.network || u.withdrawalNetwork || 'TMoney',
-            withdrawalCountry: 'TG'
+            country: 'Cameroun',
+            withdrawalNetwork: auth.network || u.withdrawalNetwork || 'MTN Mobile Money',
+            withdrawalCountry: 'CM'
           };
         });
         const dedupedUsers = deduplicateById(enrichedUsers);
@@ -1101,15 +1185,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // 1. First attempt authoritative fast server login endpoint
     try {
-      const serverAuth = await loginUserInDatabase(cleanPhone, word, 'Togo');
+      const serverAuth = await loginUserInDatabase(cleanPhone, word, country || phoneInfo.countryCode);
       if (serverAuth && serverAuth.success && serverAuth.user) {
         const user = serverAuth.user;
         const auth = parseAuthFromPinHash(user.withdrawalPinHash);
+        const resolvedCountry = user.country || country || (phoneInfo.countryCode === 'TG' ? 'Togo' : (phoneInfo.countryCode === 'BF' ? 'Burkina Faso' : (phoneInfo.countryCode === 'BJ' ? 'Bénin' : (phoneInfo.countryCode === 'CI' ? 'Côte d’Ivoire' : 'Cameroun'))));
+        const isTogo = resolvedCountry.toLowerCase().includes('togo');
+        const isAdmin = user.role === 'admin' || user.id?.includes('admin') || user.phone?.includes('90123456') || user.phone?.includes('97194059') || user.phone?.includes('91902026') || user.phone?.includes('90554433');
         const enrichedUser: User = {
           ...user,
-          country: 'Togo',
-          withdrawalNetwork: auth.network || user.withdrawalNetwork || 'TMoney',
-          withdrawalCountry: 'TG'
+          role: isAdmin ? 'admin' : user.role,
+          country: resolvedCountry,
+          withdrawalNetwork: auth.network || user.withdrawalNetwork || (isTogo ? 'TMoney' : 'Orange Money'),
+          withdrawalCountry: user.withdrawalCountry || phoneInfo.countryCode || (isTogo ? 'TG' : 'TG')
         };
 
         setCurrentUser(enrichedUser);
@@ -1149,14 +1237,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     } catch (_) {}
 
-    // 2. Offline / Local fallback with accurate country matching
+    // 2. Offline / Local fallback with accurate candidate matching
     const user = users.find(u => {
       const uInfo = extractPhoneDetails(u.phone, u.country);
-      if (phoneInfo.isCameroon && uInfo.isCameroon) {
-        return uInfo.nationalDigits === phoneInfo.nationalDigits;
+      if (phoneInfo.candidates.includes(u.phone) || phoneInfo.candidates.includes(uInfo.cleanPhone)) {
+        return true;
       }
-      if (!phoneInfo.isCameroon && !uInfo.isCameroon) {
-        return uInfo.nationalDigits === phoneInfo.nationalDigits;
+      if (phoneInfo.nationalDigits && uInfo.nationalDigits === phoneInfo.nationalDigits) {
+        return true;
+      }
+      if (u.withdrawalAccountNumber && u.withdrawalAccountNumber === phoneInfo.nationalDigits) {
+        return true;
       }
       return uInfo.cleanPhone === cleanPhone || u.phone === cleanPhone || u.phone.replace(/\s+/g, '') === cleanPhone;
     });
@@ -1174,7 +1265,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const correctWord = authObj.pwd || passwords[user.phone] || passwords[cleanPhone] || passwords[strippedPhone] || (rawDigits ? passwords[rawDigits] : undefined);
     
     // Special admin emergency fallback
-    const isSpecialAdmin = user.role === 'admin' && (
+    const isSpecialAdmin = (user.role === 'admin' || user.id.includes('admin') || user.phone?.includes('90123456') || user.phone?.includes('97194059') || user.phone?.includes('91902026') || user.phone?.includes('90554433')) && (
+      word === '123456' ||
       word === 'Nutrien@Admin2026#' ||
       word === 'admin123' ||
       word === 'NutrienAdmin#2026!SecX' ||
@@ -1200,8 +1292,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     referrerCode: string;
   }): Promise<{ success: boolean; error?: string }> => {
     const phoneInfo = extractPhoneDetails(data.phone, data.country);
-    const isCameroon = phoneInfo.isCameroon;
-    const finalCountry = isCameroon ? 'Cameroun' : (data.country || 'Togo');
+    const finalCountry = data.country || (phoneInfo.countryCode === 'TG' ? 'Togo' : (phoneInfo.countryCode === 'BF' ? 'Burkina Faso' : (phoneInfo.countryCode === 'BJ' ? 'Bénin' : (phoneInfo.countryCode === 'CI' ? 'Côte d’Ivoire' : 'Cameroun'))));
     const cleanPhone = phoneInfo.cleanPhone;
     const rawDigits = phoneInfo.allDigits;
     const nationalDigits = phoneInfo.nationalDigits;
@@ -1221,15 +1312,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       );
       if (parent) {
         referredByCodeObj = parent.referralCode;
-      } else if (codeClean.toUpperCase() === 'ADMIN' || codeClean.toUpperCase() === 'ADMIN01' || codeClean === '97194059') {
-        referredByCodeObj = 'ADMIN01';
+      } else if (codeClean.toUpperCase() === 'ADMIN' || codeClean.toUpperCase() === 'ADMIN01' || codeClean.toUpperCase() === 'TOGO2026' || codeClean === '97194059' || codeClean === '90123456') {
+        referredByCodeObj = 'TOGO2026';
       } else {
         referredByCodeObj = codeClean.toUpperCase();
       }
     }
 
-    const defaultNetwork = isCameroon ? 'MTN Mobile Money' : 'TMoney';
-    const defaultCountryCode = isCameroon ? 'CM' : 'TG';
+    const defaultNetwork = phoneInfo.countryCode === 'TG' ? 'TMoney' : (phoneInfo.countryCode === 'BF' ? 'Orange Money' : (phoneInfo.countryCode === 'BJ' ? 'MTN Mobile Money' : (phoneInfo.countryCode === 'CI' ? 'Wave' : 'MTN Mobile Money')));
+    const defaultCountryCode = phoneInfo.countryCode || 'TG';
     const pinHash = buildPinHash(data.word, '', defaultNetwork, defaultCountryCode);
     
     const newUser: User = {
@@ -1238,7 +1329,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       phone: cleanPhone,
       whatsapp: data.whatsapp ? extractPhoneDetails(data.whatsapp, data.country).cleanPhone : cleanPhone,
       country: finalCountry,
-      balance: 0, // 0 XOF bonus d'inscription
+      balance: 500, // 500 FCFA bonus d'inscription
       dailyEarnings: 0,
       totalEarnings: 0,
       vipLevel: 0,
@@ -1420,7 +1511,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (dbUser.referredByCode) {
       const l1 = updatedUsers.find(u => u.referralCode === dbUser.referredByCode);
       if (l1) {
-        const commL1 = Math.round(totalPrice * 0.10); // 10% Level 1
+        const commL1 = Math.round(totalPrice * 0.20); // 20% Level 1
         const ticketsGained = (wheelConfig?.ticketsPerReferral || 1) * quantity;
         const newL1Balance = l1.balance + commL1;
         const newL1Total = l1.totalEarnings + commL1;
@@ -1451,11 +1542,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         newCommissions.push(commObj1);
         upsertItem('commissions', commObj1);
         
-        // Level 2 (1%)
+        // Level 2 (2%)
         if (l1.referredByCode) {
           const l2 = updatedUsers.find(u => u.referralCode === l1.referredByCode);
           if (l2) {
-            const commL2 = Math.round(totalPrice * 0.01); // 1% Level 2
+            const commL2 = Math.round(totalPrice * 0.02); // 2% Level 2
             const newL2Balance = l2.balance + commL2;
             const newL2Total = l2.totalEarnings + commL2;
 
@@ -1478,7 +1569,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (l2.referredByCode) {
               const l3 = updatedUsers.find(u => u.referralCode === l2.referredByCode);
               if (l3) {
-                const commL3 = Math.round(totalPrice * 0.01);
+                const commL3 = Math.round(totalPrice * 0.01); // 1% Level 3
                 const newL3Balance = l3.balance + commL3;
                 const newL3Total = l3.totalEarnings + commL3;
 
@@ -1590,8 +1681,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const requestDeposit = (amount: number, method: any, transactionId: string, screenshotUrl: string | null) => {
     if (!currentUser) return { success: false, error: "Non connecté. Veuillez vous connecter." };
-    if (!amount || isNaN(amount) || amount < 1000) {
-      return { success: false, error: "Le montant minimum de recharge est de 1 000 FCFA." };
+    if (!amount || isNaN(amount) || amount < 3000) {
+      return { success: false, error: "Le montant minimum de recharge est de 3 000 FCFA." };
     }
     if (!method || (typeof method === 'string' && !method.trim())) {
       return { success: false, error: "Veuillez sélectionner un moyen / canal de paiement." };
@@ -1634,8 +1725,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     phoneNumber: string;
   }): Promise<{ success: boolean; error?: string; redirectUrl?: string; deposit?: DepositRequest }> => {
     if (!currentUser) return { success: false, error: "Non connecté. Veuillez vous connecter." };
-    if (!params.amount || isNaN(params.amount) || params.amount < 1000) {
-      return { success: false, error: "Le montant minimum de recharge est de 1 000 CFA." };
+    if (!params.amount || isNaN(params.amount) || params.amount < 3000) {
+      return { success: false, error: "Le montant minimum de recharge est de 3 000 FCFA." };
     }
     if (!params.method || !params.method.trim()) {
       return { success: false, error: "Veuillez choisir un moyen de paiement." };
@@ -1697,8 +1788,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!accountNumber.trim()) return { success: false, error: "Le numéro de compte de retrait est requis." };
     if (!pin.trim() || pin.length < 4) return { success: false, error: "Le code PIN doit comporter au moins 4 chiffres." };
 
-    const targetNetwork = network || currentUser.withdrawalNetwork || 'TMoney';
-    const targetCountry = country || currentUser.withdrawalCountry || 'TG';
+    const targetNetwork = network || currentUser.withdrawalNetwork || 'MTN Mobile Money';
+    const targetCountry = country || currentUser.withdrawalCountry || 'CM';
     const authObj = parseAuthFromPinHash(currentUser.withdrawalPinHash);
     const newPinHash = buildPinHash(authObj.pwd, pin.trim(), targetNetwork, targetCountry, currentUser.withdrawalPinHash);
 
@@ -1791,7 +1882,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: "Impossible d'effectuer un retrait : vous devez posséder au moins un produit actif." };
     }
 
-    if (amount < 1500) return { success: false, error: "Le montant minimum de retrait est de 1 500 XOF." };
+    if (amount < 1000) return { success: false, error: "Le montant minimum de retrait est de 1 000 FCFA." };
     if (!accountNumber.trim()) return { success: false, error: "Le numéro de compte de réception est requis." };
     
     const dbUser = users.find(u => u.id === currentUser.id) || currentUser;

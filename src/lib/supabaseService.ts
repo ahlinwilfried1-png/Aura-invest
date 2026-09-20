@@ -415,7 +415,7 @@ export async function checkoutDeposit(payload: {
     createdAt: new Date().toISOString()
   };
   await upsertItem('deposits', fallbackDep);
-  const exactPaymentGatewayUrl = 'https://goespay.io/pay/WMBJJ7VE';
+  const exactPaymentGatewayUrl = `/api/pay-redirect/${fallbackDep.id}`;
   return {
     success: true,
     deposit: fallbackDep,

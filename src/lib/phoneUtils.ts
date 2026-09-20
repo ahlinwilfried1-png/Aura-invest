@@ -1,6 +1,6 @@
 /**
  * Phone Number Normalization & Country Utilities
- * Site exclusive to Togo (+228)
+ * Site exclusive to Cameroun (+237)
  */
 import { ALLOWED_COUNTRIES, DEFAULT_COUNTRY, AllowedCountry, getCountryByCode, getCountryByNameOrCode } from '../constants/countries';
 
@@ -47,28 +47,6 @@ export function normalizePhoneNumber(input: string | undefined | null, defaultPr
     return `${matchedCountry.prefix}${cleaned}`;
   }
 
-  // Automatic country heuristics for raw national digits if no prefix
-  // Côte d'Ivoire: 10 digits or starts with 01, 05, 07
-  if (cleaned.length === 10 && (cleaned.startsWith('07') || cleaned.startsWith('05') || cleaned.startsWith('01'))) {
-    return `+225${cleaned}`;
-  }
-  // Cameroon: 9 digits starting with 6, 2, 3
-  if (cleaned.length === 9 && (cleaned.startsWith('6') || cleaned.startsWith('2') || cleaned.startsWith('3'))) {
-    return `+237${cleaned}`;
-  }
-  // Togo: 8 digits starting with 9, 7, 2
-  if (cleaned.length === 8 && (cleaned.startsWith('9') || cleaned.startsWith('7') || cleaned.startsWith('2'))) {
-    return `+228${cleaned}`;
-  }
-  // Burkina Faso: 8 digits starting with 7, 6, 5
-  if (cleaned.length === 8 && (cleaned.startsWith('7') || cleaned.startsWith('6') || cleaned.startsWith('5'))) {
-    return `+226${cleaned}`;
-  }
-  // Benin: 8 digits
-  if (cleaned.length === 8) {
-    return `+229${cleaned}`;
-  }
-  
   const prefix = defaultPrefix.startsWith('+') ? defaultPrefix : `+${defaultPrefix}`;
   return `${prefix}${cleaned}`;
 }
@@ -97,17 +75,20 @@ export function extractPhoneDetails(input: string | undefined | null, countryHin
 
   let detectedCountry: AllowedCountry = DEFAULT_COUNTRY;
 
-  if (countryHint) {
-    detectedCountry = getCountryByNameOrCode(countryHint);
-  } else {
-    // Detect by prefix
-    for (const c of ALLOWED_COUNTRIES) {
-      const pDigits = c.prefix.replace('+', '');
-      if (raw.startsWith(c.prefix) || allDigits.startsWith(pDigits)) {
-        detectedCountry = c;
-        break;
-      }
+  // 1. Check if the raw string explicitly has a known country prefix
+  let explicitMatch = false;
+  for (const c of ALLOWED_COUNTRIES) {
+    const pDigits = c.prefix.replace('+', '');
+    if (raw.startsWith(c.prefix) || (allDigits.startsWith(pDigits) && allDigits.length >= pDigits.length + 7)) {
+      detectedCountry = c;
+      explicitMatch = true;
+      break;
     }
+  }
+
+  // 2. If no explicit prefix, check countryHint
+  if (!explicitMatch && countryHint) {
+    detectedCountry = getCountryByNameOrCode(countryHint);
   }
 
   let nationalDigits = '';
@@ -129,6 +110,10 @@ export function extractPhoneDetails(input: string | undefined | null, countryHin
     candidatesSet.add(`0${nationalDigits}`);
     candidatesSet.add(`${detectedCountry.prefix} ${nationalDigits}`);
     candidatesSet.add(`${prefixDigits}${nationalDigits}`);
+    for (const c of ALLOWED_COUNTRIES) {
+      candidatesSet.add(`${c.prefix}${nationalDigits}`);
+      candidatesSet.add(`${c.prefix.replace('+', '')}${nationalDigits}`);
+    }
   }
 
   return {
@@ -142,7 +127,7 @@ export function extractPhoneDetails(input: string | undefined | null, countryHin
 }
 
 export function detectCountryFromPhone(phone: string | undefined | null): string {
-  if (!phone) return 'Cameroun';
+  if (!phone) return DEFAULT_COUNTRY.name;
   const clean = String(phone).replace(/\s+/g, '');
   for (const c of ALLOWED_COUNTRIES) {
     const rawPrefix = c.prefix.replace('+', '');
@@ -150,7 +135,7 @@ export function detectCountryFromPhone(phone: string | undefined | null): string
       return c.name;
     }
   }
-  return 'Cameroun';
+  return DEFAULT_COUNTRY.name;
 }
 
 export function getCountryCode(countryNameOrCode: string | undefined | null): string {

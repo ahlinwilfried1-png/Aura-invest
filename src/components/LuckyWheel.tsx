@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Trophy, RotateCw, Gift, Share2, HelpCircle, Ticket, CheckCircle2, MessageCircle } from 'lucide-react';
+import { Sparkles, Trophy, RotateCw, Gift, Share2, HelpCircle, Ticket, CheckCircle2, Send } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 interface LuckyWheelProps {
@@ -23,17 +23,17 @@ const getRelativeTime = (isoString: string): string => {
 };
 
 const DEFAULT_SIMULATED_RECORDS = [
-  { id: 'sim-1', userPhone: '+228 90 ** ** 48', prizeLabel: '+50 FCFA', action: 'a gagné le lot maximal', createdAt: new Date(Date.now() - 12000).toISOString() },
-  { id: 'sim-2', userPhone: '+228 91 ** ** 12', prizeLabel: '+25 FCFA', action: 'a fait tourner la roue', createdAt: new Date(Date.now() - 35000).toISOString() },
-  { id: 'sim-3', userPhone: '+228 92 ** ** 90', prizeLabel: '+35 FCFA', action: 'a fait tourner la roue', createdAt: new Date(Date.now() - 72000).toISOString() },
-  { id: 'sim-4', userPhone: '+228 93 ** ** 33', prizeLabel: '+30 FCFA', action: 'a fait tourner la roue', createdAt: new Date(Date.now() - 140000).toISOString() },
-  { id: 'sim-5', userPhone: '+228 90 ** ** 88', prizeLabel: '+45 FCFA', action: 'a fait tourner la roue', createdAt: new Date(Date.now() - 210000).toISOString() },
+  { id: 'sim-1', userPhone: '+237 67 ** ** 48', prizeLabel: '+50 FCFA', action: 'a gagné le lot maximal', createdAt: new Date(Date.now() - 12000).toISOString() },
+  { id: 'sim-2', userPhone: '+237 69 ** ** 12', prizeLabel: '+25 FCFA', action: 'a fait tourner la roue', createdAt: new Date(Date.now() - 35000).toISOString() },
+  { id: 'sim-3', userPhone: '+237 65 ** ** 90', prizeLabel: '+35 FCFA', action: 'a fait tourner la roue', createdAt: new Date(Date.now() - 72000).toISOString() },
+  { id: 'sim-4', userPhone: '+237 68 ** ** 33', prizeLabel: '+30 FCFA', action: 'a fait tourner la roue', createdAt: new Date(Date.now() - 140000).toISOString() },
+  { id: 'sim-5', userPhone: '+237 67 ** ** 88', prizeLabel: '+45 FCFA', action: 'a fait tourner la roue', createdAt: new Date(Date.now() - 210000).toISOString() },
 ];
 
 const PRESET_PHONES = [
-  '+228 90 ** ** 19', '+228 91 ** ** 64', '+228 92 ** ** 82',
-  '+228 93 ** ** 91', '+228 90 ** ** 40', '+228 91 ** ** 37',
-  '+228 92 ** ** 55', '+228 93 ** ** 73', '+228 90 ** ** 26'
+  '+237 67 ** ** 19', '+237 69 ** ** 64', '+237 65 ** ** 82',
+  '+237 68 ** ** 91', '+237 67 ** ** 40', '+237 69 ** ** 37',
+  '+237 65 ** ** 55', '+237 68 ** ** 73', '+237 67 ** ** 26'
 ];
 
 const PRESET_PRIZES = ['+25 FCFA', '+30 FCFA', '+35 FCFA', '+40 FCFA', '+45 FCFA', '+50 FCFA'];
@@ -171,29 +171,29 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
       {/* 1. TICKET STATUS & WHEEL GAME CONTAINER */}
       <div className="space-y-5 text-center relative bg-[#1a082b] border border-pink-500/30 rounded-3xl p-4 sm:p-6 shadow-xl">
         
-        {/* WhatsApp Channel Header Banner */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl text-left">
+        {/* Canal Telegram Officiel */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 bg-sky-950/40 border border-sky-500/30 rounded-2xl text-left">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-xs">
-              <MessageCircle className="w-5 h-5 fill-white text-white" />
+            <div className="w-10 h-10 rounded-xl bg-[#0088cc] text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Send className="w-5 h-5 -ml-0.5" />
             </div>
             <div>
-              <div className="text-[10px] font-black uppercase tracking-wider text-emerald-400">
-                Canal WhatsApp Officiel
+              <div className="text-[10px] font-black uppercase tracking-wider text-sky-400">
+                Canal Telegram Officiel
               </div>
               <div className="text-xs sm:text-sm font-extrabold text-white">
-                Rejoindre la chaîne WhatsApp
+                Rejoindre la chaîne Telegram
               </div>
             </div>
           </div>
 
           <a
-            href="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
+            href="https://t.me/+Nml17Ji3CY8wYWQ8"
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full sm:w-auto bg-[#25D366] hover:bg-[#20ba5a] active:scale-[0.98] text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-1.5 shrink-0 shadow-xs"
+            className="w-full sm:w-auto bg-[#0088cc] hover:bg-[#0077b5] active:scale-[0.98] text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-1.5 shrink-0 shadow-xs"
           >
-            <MessageCircle className="w-4 h-4 fill-white text-white" />
+            <Send className="w-4 h-4 -ml-0.5" />
             <span>Rejoindre la chaîne</span>
           </a>
         </div>
@@ -469,18 +469,18 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
         </div>
       </div>
 
-      {/* 4. CANAL WHATSAPP OFFICIEL POUR LES TIRAGES AU SORT */}
+      {/* 4. CANAL TELEGRAM OFFICIEL POUR LES TIRAGES AU SORT */}
       <div className="bg-gradient-to-br from-[#1a082b] via-[#250b3f] to-[#120422] border border-pink-500/30 text-white rounded-3xl p-4 sm:p-5 shadow-lg space-y-3.5">
         <div className="flex items-start space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-pink-500/20 text-pink-400 flex items-center justify-center shrink-0 border border-pink-500/30">
-            <MessageCircle className="w-5 h-5 fill-pink-400 text-pink-400" />
+          <div className="w-10 h-10 rounded-2xl bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0 border border-sky-500/30">
+            <Send className="w-5 h-5 -ml-0.5" />
           </div>
           <div className="space-y-1 min-w-0 flex-1">
-            <div className="text-[10px] font-black uppercase tracking-wider text-pink-300">
+            <div className="text-[10px] font-black uppercase tracking-wider text-sky-300">
               Résultats & Lots du Tirage
             </div>
             <h4 className="text-sm sm:text-base font-extrabold tracking-tight leading-snug text-white">
-              Chaîne WhatsApp Officielle des Tirages
+              Chaîne Telegram Officielle des Tirages
             </h4>
             <p className="text-xs text-pink-200/80 font-medium leading-relaxed">
               Suivez la publication quotidienne des gagnants, les événements spéciaux de tirage au sort et les codes bonus exclusifs sur notre chaîne.
@@ -489,13 +489,13 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ onShowToast }) => {
         </div>
 
         <a
-          href="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
+          href="https://t.me/+Nml17Ji3CY8wYWQ8"
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full bg-[#25D366] hover:bg-[#20ba5a] active:scale-[0.99] text-white font-extrabold text-xs sm:text-sm py-3.5 rounded-2xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md"
+          className="w-full bg-[#0088cc] hover:bg-[#0077b5] active:scale-[0.99] text-white font-extrabold text-xs sm:text-sm py-3.5 rounded-2xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md"
         >
-          <MessageCircle className="w-4 h-4 fill-white text-white" />
-          <span>REJOINDRE LA CHAÎNE OFFICIELLE</span>
+          <Send className="w-4 h-4 -ml-0.5" />
+          <span>REJOINDRE LA CHAÎNE OFFICIELLE TELEGRAM</span>
         </a>
       </div>
 

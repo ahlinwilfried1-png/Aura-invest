@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { ArrowLeft, User, Phone, MapPin, CreditCard, ShieldCheck, CheckCircle2, Copy, Send, Sparkles, Globe } from 'lucide-react';
+import { ArrowLeft, User, Phone, MapPin, CreditCard, ShieldCheck, CheckCircle2, Copy, Send, Sparkles } from 'lucide-react';
 import { User as UserType } from '../types';
-import { ALLOWED_COUNTRIES } from '../constants/countries';
 
 interface InformationFillViewProps {
   currentUser: UserType;
@@ -20,8 +19,8 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
     name: currentUser.name || '',
     phone: currentUser.phone || '',
     whatsapp: currentUser.whatsapp || '',
-    country: currentUser.country || (currentUser.phone?.startsWith('+237') ? 'Cameroun' : 'Togo'),
-    paymentNetwork: currentUser.withdrawalNetwork || 'TMoney (Togocom)',
+    country: currentUser.country || 'Cameroun',
+    paymentNetwork: currentUser.withdrawalNetwork || 'MTN Mobile Money',
     paymentAccount: currentUser.withdrawalAccountNumber || currentUser.phone || '',
     idNumber: '',
     email: ''
@@ -39,14 +38,14 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
       return;
     }
     if (!formData.whatsapp.trim()) {
-      onShowToast('err', 'Veuillez saisir votre numéro WhatsApp.');
+      onShowToast('err', 'Veuillez saisir votre numéro de contact.');
       return;
     }
 
     onUpdateProfile({
       name: formData.name.trim(),
       whatsapp: formData.whatsapp.trim(),
-      country: formData.country.trim() || 'Togo'
+      country: 'Cameroun'
     });
 
     setIsSaved(true);
@@ -171,21 +170,9 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
               required
               value={formData.whatsapp}
               onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-              placeholder="Ex: +22890909090"
+              placeholder="Ex: +237690000000"
               className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-white placeholder:text-pink-300/40 outline-none focus:border-pink-400 transition-colors"
             />
-          </div>
-        </div>
-
-        {/* Pays (Exclusif Togo) */}
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-pink-200/90 flex items-center space-x-1">
-            <Globe className="w-3.5 h-3.5 text-pink-400" />
-            <span>Pays de résidence *</span>
-          </label>
-          <div className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white flex items-center space-x-2">
-            <span className="text-base">🇹🇬</span>
-            <span>Togo (+228)</span>
           </div>
         </div>
 
@@ -201,8 +188,8 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
               onChange={(e) => setFormData({ ...formData, paymentNetwork: e.target.value })}
               className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white outline-none focus:border-pink-400 transition-colors"
             >
-              <option value="TMoney (Togocom)" className="bg-[#120422] text-white">TMoney (Togocom)</option>
-              <option value="Moov Money (Flooz)" className="bg-[#120422] text-white">Moov Money (Flooz)</option>
+              <option value="MTN Mobile Money" className="bg-[#120422] text-white">MTN Mobile Money</option>
+              <option value="Orange Money" className="bg-[#120422] text-white">Orange Money</option>
               <option value="Carte Visa / Mastercard" className="bg-[#120422] text-white">Carte Visa / Mastercard</option>
               <option value="Virement Bancaire" className="bg-[#120422] text-white">Virement Bancaire</option>
             </select>

@@ -298,7 +298,7 @@ export const ProofOfWithdrawalView: React.FC<ProofOfWithdrawalViewProps> = ({ on
                 </label>
                 <input
                   type="number"
-                  min={1500}
+                  min={1000}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
                   placeholder="Ex: 25000"

@@ -93,23 +93,22 @@
   <rect x="35" y="322" width="1130" height="150" rx="16" fill="#ffffff" fill-opacity="0.8" stroke="#e2e8f0" stroke-width="1.5"/>
 
   <!-- 6 PARTNERS COLUMNS -->
-  <!-- Partner 1: AirPods Togo -->
+  <!-- Partner 1: AirPods Cameroun -->
   <g transform="translate(130, 395)" text-anchor="middle">
     <!-- AirPods Mini Logo -->
     <path d="M-10,-28 C-20,-40 -5,-50 0,-50 C0,-50 3,-38 -10,-28 Z" fill="#84cc16"/>
     <path d="M0,-50 C6,-50 20,-38 10,-28 C-3,-38 0,-50 0,-50 Z" fill="#16a34a"/>
     <text y="-8" font-family="sans-serif" font-weight="900" font-size="15" fill="#0f172a">AIRPODS</text>
-    <text y="4" font-family="sans-serif" font-weight="800" font-size="8" fill="#047857" letter-spacing="2">AGRICULTURE</text>
-    <!-- Flag Togo -->
-    <g transform="translate(-32, 22)">
-      <rect width="20" height="12" rx="2" fill="#22c55e"/>
-      <rect y="2.4" width="20" height="2.4" fill="#eab308"/>
-      <rect y="7.2" width="20" height="2.4" fill="#eab308"/>
-      <rect width="8" height="7.2" rx="1" fill="#ef4444"/>
-      <polygon points="4,1.5 4.8,3.5 3,2.2 5,2.2 3.2,3.5" fill="#ffffff"/>
+    <text y="4" font-family="sans-serif" font-weight="800" font-size="8" fill="#047857" letter-spacing="2">CAMEROUN</text>
+    <!-- Flag Cameroun -->
+    <g transform="translate(-46, 22)">
+      <rect width="6.6" height="12" fill="#007a5e"/>
+      <rect x="6.6" width="6.8" height="12" fill="#ce1126"/>
+      <rect x="13.4" width="6.6" height="12" fill="#fcd116"/>
+      <polygon points="10,4.5 10.8,6.8 9,5.5 11,5.5 9.2,6.8" fill="#fcd116"/>
     </g>
-    <text x="-4" y="32" font-family="sans-serif" font-weight="800" font-size="11" fill="#334155">TOGO</text>
-    <text y="45" font-family="sans-serif" font-weight="600" font-size="10" fill="#64748b">Siège Social</text>
+    <text x="2" y="32" font-family="sans-serif" font-weight="800" font-size="11" fill="#334155">CAMEROUN</text>
+    <text y="45" font-family="sans-serif" font-weight="600" font-size="10" fill="#64748b">Siège Régional</text>
   </g>
   <line x1="223" y1="337" x2="223" y2="457" stroke="#cbd5e1" stroke-width="1"/>
 
