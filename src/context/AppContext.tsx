@@ -375,6 +375,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           price: official.price,
           dailyGain: official.dailyGain,
           duration: official.duration,
+          gain120Days: official.gain120Days,
           gain40Days: official.gain40Days,
           totalGain: official.totalGain,
           dailyRatePercent: official.dailyRatePercent,
@@ -384,13 +385,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       const parsedPrice = Number(item.price) || 0;
       const parsedDaily = Number(item.dailyGain) || 0;
-      const parsedDur = Number(item.duration) || 40;
+      const parsedDur = Number(item.duration) || 120;
       return {
         ...item,
         price: parsedPrice,
         dailyGain: parsedDaily,
         duration: parsedDur,
-        totalGain: Number(item.totalGain) || (parsedDaily * parsedDur),
+        totalGain: Number(item.totalGain) || (parsedPrice + (parsedDaily * parsedDur)),
         isActive: item.isActive !== false
       };
     });

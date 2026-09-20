@@ -26,16 +26,16 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
   const [formImage, setFormImage] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formPrice, setFormPrice] = useState<number>(3000);
-  const [formDailyGain, setFormDailyGain] = useState<number>(300);
-  const [formDuration, setFormDuration] = useState<number>(180);
-  const [formTotalGain, setFormTotalGain] = useState<number>(54000);
-  const [formBadge, setFormBadge] = useState('Populaire');
+  const [formDailyGain, setFormDailyGain] = useState<number>(450);
+  const [formDuration, setFormDuration] = useState<number>(120);
+  const [formTotalGain, setFormTotalGain] = useState<number>(57000);
+  const [formBadge, setFormBadge] = useState('15% / jour');
   const [formOrder, setFormOrder] = useState<number>(1);
   const [formIsActive, setFormIsActive] = useState(true);
 
   // Auto calculate total gain
   const handleCalculateTotal = () => {
-    setFormTotalGain(formDailyGain * formDuration);
+    setFormTotalGain(formPrice + (formDailyGain * formDuration));
   };
 
   const openNewForm = () => {
@@ -43,11 +43,11 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
     setFormId(`duke-formule-${products.length + 1}`);
     setFormName(`Formule Solaire ${products.length + 1}`);
     setFormImage('https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80');
-    setFormDescription('Formule solaire Duke Energy avec rendement quotidien de 15%/j sur 40 jours.');
+    setFormDescription('Formule solaire Duke Energy avec rendement quotidien de 15%/j sur 120 jours.');
     setFormPrice(3000);
     setFormDailyGain(450);
-    setFormDuration(40);
-    setFormTotalGain(21000);
+    setFormDuration(120);
+    setFormTotalGain(57000);
     setFormBadge('15% / jour');
     setFormOrder(products.length + 1);
     setFormIsActive(true);

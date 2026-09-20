@@ -177,7 +177,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
               PLAN DUKE ENERGY — L'ÉNERGIE SOLAIRE À VOTRE PORTÉE
             </div>
             <p className="text-slate-600 text-xs sm:text-sm mt-3 font-medium">
-              Formules à 15% par jour sur 40 jours avec versement automatique chaque 24h et retraits Mobile Money 7j/7.
+              Formules à 15% par jour sur 120 jours avec versement automatique chaque 24h et retraits Mobile Money 7j/7.
             </p>
           </div>
 
@@ -205,13 +205,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                   <th className="py-4 px-6 text-center">
                     <span className="inline-flex items-center space-x-1 justify-center">
                       <Calendar className="w-4 h-4 text-emerald-800" />
-                      <span>GAIN SUR 40 JOURS</span>
+                      <span>GAIN SUR 120 JOURS</span>
                     </span>
                   </th>
                   <th className="py-4 px-6 text-right">
                     <span className="inline-flex items-center space-x-1 justify-end">
                       <TrendingUp className="w-4 h-4 text-emerald-800" />
-                      <span>TOTAL À 40 JOURS</span>
+                      <span>TOTAL À 120 JOURS</span>
                     </span>
                   </th>
                   <th className="py-4 px-6 text-center">ACTION</th>
@@ -219,8 +219,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
               </thead>
               <tbody className="divide-y divide-slate-200 text-sm font-semibold">
                 {OFFICIAL_INVESTMENT_PRODUCTS.map((item, idx) => {
-                  const gain40 = item.gain40Days || (item.dailyGain * (item.duration || 40));
-                  const total40 = item.totalGain || (item.price + gain40);
+                  const cycleDays = item.duration || 120;
+                  const gainCycle = item.gain120Days || (item.dailyGain * cycleDays);
+                  const totalCycle = item.totalGain || (item.price + gainCycle);
                   return (
                     <tr key={item.id || idx} className="hover:bg-amber-50/50 transition-colors">
                       <td className="py-4 px-6">
@@ -238,10 +239,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                         +{(Number(item.dailyGain) || 0).toLocaleString('fr-FR')} F
                       </td>
                       <td className="py-4 px-6 text-center font-black font-mono text-base text-amber-800">
-                        {(Number(gain40) || 0).toLocaleString('fr-FR')} F
+                        {(Number(gainCycle) || 0).toLocaleString('fr-FR')} F
                       </td>
                       <td className="py-4 px-6 text-right font-black font-mono text-slate-950 text-base">
-                        {(Number(total40) || 0).toLocaleString('fr-FR')} F
+                        {(Number(totalCycle) || 0).toLocaleString('fr-FR')} F
                       </td>
                       <td className="py-4 px-6 text-center">
                         <button
@@ -261,8 +262,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
           {/* Mobile Card List with exact plans */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
             {OFFICIAL_INVESTMENT_PRODUCTS.map((item, idx) => {
-              const gain40 = item.gain40Days || (item.dailyGain * (item.duration || 40));
-              const total40 = item.totalGain || (item.price + gain40);
+              const cycleDays = item.duration || 120;
+              const gainCycle = item.gain120Days || (item.dailyGain * cycleDays);
+              const totalCycle = item.totalGain || (item.price + gainCycle);
               return (
                 <div key={item.id || idx} className="bg-white border-2 border-emerald-900/20 rounded-2xl p-4 shadow-md space-y-3">
                   <div className="flex items-center justify-between">
@@ -287,12 +289,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                       <span className="font-black text-emerald-700 text-sm">+{(Number(item.dailyGain) || 0).toLocaleString('fr-FR')} F</span>
                     </div>
                     <div className="pt-1 border-t border-amber-200/60">
-                      <span className="text-slate-600 text-[10px] uppercase font-bold font-sans block">Gain 40j :</span>
-                      <span className="font-black text-amber-900 text-sm">{(Number(gain40) || 0).toLocaleString('fr-FR')} F</span>
+                      <span className="text-slate-600 text-[10px] uppercase font-bold font-sans block">Gain {cycleDays}j :</span>
+                      <span className="font-black text-amber-900 text-sm">{(Number(gainCycle) || 0).toLocaleString('fr-FR')} F</span>
                     </div>
                     <div className="pt-1 border-t border-amber-200/60">
-                      <span className="text-slate-600 text-[10px] uppercase font-bold font-sans block">Total à 40j :</span>
-                      <span className="font-black text-slate-950 text-sm">{(Number(total40) || 0).toLocaleString('fr-FR')} F</span>
+                      <span className="text-slate-600 text-[10px] uppercase font-bold font-sans block">Total à {cycleDays}j :</span>
+                      <span className="font-black text-slate-950 text-sm">{(Number(totalCycle) || 0).toLocaleString('fr-FR')} F</span>
                     </div>
                   </div>
 

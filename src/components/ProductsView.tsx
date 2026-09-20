@@ -58,7 +58,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           </h2>
 
           <p className="text-xs sm:text-sm text-pink-200/80 max-w-xl leading-relaxed">
-            Profitez d'un rendement quotidien de <span className="font-bold text-amber-400">15% par jour</span> pendant un cycle de <span className="font-bold text-amber-400">40 jours</span> avec versement automatique de vos gains chaque 24h.
+            Profitez d'un rendement quotidien de <span className="font-bold text-amber-400">15% par jour</span> pendant un cycle de <span className="font-bold text-amber-400">120 jours</span> avec versement automatique de vos gains chaque 24h.
           </p>
 
           {/* Quick value props */}
@@ -68,7 +68,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               <div className="text-[9px] sm:text-[10px] text-pink-200/70 font-sans font-medium">Taux garanti</div>
             </div>
             <div className="bg-[#240c3c]/80 backdrop-blur-xs rounded-xl p-2 border border-pink-500/25">
-              <div className="text-[11px] sm:text-xs font-black text-pink-300">40 Jours</div>
+              <div className="text-[11px] sm:text-xs font-black text-pink-300">120 Jours</div>
               <div className="text-[9px] sm:text-[10px] text-pink-200/70 font-sans font-medium">Cycle d'énergie</div>
             </div>
             <div className="bg-[#240c3c]/80 backdrop-blur-xs rounded-xl p-2 border border-pink-500/25">
@@ -89,8 +89,9 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       ) : (
         <div className="space-y-3.5">
           {activeProducts.map((product) => {
-            const gain40 = product.gain40Days || (product.dailyGain * (product.duration || 40));
-            const total40 = product.totalGain || (product.price + gain40);
+            const cycleDays = product.duration || 120;
+            const gainCycle = product.gain120Days || (product.dailyGain * cycleDays);
+            const totalCycle = product.totalGain || (product.price + gainCycle);
             return (
               <div
                 key={product.id}
@@ -108,7 +109,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                         {product.badge || '15% / jour'}
                       </span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                        {product.duration || 40} jours
+                        {cycleDays} jours
                       </span>
                     </div>
                     {product.description && (
@@ -145,18 +146,18 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   </div>
                   <div className="border-r border-pink-500/20 pr-1">
                     <div className="text-pink-300 font-black text-base sm:text-lg tracking-tight">
-                      {(Number(gain40) || 0).toLocaleString('fr-FR')} F
+                      {(Number(gainCycle) || 0).toLocaleString('fr-FR')} F
                     </div>
                     <div className="text-[10px] sm:text-xs font-semibold text-pink-200/80 mt-0.5 font-sans">
-                      Gain sur 40j
+                      Gain sur {cycleDays}j
                     </div>
                   </div>
                   <div>
                     <div className="text-purple-300 font-black text-base sm:text-lg tracking-tight">
-                      {(Number(total40) || 0).toLocaleString('fr-FR')} F
+                      {(Number(totalCycle) || 0).toLocaleString('fr-FR')} F
                     </div>
                     <div className="text-[10px] sm:text-xs font-semibold text-pink-200/80 mt-0.5 font-sans">
-                      Total à 40j
+                      Total à {cycleDays}j
                     </div>
                   </div>
                 </div>

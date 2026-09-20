@@ -23,10 +23,11 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  const cycleDays = product.duration || 120;
   const totalPrice = product.price * quantity;
   const totalDailyGain = product.dailyGain * quantity;
-  const totalGain40Days = (product.gain40Days || (product.dailyGain * (product.duration || 40))) * quantity;
-  const totalGain = (product.totalGain || (product.price * quantity + totalGain40Days));
+  const totalPeriodGain = (product.gain120Days || product.gain40Days || (product.dailyGain * cycleDays)) * quantity;
+  const totalGain = (product.totalGain ? product.totalGain * quantity : (totalPrice + totalPeriodGain));
 
   const hasSufficientBalance = (Number(currentUser.balance) || 0) >= totalPrice;
 
@@ -109,10 +110,10 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
         <div className="space-y-0.5 border-x border-pink-500/20 px-1">
           <div className="text-lg sm:text-xl font-black tracking-tight text-amber-400">
-            {(Number(totalGain40Days) || 0).toLocaleString('fr-FR')} F
+            {(Number(totalPeriodGain) || 0).toLocaleString('fr-FR')} F
           </div>
           <div className="text-[10px] sm:text-xs font-bold text-pink-300 uppercase font-sans">
-            Gain sur 40j
+            Gain sur {cycleDays}j
           </div>
         </div>
 
@@ -121,7 +122,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
             {(Number(totalGain) || 0).toLocaleString('fr-FR')} F
           </div>
           <div className="text-[10px] sm:text-xs font-bold text-pink-300 uppercase font-sans">
-            Total à 40j
+            Total à {cycleDays}j
           </div>
         </div>
       </div>
@@ -159,7 +160,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
         <div className="flex items-center justify-between text-xs sm:text-sm font-medium py-1">
           <span className="text-pink-200/90 font-semibold">Durée du cycle énergétique :</span>
           <span className="font-extrabold text-pink-300 font-mono text-sm sm:text-base">
-            {product.duration || 40} jours
+            {cycleDays} jours
           </span>
         </div>
       </div>
@@ -181,17 +182,17 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
           </div>
           <div className="flex items-center space-x-2">
             <span>⚡</span>
-            <span className="text-pink-300">Gain sur {product.duration || 40} jours : {(Number(totalGain40Days) || 0).toLocaleString('fr-FR')} FCFA</span>
+            <span className="text-pink-300">Gain sur {cycleDays} jours : {(Number(totalPeriodGain) || 0).toLocaleString('fr-FR')} FCFA</span>
           </div>
           <div className="flex items-center space-x-2">
             <span>🏆</span>
-            <span className="text-purple-300">Total à {product.duration || 40} jours : {(Number(totalGain) || 0).toLocaleString('fr-FR')} FCFA</span>
+            <span className="text-purple-300">Total à {cycleDays} jours : {(Number(totalGain) || 0).toLocaleString('fr-FR')} FCFA</span>
           </div>
         </div>
 
         <div className="pt-2 space-y-3 text-pink-200/80 font-medium text-xs sm:text-sm leading-relaxed">
           <p>
-            {product.description || `La formule solaire ${product.name} de Duke Energy génère un rendement quotidien garanti de 15% par jour pendant un cycle complet de 40 jours.`}
+            {product.description || `La formule solaire ${product.name} de Duke Energy génère un rendement quotidien garanti de 15% par jour pendant un cycle complet de ${cycleDays} jours.`}
           </p>
           <p>
             Vos revenus sont automatiquement crédités toutes les 24 heures sur votre compte et sont immédiatement retirables via Mobile Money (TMoney, Moov Money, MTN, Orange, Wave).
