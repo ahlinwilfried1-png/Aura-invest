@@ -57,17 +57,18 @@ export interface InvestmentProduct {
   name: string;
   price: number;
   dailyGain: number;
-  duration: number; // in days (120 days)
-  totalGain: number; // Total à 120 jours (57 000, 133 000, etc.)
-  gain120Days?: number; // Gain net sur 120 jours (54 000, 126 000, etc.)
+  duration: number; // in days (180 days)
+  totalGain: number; // Revenu total sur 180 jours
+  gain180Days?: number; // Gain sur 180 jours
+  gain120Days?: number; // Compatibilité précédente
   gain40Days?: number; // Compatibilité précédente
-  dailyRatePercent?: number; // 15%
+  dailyRatePercent?: number;
   isActive: boolean;
   image?: string;
   description?: string;
   order?: number;
   badge?: string;
-  color?: string; // Tailwind color classes for custom styled premium look
+  color?: string; // Tailwind color classes
 }
 
 export interface UserInvestment {
@@ -198,3 +199,30 @@ export interface FaqItem {
   createdAt: string;
 }
 
+export interface TaskItem {
+  id: string;
+  title: string;
+  description: string;
+  category: 'referral' | 'purchase' | 'team_salary';
+  targetType: 'level1_investors_count' | 'vip_purchase' | 'team_investment_amount';
+  targetValue: number;
+  targetVipLevel?: number;
+  reward: number;
+  rewardType: 'one_time' | 'daily_salary';
+  isActive: boolean;
+  order: number;
+  iconName?: string;
+}
+
+export interface UserTaskClaim {
+  id: string;
+  userId: string;
+  userName?: string;
+  userPhone?: string;
+  taskId: string;
+  taskTitle: string;
+  reward: number;
+  rewardType: 'one_time' | 'daily_salary';
+  claimedAt: string;
+  claimedDate: string; // YYYY-MM-DD
+}

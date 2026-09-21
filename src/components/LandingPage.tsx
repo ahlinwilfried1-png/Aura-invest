@@ -47,7 +47,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
     <div className="min-h-screen bg-[#f8faf7] text-slate-900 flex flex-col relative overflow-hidden font-sans">
       {/* Floating Telegram Community Action */}
       <a 
-        href="https://t.me/+Nml17Ji3CY8wYWQ8" 
+        href="https://t.me/+_mfGwgAziVtlYjJk" 
         target="_blank" 
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 z-50 bg-[#0088cc] hover:bg-[#0077b5] text-white p-4 rounded-full shadow-2xl shadow-sky-600/30 flex items-center justify-center transition-transform hover:scale-110 group cursor-pointer"
@@ -169,15 +169,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
           </div>
         </section>
 
-        {/* OFFICIAL DUKE ENERGY PRICING TABLE SECTION */}
+        {/* OFFICIAL AIRPRODS PRICING TABLE SECTION */}
         <section className="py-12 px-4 sm:px-6 max-w-6xl mx-auto w-full">
           {/* Header Badge */}
           <div className="text-center mb-8">
             <div className="inline-block bg-[#0e3d1c] border-2 border-amber-400 text-white font-black text-xs sm:text-base md:text-lg uppercase px-6 sm:px-10 py-2.5 rounded-full shadow-lg tracking-wider font-mono">
-              PLAN DUKE ENERGY — L'ÉNERGIE SOLAIRE À VOTRE PORTÉE
+              PLAN AIRPRODS — TECHNOLOGIE VIP IMMERSIVE
             </div>
             <p className="text-slate-600 text-xs sm:text-sm mt-3 font-medium">
-              Formules à 15% par jour sur 120 jours avec versement automatique chaque 24h et retraits Mobile Money 7j/7.
+              Formules VIP de 180 jours avec versement automatique chaque 24h et retraits dès 1 500 XOF.
             </p>
           </div>
 
@@ -199,19 +199,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                   <th className="py-4 px-6 text-center">
                     <span className="inline-flex items-center space-x-1 justify-center">
                       <Coins className="w-4 h-4 text-amber-700" />
-                      <span>REVENU / JOUR (15%)</span>
+                      <span>REVENU / JOUR</span>
                     </span>
                   </th>
                   <th className="py-4 px-6 text-center">
                     <span className="inline-flex items-center space-x-1 justify-center">
                       <Calendar className="w-4 h-4 text-emerald-800" />
-                      <span>GAIN SUR 120 JOURS</span>
+                      <span>GAIN SUR 180 JOURS</span>
                     </span>
                   </th>
                   <th className="py-4 px-6 text-right">
                     <span className="inline-flex items-center space-x-1 justify-end">
                       <TrendingUp className="w-4 h-4 text-emerald-800" />
-                      <span>TOTAL À 120 JOURS</span>
+                      <span>TOTAL À 180 JOURS</span>
                     </span>
                   </th>
                   <th className="py-4 px-6 text-center">ACTION</th>
@@ -219,8 +219,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
               </thead>
               <tbody className="divide-y divide-slate-200 text-sm font-semibold">
                 {OFFICIAL_INVESTMENT_PRODUCTS.map((item, idx) => {
-                  const cycleDays = item.duration || 120;
-                  const gainCycle = item.gain120Days || (item.dailyGain * cycleDays);
+                  const cycleDays = item.duration || 180;
+                  const gainCycle = item.gain180Days || item.gain120Days || (item.dailyGain * cycleDays);
                   const totalCycle = item.totalGain || (item.price + gainCycle);
                   return (
                     <tr key={item.id || idx} className="hover:bg-amber-50/50 transition-colors">
@@ -262,8 +262,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
           {/* Mobile Card List with exact plans */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
             {OFFICIAL_INVESTMENT_PRODUCTS.map((item, idx) => {
-              const cycleDays = item.duration || 120;
-              const gainCycle = item.gain120Days || (item.dailyGain * cycleDays);
+              const cycleDays = item.duration || 180;
+              const gainCycle = item.gain180Days || item.gain120Days || (item.dailyGain * cycleDays);
               const totalCycle = item.totalGain || (item.price + gainCycle);
               return (
                 <div key={item.id || idx} className="bg-white border-2 border-emerald-900/20 rounded-2xl p-4 shadow-md space-y-3">
@@ -275,7 +275,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                       <span className="font-black text-slate-900 text-sm">{item.name}</span>
                     </div>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                      {item.badge || '15% / jour'}
+                      {item.badge || `${cycleDays} jours`}
                     </span>
                   </div>
                   
@@ -285,7 +285,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                       <span className="font-black text-emerald-950 text-sm">{(Number(item.price) || 0).toLocaleString('fr-FR')} F</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block text-[10px] uppercase font-bold font-sans">15% / Jour</span>
+                      <span className="text-slate-500 block text-[10px] uppercase font-bold font-sans">Revenu / Jour</span>
                       <span className="font-black text-emerald-700 text-sm">+{(Number(item.dailyGain) || 0).toLocaleString('fr-FR')} F</span>
                     </div>
                     <div className="pt-1 border-t border-amber-200/60">

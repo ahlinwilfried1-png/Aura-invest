@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { InvestmentProduct, User, DepositRequest, WithdrawalRequest, SupportTicket, FaqItem, RechargeChannel, Announcement } from '../types';
+import { InvestmentProduct, User, DepositRequest, WithdrawalRequest, SupportTicket, FaqItem, RechargeChannel, Announcement, TaskItem } from '../types';
 import { OFFICIAL_INVESTMENT_PRODUCTS } from '../constants/products';
 import { ALLOWED_COUNTRIES } from '../constants/countries';
 import { 
@@ -12,6 +12,8 @@ import {
   ShoppingBag,
   Headphones, 
   Megaphone, 
+  Coins,
+  ListTodo, 
   Plus, 
   Edit2, 
   Trash2, 
@@ -106,6 +108,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     updateWheelConfig,
     deleteDrawRecord,
     addTicketsToUser,
+    tasks = [],
+    userTaskClaims = [],
+    updateTask,
+    resetDefaultTasks,
     announcements,
     addAnnouncement,
     updateAnnouncement,
@@ -250,10 +256,73 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     }
   };
 
-  // Navigation tab state (avec 'channels')
+  // Navigation tab state (avec 'channels' et 'tasks')
   const [activeAdminTab, setActiveAdminTab] = useState<
-    'dashboard' | 'deposits' | 'withdrawals' | 'proofs' | 'users' | 'products' | 'paid_products' | 'support' | 'announcements' | 'wheel' | 'faq' | 'channels'
+    'dashboard' | 'deposits' | 'withdrawals' | 'proofs' | 'users' | 'products' | 'paid_products' | 'support' | 'announcements' | 'tasks' | 'wheel' | 'faq' | 'channels'
   >('dashboard');
+
+  // Task Center Admin State
+  const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
+  const [taskEditTitle, setTaskEditTitle] = useState('');
+  const [taskEditDescription, setTaskEditDescription] = useState('');
+  const [taskEditReward, setTaskEditReward] = useState<number>(0);
+  const [taskEditTargetValue, setTaskEditTargetValue] = useState<number>(0);
+  const [taskEditIsActive, setTaskEditIsActive] = useState(true);
+  const [taskFeedback, setTaskFeedback] = useState<string | null>(null);
+  const [isResettingTasks, setIsResettingTasks] = useState(false);
+  const [isSavingTask, setIsSavingTask] = useState(false);
+
+  const handleOpenEditTask = (task: TaskItem) => {
+    setEditingTask(task);
+    setTaskEditTitle(task.title);
+    setTaskEditDescription(task.description);
+    setTaskEditReward(task.reward);
+    setTaskEditTargetValue(task.targetValue);
+    setTaskEditIsActive(task.isActive !== false);
+  };
+
+  const handleSaveTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTask) return;
+    try {
+      setIsSavingTask(true);
+      const res = await updateTask(editingTask.id, {
+        title: taskEditTitle,
+        description: taskEditDescription,
+        reward: Number(taskEditReward),
+        targetValue: Number(taskEditTargetValue),
+        isActive: taskEditIsActive,
+      });
+      if (res.success) {
+        setTaskFeedback('Tâche mise à jour avec succès !');
+        setEditingTask(null);
+        setTimeout(() => setTaskFeedback(null), 3500);
+      } else {
+        alert(res.error || 'Erreur lors de la mise à jour de la tâche.');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Erreur réseau');
+    } finally {
+      setIsSavingTask(false);
+    }
+  };
+
+  const handleResetTasks = async () => {
+    if (window.confirm('Voulez-vous vraiment réinitialiser les 12 tâches et récompenses aux valeurs officielles AirProds ?')) {
+      try {
+        setIsResettingTasks(true);
+        const res = await resetDefaultTasks();
+        if (res.success) {
+          setTaskFeedback('Les 12 tâches ont été réinitialisées aux valeurs officielles.');
+          setTimeout(() => setTaskFeedback(null), 3500);
+        }
+      } catch (err: any) {
+        alert(err?.message || 'Erreur lors de la réinitialisation.');
+      } finally {
+        setIsResettingTasks(false);
+      }
+    }
+  };
 
   // Recharge Channels Admin State (Burkina Faso, Bénin, Togo, Côte d'Ivoire, Cameroun)
   const [channelCountryCode, setChannelCountryCode] = useState<string>('BF');
@@ -1198,6 +1267,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   {openTicketsCount}
                 </span>
               )}
+            </button>
+
+            <button
+              onClick={() => setActiveAdminTab('tasks')}
+              className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+                activeAdminTab === 'tasks'
+                  ? 'bg-red-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
+            >
+              <Coins className="w-4 h-4 text-amber-500" />
+              <span>Centre de tâches</span>
+              <span className="text-[10px] bg-red-800 text-white px-1.5 py-0.5 rounded-full ml-1 font-mono">{tasks.length}</span>
             </button>
 
             <button
@@ -2262,14 +2344,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                       OFFICIAL_INVESTMENT_PRODUCTS.forEach(p => {
                         addOrUpdateProduct(p);
                       });
-                      showToast('success', "Les 6 formules solaires officielles Duke Energy ont été synchronisées avec succès !");
+                      showToast('success', "Les formules officielles AirProds ont été synchronisées avec succès !");
                     }}
                     type="button"
                     className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all cursor-pointer flex items-center space-x-1.5 border border-slate-600 shadow-xs"
-                    title="Restaurer et enregistrer les 6 formules solaires Duke Energy"
+                    title="Restaurer et enregistrer les 9 formules VIP AirProds"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Synchroniser Formules Solaires (Duke Energy)</span>
+                    <span>Synchroniser Formules AirProds</span>
                   </button>
 
                   <button 
@@ -2902,6 +2984,210 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* 6.5 GESTION DU CENTRE DE TÂCHES AIRPRODS */}
+        {activeAdminTab === 'tasks' && (
+          <div className="space-y-6 animate-fadeIn">
+            {/* Header & Quick Action */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
+                    <Coins className="w-5 h-5 text-amber-500" />
+                    <span>Centre de Tâches & Récompenses AirProds</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Gérez les 12 tâches officielles (parrainage niveau 1, achat d'équipements VR, salaires d'équipe quotidiens).
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handleResetTasks}
+                    disabled={isResettingTasks}
+                    className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-all border border-slate-300 flex items-center space-x-2 cursor-pointer disabled:opacity-50"
+                  >
+                    <RotateCw className={`w-3.5 h-3.5 ${isResettingTasks ? 'animate-spin' : ''}`} />
+                    <span>Réinitialiser aux 12 tâches</span>
+                  </button>
+                </div>
+              </div>
+
+              {taskFeedback && (
+                <div className="mt-4 p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-xs font-bold text-emerald-800 flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{taskFeedback}</span>
+                </div>
+              )}
+
+              {/* Stats Overview */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
+                <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200">
+                  <p className="text-[10px] uppercase font-bold text-slate-500">Tâches Officielles</p>
+                  <p className="text-xl font-black text-slate-900 mt-1">{tasks.length}</p>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200">
+                  <p className="text-[10px] uppercase font-bold text-slate-500">Total Réclamations Effectuées</p>
+                  <p className="text-xl font-black text-blue-600 mt-1">{userTaskClaims.length}</p>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200">
+                  <p className="text-[10px] uppercase font-bold text-slate-500">Total Primes Versées</p>
+                  <p className="text-xl font-black text-emerald-600 mt-1">
+                    {userTaskClaims.reduce((acc, c) => acc + (Number(c.reward) || 0), 0).toLocaleString('fr-FR')} XOF
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* List of Tasks */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
+                    <ListTodo className="w-4 h-4 text-amber-500" />
+                    <span>Liste des 12 Tâches & Formules de Gains</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Modifiez le montant de la prime, la cible requise ou activez/désactivez chaque tâche.
+                  </p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-500 text-[10px] uppercase tracking-wider font-bold bg-slate-50">
+                      <th className="p-3">#</th>
+                      <th className="p-3">Catégorie</th>
+                      <th className="p-3">Tâche & Description</th>
+                      <th className="p-3">Objectif / Cible</th>
+                      <th className="p-3">Récompense (XOF)</th>
+                      <th className="p-3">Type</th>
+                      <th className="p-3">Statut</th>
+                      <th className="p-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium">
+                    {tasks.map((task, idx) => (
+                      <tr key={task.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="p-3 font-mono text-slate-400 font-bold">{idx + 1}</td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                            task.category === 'referral' 
+                              ? 'bg-purple-100 text-purple-700' 
+                              : task.category === 'purchase'
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {task.category === 'referral' ? 'Parrainage' : task.category === 'purchase' ? 'Équipement' : 'Salaire'}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <p className="font-bold text-slate-900">{task.title}</p>
+                          <p className="text-[11px] text-slate-500 line-clamp-1">{task.description}</p>
+                        </td>
+                        <td className="p-3 font-mono font-bold text-slate-700">
+                          {task.targetType === 'team_investment_amount'
+                            ? `${Number(task.targetValue).toLocaleString('fr-FR')} XOF`
+                            : task.targetType === 'vip_purchase'
+                            ? `VIP${task.targetVipLevel || task.targetValue}`
+                            : `${task.targetValue} direct(s)`
+                          }
+                        </td>
+                        <td className="p-3 font-mono font-extrabold text-emerald-600">
+                          +{Number(task.reward).toLocaleString('fr-FR')} XOF
+                        </td>
+                        <td className="p-3 text-[11px]">
+                          {task.rewardType === 'daily_salary' ? (
+                            <span className="text-blue-600 font-bold">Quotidien / j</span>
+                          ) : (
+                            <span className="text-slate-500">Prime unique</span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          {task.isActive !== false ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded-full">
+                              <CheckCircle className="w-3 h-3" /> Actif
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 font-bold bg-slate-200 px-2 py-0.5 rounded-full">
+                              Inactif
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 text-right">
+                          <button
+                            onClick={() => handleOpenEditTask(task)}
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-all border border-slate-300 cursor-pointer inline-flex items-center gap-1"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                            Modifier
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Recent Claims Log */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
+              <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
+                <Clock className="w-4 h-4 text-slate-500" />
+                <span>Journal des Réclamations Récentes ({userTaskClaims.length})</span>
+              </h3>
+
+              {userTaskClaims.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 text-xs">
+                  Aucune prime n'a encore été réclamée par les utilisateurs.
+                </div>
+              ) : (
+                <div className="overflow-x-auto max-h-80">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-500 text-[10px] uppercase tracking-wider font-bold bg-slate-50">
+                        <th className="p-2.5">Date</th>
+                        <th className="p-2.5">Utilisateur</th>
+                        <th className="p-2.5">Tâche</th>
+                        <th className="p-2.5">Montant Crédité</th>
+                        <th className="p-2.5">Type</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {[...userTaskClaims].reverse().slice(0, 50).map((claim) => {
+                        const targetUser = users.find(u => u.id === claim.userId);
+                        return (
+                          <tr key={claim.id} className="hover:bg-slate-50">
+                            <td className="p-2.5 font-mono text-[11px] text-slate-500">
+                              {new Date(claim.claimedAt).toLocaleString('fr-FR', {
+                                day: '2-digit',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </td>
+                            <td className="p-2.5">
+                              <p className="font-bold text-slate-800">{targetUser?.name || 'Utilisateur'}</p>
+                              <p className="text-[10px] text-slate-500 font-mono">{targetUser?.phone || claim.userId.slice(-6)}</p>
+                            </td>
+                            <td className="p-2.5 font-medium text-slate-700">{claim.taskTitle}</td>
+                            <td className="p-2.5 font-mono font-extrabold text-emerald-600">
+                              +{Number(claim.reward).toLocaleString('fr-FR')} XOF
+                            </td>
+                            <td className="p-2.5 text-[11px] text-slate-500">
+                              {claim.rewardType === 'daily_salary' ? 'Salaire Quotidien' : 'Prime Unique'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -5161,6 +5447,134 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT TASK */}
+      {editingTask && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center space-x-2">
+                <Coins className="w-5 h-5 text-amber-500" />
+                <h3 className="text-base font-bold text-slate-900">
+                  Modifier la Tâche #{editingTask.order}
+                </h3>
+              </div>
+              <button
+                onClick={() => setEditingTask(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveTask} className="space-y-4 text-xs font-medium">
+              <div>
+                <label className="block text-slate-700 text-[11px] uppercase font-bold mb-1">
+                  Titre de la tâche *
+                </label>
+                <input
+                  type="text"
+                  value={taskEditTitle}
+                  onChange={(e) => setTaskEditTitle(e.target.value)}
+                  className="w-full bg-slate-50 text-slate-900 font-bold p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 text-[11px] uppercase font-bold mb-1">
+                  Description / Consignes *
+                </label>
+                <textarea
+                  rows={3}
+                  value={taskEditDescription}
+                  onChange={(e) => setTaskEditDescription(e.target.value)}
+                  className="w-full bg-slate-50 text-slate-900 p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white leading-relaxed"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 text-[11px] uppercase font-bold mb-1">
+                    Prime / Récompense (XOF) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={taskEditReward}
+                    onChange={(e) => setTaskEditReward(Number(e.target.value))}
+                    className="w-full bg-slate-50 text-slate-900 font-mono font-bold p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white"
+                    required
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    {editingTask.rewardType === 'daily_salary' ? 'Salaire versé quotidiennement' : 'Prime unique versée'}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 text-[11px] uppercase font-bold mb-1">
+                    Objectif / Cible numérique *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={taskEditTargetValue}
+                    onChange={(e) => setTaskEditTargetValue(Number(e.target.value))}
+                    className="w-full bg-slate-50 text-slate-900 font-mono font-bold p-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 focus:bg-white"
+                    required
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    {editingTask.targetType === 'team_investment_amount' 
+                      ? 'Volume cumulé de l’équipe (XOF)'
+                      : editingTask.targetType === 'vip_purchase'
+                      ? 'Niveau VIP minimum (ex: 4 pour VIP4)'
+                      : 'Nombre d’investisseurs directs requis'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="taskEditIsActive"
+                  checked={taskEditIsActive}
+                  onChange={(e) => setTaskEditIsActive(e.target.checked)}
+                  className="w-4 h-4 rounded text-red-600 focus:ring-red-500 border-slate-300"
+                />
+                <label htmlFor="taskEditIsActive" className="text-xs font-bold text-slate-700 cursor-pointer">
+                  Tâche active et visible dans le Centre de tâches
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingTask(null)}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs cursor-pointer transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingTask}
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl text-xs uppercase tracking-wider cursor-pointer shadow-xs transition-all disabled:opacity-50 flex items-center space-x-1.5"
+                >
+                  {isSavingTask ? (
+                    <>
+                      <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Enregistrement...</span>
+                    </>
+                  ) : (
+                    <span>Enregistrer la tâche</span>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

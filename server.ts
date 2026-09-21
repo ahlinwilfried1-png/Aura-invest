@@ -557,6 +557,8 @@ const serverTicketsStore = new Map<string, any>();
 const serverCommissionsStore = new Map<string, any>();
 const serverBonusCodesStore = new Map<string, any>();
 const serverAnnouncementsStore = new Map<string, any>();
+const serverTasksStore = new Map<string, any>();
+const serverUserTaskClaimsStore = new Map<string, any>();
 
 // =========================================================================
 // LOCAL PERSISTENT DISK STORAGE (FAILSAFE AGAINST SUPABASE QUOTA VIOLATIONS)
@@ -592,6 +594,8 @@ function savePlatformDataToDisk(force: boolean = false): void {
         commissions: Array.from(serverCommissionsStore.values()),
         bonus_codes: Array.from(serverBonusCodesStore.values()),
         announcements: Array.from(serverAnnouncementsStore.values()),
+        tasks: Array.from(serverTasksStore.values()),
+        task_claims: Array.from(serverUserTaskClaimsStore.values()),
         paymentGatewayUrl: activePaymentGatewayUrl,
         lastSaved: new Date().toISOString()
       };
@@ -669,6 +673,12 @@ function loadPlatformDataFromDisk(): void {
             isNew: false
           };
           serverAnnouncementsStore.set(initialAirpodsAnn.id, initialAirpodsAnn);
+        }
+        if (Array.isArray(parsed.tasks)) {
+          parsed.tasks.forEach((tk: any) => { if (tk && tk.id) serverTasksStore.set(tk.id, tk); });
+        }
+        if (Array.isArray(parsed.task_claims)) {
+          parsed.task_claims.forEach((cl: any) => { if (cl && cl.id) serverUserTaskClaimsStore.set(cl.id, cl); });
         }
         if (parsed.paymentGatewayUrl && typeof parsed.paymentGatewayUrl === 'string' && parsed.paymentGatewayUrl.startsWith('http')) {
           activePaymentGatewayUrl = parsed.paymentGatewayUrl;
@@ -837,109 +847,317 @@ const defaultSeedUsers = [
   }
 ];
 
-// Official Duke Energy Solar Investment Plans (Cycle 120 days, 15% / jour)
+// Official AirProds Investment Plans (Cycle 180 days)
 const defaultSeedProducts = [
   {
-    id: 'photovoltaique',
-    name: 'Photovoltaïque',
+    id: 'airprods-vip1',
+    name: 'VIP1 AirProds',
     price: 3000,
-    dailyGain: 450,
-    duration: 120,
-    gain120Days: 54000,
-    gain40Days: 54000,
-    totalGain: 57000,
-    dailyRatePercent: 15,
+    dailyGain: 750,
+    duration: 180,
+    gain180Days: 135000,
+    totalGain: 135000,
+    dailyRatePercent: 25,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80',
-    description: 'Formule Photovoltaïque Duke Energy — Rendement quotidien de 450 FCFA (15%/j) pendant 120 jours. Gain net sur 120 jours : 54 000 FCFA | Total à 120 jours : 57 000 FCFA.',
+    image: 'https://images.unsplash.com/photo-1622979135225-d2ba269bc1df?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule VIP1 AirProds — Revenu quotidien de 750 XOF (25%/j) pendant 180 jours. Revenu total : 135 000 XOF.',
     order: 1,
-    badge: '15% / jour',
-    color: 'from-amber-950/60 via-yellow-900/30 to-orange-950/40 border-amber-500/30'
+    badge: 'VIP1',
+    color: 'from-blue-950/70 via-cyan-900/40 to-sky-950/50 border-cyan-500/40'
   },
   {
-    id: 'solar-panel',
-    name: 'Solar Panel',
-    price: 7000,
-    dailyGain: 1050,
-    duration: 120,
-    gain120Days: 126000,
-    gain40Days: 126000,
-    totalGain: 133000,
-    dailyRatePercent: 15,
+    id: 'airprods-vip2',
+    name: 'VIP2 AirProds',
+    price: 10000,
+    dailyGain: 2550,
+    duration: 180,
+    gain180Days: 459000,
+    totalGain: 459000,
+    dailyRatePercent: 25.5,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1508873696983-2df5293cb32f?w=800&auto=format&fit=crop&q=80',
-    description: 'Formule Solar Panel Duke Energy — Rendement quotidien de 1 050 FCFA (15%/j) pendant 120 jours. Gain net sur 120 jours : 126 000 FCFA | Total à 120 jours : 133 000 FCFA.',
+    image: 'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule VIP2 AirProds — Revenu quotidien de 2 550 XOF (25.5%/j) pendant 180 jours. Revenu total : 459 000 XOF.',
     order: 2,
-    badge: '15% / jour',
-    color: 'from-blue-950/60 via-sky-900/30 to-cyan-950/40 border-blue-500/30'
+    badge: 'VIP2',
+    color: 'from-emerald-950/70 via-teal-900/40 to-green-950/50 border-emerald-500/40'
   },
   {
-    id: 'inverter',
-    name: 'Inverter',
-    price: 15000,
-    dailyGain: 2250,
-    duration: 120,
-    gain120Days: 270000,
-    gain40Days: 270000,
-    totalGain: 285000,
-    dailyRatePercent: 15,
+    id: 'airprods-vip3',
+    name: 'VIP3 AirProds',
+    price: 20000,
+    dailyGain: 5200,
+    duration: 180,
+    gain180Days: 936000,
+    totalGain: 936000,
+    dailyRatePercent: 26,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1620714223084-8fcacc6dfd8d?w=800&auto=format&fit=crop&q=80',
-    description: 'Formule Inverter Duke Energy — Onduleur solaire avec rendement quotidien de 2 250 FCFA (15%/j) pendant 120 jours. Gain net sur 120 jours : 270 000 FCFA | Total à 120 jours : 285 000 FCFA.',
+    image: 'https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule VIP3 AirProds — Revenu quotidien de 5 200 XOF (26%/j) pendant 180 jours. Revenu total : 936 000 XOF.',
     order: 3,
-    badge: '15% / jour',
-    color: 'from-emerald-950/60 via-teal-900/30 to-green-950/40 border-emerald-500/30'
+    badge: 'VIP3',
+    color: 'from-purple-950/70 via-indigo-900/40 to-violet-950/50 border-purple-500/40'
   },
   {
-    id: 'batterie-solaire',
-    name: 'Batterie Solaire',
-    price: 30000,
-    dailyGain: 4500,
-    duration: 120,
-    gain120Days: 540000,
-    gain40Days: 540000,
-    totalGain: 570000,
-    dailyRatePercent: 15,
+    id: 'airprods-vip4',
+    name: 'VIP4 AirProds',
+    price: 45000,
+    dailyGain: 11925,
+    duration: 180,
+    gain180Days: 2146500,
+    totalGain: 2146500,
+    dailyRatePercent: 26.5,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1558441719-8b489c652790?w=800&auto=format&fit=crop&q=80',
-    description: 'Formule Batterie Solaire Duke Energy — Stockage photovoltaïque avec rendement quotidien de 4 500 FCFA (15%/j) pendant 120 jours. Gain net sur 120 jours : 540 000 FCFA | Total à 120 jours : 570 000 FCFA.',
+    image: 'https://images.unsplash.com/photo-1535223289827-42f1e9919769?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule VIP4 AirProds — Revenu quotidien de 11 925 XOF (26.5%/j) pendant 180 jours. Revenu total : 2 146 500 XOF.',
     order: 4,
-    badge: '15% / jour',
-    color: 'from-purple-950/60 via-indigo-900/30 to-violet-950/40 border-purple-500/30'
+    badge: 'VIP4',
+    color: 'from-amber-950/70 via-orange-900/40 to-yellow-950/50 border-amber-500/40'
   },
   {
-    id: 'kilowatt-solaire',
-    name: 'Kilowatt Solaire',
-    price: 70000,
-    dailyGain: 10500,
-    duration: 120,
-    gain120Days: 1260000,
-    gain40Days: 1260000,
-    totalGain: 1330000,
-    dailyRatePercent: 15,
+    id: 'airprods-vip5',
+    name: 'VIP5 AirProds',
+    price: 100000,
+    dailyGain: 27000,
+    duration: 180,
+    gain180Days: 4860000,
+    totalGain: 4860000,
+    dailyRatePercent: 27,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1497440001374-f26997328c1b?w=800&auto=format&fit=crop&q=80',
-    description: 'Formule Kilowatt Solaire Duke Energy — Production kW industrielle avec rendement quotidien de 10 500 FCFA (15%/j) pendant 120 jours. Gain net sur 120 jours : 1 260 000 FCFA | Total à 120 jours : 1 330 000 FCFA.',
+    image: 'https://images.unsplash.com/photo-1576633587382-13ddf37b1fc1?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule VIP5 AirProds — Revenu quotidien de 27 000 XOF (27%/j) pendant 180 jours. Revenu total : 4 860 000 XOF.',
     order: 5,
-    badge: '15% / jour',
-    color: 'from-yellow-950/60 via-amber-900/30 to-orange-950/40 border-yellow-500/30'
+    badge: 'VIP5',
+    color: 'from-rose-950/70 via-pink-900/40 to-red-950/50 border-rose-500/40'
   },
   {
-    id: 'megawatt-solaire',
-    name: 'Megawatt Solaire',
-    price: 130000,
-    dailyGain: 19500,
-    duration: 120,
-    gain120Days: 2340000,
-    gain40Days: 2340000,
-    totalGain: 2470000,
-    dailyRatePercent: 15,
+    id: 'airprods-vip6',
+    name: 'VIP6 AirProds',
+    price: 250000,
+    dailyGain: 70000,
+    duration: 180,
+    gain180Days: 12600000,
+    totalGain: 12600000,
+    dailyRatePercent: 28,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80',
-    description: 'Formule Megawatt Solaire Duke Energy — Puissance maximale de centrale MW avec rendement quotidien de 19 500 FCFA (15%/j) pendant 120 jours. Gain net sur 120 jours : 2 340 000 FCFA | Total à 120 jours : 2 470 000 FCFA.',
+    image: 'https://images.unsplash.com/photo-1546776310-eef45dd6d63c?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule VIP6 AirProds — Revenu quotidien de 70 000 XOF (28%/j) pendant 180 jours. Revenu total : 12 600 000 XOF.',
     order: 6,
-    badge: '15% / jour',
-    color: 'from-rose-950/60 via-pink-900/30 to-red-950/40 border-rose-500/30'
+    badge: 'VIP6',
+    color: 'from-cyan-950/70 via-teal-900/40 to-blue-950/50 border-cyan-400/40'
+  },
+  {
+    id: 'airprods-vip7',
+    name: 'VIP7 AirProds',
+    price: 500000,
+    dailyGain: 145000,
+    duration: 180,
+    gain180Days: 26100000,
+    totalGain: 26100000,
+    dailyRatePercent: 29,
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1617802690992-15d93263d3a9?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule VIP7 AirProds — Revenu quotidien de 145 000 XOF (29%/j) pendant 180 jours. Revenu total : 26 100 000 XOF.',
+    order: 7,
+    badge: 'VIP7',
+    color: 'from-purple-950/70 via-fuchsia-900/40 to-indigo-950/50 border-purple-400/40'
+  },
+  {
+    id: 'airprods-vip8',
+    name: 'VIP8 AirProds',
+    price: 1000000,
+    dailyGain: 310000,
+    duration: 180,
+    gain180Days: 55800000,
+    totalGain: 55800000,
+    dailyRatePercent: 31,
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule VIP8 AirProds — Revenu quotidien de 310 000 XOF (31%/j) pendant 180 jours. Revenu total : 55 800 000 XOF.',
+    order: 8,
+    badge: 'VIP8',
+    color: 'from-blue-950/70 via-indigo-900/40 to-sky-950/50 border-blue-400/40'
+  },
+  {
+    id: 'airprods-vip9',
+    name: 'VIP9 AirProds',
+    price: 2000000,
+    dailyGain: 800000,
+    duration: 180,
+    gain180Days: 144000000,
+    totalGain: 144000000,
+    dailyRatePercent: 40,
+    isActive: true,
+    image: 'https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule VIP9 AirProds — Revenu quotidien de 800 000 XOF (40%/j) pendant 180 jours. Revenu total : 144 000 000 XOF.',
+    order: 9,
+    badge: 'VIP9',
+    color: 'from-violet-950/70 via-purple-900/40 to-indigo-950/50 border-violet-400/40'
+  }
+];
+
+// Official AirProds Task Center Seed Tasks (12 Tasks)
+const defaultSeedTasks = [
+  {
+    id: 'task_inv_3',
+    title: 'Invitez 3 investisseurs de niveau 1',
+    description: 'Parrainez 3 investisseurs directs de niveau 1 ayant activé au moins un pack AirProds.',
+    category: 'referral',
+    targetType: 'level1_investors_count',
+    targetValue: 3,
+    reward: 1000,
+    rewardType: 'one_time',
+    isActive: true,
+    order: 1,
+    iconName: 'Users'
+  },
+  {
+    id: 'task_inv_10',
+    title: 'Invitez 10 investisseurs de niveau 1',
+    description: 'Parrainez 10 investisseurs directs de niveau 1 ayant activé au moins un pack AirProds.',
+    category: 'referral',
+    targetType: 'level1_investors_count',
+    targetValue: 10,
+    reward: 3000,
+    rewardType: 'one_time',
+    isActive: true,
+    order: 2,
+    iconName: 'Users'
+  },
+  {
+    id: 'task_inv_30',
+    title: 'Invitez 30 investisseurs de niveau 1',
+    description: 'Parrainez 30 investisseurs directs de niveau 1 ayant activé au moins un pack AirProds.',
+    category: 'referral',
+    targetType: 'level1_investors_count',
+    targetValue: 30,
+    reward: 10000,
+    rewardType: 'one_time',
+    isActive: true,
+    order: 3,
+    iconName: 'Award'
+  },
+  {
+    id: 'task_buy_vip4',
+    title: 'Achetez VIP4 AirProds',
+    description: 'Activez la formule technologique VIP4 AirProds (45 000 XOF) pour débloquer votre prime.',
+    category: 'purchase',
+    targetType: 'vip_purchase',
+    targetValue: 4,
+    targetVipLevel: 4,
+    reward: 500,
+    rewardType: 'one_time',
+    isActive: true,
+    order: 4,
+    iconName: 'Zap'
+  },
+  {
+    id: 'task_buy_vip5',
+    title: 'Achetez VIP5 AirProds',
+    description: 'Activez la formule technologique VIP5 AirProds (100 000 XOF) pour percevoir votre prime.',
+    category: 'purchase',
+    targetType: 'vip_purchase',
+    targetValue: 5,
+    targetVipLevel: 5,
+    reward: 1000,
+    rewardType: 'one_time',
+    isActive: true,
+    order: 5,
+    iconName: 'Zap'
+  },
+  {
+    id: 'task_buy_vip6',
+    title: 'Achetez VIP6 AirProds',
+    description: 'Activez la formule technologique VIP6 AirProds (250 000 XOF) pour percevoir votre prime.',
+    category: 'purchase',
+    targetType: 'vip_purchase',
+    targetValue: 6,
+    targetVipLevel: 6,
+    reward: 2500,
+    rewardType: 'one_time',
+    isActive: true,
+    order: 6,
+    iconName: 'ShieldCheck'
+  },
+  {
+    id: 'task_buy_vip7',
+    title: 'Achetez VIP7 AirProds',
+    description: 'Activez la formule technologique VIP7 AirProds (500 000 XOF) pour percevoir votre prime.',
+    category: 'purchase',
+    targetType: 'vip_purchase',
+    targetValue: 7,
+    targetVipLevel: 7,
+    reward: 5000,
+    rewardType: 'one_time',
+    isActive: true,
+    order: 7,
+    iconName: 'ShieldCheck'
+  },
+  {
+    id: 'task_buy_vip8',
+    title: 'Achetez VIP8 AirProds',
+    description: 'Activez la formule technologique VIP8 AirProds (1 000 000 XOF) pour percevoir votre prime.',
+    category: 'purchase',
+    targetType: 'vip_purchase',
+    targetValue: 8,
+    targetVipLevel: 8,
+    reward: 10000,
+    rewardType: 'one_time',
+    isActive: true,
+    order: 8,
+    iconName: 'Crown'
+  },
+  {
+    id: 'task_buy_vip9',
+    title: 'Achetez VIP9 AirProds',
+    description: 'Activez la formule de prestige VIP9 AirProds (2 000 000 XOF) pour percevoir votre prime suprême.',
+    category: 'purchase',
+    targetType: 'vip_purchase',
+    targetValue: 9,
+    targetVipLevel: 9,
+    reward: 20000,
+    rewardType: 'one_time',
+    isActive: true,
+    order: 9,
+    iconName: 'Crown'
+  },
+  {
+    id: 'task_team_400k',
+    title: 'Investissement d’équipe de 400 000 XOF',
+    description: 'Volume cumulé d’investissements de votre équipe atteignant 400 000 XOF → Salaire quotidien de 500 XOF.',
+    category: 'team_salary',
+    targetType: 'team_investment_amount',
+    targetValue: 400000,
+    reward: 500,
+    rewardType: 'daily_salary',
+    isActive: true,
+    order: 10,
+    iconName: 'TrendingUp'
+  },
+  {
+    id: 'task_team_1m',
+    title: 'Investissement d’équipe de 1 000 000 XOF',
+    description: 'Volume cumulé d’investissements de votre équipe atteignant 1 000 000 XOF → Salaire quotidien de 1 000 XOF.',
+    category: 'team_salary',
+    targetType: 'team_investment_amount',
+    targetValue: 1000000,
+    reward: 1000,
+    rewardType: 'daily_salary',
+    isActive: true,
+    order: 11,
+    iconName: 'TrendingUp'
+  },
+  {
+    id: 'task_team_3m',
+    title: 'Investissement d’équipe de 3 000 000 XOF',
+    description: 'Volume cumulé d’investissements de votre équipe atteignant 3 000 000 XOF → Salaire quotidien (configurable par l’administrateur).',
+    category: 'team_salary',
+    targetType: 'team_investment_amount',
+    targetValue: 3000000,
+    reward: 3000,
+    rewardType: 'daily_salary',
+    isActive: true,
+    order: 12,
+    iconName: 'Trophy'
   }
 ];
 
@@ -949,10 +1167,17 @@ defaultSeedProducts.forEach(p => serverProductsStore.set(p.id, p));
 // Load all persistent records from disk (users, deposits, withdrawals, tickets, investments)
 loadPlatformDataFromDisk();
 
-// Strictly keep official Duke Energy solar products and remove any obsolete/legacy products
-const officialDukeIds = new Set(defaultSeedProducts.map(p => p.id));
+// Seed tasks if not already populated
+defaultSeedTasks.forEach(task => {
+  if (!serverTasksStore.has(task.id)) {
+    serverTasksStore.set(task.id, task);
+  }
+});
+
+// Strictly keep official AirProds products and remove any obsolete/legacy products
+const officialAirProdsIds = new Set(defaultSeedProducts.map(p => p.id));
 for (const key of Array.from(serverProductsStore.keys())) {
-  if (!officialDukeIds.has(key)) {
+  if (!officialAirProdsIds.has(key)) {
     serverProductsStore.delete(key);
   }
 }
@@ -1018,7 +1243,7 @@ async function syncFromSupabaseInitial() {
     if (!prodErr && dbProducts && Array.isArray(dbProducts)) {
       for (const p of dbProducts) {
         if (p && p.id) {
-          if (!officialDukeIds.has(p.id)) {
+          if (!officialAirProdsIds.has(p.id)) {
             // Remove non-official product from Supabase & memory
             serverProductsStore.delete(p.id);
             try {
@@ -1034,7 +1259,7 @@ async function syncFromSupabaseInitial() {
       console.log(`[Supabase Sync] Successfully loaded ${serverProductsStore.size} products from database into memory.`);
     }
 
-    // 4. Ensure all official Duke Energy products are updated/inserted in Supabase and memory
+    // 4. Ensure all official AirProds products are updated/inserted in Supabase and memory
     for (const seedProd of defaultSeedProducts) {
       serverProductsStore.set(seedProd.id, seedProd);
       await safeSupabaseUpsert('products', seedProd);
@@ -1543,7 +1768,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
         phone: cleanPhone,
         whatsapp: user.whatsapp ? extractPhoneDetails(user.whatsapp, user.country).cleanPhone : cleanPhone,
         country: finalCountry,
-        balance: Number(user.balance ?? 500),
+        balance: Number(user.balance ?? 1500),
         dailyEarnings: Number(user.dailyEarnings ?? 0),
         totalEarnings: Number(user.totalEarnings ?? 0),
         vipLevel: Number(user.vipLevel ?? 0),
@@ -2000,6 +2225,10 @@ app.get(['/api/health', '/health'], async (req, res) => {
       const withdrawalData = req.body;
       if (!withdrawalData || !withdrawalData.id || !withdrawalData.amount || !withdrawalData.userId) {
         return res.status(400).json({ success: false, error: 'Données de retrait incomplètes.' });
+      }
+
+      if (Number(withdrawalData.amount || 0) < 1500) {
+        return res.status(400).json({ success: false, error: 'Le montant minimum de retrait est de 1 500 XOF.' });
       }
 
       // Check user balance and deduct
@@ -2494,7 +2723,9 @@ app.get(['/api/health', '/health'], async (req, res) => {
         tickets: Array.isArray(tickets) ? tickets : Array.from(serverTicketsStore.values()),
         commissions: Array.isArray(commissions) ? commissions : Array.from(serverCommissionsStore.values()),
         bonus_codes: Array.isArray(bonusCodes) ? bonusCodes : Array.from(serverBonusCodesStore.values()),
-        announcements: Array.from(serverAnnouncementsStore.values())
+        announcements: Array.from(serverAnnouncementsStore.values()),
+        tasks: Array.from(serverTasksStore.values()),
+        task_claims: Array.from(serverUserTaskClaimsStore.values())
       };
 
       // Keep disk file updated with the latest in-memory master state
@@ -2830,6 +3061,265 @@ app.get(['/api/health', '/health'], async (req, res) => {
       return res.status(500).json({ success: false, error: err?.message || 'Erreur suppression annonce.' });
     }
   });
+
+  // =========================================================================
+  // TASK CENTER (CENTRE DE TÂCHES AIRPRODS) - VALIDATION & CLAIMING ENGINE
+  // =========================================================================
+
+  function isDirectRefereeServer(child: any, parent: any): boolean {
+    if (!child || !parent || child.id === parent.id) return false;
+    const childRefBy = (child.referredByCode || '').trim();
+    if (!childRefBy) return false;
+
+    const parentCode = (parent.referralCode || '').trim();
+    const parentId = (parent.id || '').trim();
+    const parentPhone = (parent.phone || '').trim();
+
+    if (parentCode && childRefBy.toLowerCase() === parentCode.toLowerCase()) return true;
+    if (parentId && childRefBy.toLowerCase() === parentId.toLowerCase()) return true;
+    if (parentPhone) {
+      const pDigits = parentPhone.replace(/\D/g, '');
+      const cDigits = childRefBy.replace(/\D/g, '');
+      if (childRefBy === parentPhone || childRefBy.replace(/\s+/g, '') === parentPhone.replace(/\s+/g, '')) return true;
+      if (pDigits.length >= 8 && cDigits.length >= 8 && (pDigits.endsWith(cDigits) || cDigits.endsWith(pDigits))) return true;
+    }
+    return false;
+  }
+
+  function calculateUserTaskProgressServer(user: any, task: any) {
+    const allUsers = Array.from(serverUsersStore.values());
+    const allInvestments = Array.from(serverInvestmentsStore.values());
+
+    if (task.targetType === 'level1_investors_count') {
+      const level1Users = allUsers.filter(u => isDirectRefereeServer(u, user));
+      const activeInvestors = level1Users.filter(u => 
+        allInvestments.some(inv => inv.userId === u.id)
+      );
+      const count = activeInvestors.length;
+      return {
+        current: count,
+        target: Number(task.targetValue) || 1,
+        isFulfilled: count >= Number(task.targetValue)
+      };
+    }
+
+    if (task.targetType === 'vip_purchase') {
+      const targetVip = Number(task.targetVipLevel || task.targetValue) || 4;
+      const userInvs = allInvestments.filter(inv => inv.userId === user.id);
+      
+      const hasPurchasedVip = userInvs.some(inv => {
+        const pId = String(inv.productId || '').toLowerCase();
+        const pName = String(inv.productName || '').toLowerCase();
+        if (pId.includes(`vip${targetVip}`) || pName.includes(`vip${targetVip}`)) return true;
+        const match = (pName + ' ' + pId).match(/vip(\d+)/i);
+        if (match && parseInt(match[1], 10) >= targetVip) return true;
+        return false;
+      }) || (Number(user.vipLevel || 0) >= targetVip);
+
+      return {
+        current: hasPurchasedVip ? 1 : 0,
+        target: 1,
+        isFulfilled: !!hasPurchasedVip
+      };
+    }
+
+    if (task.targetType === 'team_investment_amount') {
+      const level1Users = allUsers.filter(u => isDirectRefereeServer(u, user));
+      const level2Users = allUsers.filter(u => level1Users.some(l1 => isDirectRefereeServer(u, l1)));
+      const level3Users = allUsers.filter(u => level2Users.some(l2 => isDirectRefereeServer(u, l2)));
+
+      const teamIds = new Set([
+        ...level1Users.map(u => u.id),
+        ...level2Users.map(u => u.id),
+        ...level3Users.map(u => u.id)
+      ]);
+
+      const totalTeamVolume = allInvestments
+        .filter(inv => teamIds.has(inv.userId))
+        .reduce((sum, inv) => sum + (Number(inv.price) || 0) * (Number(inv.quantity) || 1), 0);
+
+      const target = Number(task.targetValue) || 1;
+      return {
+        current: totalTeamVolume,
+        target: target,
+        isFulfilled: totalTeamVolume >= target
+      };
+    }
+
+    return { current: 0, target: Number(task.targetValue) || 1, isFulfilled: false };
+  }
+
+  // GET /api/tasks - Retrieve all tasks
+  app.get('/api/tasks', (req, res) => {
+    const tasks = Array.from(serverTasksStore.values()).sort((a, b) => (a.order || 0) - (b.order || 0));
+    return res.json({ success: true, tasks });
+  });
+
+  // GET /api/tasks/claims - Retrieve claims for a user or all claims
+  app.get('/api/tasks/claims', (req, res) => {
+    const { userId } = req.query;
+    let claims = Array.from(serverUserTaskClaimsStore.values());
+    if (userId) {
+      claims = claims.filter(c => c.userId === String(userId));
+    }
+    claims.sort((a, b) => new Date(b.claimedAt || 0).getTime() - new Date(a.claimedAt || 0).getTime());
+    return res.json({ success: true, claims });
+  });
+
+  // POST /api/tasks/claim - Claim a task reward with strict validation & double-claim prevention
+  app.post('/api/tasks/claim', async (req, res) => {
+    try {
+      const { userId, taskId } = req.body;
+      if (!userId || !taskId) {
+        return res.status(400).json({ success: false, error: 'Identifiants utilisateur et tâche requis.' });
+      }
+
+      // 1. Verify User
+      const user = serverUsersStore.get(userId);
+      if (!user) {
+        return res.status(404).json({ success: false, error: 'Utilisateur non trouvé.' });
+      }
+
+      // 2. Verify Task
+      const task = serverTasksStore.get(taskId);
+      if (!task || !task.isActive) {
+        return res.status(404).json({ success: false, error: 'Tâche introuvable ou inactive.' });
+      }
+
+      // 3. Double-claim prevention
+      const todayDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const existingClaims = Array.from(serverUserTaskClaimsStore.values()).filter(
+        c => c.userId === userId && c.taskId === taskId
+      );
+
+      if (task.rewardType === 'one_time') {
+        if (existingClaims.length > 0) {
+          return res.status(400).json({ success: false, error: 'Cette prime a déjà été réclamée.' });
+        }
+      } else if (task.rewardType === 'daily_salary') {
+        const claimedToday = existingClaims.some(c => c.claimedDate === todayDate);
+        if (claimedToday) {
+          return res.status(400).json({
+            success: false,
+            error: 'Vous avez déjà perçu votre salaire quotidien pour cette tâche aujourd’hui. Revenez demain !'
+          });
+        }
+      }
+
+      // 4. Verify Real Conditions
+      const progress = calculateUserTaskProgressServer(user, task);
+      if (!progress.isFulfilled) {
+        return res.status(400).json({
+          success: false,
+          error: `Conditions d'accomplissement non atteintes. Progression réelle : ${progress.current.toLocaleString('fr-FR')} / ${progress.target.toLocaleString('fr-FR')}`
+        });
+      }
+
+      // 5. Credit Reward to User
+      const reward = Number(task.reward) || 0;
+      const currentBalance = Number(user.balance) || 0;
+      const newBalance = currentBalance + reward;
+      const newTotalEarnings = (Number(user.totalEarnings) || 0) + reward;
+
+      user.balance = newBalance;
+      user.totalEarnings = newTotalEarnings;
+      serverUsersStore.set(user.id, user);
+
+      // 6. Record Claim
+      const claimRecord = {
+        id: `claim_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        userId: user.id,
+        userName: user.name || 'Utilisateur',
+        userPhone: user.phone || '',
+        taskId: task.id,
+        taskTitle: task.title,
+        reward,
+        rewardType: task.rewardType,
+        claimedAt: new Date().toISOString(),
+        claimedDate: todayDate
+      };
+      serverUserTaskClaimsStore.set(claimRecord.id, claimRecord);
+
+      // 7. Persist to Disk & Supabase
+      savePlatformDataToDisk(true);
+      await safeSupabaseUpdate('users', { balance: newBalance, totalEarnings: newTotalEarnings }, 'id', user.id);
+      await safeSupabaseUpsert('bonus_codes', {
+        code: `__CLAIM_${claimRecord.id}__`,
+        amount: reward,
+        maxUses: 1,
+        usedBy: [claimRecord],
+        createdAt: new Date().toISOString()
+      });
+
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
+
+      return res.json({
+        success: true,
+        reward,
+        newBalance,
+        claim: claimRecord,
+        message: `Félicitations ! Votre récompense de ${reward.toLocaleString('fr-FR')} XOF a été créditée avec succès.`
+      });
+    } catch (err: any) {
+      console.error('[Task Claim Error]:', err);
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur lors de la réclamation de la tâche.' });
+    }
+  });
+
+  // PUT /api/admin/tasks/:id - Admin updates a task
+  app.put('/api/admin/tasks/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { title, description, reward, targetValue, isActive, order } = req.body;
+
+      const existing = serverTasksStore.get(id);
+      if (!existing) {
+        return res.status(404).json({ success: false, error: 'Tâche non trouvée.' });
+      }
+
+      const updated = {
+        ...existing,
+        title: title !== undefined ? String(title).trim() : existing.title,
+        description: description !== undefined ? String(description).trim() : existing.description,
+        reward: reward !== undefined ? Math.max(0, Number(reward)) : existing.reward,
+        targetValue: targetValue !== undefined ? Math.max(1, Number(targetValue)) : existing.targetValue,
+        isActive: isActive !== undefined ? Boolean(isActive) : existing.isActive,
+        order: order !== undefined ? Number(order) : existing.order
+      };
+
+      serverTasksStore.set(id, updated);
+      savePlatformDataToDisk(true);
+
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
+
+      const allTasks = Array.from(serverTasksStore.values()).sort((a, b) => (a.order || 0) - (b.order || 0));
+      return res.json({ success: true, task: updated, tasks: allTasks });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur mise à jour tâche.' });
+    }
+  });
+
+  // POST /api/admin/tasks/reset - Admin resets tasks to official AirProds 12 tasks
+  app.post('/api/admin/tasks/reset', async (req, res) => {
+    try {
+      serverTasksStore.clear();
+      defaultSeedTasks.forEach(task => {
+        serverTasksStore.set(task.id, task);
+      });
+      savePlatformDataToDisk(true);
+
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
+
+      const allTasks = Array.from(serverTasksStore.values()).sort((a, b) => (a.order || 0) - (b.order || 0));
+      return res.json({ success: true, tasks: allTasks });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur réinitialisation tâches.' });
+    }
+  });
+
 
   // =========================================================================
   // PURGE ALL USERS, DEPOSITS & WITHDRAWALS (CENTRAL DATABASE RESET)

@@ -71,6 +71,7 @@ import { AccountView } from './AccountView';
 import { DepositView } from './DepositView';
 import { WithdrawView } from './WithdrawView';
 import { AnnouncementsView } from './AnnouncementsView';
+import { TaskCenterView } from './TaskCenterView';
 import { ProductDetailView } from './ProductDetailView';
 import { ProductsView } from './ProductsView';
 import { ProofOfWithdrawalView } from './ProofOfWithdrawalView';
@@ -154,8 +155,27 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   sendGlobalNotification,
   replyToTicket
 }) => {
-  const { announcements, markTicketsAsRead, revenueLogs = [], rechargeChannels = [] } = useApp();
+  const { announcements, tasks = [], userTaskClaims = [], markTicketsAsRead, revenueLogs = [], rechargeChannels = [] } = useApp();
   const userRevenueLogs = revenueLogs.filter(log => log.userId === currentUser.id);
+
+  // Compute tasks ready to be claimed
+  const todayDate = new Date().toISOString().split('T')[0];
+  const unclaimedTasksCount = tasks.filter(t => {
+    if (!t.isActive) return false;
+    const userClaims = userTaskClaims.filter(c => c.userId === currentUser.id && c.taskId === t.id);
+    if (t.rewardType === 'one_time' && userClaims.length > 0) return false;
+    if (t.rewardType === 'daily_salary' && userClaims.some(c => c.claimedDate === todayDate)) return false;
+
+    if (t.targetType === 'level1_investors_count') {
+      const l1Count = users.filter(u => (u.referredByCode || '').trim().toLowerCase() === (currentUser.referralCode || '').trim().toLowerCase() && userInvestments.some(i => i.userId === u.id)).length;
+      return l1Count >= Number(t.targetValue);
+    }
+    if (t.targetType === 'vip_purchase') {
+      const targetVip = Number(t.targetVipLevel || t.targetValue);
+      return (currentUser.vipLevel || 0) >= targetVip || userInvestments.some(i => i.userId === currentUser.id && ((i.productId || '').toLowerCase().includes(`vip${targetVip}`) || (i.productName || '').toLowerCase().includes(`vip${targetVip}`)));
+    }
+    return false;
+  }).length;
 
   const isCurrentUserTicket = (t: SupportTicket) =>
     t.userId === currentUser.id ||
@@ -172,7 +192,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const totalUnreadAnnouncements = unreadAnnouncementsCount;
 
   // Navigation State (Req: Accueil, Produit, Équipe, Chat, Mon compte + full-page operations)
-  const [activeTab, setActiveTab] = useState<'home' | 'products' | 'orders' | 'team' | 'chat' | 'profile' | 'deposit' | 'withdraw' | 'announcements' | 'link_card' | 'proofs' | 'service_client'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'products' | 'orders' | 'team' | 'chat' | 'profile' | 'deposit' | 'withdraw' | 'tasks' | 'announcements' | 'link_card' | 'proofs' | 'service_client'>('home');
 
   const navigateToHome = () => {
     setSelectedProductDetail(null);
@@ -282,8 +302,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     }
     const res = requestDeposit(depAmount, depMethod, depTxId, depScreenshot);
     if (res.success) {
-      showToast('success', "Demande de recharge enregistrée ! Redirection vers la passerelle WestPay...");
-      window.open('https://westpay.cfd/link/3s7hn53gmsupa11l', '_blank');
+      showToast('success', "Demande de recharge enregistrée ! Redirection vers la passerelle sécurisée...");
+      window.open('https://tchin.tech/pay/6wy9goqpge', '_blank');
       setDepositModalOpen(false);
       setDepTxId('');
       setDepScreenshot(null);
@@ -294,8 +314,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const handleWithdrawalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!wthAmount || wthAmount < 1000) {
-      showToast('err', "Le montant minimum de retrait est de 1 000 FCFA.");
+    if (!wthAmount || wthAmount < 1500) {
+      showToast('err', "Le montant minimum de retrait est de 1 500 XOF.");
       return;
     }
     if (wthAmount > currentUser.balance) {
@@ -427,11 +447,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       showToast('err', res.error || "Pointage déjà effectué aujourd'hui.");
                     }
                   }}
-                  onAnnonces={() => setActiveTab('announcements')}
+                  onTasks={() => setActiveTab('tasks')}
+                  onAnnonces={() => setActiveTab('tasks')}
                   onGuide={() => setGuideModalOpen(true)}
                   onChat={() => setActiveTab('service_client')}
                   hasUnreadAnnouncements={hasUnreadAnnouncements}
                   unreadAnnouncementsCount={totalUnreadAnnouncements}
+                  unclaimedTasksCount={unclaimedTasksCount}
                   unreadChatCount={unreadChatCount}
                 />
 
@@ -585,11 +607,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               />
             )}
 
-            {/* FULL-PAGE VIEW 4: ANNONCES (PAGE TOUT ENTIÈRE SANS CADRE) */}
-            {activeTab === 'announcements' && (
-              <AnnouncementsView
-                notificationText={globalNotification}
+            {/* FULL-PAGE VIEW 4: CENTRE DE TÂCHES AIRPRODS (REMPLACE COMPLÈTEMENT LA RUBRIQUE ANNONCE) */}
+            {(activeTab === 'tasks' || activeTab === 'announcements') && (
+              <TaskCenterView
                 onBack={navigateToHome}
+                onNavigateToProducts={() => setActiveTab('products')}
+                onNavigateToTeam={() => setActiveTab('team')}
               />
             )}
 
@@ -845,10 +868,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-mono text-pink-200/80 mb-1 font-bold">Montant à Retirer (FCFA)</label>
+                <label className="block text-[10px] uppercase font-mono text-pink-200/80 mb-1 font-bold">Montant à Retirer (XOF)</label>
                 <input 
                   type="number" 
-                  min={1000}
+                  min={1500}
                   max={currentUser.balance}
                   step={500}
                   value={wthAmount}

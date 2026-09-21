@@ -55,7 +55,9 @@ import {
   Announcement,
   RevenueLog,
   FaqItem,
-  RechargeChannel
+  RechargeChannel,
+  TaskItem,
+  UserTaskClaim
 } from '../types';
 import { OFFICIAL_INVESTMENT_PRODUCTS } from '../constants/products';
 
@@ -74,6 +76,8 @@ interface AppContextType {
   drawRecords: DrawRecord[];
   wheelConfig: WheelConfig;
   announcements: Announcement[];
+  tasks: TaskItem[];
+  userTaskClaims: UserTaskClaim[];
   faqs: FaqItem[];
   rechargeChannels: RechargeChannel[];
   liveStats: {
@@ -101,6 +105,9 @@ interface AppContextType {
   // User activities
   buyInvestment: (productId: string, quantity?: number) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string };
   claimDailyEarning: (investmentId: string) => { success: boolean; error?: string };
+  claimTaskReward: (taskId: string) => Promise<{ success: boolean; reward?: number; newBalance?: number; error?: string }>;
+  updateTask: (idOrTask: string | (Partial<TaskItem> & { id: string }), updates?: Partial<TaskItem>) => Promise<{ success: boolean; error?: string }>;
+  resetDefaultTasks: () => Promise<{ success: boolean; tasks?: TaskItem[]; error?: string }>;
   requestDeposit: (amount: number, method: any, transactionId: string, screenshotUrl: string | null) => { success: boolean; error?: string };
   initiateDepositCheckout: (params: {
     amount: number;
@@ -536,6 +543,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return [];
   });
 
+  const [tasks, setTasks] = useState<TaskItem[]>(() => {
+    const data = safeGetLocalStorage('fintech_tasks');
+    if (data) {
+      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
+    }
+    return [];
+  });
+
+  const [userTaskClaims, setUserTaskClaims] = useState<UserTaskClaim[]>(() => {
+    const data = safeGetLocalStorage('fintech_task_claims');
+    if (data) {
+      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
+    }
+    return [];
+  });
+
   const [faqs, setFaqs] = useState<FaqItem[]>(() => {
     const data = safeGetLocalStorage('fintech_faqs');
     if (data) {
@@ -771,6 +794,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (master.announcements && Array.isArray(master.announcements)) {
           sysAnnouncements = master.announcements;
         }
+        if (master.tasks && Array.isArray(master.tasks)) {
+          setTasks(master.tasks);
+          safeSetLocalStorage('fintech_tasks', master.tasks);
+        }
+        if (master.task_claims && Array.isArray(master.task_claims)) {
+          setUserTaskClaims(master.task_claims);
+          safeSetLocalStorage('fintech_task_claims', master.task_claims);
+        }
       } else {
         const [
           u, p, i, d, w, pr, t, c, b
@@ -991,6 +1022,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               if (data && data.success && Array.isArray(data.announcements)) {
                 setAnnouncements(data.announcements);
                 safeSetLocalStorage('fintech_announcements', data.announcements);
+              }
+            })
+            .catch(() => {});
+
+          fetch('/api/tasks')
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.success && Array.isArray(data.tasks)) {
+                setTasks(data.tasks);
+                safeSetLocalStorage('fintech_tasks', data.tasks);
+              }
+            })
+            .catch(() => {});
+
+          fetch('/api/tasks/claims')
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.success && Array.isArray(data.claims)) {
+                setUserTaskClaims(data.claims);
+                safeSetLocalStorage('fintech_task_claims', data.claims);
               }
             })
             .catch(() => {});
@@ -1336,7 +1387,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       phone: cleanPhone,
       whatsapp: data.whatsapp ? extractPhoneDetails(data.whatsapp, data.country).cleanPhone : cleanPhone,
       country: finalCountry,
-      balance: 500, // 500 FCFA bonus d'inscription
+      balance: 1500, // 1500 XOF bonus d'inscription
       dailyEarnings: 0,
       totalEarnings: 0,
       vipLevel: 0,
@@ -1889,7 +1940,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: "Impossible d'effectuer un retrait : vous devez posséder au moins un produit actif." };
     }
 
-    if (amount < 1000) return { success: false, error: "Le montant minimum de retrait est de 1 000 FCFA." };
+    if (amount < 1500) return { success: false, error: "Le montant minimum de retrait est de 1 500 XOF." };
     if (!accountNumber.trim()) return { success: false, error: "Le numéro de compte de réception est requis." };
     
     const dbUser = users.find(u => u.id === currentUser.id) || currentUser;
@@ -2719,6 +2770,116 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // =========================================================================
+  // TASK CENTER (CENTRE DE TÂCHES AIRPRODS) ACTIONS
+  // =========================================================================
+
+  const claimTaskReward = async (taskId: string): Promise<{ success: boolean; error?: string; reward?: number; newBalance?: number }> => {
+    if (!currentUser) return { success: false, error: 'Veuillez vous connecter pour réclamer votre récompense.' };
+
+    try {
+      const res = await fetch('/api/tasks/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id, taskId })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { success: false, error: data?.error || 'Impossible de réclamer la récompense.' };
+      }
+
+      const reward = Number(data.reward) || 0;
+      const newBal = Number(data.newBalance) !== undefined ? Number(data.newBalance) : (Number(currentUser.balance) + reward);
+      const claim = data.claim;
+
+      setCurrentUser(prev => {
+        if (!prev) return null;
+        const updated = {
+          ...prev,
+          balance: newBal,
+          totalEarnings: (Number(prev.totalEarnings) || 0) + reward
+        };
+        safeSetLocalStorage('fintech_current_user', updated);
+        return updated;
+      });
+
+      setUsers(prev => prev.map(u => u.id === currentUser.id ? {
+        ...u,
+        balance: newBal,
+        totalEarnings: (Number(u.totalEarnings) || 0) + reward
+      } : u));
+
+      if (claim) {
+        setUserTaskClaims(prev => {
+          const updated = [claim, ...prev.filter(c => c.id !== claim.id)];
+          safeSetLocalStorage('fintech_task_claims', updated);
+          return updated;
+        });
+      }
+
+      // Add revenue log
+      const newLog: RevenueLog = {
+        id: `rev_task_${Date.now()}`,
+        userId: currentUser.id,
+        investmentId: claim?.taskId || 'task_reward',
+        productName: claim?.taskTitle || 'Récompense Centre de Tâches',
+        amount: reward,
+        creditedAt: new Date().toISOString()
+      };
+      setRevenueLogs(prev => [newLog, ...prev]);
+
+      return { success: true, reward, newBalance: newBal };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Erreur lors de la communication avec le serveur.' };
+    }
+  };
+
+  const updateTask = async (
+    idOrTask: string | (Partial<TaskItem> & { id: string }),
+    updates?: Partial<TaskItem>
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const taskId = typeof idOrTask === 'string' ? idOrTask : idOrTask.id;
+      const taskBody = typeof idOrTask === 'string' ? { ...updates, id: taskId } : idOrTask;
+      const res = await fetch(`/api/admin/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(taskBody)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { success: false, error: data?.error || 'Erreur mise à jour de la tâche.' };
+      }
+      if (Array.isArray(data.tasks)) {
+        setTasks(data.tasks);
+        safeSetLocalStorage('fintech_tasks', data.tasks);
+      }
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Erreur réseau.' };
+    }
+  };
+
+  const resetDefaultTasks = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch('/api/admin/tasks/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { success: false, error: data?.error || 'Erreur lors de la réinitialisation des tâches.' };
+      }
+      if (Array.isArray(data.tasks)) {
+        setTasks(data.tasks);
+        safeSetLocalStorage('fintech_tasks', data.tasks);
+      }
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Erreur réseau.' };
+    }
+  };
+
   const purgeAllUsersDepositsWithdrawals = async (): Promise<{ success: boolean; message?: string; error?: string }> => {
     try {
       const res = await fetch('/api/admin/purge-users-deposits-withdrawals', {
@@ -2891,6 +3052,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       drawRecords,
       wheelConfig,
       announcements,
+      tasks,
+      userTaskClaims,
+      claimTaskReward,
+      updateTask,
+      resetDefaultTasks,
       faqs,
       rechargeChannels,
       liveStats,

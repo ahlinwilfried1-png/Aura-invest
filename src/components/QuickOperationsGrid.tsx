@@ -1,15 +1,17 @@
 import React from 'react';
-import { CreditCard, ArrowUpRight, Calendar, Bell } from 'lucide-react';
+import { CreditCard, ArrowUpRight, Calendar, Coins, Bell } from 'lucide-react';
 
 interface QuickOperationsGridProps {
   onRecharger: () => void;
   onRetirer: () => void;
   onPointage: () => void;
-  onAnnonces: () => void;
+  onTasks?: () => void;
+  onAnnonces?: () => void;
   onGuide?: () => void;
   onChat?: () => void;
   hasUnreadAnnouncements?: boolean;
   unreadAnnouncementsCount?: number;
+  unclaimedTasksCount?: number;
   unreadChatCount?: number;
 }
 
@@ -17,9 +19,11 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
   onRecharger,
   onRetirer,
   onPointage,
+  onTasks,
   onAnnonces,
   hasUnreadAnnouncements,
   unreadAnnouncementsCount = 0,
+  unclaimedTasksCount = 0,
 }) => {
   const operations = [
     {
@@ -44,13 +48,13 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
       action: onPointage
     },
     {
-      id: 'annonces',
-      label: 'Annonces',
-      icon: Bell,
-      color: 'bg-gradient-to-br from-violet-600 to-purple-800 text-white shadow-violet-500/30',
-      action: onAnnonces,
-      unreadCount: unreadAnnouncementsCount || (hasUnreadAnnouncements ? 1 : 0),
-      hasBadge: hasUnreadAnnouncements
+      id: 'tasks',
+      label: 'Tâches',
+      icon: Coins,
+      color: 'bg-gradient-to-br from-amber-500 via-pink-600 to-purple-700 text-white shadow-amber-500/30',
+      action: onTasks || onAnnonces || (() => {}),
+      unreadCount: unclaimedTasksCount,
+      hasBadge: unclaimedTasksCount > 0
     }
   ];
 

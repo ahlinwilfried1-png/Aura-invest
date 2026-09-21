@@ -9,7 +9,7 @@ interface UserGuideModalProps {
 export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
-  const telegramChannelUrl = "https://t.me/+Nml17Ji3CY8wYWQ8";
+  const telegramChannelUrl = "https://t.me/+_mfGwgAziVtlYjJk";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 bg-[#0d0417]/85 backdrop-blur-sm animate-fadeIn">
@@ -62,7 +62,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
           <div className="space-y-1.5 text-[11px] font-medium text-pink-100 bg-[#120422] p-2.5 rounded-xl border border-pink-500/20">
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">🎁</span>
-              <span><strong>Bonus d'inscription :</strong> 500 FCFA</span>
+              <span><strong>Bonus d'inscription :</strong> 1 500 XOF</span>
             </div>
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">🔥</span>
@@ -74,7 +74,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             </div>
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">💸</span>
-              <span><strong>Retrait minimum :</strong> 1 000 FCFA</span>
+              <span><strong>Retrait minimum :</strong> 1 500 XOF</span>
             </div>
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">⚙️</span>

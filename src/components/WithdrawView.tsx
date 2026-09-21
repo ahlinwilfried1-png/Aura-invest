@@ -108,8 +108,8 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
       return;
     }
 
-    if (amountNum < 1000) {
-      onShowToast('err', "Le montant minimum de retrait est de 1 000 FCFA.");
+    if (amountNum < 1500) {
+      onShowToast('err', "Le montant minimum de retrait est de 1 500 XOF.");
       return;
     }
 
@@ -305,7 +305,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
 
         <div className="text-center pt-1">
           <span className="text-xs font-semibold text-pink-300/80 block">
-            Montant minimum de retrait : <strong className="text-pink-400 font-bold">1 000 FCFA</strong> (Frais : 15%)
+            Montant minimum de retrait : <strong className="text-pink-400 font-bold">1 500 XOF</strong> (Frais : 15%)
           </span>
         </div>
       </div>
@@ -329,7 +329,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
             </span>
             <input
               type="number"
-              min={1000}
+              min={1500}
               max={currentUser.balance}
               value={wthAmount}
               onChange={(e) => setWthAmount(e.target.value)}
@@ -369,7 +369,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
       {/* 4. Règles de retrait */}
       <div className="bg-[#1a082b] rounded-2xl p-4 sm:p-5 shadow-xl border border-pink-500/25 space-y-3.5 text-xs sm:text-sm text-pink-200/90 leading-relaxed font-sans">
         <p className="font-medium text-pink-200">
-          <strong className="font-extrabold text-white">Règles de retrait :</strong> Le montant minimum de retrait est de 1 000 FCFA, limité à 2 retraits par jour.
+          <strong className="font-extrabold text-white">Règles de retrait :</strong> Le montant minimum de retrait est de 1 500 XOF, limité à 2 retraits par jour.
         </p>
 
         <p className="font-medium text-pink-200">
@@ -377,7 +377,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
         </p>
 
         <p className="font-medium text-pink-300/80">
-          Afin de garantir un traitement efficace de vos transactions, le montant minimum de retrait est fixé à 1 000 FCFA.
+          Afin de garantir un traitement efficace de vos transactions, le montant minimum de retrait est fixé à 1 500 XOF.
         </p>
 
         <p className="font-medium text-pink-300/80">

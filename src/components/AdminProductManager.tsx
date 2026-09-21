@@ -40,15 +40,15 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
 
   const openNewForm = () => {
     setEditingProduct(null);
-    setFormId(`duke-formule-${products.length + 1}`);
-    setFormName(`Formule Solaire ${products.length + 1}`);
-    setFormImage('https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80');
-    setFormDescription('Formule solaire Duke Energy avec rendement quotidien de 15%/j sur 120 jours.');
-    setFormPrice(3000);
-    setFormDailyGain(450);
-    setFormDuration(120);
-    setFormTotalGain(57000);
-    setFormBadge('15% / jour');
+    setFormId(`airprods-vip-${products.length + 1}`);
+    setFormName(`AirProds VIP${products.length + 1}`);
+    setFormImage('https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=800&auto=format&fit=crop&q=80');
+    setFormDescription('Formule VIP AirProds avec cycle officiel de 180 jours et gains journaliers.');
+    setFormPrice(4000);
+    setFormDailyGain(150);
+    setFormDuration(180);
+    setFormTotalGain(27000);
+    setFormBadge('VIP');
     setFormOrder(products.length + 1);
     setFormIsActive(true);
     setIsFormOpen(true);

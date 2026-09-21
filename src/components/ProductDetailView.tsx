@@ -23,10 +23,10 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const cycleDays = product.duration || 120;
+  const cycleDays = product.duration || 180;
   const totalPrice = product.price * quantity;
   const totalDailyGain = product.dailyGain * quantity;
-  const totalPeriodGain = (product.gain120Days || product.gain40Days || (product.dailyGain * cycleDays)) * quantity;
+  const totalPeriodGain = (product.gain180Days || product.gain120Days || product.gain40Days || (product.dailyGain * cycleDays)) * quantity;
   const totalGain = (product.totalGain ? product.totalGain * quantity : (totalPrice + totalPeriodGain));
 
   const hasSufficientBalance = (Number(currentUser.balance) || 0) >= totalPrice;
@@ -170,7 +170,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
         <div className="space-y-2.5 text-sm sm:text-base font-bold text-white leading-relaxed font-sans">
           <div className="flex items-center space-x-2">
             <span>☀️⚡</span>
-            <span className="text-pink-200">Formule {product.name} — PLAN Duke Energy</span>
+            <span className="text-pink-200">Formule {product.name} — PLAN AirProds</span>
           </div>
           <div className="flex items-center space-x-2">
             <span>💰</span>
@@ -192,7 +192,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
         <div className="pt-2 space-y-3 text-pink-200/80 font-medium text-xs sm:text-sm leading-relaxed">
           <p>
-            {product.description || `La formule solaire ${product.name} de Duke Energy génère un rendement quotidien garanti de 15% par jour pendant un cycle complet de ${cycleDays} jours.`}
+            {product.description || `La formule ${product.name} de AirProds génère un rendement quotidien garanti pendant un cycle complet de ${cycleDays} jours.`}
           </p>
           <p>
             Vos revenus sont automatiquement crédités toutes les 24 heures sur votre compte et sont immédiatement retirables via Mobile Money (TMoney, Moov Money, MTN, Orange, Wave).

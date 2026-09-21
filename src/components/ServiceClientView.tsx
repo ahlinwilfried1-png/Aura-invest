@@ -4,11 +4,13 @@ import { ChevronLeft, Send, MessageCircle } from 'lucide-react';
 interface ServiceClientViewProps {
   onBack: () => void;
   telegramUrl?: string;
+  whatsappUrl?: string;
 }
 
 export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
   onBack,
-  telegramUrl = "https://t.me/+Nml17Ji3CY8wYWQ8"
+  telegramUrl = "https://t.me/+_mfGwgAziVtlYjJk",
+  whatsappUrl = "https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
 }) => {
   return (
     <div className="min-h-screen bg-[#0d0417] text-white pb-20 font-sans animate-fadeIn">
@@ -33,15 +35,46 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
         {/* 2. Channels List Card */}
         <div className="bg-[#1a082b] border border-pink-500/25 rounded-3xl p-4 sm:p-5 shadow-lg space-y-4">
           
+          {/* Row 0: WhatsApp AirProds Official Channel */}
+          <div className="flex items-center justify-between gap-3 py-1">
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className="w-11 h-11 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <MessageCircle className="w-6 h-6" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-xs sm:text-sm font-bold text-white block truncate">
+                  Chaîne WhatsApp AirProds
+                </span>
+                <span className="text-[10px] text-emerald-300 font-medium block">
+                  Informations & actualités exclusives
+                </span>
+              </div>
+            </div>
+
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer active:scale-95 shrink-0 border border-emerald-400/40 flex items-center space-x-1"
+            >
+              <span>Rejoindre</span>
+            </a>
+          </div>
+
           {/* Row 1: Telegram Channel */}
           <div className="flex items-center justify-between gap-3 py-1">
             <div className="flex items-center space-x-3 min-w-0">
               <div className="w-11 h-11 rounded-full bg-[#0088cc] text-white flex items-center justify-center shrink-0 shadow-xs">
                 <Send className="w-5 h-5 -ml-0.5" />
               </div>
-              <span className="text-xs sm:text-sm font-bold text-white truncate">
-                Chaîne officielle Telegram
-              </span>
+              <div className="min-w-0">
+                <span className="text-xs sm:text-sm font-bold text-white block truncate">
+                  Canal Telegram AirProds
+                </span>
+                <span className="text-[10px] text-cyan-300 font-medium block">
+                  Canal officiel & annonces
+                </span>
+              </div>
             </div>
 
             <a
@@ -60,9 +93,14 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
               <div className="w-11 h-11 rounded-full bg-[#0088cc] text-white flex items-center justify-center shrink-0 shadow-xs">
                 <Send className="w-5 h-5 -ml-0.5" />
               </div>
-              <span className="text-xs sm:text-sm font-bold text-white truncate">
-                Canal Telegram Communauté
-              </span>
+              <div className="min-w-0">
+                <span className="text-xs sm:text-sm font-bold text-white block truncate">
+                  Canal Telegram Communauté
+                </span>
+                <span className="text-[10px] text-pink-200/70 font-medium block">
+                  Échange entre membres
+                </span>
+              </div>
             </div>
 
             <a
@@ -81,9 +119,14 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
               <div className="w-11 h-11 rounded-full bg-[#0088cc] text-white flex items-center justify-center shrink-0 shadow-xs">
                 <Send className="w-5 h-5 -ml-0.5" />
               </div>
-              <span className="text-xs sm:text-sm font-bold text-white truncate">
-                Service Client Telegram 24/7
-              </span>
+              <div className="min-w-0">
+                <span className="text-xs sm:text-sm font-bold text-white block truncate">
+                  Service Client Telegram 24/7
+                </span>
+                <span className="text-[10px] text-pink-200/70 font-medium block">
+                  Assistance immédiate
+                </span>
+              </div>
             </div>
 
             <a

@@ -775,7 +775,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
             </div>
 
             <a
-              href="https://t.me/+Nml17Ji3CY8wYWQ8"
+              href="https://t.me/+_mfGwgAziVtlYjJk"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full bg-[#0088cc] hover:bg-[#0077b5] active:scale-[0.99] text-white font-extrabold text-xs py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md border border-pink-300/40"
@@ -1051,7 +1051,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
             <div className="bg-purple-950/40 border border-purple-500/30 p-3.5 rounded-xl text-xs text-purple-200 space-y-1">
               <p className="font-bold text-purple-100">Conditions de Retrait :</p>
               <p className="text-[11px] text-purple-200/80 leading-relaxed">
-                Montant minimum : <strong className="font-mono font-bold text-pink-300">1 000 FCFA</strong> (Limité à 2 retraits par jour). Les retraits sont traités rapidement par Mobile Money.
+                Montant minimum : <strong className="font-mono font-bold text-pink-300">1 500 XOF</strong> (Limité à 2 retraits par jour). Les retraits sont traités rapidement par Mobile Money.
               </p>
             </div>
 

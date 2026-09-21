@@ -50,30 +50,30 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         <div className="relative z-10 space-y-2">
           <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold">
             <Sun className="w-3.5 h-3.5 text-amber-400" />
-            <span>PLAN Duke Energy</span>
+            <span>PLAN AirProds</span>
           </div>
 
           <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight">
-            L'énergie solaire à votre portée
+            L'univers AirProds à votre portée
           </h2>
 
           <p className="text-xs sm:text-sm text-pink-200/80 max-w-xl leading-relaxed">
-            Profitez d'un rendement quotidien de <span className="font-bold text-amber-400">15% par jour</span> pendant un cycle de <span className="font-bold text-amber-400">120 jours</span> avec versement automatique de vos gains chaque 24h.
+            Profitez de revenus réguliers avec nos packs technologiques AirProds pendant un cycle officiel de <span className="font-bold text-amber-400">180 jours</span> avec versement automatique de vos gains chaque 24h.
           </p>
 
           {/* Quick value props */}
           <div className="grid grid-cols-3 gap-2 pt-2 text-center font-mono">
             <div className="bg-[#240c3c]/80 backdrop-blur-xs rounded-xl p-2 border border-pink-500/25">
-              <div className="text-[11px] sm:text-xs font-black text-amber-300">15% / jour</div>
-              <div className="text-[9px] sm:text-[10px] text-pink-200/70 font-sans font-medium">Taux garanti</div>
+              <div className="text-[11px] sm:text-xs font-black text-amber-300">AirProds</div>
+              <div className="text-[9px] sm:text-[10px] text-pink-200/70 font-sans font-medium">Technologie VIP</div>
             </div>
             <div className="bg-[#240c3c]/80 backdrop-blur-xs rounded-xl p-2 border border-pink-500/25">
-              <div className="text-[11px] sm:text-xs font-black text-pink-300">120 Jours</div>
-              <div className="text-[9px] sm:text-[10px] text-pink-200/70 font-sans font-medium">Cycle d'énergie</div>
+              <div className="text-[11px] sm:text-xs font-black text-pink-300">180 Jours</div>
+              <div className="text-[9px] sm:text-[10px] text-pink-200/70 font-sans font-medium">Cycle officiel</div>
             </div>
             <div className="bg-[#240c3c]/80 backdrop-blur-xs rounded-xl p-2 border border-pink-500/25">
               <div className="text-[11px] sm:text-xs font-black text-emerald-300">Retraits 7j/7</div>
-              <div className="text-[9px] sm:text-[10px] text-pink-200/70 font-sans font-medium">Mobile Money</div>
+              <div className="text-[9px] sm:text-[10px] text-pink-200/70 font-sans font-medium">Dès 1 500 XOF</div>
             </div>
           </div>
         </div>
@@ -89,9 +89,10 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       ) : (
         <div className="space-y-3.5">
           {activeProducts.map((product) => {
-            const cycleDays = product.duration || 120;
-            const gainCycle = product.gain120Days || (product.dailyGain * cycleDays);
+            const cycleDays = product.duration || 180;
+            const gainCycle = product.gain180Days || product.gain120Days || (product.dailyGain * cycleDays);
             const totalCycle = product.totalGain || (product.price + gainCycle);
+            const ratePercent = product.dailyRatePercent ? `${product.dailyRatePercent}%` : `${((product.dailyGain / product.price) * 100).toFixed(1)}%`;
             return (
               <div
                 key={product.id}
@@ -106,7 +107,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                         {product.name}
                       </h4>
                       <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                        {product.badge || '15% / jour'}
+                        {product.badge || `${ratePercent} / j`}
                       </span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">
                         {cycleDays} jours
@@ -123,12 +124,12 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     src={
                       product.image && product.image.trim() !== ''
                         ? product.image
-                        : 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80'
+                        : 'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=800&auto=format&fit=crop&q=80'
                     }
                     alt={product.name}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src =
-                        'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80';
+                        'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=800&auto=format&fit=crop&q=80';
                     }}
                     className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 border border-pink-500/30 bg-[#250d3c]"
                   />
@@ -141,7 +142,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                       +{(Number(product.dailyGain) || 0).toLocaleString('fr-FR')} F
                     </div>
                     <div className="text-[10px] sm:text-xs font-semibold text-pink-200/80 mt-0.5 font-sans">
-                      / jour (15%)
+                      / jour ({ratePercent})
                     </div>
                   </div>
                   <div className="border-r border-pink-500/20 pr-1">
@@ -167,7 +168,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   <div className="text-xs sm:text-sm font-medium text-pink-200">
                     Prix de la formule :{' '}
                     <span className="text-white font-black ml-1 text-base sm:text-lg font-mono">
-                      {(Number(product.price) || 0).toLocaleString('fr-FR')} FCFA
+                      {(Number(product.price) || 0).toLocaleString('fr-FR')} XOF
                     </span>
                   </div>
 
