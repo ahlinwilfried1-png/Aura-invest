@@ -2763,7 +2763,10 @@ app.get(['/api/health', '/health'], async (req, res) => {
           withdrawal_proofs: Array.from(serverProofsStore.values()),
           tickets: Array.from(serverTicketsStore.values()),
           commissions: Array.from(serverCommissionsStore.values()),
-          bonus_codes: Array.from(serverBonusCodesStore.values())
+          bonus_codes: Array.from(serverBonusCodesStore.values()),
+          announcements: Array.from(serverAnnouncementsStore.values()),
+          tasks: serverTasksStore.size > 0 ? Array.from(serverTasksStore.values()) : defaultSeedTasks,
+          task_claims: Array.from(serverUserTaskClaimsStore.values())
         },
         supabaseStatus: isSupabaseQuotaExceeded ? 'quota_exceeded' : 'connected',
         isQuotaExceeded: isSupabaseQuotaExceeded
@@ -3151,6 +3154,12 @@ app.get(['/api/health', '/health'], async (req, res) => {
 
   // GET /api/tasks - Retrieve all tasks
   app.get('/api/tasks', (req, res) => {
+    if (serverTasksStore.size === 0) {
+      defaultSeedTasks.forEach(task => {
+        serverTasksStore.set(task.id, task);
+      });
+      savePlatformDataToDisk();
+    }
     const tasks = Array.from(serverTasksStore.values()).sort((a, b) => (a.order || 0) - (b.order || 0));
     return res.json({ success: true, tasks });
   });

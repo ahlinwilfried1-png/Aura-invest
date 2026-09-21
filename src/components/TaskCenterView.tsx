@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { TaskItem, User } from '../types';
+import { OFFICIAL_TASKS } from '../constants/tasks';
 
 interface TaskCenterViewProps {
   onBack: () => void;
@@ -147,13 +148,21 @@ export const TaskCenterView: React.FC<TaskCenterViewProps> = ({
     return { current, target, isFulfilled, isClaimed, claimedToday, percent };
   };
 
+  // Ensure tasks are never empty in deployed or fresh environments
+  const effectiveTasks = useMemo(() => {
+    if (Array.isArray(tasks) && tasks.length > 0) {
+      return tasks;
+    }
+    return OFFICIAL_TASKS;
+  }, [tasks]);
+
   // Filter tasks based on active category
   const filteredTasks = useMemo(() => {
-    return tasks
+    return effectiveTasks
       .filter(t => t.isActive !== false)
       .filter(t => activeTab === 'ALL' || t.category === activeTab)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
-  }, [tasks, activeTab]);
+  }, [effectiveTasks, activeTab]);
 
   // Overall User Summary Stats
   const userTotalClaimsCount = useMemo(() => {
@@ -342,7 +351,7 @@ export const TaskCenterView: React.FC<TaskCenterViewProps> = ({
               : 'bg-[#1a082b] text-pink-300/70 hover:text-white border border-pink-500/20'
           }`}
         >
-          Équipements VR (VIP)
+          AirProds (VIP)
         </button>
         <button
           onClick={() => setActiveTab('team_salary')}

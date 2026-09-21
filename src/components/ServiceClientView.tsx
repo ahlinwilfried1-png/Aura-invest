@@ -1,15 +1,17 @@
 import React from 'react';
-import { ChevronLeft, Send, MessageCircle } from 'lucide-react';
+import { ChevronLeft, Send, MessageCircle, Users, Headset } from 'lucide-react';
 
 interface ServiceClientViewProps {
   onBack: () => void;
   telegramUrl?: string;
+  telegramGroupUrl?: string;
   whatsappUrl?: string;
 }
 
 export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
   onBack,
   telegramUrl = "https://t.me/+_mfGwgAziVtlYjJk",
+  telegramGroupUrl = "https://t.me/+_mfGwgAziVtlYjJk",
   whatsappUrl = "https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
 }) => {
   return (
@@ -87,24 +89,24 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
             </a>
           </div>
 
-          {/* Row 2: Telegram Group */}
+          {/* Row 2: Telegram Discussion Group */}
           <div className="flex items-center justify-between gap-3 py-1">
             <div className="flex items-center space-x-3 min-w-0">
               <div className="w-11 h-11 rounded-full bg-[#0088cc] text-white flex items-center justify-center shrink-0 shadow-xs">
-                <Send className="w-5 h-5 -ml-0.5" />
+                <Users className="w-5 h-5" />
               </div>
               <div className="min-w-0">
                 <span className="text-xs sm:text-sm font-bold text-white block truncate">
-                  Canal Telegram Communauté
+                  Groupe de discussion Telegram
                 </span>
-                <span className="text-[10px] text-pink-200/70 font-medium block">
-                  Échange entre membres
+                <span className="text-[10px] text-pink-200/80 font-medium block">
+                  Discussions & entraide entre membres
                 </span>
               </div>
             </div>
 
             <a
-              href={telegramUrl}
+              href={telegramGroupUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer active:scale-95 shrink-0 border border-pink-300/30"
@@ -117,7 +119,7 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
           <div className="flex items-center justify-between gap-3 py-1">
             <div className="flex items-center space-x-3 min-w-0">
               <div className="w-11 h-11 rounded-full bg-[#0088cc] text-white flex items-center justify-center shrink-0 shadow-xs">
-                <Send className="w-5 h-5 -ml-0.5" />
+                <Headset className="w-5 h-5" />
               </div>
               <div className="min-w-0">
                 <span className="text-xs sm:text-sm font-bold text-white block truncate">

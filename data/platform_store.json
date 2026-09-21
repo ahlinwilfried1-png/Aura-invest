@@ -103,7 +103,7 @@
       "whatsapp": "+22897783065",
       "country": "Togo",
       "balance": 4915,
-      "dailyEarnings": 504,
+      "dailyEarnings": 672,
       "totalEarnings": 1215,
       "vipLevel": 12,
       "isBlocked": false,
@@ -1340,26 +1340,18 @@
       "maxUses": 0,
       "usedBy": [
         {
-          "id": "rev-1789926688575-inv-gzkq8u6yw-dwq0",
-          "amount": 504,
+          "id": "rev-1789976228016-inv-gzkq8u6yw-wgdm",
+          "amount": 672,
           "userId": "usr-5120441",
-          "creditedAt": "2026-09-20T17:51:28.575Z",
-          "productName": "VIP NIVEAU 1 (AirPods 2) (3x 24h)",
+          "creditedAt": "2026-09-21T07:37:08.016Z",
+          "productName": "VIP NIVEAU 1 (AirPods 2) (4x 24h)",
           "investmentId": "inv-gzkq8u6yw"
         },
         {
-          "id": "rev-1789690039869-inv-gzkq8u6yw-8crk",
+          "id": "rev-1789555259402-inv-gzkq8u6yw-7c40",
           "amount": 168,
           "userId": "usr-5120441",
-          "creditedAt": "2026-09-18T00:07:19.869Z",
-          "productName": "VIP NIVEAU 1 (AirPods 2) (1x 24h)",
-          "investmentId": "inv-gzkq8u6yw"
-        },
-        {
-          "id": "rev-1789631964038-inv-gzkq8u6yw-gbsp",
-          "amount": 168,
-          "userId": "usr-5120441",
-          "creditedAt": "2026-09-17T07:59:24.038Z",
+          "creditedAt": "2026-09-16T10:40:59.402Z",
           "productName": "VIP NIVEAU 1 (AirPods 2) (1x 24h)",
           "investmentId": "inv-gzkq8u6yw"
         },
@@ -1572,7 +1564,7 @@
           "investmentId": "inv-plg58t9-mt9rvopf"
         }
       ],
-      "createdAt": "2026-09-20T17:51:28.583+00:00"
+      "createdAt": "2026-09-21T07:37:08.079+00:00"
     },
     {
       "code": "__SYS_ANNOUNCEMENTS__",
@@ -1793,5 +1785,5 @@
   ],
   "task_claims": [],
   "paymentGatewayUrl": "https://tchin.tech/pay/6wy9goqpge",
-  "lastSaved": "2026-09-21T07:26:31.843Z"
+  "lastSaved": "2026-09-21T07:50:20.559Z"
 }

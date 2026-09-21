@@ -636,6 +636,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             {activeTab === 'service_client' && (
               <ServiceClientView
                 onBack={navigateToHome}
+                telegramUrl="https://t.me/+_mfGwgAziVtlYjJk"
+                telegramGroupUrl="https://t.me/+_mfGwgAziVtlYjJk"
+                whatsappUrl="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
               />
             )}
           </div>

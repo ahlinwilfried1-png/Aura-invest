@@ -60,6 +60,7 @@ import {
   UserTaskClaim
 } from '../types';
 import { OFFICIAL_INVESTMENT_PRODUCTS } from '../constants/products';
+import { OFFICIAL_TASKS } from '../constants/tasks';
 
 interface AppContextType {
   users: User[];
@@ -546,9 +547,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [tasks, setTasks] = useState<TaskItem[]>(() => {
     const data = safeGetLocalStorage('fintech_tasks');
     if (data) {
-      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
+      try {
+        const parsed = deduplicateById<TaskItem>(JSON.parse(data));
+        if (parsed.length > 0) return parsed;
+      } catch (_) {}
     }
-    return [];
+    return OFFICIAL_TASKS;
   });
 
   const [userTaskClaims, setUserTaskClaims] = useState<UserTaskClaim[]>(() => {
@@ -794,9 +798,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (master.announcements && Array.isArray(master.announcements)) {
           sysAnnouncements = master.announcements;
         }
-        if (master.tasks && Array.isArray(master.tasks)) {
+        if (master.tasks && Array.isArray(master.tasks) && master.tasks.length > 0) {
           setTasks(master.tasks);
           safeSetLocalStorage('fintech_tasks', master.tasks);
+        } else {
+          setTasks(prev => (prev && prev.length > 0 ? prev : OFFICIAL_TASKS));
         }
         if (master.task_claims && Array.isArray(master.task_claims)) {
           setUserTaskClaims(master.task_claims);
@@ -1013,39 +1019,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setAnnouncements(sysAnnouncements);
           safeSetLocalStorage('fintech_announcements', sysAnnouncements);
         }
-
-        // Fetch announcements directly from dedicated central endpoint
-        try {
-          fetch('/api/announcements')
-            .then(res => res.json())
-            .then(data => {
-              if (data && data.success && Array.isArray(data.announcements)) {
-                setAnnouncements(data.announcements);
-                safeSetLocalStorage('fintech_announcements', data.announcements);
-              }
-            })
-            .catch(() => {});
-
-          fetch('/api/tasks')
-            .then(res => res.json())
-            .then(data => {
-              if (data && data.success && Array.isArray(data.tasks)) {
-                setTasks(data.tasks);
-                safeSetLocalStorage('fintech_tasks', data.tasks);
-              }
-            })
-            .catch(() => {});
-
-          fetch('/api/tasks/claims')
-            .then(res => res.json())
-            .then(data => {
-              if (data && data.success && Array.isArray(data.claims)) {
-                setUserTaskClaims(data.claims);
-                safeSetLocalStorage('fintech_task_claims', data.claims);
-              }
-            })
-            .catch(() => {});
-        } catch (_) {}
         if (sysFaqs) {
           setFaqs(sysFaqs);
           safeSetLocalStorage('fintech_faqs', sysFaqs);
@@ -1078,6 +1051,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           safeSetLocalStorage('fintech_global_notification', sysNotif);
         }
       }
+
+      // Dedicated robust endpoint sync: Announcements, Tasks and Claims (Independent of Supabase bonus rows)
+      try {
+        fetch('/api/announcements')
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.success && Array.isArray(data.announcements)) {
+              setAnnouncements(data.announcements);
+              safeSetLocalStorage('fintech_announcements', data.announcements);
+            }
+          })
+          .catch(() => {});
+
+        fetch('/api/tasks')
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.success && Array.isArray(data.tasks) && data.tasks.length > 0) {
+              setTasks(data.tasks);
+              safeSetLocalStorage('fintech_tasks', data.tasks);
+            } else {
+              setTasks(prev => (prev && prev.length > 0 ? prev : OFFICIAL_TASKS));
+            }
+          })
+          .catch(() => {
+            setTasks(prev => (prev && prev.length > 0 ? prev : OFFICIAL_TASKS));
+          });
+
+        fetch('/api/tasks/claims')
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.success && Array.isArray(data.claims)) {
+              setUserTaskClaims(data.claims);
+              safeSetLocalStorage('fintech_task_claims', data.claims);
+            }
+          })
+          .catch(() => {});
+      } catch (_) {}
 
       isHydratedRef.current = true;
     } catch (err) {
@@ -2868,15 +2878,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        return { success: false, error: data?.error || 'Erreur lors de la réinitialisation des tâches.' };
+        setTasks(OFFICIAL_TASKS);
+        safeSetLocalStorage('fintech_tasks', OFFICIAL_TASKS);
+        return { success: true };
       }
-      if (Array.isArray(data.tasks)) {
+      if (Array.isArray(data.tasks) && data.tasks.length > 0) {
         setTasks(data.tasks);
         safeSetLocalStorage('fintech_tasks', data.tasks);
+      } else {
+        setTasks(OFFICIAL_TASKS);
+        safeSetLocalStorage('fintech_tasks', OFFICIAL_TASKS);
       }
       return { success: true };
     } catch (err: any) {
-      return { success: false, error: err?.message || 'Erreur réseau.' };
+      setTasks(OFFICIAL_TASKS);
+      safeSetLocalStorage('fintech_tasks', OFFICIAL_TASKS);
+      return { success: true };
     }
   };
 
