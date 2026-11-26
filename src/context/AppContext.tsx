@@ -19,7 +19,6 @@ import {
   deleteSystemConfig,
   buyProductInvestment,
   submitDepositRequest,
-  checkoutDeposit,
   submitWithdrawalRequest,
   submitSupportTicket,
   replySupportTicket,
@@ -110,13 +109,6 @@ interface AppContextType {
   updateTask: (idOrTask: string | (Partial<TaskItem> & { id: string }), updates?: Partial<TaskItem>) => Promise<{ success: boolean; error?: string }>;
   resetDefaultTasks: () => Promise<{ success: boolean; tasks?: TaskItem[]; error?: string }>;
   requestDeposit: (amount: number, method: any, transactionId: string, screenshotUrl: string | null) => { success: boolean; error?: string };
-  initiateDepositCheckout: (params: {
-    amount: number;
-    country: string;
-    countryCode: string;
-    method: string;
-    phoneNumber: string;
-  }) => Promise<{ success: boolean; error?: string; redirectUrl?: string; deposit?: DepositRequest }>;
   requestWithdrawal: (amount: number, network: any, accountNumber: string) => { success: boolean; error?: string };
   saveWithdrawalAccount: (accountName: string, accountNumber: string, pin: string, network?: string, country?: string, isAdminOverride?: boolean) => Promise<{ success: boolean; error?: string }>;
   sendAdminDirectMessage: (userId: string, message: string) => Promise<{ success: boolean; error?: string }>;
@@ -202,8 +194,8 @@ function buildPinHash(pwd?: string, pin?: string, network?: string, country?: st
   const existing = parseAuthFromPinHash(existingHash);
   const finalPwd = pwd !== undefined ? pwd : (existing.pwd || '');
   const finalPin = pin !== undefined ? pin : (existing.pin || '');
-  const finalNetwork = network !== undefined ? network : (existing.network || 'MTN Mobile Money');
-  const finalCountry = country !== undefined ? country : (existing.country || 'CM');
+  const finalNetwork = network !== undefined ? network : (existing.network || 'TMoney');
+  const finalCountry = country !== undefined ? country : (existing.country || 'TG');
   return JSON.stringify({ pwd: finalPwd, pin: finalPin, network: finalNetwork, country: finalCountry });
 }
 
@@ -260,13 +252,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       role: 'admin',
       referralCode: 'ADMIN01',
       referredByCode: null,
-      withdrawalAccountName: 'ADMINISTRATION NUTRIEN',
+      withdrawalAccountName: 'ADMINISTRATION GOLD SPEED',
       withdrawalAccountNumber: '97194059',
       withdrawalPinHash: JSON.stringify({ pwd: '123456', pin: '0000', net: 'TMoney', cty: 'TG' })
     },
     {
       id: 'usr-admin-principal-2026',
-      name: 'Administrateur Principal (AirPods)',
+      name: 'Administrateur Principal (Gold Speed)',
       phone: '+22891902026',
       whatsapp: '+22891902026',
       country: 'Togo',
@@ -279,7 +271,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       role: 'admin',
       referralCode: 'ADMIN2026',
       referredByCode: null,
-      withdrawalAccountName: 'ADMINISTRATION OFFICIELLE AIRPODS',
+      withdrawalAccountName: 'ADMINISTRATION OFFICIELLE GOLD SPEED',
       withdrawalAccountNumber: '91902026',
       withdrawalPinHash: JSON.stringify({
         pwd: '123456',
@@ -343,18 +335,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { return JSON.parse(data); } catch (_) {}
     }
     return {
-      '+237691902026': 'Nutrien@Admin2026#',
-      '691902026': 'Nutrien@Admin2026#',
+      '+22891902026': 'Nutrien@Admin2026#',
       '91902026': 'Nutrien@Admin2026#',
-      '+237697194059': 'admin123',
-      '697194059': 'admin123',
+      '+22897194059': 'admin123',
       '97194059': 'admin123',
-      '+237690554433': 'NutrienAdmin#2026!SecX',
-      '690554433': 'NutrienAdmin#2026!SecX',
+      '+22890554433': 'NutrienAdmin#2026!SecX',
       '90554433': 'NutrienAdmin#2026!SecX',
-      '11111111': 'admin123',
-      '07070707': 'koffi123',
-      '77777777': 'seydou123'
+      '90123456': '123456'
     };
   });
 
@@ -363,56 +350,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const obsoleteIds = new Set([
       'vip-1-pro', 'vip-2-elite', 'vip-3-premium', 'vip-4-platinum', 'vip-5-or',
       'vip-6-saphir', 'vip-7-silver', 'vip-8-gray', 'vip-9-gold',
-      'vip-partenaire-bronze', 'vip-partenaire-argent'
+      'vip-partenaire-bronze', 'vip-partenaire-argent',
+      'airprods-vip1', 'airprods-vip2', 'airprods-vip3', 'airprods-vip4',
+      'airprods-vip5', 'airprods-vip6', 'airprods-vip7', 'airprods-vip8', 'airprods-vip9'
     ]);
-    
-    // Filter out obsolete removed products
-    const cleanList = list.filter(item => !obsoleteIds.has(item.id));
 
-    const updatedList = cleanList.map(item => {
+    // Filter out obsolete removed legacy products while keeping admin-edited & custom products intact
+    const cleanList = list.filter(item => item && item.id && !obsoleteIds.has(item.id));
+
+    if (cleanList.length === 0) {
+      return OFFICIAL_INVESTMENT_PRODUCTS;
+    }
+
+    const updatedList = cleanList.map((item, idx) => {
       const official = officialMap.get(item.id);
-      if (official) {
-        return {
-          ...official,
-          ...item,
-          name: official.name,
-          image: item.image || official.image,
-          description: official.description,
-          badge: official.badge,
-          color: official.color,
-          price: official.price,
-          dailyGain: official.dailyGain,
-          duration: official.duration,
-          gain120Days: official.gain120Days,
-          gain40Days: official.gain40Days,
-          totalGain: official.totalGain,
-          dailyRatePercent: official.dailyRatePercent,
-          order: official.order,
-          isActive: item.isActive !== false
-        };
+      const parsedPrice = Number(item.price) !== undefined && !isNaN(Number(item.price)) ? Number(item.price) : (official?.price || 0);
+      const parsedDaily = Number(item.dailyGain) !== undefined && !isNaN(Number(item.dailyGain)) ? Number(item.dailyGain) : (official?.dailyGain || 0);
+      const parsedDur = Number(item.duration) > 0 ? Number(item.duration) : (official?.duration || 150);
+      const parsedTotal = Number(item.totalGain) > 0 ? Number(item.totalGain) : (parsedDaily * parsedDur);
+      const calcRate = parsedPrice > 0 ? Math.round((parsedDaily / parsedPrice) * 1000) / 10 : (official?.dailyRatePercent || 0);
+
+      let migratedName = item.name || official?.name || `Gold ${idx + 1}`;
+      if (/iphone\s*switch/i.test(migratedName)) {
+        const numMatch = migratedName.match(/(\d+)\s*$/);
+        migratedName = numMatch ? `Gold ${numMatch[1]}` : (official?.name || migratedName.replace(/vip\d*\s*iphone\s*switch/i, 'Gold').trim());
       }
-      const parsedPrice = Number(item.price) || 0;
-      const parsedDaily = Number(item.dailyGain) || 0;
-      const parsedDur = Number(item.duration) || 120;
+      let migratedDesc = item.description ?? official?.description ?? '';
+      if (/iphone\s*switch/i.test(migratedDesc)) {
+        migratedDesc = migratedDesc
+          .replace(/VIP(\d+)\s+iPhone\s+Switch\s+(\d+)/gi, 'Gold $2')
+          .replace(/iPhone\s+Switch/gi, 'Gold');
+      }
+      let migratedBadge = item.badge ?? official?.badge ?? `GOLD ${idx + 1}`;
+      if (/^VIP(\d+)$/i.test(String(migratedBadge))) {
+        migratedBadge = String(migratedBadge).replace(/^VIP(\d+)$/i, 'GOLD $1');
+      }
+
       return {
+        ...(official || {}),
         ...item,
+        name: migratedName,
+        image: item.image || official?.image || 'https://images.unsplash.com/photo-1678685888221-cda773a3dcdb?w=800&auto=format&fit=crop&q=80',
+        description: migratedDesc,
+        badge: migratedBadge,
+        color: item.color || official?.color || 'from-blue-950/70 via-cyan-900/40 to-sky-950/50 border-cyan-500/40',
         price: parsedPrice,
         dailyGain: parsedDaily,
         duration: parsedDur,
-        totalGain: Number(item.totalGain) || (parsedPrice + (parsedDaily * parsedDur)),
+        totalGain: parsedTotal,
+        dailyRatePercent: calcRate,
+        order: Number(item.order) || official?.order || (idx + 1),
         isActive: item.isActive !== false
       };
     });
 
-    // Ensure all official products are present
-    const presentIds = new Set(updatedList.map(p => p.id));
-    for (const official of OFFICIAL_INVESTMENT_PRODUCTS) {
-      if (!presentIds.has(official.id)) {
-        updatedList.push(official);
-      }
-    }
-
-    return updatedList.sort((a, b) => (a.order || 99) - (b.order || 99));
+    return updatedList.sort((a, b) => (Number(a.order) || 99) - (Number(b.order) || 99));
   };
 
   const [products, setProducts] = useState<InvestmentProduct[]>(() => {
@@ -536,10 +528,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return [];
   });
 
+  const sanitizeGoldSpeedText = (text?: string): string => {
+    if (!text) return '';
+    return text.replace(/airprods|airpods/gi, 'Gold Speed');
+  };
+
+  const normalizeTaskList = (list: TaskItem[]): TaskItem[] => {
+    return list.map(t => ({
+      ...t,
+      title: sanitizeGoldSpeedText(t.title),
+      description: sanitizeGoldSpeedText(t.description)
+    }));
+  };
+
+  const normalizeAnnouncementList = (list: Announcement[]): Announcement[] => {
+    return list.map(a => ({
+      ...a,
+      id: a.id === 'ann-official-airpods-launch' ? 'ann-official-goldspeed-launch' : a.id,
+      title: sanitizeGoldSpeedText(a.title),
+      content: sanitizeGoldSpeedText(a.content)
+    }));
+  };
+
   const [announcements, setAnnouncements] = useState<Announcement[]>(() => {
     const data = safeGetLocalStorage('fintech_announcements');
     if (data) {
-      try { return deduplicateById(JSON.parse(data)); } catch (_) {}
+      try { return normalizeAnnouncementList(deduplicateById(JSON.parse(data))); } catch (_) {}
     }
     return [];
   });
@@ -549,7 +563,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (data) {
       try {
         const parsed = deduplicateById<TaskItem>(JSON.parse(data));
-        if (parsed.length > 0) return parsed;
+        if (parsed.length > 0) return normalizeTaskList(parsed);
       } catch (_) {}
     }
     return OFFICIAL_TASKS;
@@ -576,69 +590,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     safeRemoveLocalStorage('fintech_wellness_products');
   }, []);
 
-  // Ensure recharge channels are from supported countries (BF, BJ, TG, CI, CM)
+  // Ensure recharge channels are strictly for Togo (TG)
   const normalizeRechargeChannels = (list: RechargeChannel[]): RechargeChannel[] => {
-    const ALLOWED_CODES = ['BF', 'BJ', 'TG', 'CI', 'CM'];
-    const validList = list.filter(c => {
-      if (!c.countryCode) return true;
-      return ALLOWED_CODES.includes(c.countryCode.toUpperCase());
-    });
+    const validList = list
+      .filter(c => !c.countryCode || c.countryCode.toUpperCase() === 'TG')
+      .map(c => ({
+        ...c,
+        countryCode: 'TG',
+        name: sanitizeGoldSpeedText(c.name),
+        accountHolder: sanitizeGoldSpeedText(c.accountHolder),
+        instructions: sanitizeGoldSpeedText(c.instructions)
+      }));
 
     if (validList.length === 0) {
       return [
         {
-          id: 'rc-bf-orange',
-          name: 'Orange Money (Burkina Faso)',
-          countryCode: 'BF',
-          accountNumber: '+226 70 00 00 00',
-          accountHolder: 'Service Recharge AirPods Burkina',
-          instructions: 'Effectuez le transfert vers ce numéro Orange Money (*144#) puis saisissez la référence de transaction SMS reçue.',
+          id: 'rc-tg-tmoney',
+          name: 'TMoney / Mixx By Yas (Togo)',
+          countryCode: 'TG',
+          accountNumber: '+228 90 00 00 00',
+          accountHolder: 'Service Recharge Gold Speed Togo',
+          instructions: 'Effectuez le transfert vers ce numéro TMoney (*145#) puis saisissez la référence de transaction SMS reçue.',
           isActive: true,
           order: 1,
           createdAt: new Date().toISOString()
         },
         {
-          id: 'rc-bj-mtn',
-          name: 'MTN Mobile Money (Bénin)',
-          countryCode: 'BJ',
-          accountNumber: '+229 97 00 00 00',
-          accountHolder: 'Service Recharge AirPods Bénin',
-          instructions: 'Effectuez le transfert vers ce numéro MTN Mobile Money (*880#) puis saisissez la référence de transaction SMS reçue.',
+          id: 'rc-tg-moov',
+          name: 'Moov Money / Flooz (Togo)',
+          countryCode: 'TG',
+          accountNumber: '+228 99 00 00 00',
+          accountHolder: 'Service Recharge Gold Speed Togo',
+          instructions: 'Effectuez le transfert vers ce numéro Moov Money (*155#) puis saisissez la référence de transaction SMS reçue.',
           isActive: true,
           order: 2,
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'rc-tg-tmoney',
-          name: 'TMoney (Togo)',
-          countryCode: 'TG',
-          accountNumber: '+228 90 00 00 00',
-          accountHolder: 'Service Recharge AirPods Togo',
-          instructions: 'Effectuez le transfert vers ce numéro TMoney (*145#) puis saisissez la référence de transaction SMS reçue.',
-          isActive: true,
-          order: 3,
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'rc-ci-wave',
-          name: 'Wave / Orange Money (Côte d’Ivoire)',
-          countryCode: 'CI',
-          accountNumber: '+225 07 00 00 00 00',
-          accountHolder: 'Service Recharge AirPods CI',
-          instructions: 'Effectuez le transfert vers ce numéro via Wave ou Orange Money puis saisissez la référence de transaction SMS reçue.',
-          isActive: true,
-          order: 4,
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'rc-cm-mtn',
-          name: 'MTN Mobile Money (Cameroun)',
-          countryCode: 'CM',
-          accountNumber: '+237 670 00 00 00',
-          accountHolder: 'Service Recharge AirPods Cameroun',
-          instructions: 'Effectuez le transfert vers ce numéro MTN Mobile Money (*126#) puis saisissez la référence de transaction SMS reçue.',
-          isActive: true,
-          order: 5,
           createdAt: new Date().toISOString()
         }
       ];
@@ -659,58 +644,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return [
       {
-        id: 'rc-bf-orange',
-        name: 'Orange Money (Burkina Faso)',
-        countryCode: 'BF',
-        accountNumber: '+226 70 00 00 00',
-        accountHolder: 'Service Recharge AirPods Burkina',
-        instructions: 'Effectuez le transfert vers ce numéro Orange Money (*144#) puis saisissez la référence de transaction SMS reçue.',
+        id: 'rc-tg-tmoney',
+        name: 'TMoney / Mixx By Yas (Togo)',
+        countryCode: 'TG',
+        accountNumber: '+228 90 00 00 00',
+        accountHolder: 'Service Recharge Gold Speed Togo',
+        instructions: 'Effectuez le transfert vers ce numéro TMoney (*145#) puis saisissez la référence de transaction SMS reçue.',
         isActive: true,
         order: 1,
         createdAt: new Date().toISOString()
       },
       {
-        id: 'rc-bj-mtn',
-        name: 'MTN Mobile Money (Bénin)',
-        countryCode: 'BJ',
-        accountNumber: '+229 97 00 00 00',
-        accountHolder: 'Service Recharge AirPods Bénin',
-        instructions: 'Effectuez le transfert vers ce numéro MTN Mobile Money (*880#) puis saisissez la référence de transaction SMS reçue.',
+        id: 'rc-tg-moov',
+        name: 'Moov Money / Flooz (Togo)',
+        countryCode: 'TG',
+        accountNumber: '+228 99 00 00 00',
+        accountHolder: 'Service Recharge Gold Speed Togo',
+        instructions: 'Effectuez le transfert vers ce numéro Moov Money (*155#) puis saisissez la référence de transaction SMS reçue.',
         isActive: true,
         order: 2,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'rc-tg-tmoney',
-        name: 'TMoney (Togo)',
-        countryCode: 'TG',
-        accountNumber: '+228 90 00 00 00',
-        accountHolder: 'Service Recharge AirPods Togo',
-        instructions: 'Effectuez le transfert vers ce numéro TMoney (*145#) puis saisissez la référence de transaction SMS reçue.',
-        isActive: true,
-        order: 3,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'rc-ci-wave',
-        name: 'Wave / Orange Money (Côte d’Ivoire)',
-        countryCode: 'CI',
-        accountNumber: '+225 07 00 00 00 00',
-        accountHolder: 'Service Recharge AirPods CI',
-        instructions: 'Effectuez le transfert vers ce numéro via Wave ou Orange Money puis saisissez la référence de transaction SMS reçue.',
-        isActive: true,
-        order: 4,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'rc-cm-mtn',
-        name: 'MTN Mobile Money (Cameroun)',
-        countryCode: 'CM',
-        accountNumber: '+237 670 00 00 00',
-        accountHolder: 'Service Recharge AirPods Cameroun',
-        instructions: 'Effectuez le transfert vers ce numéro MTN Mobile Money (*126#) puis saisissez la référence de transaction SMS reçue.',
-        isActive: true,
-        order: 5,
         createdAt: new Date().toISOString()
       }
     ];
@@ -799,10 +751,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           sysAnnouncements = master.announcements;
         }
         if (master.tasks && Array.isArray(master.tasks) && master.tasks.length > 0) {
-          setTasks(master.tasks);
-          safeSetLocalStorage('fintech_tasks', master.tasks);
+          const normalizedTasks = normalizeTaskList(master.tasks);
+          setTasks(normalizedTasks);
+          safeSetLocalStorage('fintech_tasks', normalizedTasks);
         } else {
-          setTasks(prev => (prev && prev.length > 0 ? prev : OFFICIAL_TASKS));
+          setTasks(prev => (prev && prev.length > 0 ? normalizeTaskList(prev) : OFFICIAL_TASKS));
         }
         if (master.task_claims && Array.isArray(master.task_claims)) {
           setUserTaskClaims(master.task_claims);
@@ -839,9 +792,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const auth = parseAuthFromPinHash(u.withdrawalPinHash);
           return {
             ...u,
-            country: 'Cameroun',
-            withdrawalNetwork: auth.network || u.withdrawalNetwork || 'MTN Mobile Money',
-            withdrawalCountry: 'CM'
+            country: 'Togo',
+            withdrawalNetwork: auth.network || u.withdrawalNetwork || 'TMoney',
+            withdrawalCountry: 'TG'
           };
         });
         const dedupedUsers = deduplicateById(enrichedUsers);
@@ -1016,8 +969,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         safeSetLocalStorage('fintech_bonus_codes', dedupedRealBonus);
 
         if (sysAnnouncements) {
-          setAnnouncements(sysAnnouncements);
-          safeSetLocalStorage('fintech_announcements', sysAnnouncements);
+          const normalizedAnn = normalizeAnnouncementList(sysAnnouncements);
+          setAnnouncements(normalizedAnn);
+          safeSetLocalStorage('fintech_announcements', normalizedAnn);
         }
         if (sysFaqs) {
           setFaqs(sysFaqs);
@@ -1058,8 +1012,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .then(res => res.json())
           .then(data => {
             if (data && data.success && Array.isArray(data.announcements)) {
-              setAnnouncements(data.announcements);
-              safeSetLocalStorage('fintech_announcements', data.announcements);
+              const normalizedAnn = normalizeAnnouncementList(data.announcements);
+              setAnnouncements(normalizedAnn);
+              safeSetLocalStorage('fintech_announcements', normalizedAnn);
             }
           })
           .catch(() => {});
@@ -1068,10 +1023,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .then(res => res.json())
           .then(data => {
             if (data && data.success && Array.isArray(data.tasks) && data.tasks.length > 0) {
-              setTasks(data.tasks);
-              safeSetLocalStorage('fintech_tasks', data.tasks);
+              const normalizedTasks = normalizeTaskList(data.tasks);
+              setTasks(normalizedTasks);
+              safeSetLocalStorage('fintech_tasks', normalizedTasks);
             } else {
-              setTasks(prev => (prev && prev.length > 0 ? prev : OFFICIAL_TASKS));
+              setTasks(prev => (prev && prev.length > 0 ? normalizeTaskList(prev) : OFFICIAL_TASKS));
             }
           })
           .catch(() => {
@@ -1257,15 +1213,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (serverAuth && serverAuth.success && serverAuth.user) {
         const user = serverAuth.user;
         const auth = parseAuthFromPinHash(user.withdrawalPinHash);
-        const resolvedCountry = user.country || country || (phoneInfo.countryCode === 'TG' ? 'Togo' : (phoneInfo.countryCode === 'BF' ? 'Burkina Faso' : (phoneInfo.countryCode === 'BJ' ? 'Bénin' : (phoneInfo.countryCode === 'CI' ? 'Côte d’Ivoire' : 'Cameroun'))));
-        const isTogo = resolvedCountry.toLowerCase().includes('togo');
+        const resolvedCountry = 'Togo';
         const isAdmin = user.role === 'admin' || user.id?.includes('admin') || user.phone?.includes('90123456') || user.phone?.includes('97194059') || user.phone?.includes('91902026') || user.phone?.includes('90554433');
         const enrichedUser: User = {
           ...user,
           role: isAdmin ? 'admin' : user.role,
           country: resolvedCountry,
-          withdrawalNetwork: auth.network || user.withdrawalNetwork || (isTogo ? 'TMoney' : 'Orange Money'),
-          withdrawalCountry: user.withdrawalCountry || phoneInfo.countryCode || (isTogo ? 'TG' : 'TG')
+          withdrawalNetwork: auth.network || user.withdrawalNetwork || 'TMoney',
+          withdrawalCountry: 'TG'
         };
 
         setCurrentUser(enrichedUser);
@@ -1360,7 +1315,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     referrerCode: string;
   }): Promise<{ success: boolean; error?: string }> => {
     const phoneInfo = extractPhoneDetails(data.phone, data.country);
-    const finalCountry = data.country || (phoneInfo.countryCode === 'TG' ? 'Togo' : (phoneInfo.countryCode === 'BF' ? 'Burkina Faso' : (phoneInfo.countryCode === 'BJ' ? 'Bénin' : (phoneInfo.countryCode === 'CI' ? 'Côte d’Ivoire' : 'Cameroun'))));
+    const finalCountry = 'Togo';
     const cleanPhone = phoneInfo.cleanPhone;
     const rawDigits = phoneInfo.allDigits;
     const nationalDigits = phoneInfo.nationalDigits;
@@ -1387,8 +1342,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    const defaultNetwork = phoneInfo.countryCode === 'TG' ? 'TMoney' : (phoneInfo.countryCode === 'BF' ? 'Orange Money' : (phoneInfo.countryCode === 'BJ' ? 'MTN Mobile Money' : (phoneInfo.countryCode === 'CI' ? 'Wave' : 'MTN Mobile Money')));
-    const defaultCountryCode = phoneInfo.countryCode || 'TG';
+    const defaultNetwork = 'TMoney';
+    const defaultCountryCode = 'TG';
     const pinHash = buildPinHash(data.word, '', defaultNetwork, defaultCountryCode);
     
     const newUser: User = {
@@ -1579,7 +1534,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (dbUser.referredByCode) {
       const l1 = updatedUsers.find(u => u.referralCode === dbUser.referredByCode);
       if (l1) {
-        const commL1 = Math.round(totalPrice * 0.20); // 20% Level 1
+        const commL1 = Math.round(totalPrice * 0.15); // 15% Level 1
         const ticketsGained = (wheelConfig?.ticketsPerReferral || 1) * quantity;
         const newL1Balance = l1.balance + commL1;
         const newL1Total = l1.totalEarnings + commL1;
@@ -1610,11 +1565,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         newCommissions.push(commObj1);
         upsertItem('commissions', commObj1);
         
-        // Level 2 (2%)
+        // Level 2 (1%)
         if (l1.referredByCode) {
           const l2 = updatedUsers.find(u => u.referralCode === l1.referredByCode);
           if (l2) {
-            const commL2 = Math.round(totalPrice * 0.02); // 2% Level 2
+            const commL2 = Math.round(totalPrice * 0.01); // 1% Level 2
             const newL2Balance = l2.balance + commL2;
             const newL2Total = l2.totalEarnings + commL2;
 
@@ -1785,49 +1740,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
-  const initiateDepositCheckout = async (params: {
-    amount: number;
-    country: string;
-    countryCode: string;
-    method: string;
-    phoneNumber: string;
-  }): Promise<{ success: boolean; error?: string; redirectUrl?: string; deposit?: DepositRequest }> => {
-    if (!currentUser) return { success: false, error: "Non connecté. Veuillez vous connecter." };
-    if (!params.amount || isNaN(params.amount) || params.amount < 3000) {
-      return { success: false, error: "Le montant minimum de recharge est de 3 000 FCFA." };
-    }
-    if (!params.method || !params.method.trim()) {
-      return { success: false, error: "Veuillez choisir un moyen de paiement." };
-    }
-    const cleanPhone = (params.phoneNumber || '').trim();
-    if (!cleanPhone || cleanPhone.length < 6) {
-      return { success: false, error: "Veuillez renseigner un numéro de téléphone valide." };
-    }
-
-    const res = await checkoutDeposit({
-      userId: currentUser.id,
-      amount: params.amount,
-      country: params.country,
-      countryCode: params.countryCode,
-      method: params.method,
-      phoneNumber: cleanPhone
-    });
-
-    if (res.success && res.deposit) {
-      setDeposits(prev => {
-        const filtered = prev.filter(d => d.id !== res.deposit.id);
-        const updated = [res.deposit, ...filtered];
-        safeSetLocalStorage('fintech_deposits', updated);
-        return updated;
-      });
-      setTimeout(() => {
-        fetchAndSyncAllFromSupabase(true);
-      }, 400);
-    }
-
-    return res;
-  };
-
   const saveWithdrawalAccount = async (
     accountName: string,
     accountNumber: string,
@@ -1856,8 +1768,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!accountNumber.trim()) return { success: false, error: "Le numéro de compte de retrait est requis." };
     if (!pin.trim() || pin.length < 4) return { success: false, error: "Le code PIN doit comporter au moins 4 chiffres." };
 
-    const targetNetwork = network || currentUser.withdrawalNetwork || 'MTN Mobile Money';
-    const targetCountry = country || currentUser.withdrawalCountry || 'CM';
+    const targetNetwork = network || currentUser.withdrawalNetwork || 'TMoney';
+    const targetCountry = 'TG';
     const authObj = parseAuthFromPinHash(currentUser.withdrawalPinHash);
     const newPinHash = buildPinHash(authObj.pwd, pin.trim(), targetNetwork, targetCountry, currentUser.withdrawalPinHash);
 
@@ -1914,7 +1826,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       userName: userName,
       userPhone: userPhone || undefined,
       subject: "Message de l'Administration",
-      message: "Message direct du Support Client AirPods.",
+      message: "Message direct du Support Client Gold Speed.",
       reply: message.trim(),
       status: 'closed',
       createdAt: nowIso,
@@ -2280,6 +2192,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, withdrawalPinHash: newPinHash } : u));
     updateItem('users', { withdrawalPinHash: newPinHash }, userId);
+    fetch('/api/admin/users/credentials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, withdrawalPinHash: newPinHash })
+    }).catch(() => {});
 
     return { success: true };
   };
@@ -2435,7 +2352,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         userPhone: maskedPhone,
         amount: wth.amount,
         network: wth.network || 'Mobile Money',
-        message: 'Retrait validé et payé avec succès par AirPods.',
+        message: 'Retrait validé et payé avec succès par Gold Speed.',
         imageUrl: null,
         createdAt: new Date().toISOString().split('T')[0],
         isVerified: true,
@@ -2464,45 +2381,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addOrUpdateProduct = (prodData: Omit<InvestmentProduct, 'isActive'> & { isActive?: boolean; image?: string; description?: string; order?: number; badge?: string; color?: string }) => {
     const existing = products.find(p => p.id === prodData.id);
+    const priceNum = Number(prodData.price) !== undefined && !isNaN(Number(prodData.price)) ? Number(prodData.price) : (existing?.price || 0);
+    const dailyNum = Number(prodData.dailyGain) !== undefined && !isNaN(Number(prodData.dailyGain)) ? Number(prodData.dailyGain) : (existing?.dailyGain || 0);
+    const durNum = Number(prodData.duration) > 0 ? Number(prodData.duration) : (existing?.duration || 150);
+    const totalNum = Number(prodData.totalGain) > 0 ? Number(prodData.totalGain) : (dailyNum * durNum);
+    const calcRate = priceNum > 0 ? Math.round((dailyNum / priceNum) * 1000) / 10 : 0;
+
     let targetProduct: InvestmentProduct;
     if (existing) {
       targetProduct = {
         ...existing,
         ...prodData,
-        price: Number(prodData.price) !== undefined && !isNaN(Number(prodData.price)) ? Number(prodData.price) : existing.price,
-        dailyGain: Number(prodData.dailyGain) !== undefined && !isNaN(Number(prodData.dailyGain)) ? Number(prodData.dailyGain) : existing.dailyGain,
-        duration: Number(prodData.duration) || existing.duration,
-        totalGain: Number(prodData.totalGain) || ((Number(prodData.dailyGain) || existing.dailyGain) * (Number(prodData.duration) || existing.duration)),
+        price: priceNum,
+        dailyGain: dailyNum,
+        duration: durNum,
+        totalGain: totalNum,
+        dailyRatePercent: calcRate,
+        order: prodData.order !== undefined ? Number(prodData.order) : (existing.order || 99),
         isActive: prodData.isActive !== undefined ? prodData.isActive : existing.isActive
       } as InvestmentProduct;
       setProducts(prev => {
-        const next = prev.map(p => p.id === prodData.id ? targetProduct : p);
+        const next = prev.map(p => p.id === prodData.id ? targetProduct : p)
+          .sort((a, b) => (Number(a.order) || 99) - (Number(b.order) || 99));
         safeSetLocalStorage('fintech_products', next);
         return next;
       });
     } else {
       targetProduct = {
-        id: prodData.id || 'vip-' + (products.length + 1),
+        id: prodData.id || 'iphone-custom-' + Date.now(),
         name: prodData.name,
-        price: Number(prodData.price) || 0,
-        dailyGain: Number(prodData.dailyGain) || 0,
-        duration: Number(prodData.duration) || 0,
-        totalGain: Number(prodData.totalGain) || (Number(prodData.dailyGain) * Number(prodData.duration)),
+        price: priceNum,
+        dailyGain: dailyNum,
+        duration: durNum,
+        totalGain: totalNum,
+        dailyRatePercent: calcRate,
         isActive: prodData.isActive ?? true,
-        image: prodData.image || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80',
-        description: prodData.description || 'Offre d\'investissement rentable.',
+        image: prodData.image || 'https://images.unsplash.com/photo-1678685888221-cda773a3dcdb?w=800&auto=format&fit=crop&q=80',
+        description: prodData.description || "Offre d'investissement Gold Speed.",
         order: prodData.order ?? (products.length + 1),
-        badge: prodData.badge || 'Nouveau',
-        color: prodData.color || 'from-amber-950/40 via-amber-900/10 to-transparent border-amber-500/20'
+        badge: prodData.badge || 'VIP',
+        color: prodData.color || 'from-blue-950/70 via-cyan-900/40 to-sky-950/50 border-cyan-500/40'
       };
       setProducts(prev => {
-        const next = [...prev, targetProduct];
+        const next = [...prev, targetProduct]
+          .sort((a, b) => (Number(a.order) || 99) - (Number(b.order) || 99));
         safeSetLocalStorage('fintech_products', next);
         return next;
       });
     }
 
-    // Persist immediately to dedicated server route, DB and trigger instant sync
+    // Persist immediately to dedicated server route first, then sync
     (async () => {
       try {
         await fetch('/api/products', {
@@ -2512,30 +2440,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
       } catch (_) {}
       await upsertItem('products', targetProduct);
-      fetchAndSyncAllFromSupabase(true);
+      await fetchAndSyncAllFromSupabase(true);
       window.dispatchEvent(new CustomEvent('fintech_products_updated', { detail: targetProduct }));
     })();
   };
 
   const resetToOfficialProducts = async (): Promise<void> => {
-    const obsoleteIds = [
-      'vip-1-pro', 'vip-2-elite', 'vip-3-premium', 'vip-4-platinum', 'vip-5-or',
-      'vip-6-saphir', 'vip-7-silver', 'vip-8-gray', 'vip-9-gold',
-      'vip-partenaire-bronze', 'vip-partenaire-argent'
-    ];
-    for (const oldId of obsoleteIds) {
-      deleteRecord('products', oldId);
-    }
-    setProducts(OFFICIAL_INVESTMENT_PRODUCTS);
-    safeSetLocalStorage('fintech_products', OFFICIAL_INVESTMENT_PRODUCTS);
-    for (const p of OFFICIAL_INVESTMENT_PRODUCTS) {
+    let nextProducts = OFFICIAL_INVESTMENT_PRODUCTS;
+    try {
+      const resp = await fetch('/api/products/reset', { method: 'POST' });
+      if (resp.ok) {
+        const json = await resp.json();
+        if (json?.success && Array.isArray(json.products) && json.products.length > 0) {
+          nextProducts = json.products;
+        }
+      }
+    } catch (_) {}
+
+    setProducts(nextProducts);
+    safeSetLocalStorage('fintech_products', nextProducts);
+    for (const p of nextProducts) {
       await upsertItem('products', p);
     }
+    window.dispatchEvent(new CustomEvent('fintech_products_updated'));
   };
 
   const deleteProduct = (productId: string) => {
-    setProducts(prev => prev.filter(p => p.id !== productId));
-    deleteRecord('products', productId);
+    setProducts(prev => {
+      const next = prev.filter(p => p.id !== productId);
+      safeSetLocalStorage('fintech_products', next);
+      return next;
+    });
+    (async () => {
+      try {
+        await fetch(`/api/products/${encodeURIComponent(productId)}`, { method: 'DELETE' });
+      } catch (_) {}
+      await deleteRecord('products', productId);
+      window.dispatchEvent(new CustomEvent('fintech_products_updated'));
+    })();
   };
 
   const deleteUserInvestment = (investmentId: string) => {
@@ -2634,7 +2576,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isBlocked: false,
         createdAt: new Date().toISOString(),
         role: 'user',
-        referralCode: 'AIRPODS'
+        referralCode: 'GOLDSPEED'
       };
       
       const rawPhone = (user.phone || '').trim();
@@ -2649,12 +2591,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const validAmount = Number(amount) > 0 ? Number(amount) : 2000;
       const validNetwork = (network || 'Mobile Money').trim();
-      const validMessage = (message || '').trim() || `Retrait reçu avec succès via ${validNetwork}. Merci AirPods !`;
+      const validMessage = (message || '').trim() || `Retrait reçu avec succès via ${validNetwork}. Merci Gold Speed !`;
 
       const newProof: WithdrawalProof = {
         id: 'proof-' + Date.now(),
         userId: user.id,
-        userName: user.name || 'Membre AirPods',
+        userName: user.name || 'Membre Gold Speed',
         userPhone: maskedPhone,
         amount: validAmount,
         network: validNetwork,
@@ -2781,7 +2723,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // =========================================================================
-  // TASK CENTER (CENTRE DE TÂCHES AIRPRODS) ACTIONS
+  // TASK CENTER (CENTRE DE TÂCHES GOLD SPEED) ACTIONS
   // =========================================================================
 
   const claimTaskReward = async (taskId: string): Promise<{ success: boolean; error?: string; reward?: number; newBalance?: number }> => {
@@ -3088,7 +3030,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       buyInvestment,
       claimDailyEarning,
       requestDeposit,
-      initiateDepositCheckout,
       requestWithdrawal,
       saveWithdrawalAccount,
       sendAdminDirectMessage,

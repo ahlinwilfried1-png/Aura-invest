@@ -308,7 +308,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   };
 
   const handleResetTasks = async () => {
-    if (window.confirm('Voulez-vous vraiment réinitialiser les 12 tâches et récompenses aux valeurs officielles AirProds ?')) {
+    if (window.confirm('Voulez-vous vraiment réinitialiser les 12 tâches et récompenses aux valeurs officielles Gold Speed ?')) {
       try {
         setIsResettingTasks(true);
         const res = await resetDefaultTasks();
@@ -324,8 +324,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     }
   };
 
-  // Recharge Channels Admin State (Burkina Faso, Bénin, Togo, Côte d'Ivoire, Cameroun)
-  const [channelCountryCode, setChannelCountryCode] = useState<string>('BF');
+  // Recharge Channels Admin State (Togo uniquement)
+  const [channelCountryCode, setChannelCountryCode] = useState<string>('TG');
   const [adminChannelCountryFilter, setAdminChannelCountryFilter] = useState<string>('ALL');
   const [channelName, setChannelName] = useState('');
   const [channelNumber, setChannelNumber] = useState('');
@@ -401,7 +401,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
 
   const handleEditChannel = (channel: RechargeChannel) => {
     setEditingChannelId(channel.id);
-    setChannelCountryCode(channel.countryCode || 'BF');
+    setChannelCountryCode('TG');
     setChannelName(channel.name);
     setChannelNumber(channel.accountNumber);
     setChannelHolder(channel.accountHolder || '');
@@ -496,47 +496,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
       showToast('error', err?.message || "Erreur de traitement.");
     } finally {
       setProcessingDepositIds(prev => ({ ...prev, [depId]: false }));
-    }
-  };
-
-  // Payment Gateway Config State & Handlers
-  const [paymentGatewayUrl, setPaymentGatewayUrl] = useState<string>('https://tchin.tech/pay/6wy9goqpge');
-  const [isEditingGateway, setIsEditingGateway] = useState<boolean>(false);
-  const [newGatewayUrl, setNewGatewayUrl] = useState<string>('https://tchin.tech/pay/6wy9goqpge');
-
-  useEffect(() => {
-    fetch('/api/admin/config/payment-gateway')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.url) {
-          setPaymentGatewayUrl(data.url);
-          setNewGatewayUrl(data.url);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  const handleSaveGatewayUrl = async () => {
-    if (!newGatewayUrl.trim().startsWith('http')) {
-      showToast('error', 'URL invalide. Doit commencer par http:// ou https://');
-      return;
-    }
-    try {
-      const res = await fetch('/api/admin/config/payment-gateway', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: newGatewayUrl.trim() })
-      });
-      const data = await res.json();
-      if (data && data.success) {
-        setPaymentGatewayUrl(data.url);
-        setIsEditingGateway(false);
-        showToast('success', 'Lien de paiement passerelle mis à jour avec succès !');
-      } else {
-        showToast('error', data?.error || 'Erreur lors de la mise à jour.');
-      }
-    } catch (_) {
-      showToast('error', 'Erreur de communication serveur.');
     }
   };
 
@@ -743,17 +702,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
       });
     } else {
       setEditingProduct(null);
-      const newId = `prod-${Date.now()}`;
+      const newId = `iphone-custom-${Date.now()}`;
       setProdForm({
         id: newId,
-        name: 'Nouveau Produit Investissement',
+        name: `Gold ${products.length + 1}`,
         price: 10000,
-        dailyGain: 1500,
-        duration: 30,
-        totalGain: 45000,
-        image: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop&q=80',
-        description: 'Pack haut rendement financier.',
-        badge: 'EXCLUSIF',
+        dailyGain: 3000,
+        duration: 150,
+        totalGain: 450000,
+        image: 'https://images.unsplash.com/photo-1678685888221-cda773a3dcdb?w=800&auto=format&fit=crop&q=80',
+        description: 'Formule Gold Speed avec revenus quotidiens garantis pendant 150 jours.',
+        badge: `GOLD ${products.length + 1}`,
         order: products.length + 1,
         isActive: true
       });
@@ -796,25 +755,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
 
   // Move Product Order Up / Down
   const handleMoveProductOrder = (prod: InvestmentProduct, direction: 'up' | 'down') => {
-    const sorted = [...products].sort((a, b) => (a.order || 99) - (b.order || 99));
+    const sorted = [...products].sort((a, b) => (Number(a.order) || 99) - (Number(b.order) || 99));
     const index = sorted.findIndex(p => p.id === prod.id);
     if (index === -1) return;
 
     if (direction === 'up' && index > 0) {
       const prevProd = sorted[index - 1];
-      const currentOrder = prod.order || (index + 1);
-      const prevOrder = prevProd.order || index;
-      
+      const currentOrder = index + 1;
+      const prevOrder = index;
+
       addOrUpdateProduct({ ...prod, order: prevOrder });
-      addOrUpdateProduct({ ...prevProd, order: currentOrder });
+      setTimeout(() => addOrUpdateProduct({ ...prevProd, order: currentOrder }), 60);
       showToast('success', `Ordre de "${prod.name}" déplacé vers le haut`);
     } else if (direction === 'down' && index < sorted.length - 1) {
       const nextProd = sorted[index + 1];
-      const currentOrder = prod.order || (index + 1);
-      const nextOrder = nextProd.order || (index + 2);
-      
+      const currentOrder = index + 1;
+      const nextOrder = index + 2;
+
       addOrUpdateProduct({ ...prod, order: nextOrder });
-      addOrUpdateProduct({ ...nextProd, order: currentOrder });
+      setTimeout(() => addOrUpdateProduct({ ...nextProd, order: currentOrder }), 60);
       showToast('success', `Ordre de "${prod.name}" déplacé vers le bas`);
     }
   };
@@ -893,7 +852,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
       (userStatusFilter === 'active' && !u.isBlocked) || 
       (userStatusFilter === 'blocked' && u.isBlocked);
     const query = userSearch.toLowerCase().trim();
-    const countryLabel = 'cameroun';
+    const countryLabel = 'togo';
     const sponsorObj = u.referredByCode ? users.find(s => s.referralCode?.toLowerCase() === u.referredByCode?.toLowerCase() || s.phone === u.referredByCode || s.id === u.referredByCode) : null;
     const matchesSearch = 
       !query ||
@@ -1548,85 +1507,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 </div>
               </div>
 
-              {/* Passerelle de paiement sécurisée active */}
-              <div className="bg-slate-900/90 border border-slate-700 rounded-xl p-3.5 space-y-2.5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                  <div className="flex items-center space-x-2.5 min-w-0">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></div>
-                    <div className="min-w-0">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs font-bold text-amber-400">Passerelle de Paiement Active :</span>
-                        <span className="text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-800/60 px-2 py-0.5 rounded-full">
-                          En ligne
-                        </span>
-                      </div>
-                      <span className="text-xs font-mono text-slate-300 truncate block mt-0.5">
-                        {paymentGatewayUrl}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(paymentGatewayUrl);
-                        showToast('success', 'Lien de paiement copié !');
-                      }}
-                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      Copier
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNewGatewayUrl(paymentGatewayUrl);
-                        setIsEditingGateway(!isEditingGateway);
-                      }}
-                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      {isEditingGateway ? 'Fermer' : 'Modifier le lien'}
-                    </button>
-                    <a
-                      href="/api/pay-redirect/test"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-black transition-colors"
-                    >
-                      Tester ↗
-                    </a>
-                  </div>
-                </div>
-
-                {/* Formulaire de modification rapide du lien de paiement */}
-                {isEditingGateway && (
-                  <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-700/80 space-y-2 animate-fadeIn">
-                    <label className="text-[11px] font-bold text-slate-300 block">
-                      Remplacer l'URL de la passerelle de paiement (prise en compte immédiate côté serveur) :
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="url"
-                        value={newGatewayUrl}
-                        onChange={(e) => setNewGatewayUrl(e.target.value)}
-                        placeholder="https://tchin.tech/pay/..."
-                        className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-xs font-mono text-white outline-none focus:border-amber-400"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleSaveGatewayUrl}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-lg shrink-0 transition-colors cursor-pointer"
-                      >
-                        Enregistrer
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-slate-400">
-                      Vous pouvez également configurer la variable d'environnement <code>PAYMENT_GATEWAY_URL</code> sur votre serveur.
-                    </p>
-                  </div>
-                )}
-              </div>
-
               {/* Filter Tabs & Search Bar */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                 <div className="flex space-x-1.5 bg-slate-900 p-1 rounded-xl w-full sm:w-auto">
@@ -2204,7 +2084,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                             <span className="flex items-center space-x-1">
                               <span>Pays:</span>
                               <span className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                                <span>🇨🇲 Cameroun</span>
+                                <span>🇹🇬 Togo</span>
                               </span>
                             </span>
                           </div>
@@ -2338,20 +2218,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 <div className="flex items-center space-x-2 shrink-0">
                   <button 
                     onClick={async () => {
-                      try {
-                        await fetch('/api/products/reset', { method: 'POST' });
-                      } catch (_) {}
-                      OFFICIAL_INVESTMENT_PRODUCTS.forEach(p => {
-                        addOrUpdateProduct(p);
-                      });
-                      showToast('success', "Les formules officielles AirProds ont été synchronisées avec succès !");
+                      await resetToOfficialProducts();
+                      showToast('success', "Les 8 plans officiels Gold (150 jours) ont été restaurés !");
                     }}
                     type="button"
                     className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all cursor-pointer flex items-center space-x-1.5 border border-slate-600 shadow-xs"
-                    title="Restaurer et enregistrer les 9 formules VIP AirProds"
+                    title="Restaurer les 8 plans officiels Gold (150 jours)"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Synchroniser Formules AirProds</span>
+                    <span>Réinitialiser 8 Plans Gold</span>
                   </button>
 
                   <button 
@@ -2865,7 +2740,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                         </div>
                       ) : (
                         selectedUserTickets.map((tkt) => {
-                          const isAdminDirect = tkt.id.startsWith('tkt-adm-') || tkt.message === "Message direct du Support Client AirPods." || tkt.message === "Message direct du Support Client Nutrien.";
+                          const isAdminDirect = tkt.id.startsWith('tkt-adm-') || tkt.message === "Message direct du Support Client Gold Speed." || tkt.message === "Message direct du Support Client AirPods." || tkt.message === "Message direct du Support Client Nutrien.";
 
                           return (
                             <div key={tkt.id} className="space-y-2">
@@ -2937,7 +2812,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                         </button>
                         <button
                           type="button"
-                          onClick={() => setChatMessageText("Bonjour, le paiement a été crédité sur votre compte AirPods.")}
+                          onClick={() => setChatMessageText("Bonjour, le paiement a été crédité sur votre compte Gold Speed.")}
                           className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded-lg whitespace-nowrap border border-slate-700 cursor-pointer"
                         >
                           💰 Solde crédité
@@ -2988,7 +2863,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
           </div>
         )}
 
-        {/* 6.5 GESTION DU CENTRE DE TÂCHES AIRPRODS */}
+        {/* 6.5 GESTION DU CENTRE DE TÂCHES GOLD SPEED */}
         {activeAdminTab === 'tasks' && (
           <div className="space-y-6 animate-fadeIn">
             {/* Header & Quick Action */}
@@ -2997,7 +2872,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 <div>
                   <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
                     <Coins className="w-5 h-5 text-amber-500" />
-                    <span>Centre de Tâches & Récompenses AirProds</span>
+                    <span>Centre de Tâches & Récompenses Gold Speed</span>
                   </h2>
                   <p className="text-xs text-slate-500 mt-1">
                     Gérez les 12 tâches officielles (parrainage niveau 1, achat d'équipements VR, salaires d'équipe quotidiens).
@@ -3380,7 +3255,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
               <div className="flex gap-2">
                 <input 
                   type="text" 
-                  placeholder="Ex: Événement VIP : Bonus de 10% sur les recharges Orange & MTN..."
+                  placeholder="Ex: Événement VIP : Bonus de 10% sur les recharges TMoney & Moov Money..."
                   value={bannerInput}
                   onChange={(e) => setBannerInput(e.target.value)}
                   className="flex-grow bg-slate-50 text-xs text-slate-900 px-3.5 py-3 rounded-xl outline-none border border-slate-200 focus:border-red-600 font-bold"
@@ -3976,14 +3851,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                     <CreditCard className="w-4 h-4" />
                   </div>
                   <h2 className="text-lg font-black text-white tracking-tight">
-                    Gestion des Canaux de Dépôt (Cameroun 🇨🇲)
+                    Gestion des Canaux de Dépôt (Togo 🇹🇬)
                   </h2>
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                     Sync BDD Automatique
                   </span>
                 </div>
                 <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-                  Configurez les numéros de dépôt (MTN Mobile Money, Orange Money...) utilisés par la plateforme. Les canaux activés s'affichent automatiquement sur la page de recharge des utilisateurs.
+                  Configurez les numéros de dépôt (TMoney / Mixx By Yas, Moov Money / Flooz) utilisés au Togo. Les canaux activés s'affichent automatiquement sur la page de recharge des utilisateurs.
                 </p>
               </div>
 
@@ -4053,7 +3928,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                     </label>
                     <input
                       type="text"
-                      placeholder="Ex: MTN Mobile Money ou Orange Money"
+                      placeholder="Ex: TMoney (Mixx By Yas) ou Moov Money"
                       value={channelName}
                       onChange={(e) => setChannelName(e.target.value)}
                       className="w-full bg-slate-900 text-white font-bold p-2.5 rounded-xl outline-none border border-slate-700 focus:border-red-500"
@@ -4068,7 +3943,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                     </label>
                     <input
                       type="text"
-                      placeholder="Ex: +237 670 12 34 56"
+                      placeholder="Ex: +228 90 12 34 56"
                       value={channelNumber}
                       onChange={(e) => setChannelNumber(e.target.value)}
                       className="w-full bg-slate-900 text-white font-mono font-bold p-2.5 rounded-xl outline-none border border-slate-700 focus:border-red-500"
@@ -4085,7 +3960,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                     </label>
                     <input
                       type="text"
-                      placeholder="Ex: Service Recharge AirPods Cameroun"
+                      placeholder="Ex: Service Recharge Gold Speed Togo"
                       value={channelHolder}
                       onChange={(e) => setChannelHolder(e.target.value)}
                       className="w-full bg-slate-900 text-white font-bold p-2.5 rounded-xl outline-none border border-slate-700 focus:border-red-500"
@@ -4115,7 +3990,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   </label>
                   <textarea
                     rows={3}
-                    placeholder="Ex: Composez le *126# ou *150# pour effectuer le transfert vers ce numéro, puis saisissez le numéro de transaction SMS reçu..."
+                    placeholder="Ex: Composez *145# (TMoney) ou *155# (Moov Money) pour effectuer le transfert vers ce numéro, puis saisissez le numéro de transaction SMS reçu..."
                     value={channelInstructions}
                     onChange={(e) => setChannelInstructions(e.target.value)}
                     className="w-full bg-slate-900 text-white p-3 rounded-xl outline-none border border-slate-700 focus:border-red-500 leading-relaxed font-normal"
@@ -4165,7 +4040,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                     </span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Ces canaux sont synchronisés en direct avec la page de dépôt des utilisateurs (Burkina Faso, Bénin, Togo, Côte d’Ivoire, Cameroun).
+                    Ces canaux sont synchronisés en direct avec la page de dépôt des utilisateurs (Togo 🇹🇬 uniquement).
                   </p>
                 </div>
 
@@ -4221,7 +4096,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   <CreditCard className="w-10 h-10 mx-auto text-slate-600 stroke-1" />
                   <p className="text-sm font-bold text-white">Aucun canal configuré</p>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                    Ajoutez votre premier canal de recharge (MTN Mobile Money ou Orange Money) ci-dessus pour permettre aux utilisateurs de recharger leur compte.
+                    Ajoutez votre premier canal de recharge (TMoney ou Moov Money) ci-dessus pour permettre aux utilisateurs de recharger leur compte.
                   </p>
                 </div>
               ) : (
@@ -4610,7 +4485,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">Revenu / Jour (FCFA)</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-slate-400 text-[10px] uppercase font-bold">Revenu / Jour (FCFA)</label>
+                    <span className="text-[10px] font-mono font-bold text-emerald-400">
+                      {prodForm.price > 0 ? `${((Number(prodForm.dailyGain) / Number(prodForm.price)) * 100).toFixed(1)}%/j` : '0%/j'}
+                    </span>
+                  </div>
                   <input 
                     type="number" 
                     value={prodForm.dailyGain}
@@ -4639,7 +4519,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 text-[10px] uppercase font-bold mb-1">Revenu Total (FCFA)</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-slate-400 text-[10px] uppercase font-bold">Revenu Total (FCFA)</label>
+                    <button
+                      type="button"
+                      onClick={() => setProdForm({ ...prodForm, totalGain: Number(prodForm.dailyGain) * Number(prodForm.duration) })}
+                      className="text-[9px] text-amber-400 hover:underline font-bold cursor-pointer"
+                    >
+                      Calculer
+                    </button>
+                  </div>
                   <input 
                     type="number" 
                     value={prodForm.totalGain}
@@ -4839,7 +4728,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 </label>
                 <input 
                   type="text" 
-                  placeholder="Ex: 849201 ou +237690000000"
+                  placeholder="Ex: 849201 ou +22890000000"
                   value={newSponsorCodeOrPhone}
                   onChange={(e) => setNewSponsorCodeOrPhone(e.target.value)}
                   className="w-full bg-slate-950 text-white font-mono font-bold text-sm p-3 rounded-xl border border-slate-700 outline-none focus:border-sky-500"
@@ -4957,7 +4846,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                 <div className="flex justify-between py-1 border-b border-slate-800">
                   <span className="text-slate-400">Pays:</span>
                   <span className="text-white font-bold">
-                    🇨🇲 Cameroun
+                    🇹🇬 Togo
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-1 border-b border-slate-800">

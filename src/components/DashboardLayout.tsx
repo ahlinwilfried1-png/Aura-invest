@@ -46,7 +46,10 @@ import {
   X,
   Headphones,
   Package,
-  ArrowLeft
+  ArrowLeft,
+  Star,
+  Home,
+  LayoutGrid
 } from 'lucide-react';
 import { 
   User as UserType, 
@@ -61,7 +64,6 @@ import {
 import { RecentRechargesTicker } from './RecentRechargesTicker';
 import { MainWalletCard } from './MainWalletCard';
 import { QuickOperationsGrid } from './QuickOperationsGrid';
-import { ChatMessenger } from './ChatMessenger';
 import { AnnouncementsModal } from './AnnouncementsModal';
 import { UserGuideModal } from './UserGuideModal';
 import { AdminDashboard } from './AdminDashboard';
@@ -191,20 +193,29 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const hasUnreadAnnouncements = unreadAnnouncementsCount > 0;
   const totalUnreadAnnouncements = unreadAnnouncementsCount;
 
-  // Navigation State (Req: Accueil, Produit, Équipe, Chat, Mon compte + full-page operations)
-  const [activeTab, setActiveTab] = useState<'home' | 'products' | 'orders' | 'team' | 'chat' | 'profile' | 'deposit' | 'withdraw' | 'tasks' | 'announcements' | 'link_card' | 'proofs' | 'service_client'>('home');
+  // Navigation State (Req: Accueil, Produit, Équipe, Mon compte + full-page operations)
+  const [activeTab, setActiveTab] = useState<'home' | 'products' | 'orders' | 'team' | 'profile' | 'deposit' | 'withdraw' | 'tasks' | 'announcements' | 'link_card' | 'proofs' | 'service_client'>('home');
+  const [lastNonFormTab, setLastNonFormTab] = useState<'home' | 'products' | 'orders' | 'team' | 'profile'>('home');
+
+  const openDepositTab = () => {
+    if (activeTab !== 'deposit' && activeTab !== 'withdraw') {
+      setLastNonFormTab(activeTab as any);
+    }
+    setActiveTab('deposit');
+  };
+
+  const openWithdrawTab = () => {
+    if (activeTab !== 'deposit' && activeTab !== 'withdraw') {
+      setLastNonFormTab(activeTab as any);
+    }
+    setActiveTab('withdraw');
+  };
 
   const navigateToHome = () => {
     setSelectedProductDetail(null);
     setActiveTab('home');
     setGuideModalOpen(true);
   };
-
-  useEffect(() => {
-    if (activeTab === 'chat' && unreadChatCount > 0) {
-      markTicketsAsRead(currentUser.id);
-    }
-  }, [activeTab, unreadChatCount, currentUser.id, markTicketsAsRead]);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [selectedProductDetail, setSelectedProductDetail] = useState<InvestmentProduct | null>(null);
 
@@ -220,9 +231,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState<'all' | 'deposits' | 'withdrawals' | null>(null);
 
-  // Deposit workflow state
+  // Deposit workflow state (Togo only)
   const [depAmount, setDepAmount] = useState<number>(3000);
-  const [depMethod, setDepMethod] = useState<'Mixx By Yas' | 'Moov Money' | 'MTN Money' | 'Orange Money'>('Orange Money');
+  const [depMethod, setDepMethod] = useState<'TMoney' | 'Moov Money'>('TMoney');
   const [depTxId, setDepTxId] = useState('');
   const [depScreenshot, setDepScreenshot] = useState<string | null>(null);
 
@@ -232,15 +243,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     const nameLow = (c.name || '').toLowerCase();
     const depLow = (depMethod || '').toLowerCase();
     return nameLow.includes(depLow) || depLow.includes(nameLow) ||
-      (depLow.includes('orange') && nameLow.includes('orange')) ||
-      (depLow.includes('mtn') && nameLow.includes('mtn')) ||
       (depLow.includes('moov') && (nameLow.includes('moov') || nameLow.includes('flooz'))) ||
-      (depLow.includes('yas') && (nameLow.includes('yas') || nameLow.includes('tmoney')));
+      (depLow.includes('tmoney') && (nameLow.includes('yas') || nameLow.includes('tmoney') || nameLow.includes('mixx')));
   }) || rechargeChannels.find(c => c.isActive) || rechargeChannels[0];
 
-  // Withdrawal workflow state
+  // Withdrawal workflow state (Togo only)
   const [wthAmount, setWthAmount] = useState<number>(3000);
-  const [wthNetwork, setWthNetwork] = useState<'Mixx By Yas' | 'Moov Money' | 'MTN Money' | 'Orange Money'>('Orange Money');
+  const [wthNetwork, setWthNetwork] = useState<'TMoney' | 'Moov Money'>('TMoney');
   const [wthAccount, setWthAccount] = useState(currentUser.phone);
 
   // Promo code & Referral state
@@ -302,8 +311,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     }
     const res = requestDeposit(depAmount, depMethod, depTxId, depScreenshot);
     if (res.success) {
-      showToast('success', "Demande de recharge enregistrée ! Redirection vers la passerelle sécurisée...");
-      window.open('https://tchin.tech/pay/6wy9goqpge', '_blank');
+      showToast('success', "Demande de recharge enregistrée et en attente de validation !");
       setDepositModalOpen(false);
       setDepTxId('');
       setDepScreenshot(null);
@@ -414,10 +422,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       )}
 
       {/* Live Official Announcement Ticker Bar with Megaphone */}
-      <RecentRechargesTicker notificationText={globalNotification} />
+      {activeTab !== 'profile' && activeTab !== 'products' && activeTab !== 'team' && <RecentRechargesTicker notificationText={globalNotification} />}
 
       {/* Main Container Workspace (Stuck to top of site) */}
-      <main className="max-w-7xl mx-auto px-2 sm:px-6 pt-1 sm:pt-3 pb-2 flex-grow w-full">
+      <main className={`mx-auto flex-grow w-full ${activeTab === "profile" || activeTab === "products" || activeTab === "team" ? "max-w-md px-0 pt-0 pb-0" : "max-w-7xl px-2 sm:px-6 pt-1 sm:pt-3 pb-2"}`}>
+
         {/* USER WORKSPACE (DYNAMIC SUB-SCREENS VIA TABS) */}
         <div>
             {/* TAB 1: ACCUEIL (DASHBOARD HOME SANS LES PRODUITS DÉPLACÉS) */}
@@ -466,7 +475,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                         <span>Formules d'Investissement</span>
                       </div>
                       <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
-                        Gamme Officielle AirPods & Revenus Quotidiens
+                        Gamme Officielle Gold Speed & Revenus Quotidiens
                       </h3>
                       <p className="text-xs text-pink-200/80 leading-relaxed">
                         Découvrez tous nos plans d'adhésion VIP avec gains quotidiens garantis 24h/24 et retraits Mobile Money instantanés.
@@ -502,6 +511,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <ProductsView
                 products={products}
                 currentUser={currentUser}
+                userInvestments={userInvestments}
                 onConfirmPurchase={(product, qty) => buyInvestment(product.id, qty)}
                 onOpenDeposit={() => setActiveTab('deposit')}
                 onShowToast={showToast}
@@ -543,19 +553,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               />
             )}
 
-            {/* TAB 4: CHAT (REQ: LIVE CHAT & MODERN MESSENGER) */}
-            {activeTab === 'chat' && (
-              <div className="animate-fadeIn">
-                <ChatMessenger 
-                  currentUser={currentUser}
-                  tickets={tickets}
-                  createSupportTicket={createSupportTicket}
-                  replyToTicket={replyToTicket}
-                  onShowToast={showToast}
-                />
-              </div>
-            )}
-
             {/* TAB 5: MON COMPTE (REORGANIZED ACCORDING TO USER SPECIFICATIONS) */}
             {activeTab === 'profile' && (
               <AccountView
@@ -567,7 +564,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 tickets={tickets}
                 globalNotification={globalNotification}
                 announcements={announcements}
-                unreadChatCount={unreadChatCount}
+                unreadChatCount={0}
                 onRequestDeposit={requestDeposit}
                 onRequestWithdrawal={requestWithdrawal}
                 onUpdateProfile={updateProfile}
@@ -578,7 +575,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 onLogout={logout}
                 onShowToast={showToast}
                 onBuyProduct={handleBuyProduct}
-                onOpenTab={(tab) => setActiveTab(tab as any)}
+                onOpenTab={(tab) => {
+                  if (tab === 'deposit') openDepositTab();
+                  else if (tab === 'withdraw') openWithdrawTab();
+                  else setActiveTab(tab as any);
+                }}
                 onToggleAdmin={() => setIsAdminMode(true)}
                 onClaimDailyEarning={claimDailyEarning}
               />
@@ -590,7 +591,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 currentUser={currentUser}
                 deposits={deposits}
                 onRequestDeposit={requestDeposit}
-                onBack={navigateToHome}
+                onBack={() => setActiveTab(lastNonFormTab)}
                 onShowToast={showToast}
               />
             )}
@@ -601,16 +602,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 currentUser={currentUser}
                 withdrawals={withdrawals}
                 onRequestWithdrawal={requestWithdrawal}
-                onBack={navigateToHome}
+                onBack={() => setActiveTab(lastNonFormTab)}
                 onShowToast={showToast}
                 onOpenLinkCard={() => setActiveTab('link_card')}
               />
             )}
 
-            {/* FULL-PAGE VIEW 4: CENTRE DE TÂCHES AIRPRODS (REMPLACE COMPLÈTEMENT LA RUBRIQUE ANNONCE) */}
+            {/* FULL-PAGE VIEW 4: CENTRE DE TÂCHES GOLD SPEED (REMPLACE COMPLÈTEMENT LA RUBRIQUE ANNONCE) */}
             {(activeTab === 'tasks' || activeTab === 'announcements') && (
               <TaskCenterView
-                onBack={navigateToHome}
+                onBack={() => setActiveTab(lastNonFormTab)}
                 onNavigateToProducts={() => setActiveTab('products')}
                 onNavigateToTeam={() => setActiveTab('team')}
               />
@@ -619,7 +620,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             {/* FULL-PAGE VIEW 5: PREUVES DE RETRAIT (PAGE TOUT ENTIÈRE) */}
             {activeTab === 'proofs' && (
               <ProofOfWithdrawalView
-                onBack={navigateToHome}
+                onBack={() => setActiveTab(lastNonFormTab)}
               />
             )}
 
@@ -632,13 +633,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               />
             )}
 
-            {/* FULL-PAGE VIEW 7: SERVICE CLIENT (PAGE DÉDIÉE SANS CADRES NI TRACE) */}
+            {/* FULL-PAGE VIEW 7: SERVICE CLIENT WHATSAPP */}
             {activeTab === 'service_client' && (
               <ServiceClientView
-                onBack={navigateToHome}
-                telegramUrl="https://t.me/+_mfGwgAziVtlYjJk"
-                telegramGroupUrl="https://t.me/+_mfGwgAziVtlYjJk"
+                onBack={() => setActiveTab(lastNonFormTab)}
                 whatsappUrl="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
+                whatsappGroupUrl="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
               />
             )}
           </div>
@@ -656,78 +656,56 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </button>
       )}
 
-      {/* DYNAMIC FIXED FOOTER NAVIGATION TABS MENU BAR */}
-      {/* REQ ORDER: Accueil – Produit – Équipe – Chat – Mon compte */}
+      {/* DYNAMIC FIXED FOOTER NAVIGATION TABS MENU BAR (MATCHING SCREENSHOT UI) */}
       {!isAdminMode && (
-        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#140624]/95 backdrop-blur-md py-2 px-2 border-t border-pink-500/20 shadow-2xl">
-          <div className="max-w-md mx-auto flex justify-between items-center text-center">
+        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#16171b]/98 backdrop-blur-md py-2 px-2 border-t border-gray-800 shadow-2xl">
+          <div className="max-w-md mx-auto flex justify-around items-center text-center">
             
-            {/* 1. Accueil */}
+            {/* 1. Produit (Home icon) */}
             <button 
               onClick={navigateToHome}
-              className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer ${
-                activeTab === 'home' ? 'text-pink-400 font-black scale-105' : 'text-pink-200/50 hover:text-pink-200 font-medium'
+              className={`flex flex-col items-center justify-center space-y-1 py-0.5 px-3 transition-all cursor-pointer ${
+                activeTab === 'home' ? 'text-[#00E575] font-bold scale-105' : 'text-gray-400 hover:text-gray-200 font-medium'
               }`}
             >
-              <Wallet className="w-5 h-5" />
-              <span className="text-[10px]">Accueil</span>
+              <Home className="w-5 h-5" />
+              <span className="text-[10px]">Produit</span>
             </button>
 
-            {/* 2. Produit (remplace Commande à cet emplacement) */}
+            {/* 2. Mon produit (Grid icon) */}
             <button 
               onClick={() => {
                 setSelectedProductDetail(null);
                 setActiveTab('products');
               }}
-              className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer ${
-                activeTab === 'products' ? 'text-pink-400 font-black scale-105' : 'text-pink-200/50 hover:text-pink-200 font-medium'
+              className={`flex flex-col items-center justify-center space-y-1 py-0.5 px-3 transition-all cursor-pointer ${
+                activeTab === 'products' || activeTab === 'orders' ? 'text-[#00E575] font-bold scale-105' : 'text-gray-400 hover:text-gray-200 font-medium'
               }`}
             >
-              <Package className="w-5 h-5" />
-              <span className="text-[10px]">Produit</span>
+              <LayoutGrid className="w-5 h-5" />
+              <span className="text-[10px]">Mon produit</span>
             </button>
 
-            {/* 3. Équipe */}
+            {/* 3. Mon équipe (Star icon in green) */}
             <button 
               onClick={() => setActiveTab('team')}
-              className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer ${
-                activeTab === 'team' ? 'text-pink-400 font-black scale-105' : 'text-pink-200/50 hover:text-pink-200 font-medium'
+              className={`flex flex-col items-center justify-center space-y-1 py-0.5 px-3 transition-all cursor-pointer ${
+                activeTab === 'team' ? 'text-[#00E575] font-bold scale-105' : 'text-gray-400 hover:text-gray-200 font-medium'
               }`}
             >
-              <Users className="w-5 h-5" />
-              <span className="text-[10px]">Équipe</span>
+              <Star className={`w-5 h-5 ${activeTab === 'team' ? 'fill-[#00E575] text-[#00E575]' : ''}`} />
+              <span className="text-[10px]">Mon équipe</span>
             </button>
 
-            {/* 4. Chat */}
-            <button 
-              onClick={() => {
-                setActiveTab('chat');
-                if (currentUser) markTicketsAsRead(currentUser.id);
-              }}
-              className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer relative ${
-                activeTab === 'chat' ? 'text-pink-400 font-black scale-105' : 'text-pink-200/50 hover:text-pink-200 font-medium'
-              }`}
-            >
-              <div className="relative flex items-center justify-center">
-                <MessageSquare className="w-5 h-5" />
-                {unreadChatCount > 0 && (
-                  <span className="absolute -top-1.5 -right-2.5 bg-pink-600 text-white font-black text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-[#140624] animate-bounce shadow-xs">
-                    {unreadChatCount}
-                  </span>
-                )}
-              </div>
-              <span className="text-[10px]">Chat</span>
-            </button>
-
-            {/* 5. Mon compte */}
+            {/* 4. Le mien / Mon compte (User icon) */}
             <button 
               onClick={() => setActiveTab('profile')}
-              className={`flex-1 flex flex-col items-center justify-center space-y-1 py-1 transition-all cursor-pointer ${
-                activeTab === 'profile' ? 'text-pink-400 font-black scale-105' : 'text-pink-200/50 hover:text-pink-200 font-medium'
+              className={`flex flex-col items-center justify-center space-y-1 py-0.5 px-3 transition-all cursor-pointer ${
+                activeTab === 'profile' ? 'text-[#00E575] font-bold scale-105' : 'text-gray-400 hover:text-gray-200 font-medium'
               }`}
             >
               <User className="w-5 h-5" />
-              <span className="text-[10px]">Mon compte</span>
+              <span className="text-[10px]">Le mien</span>
             </button>
 
           </div>
@@ -755,9 +733,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
             <form onSubmit={handleDepositSubmit} className="space-y-4 text-xs font-medium">
               <div>
-                <label className="block text-[10px] uppercase font-mono text-pink-200/80 mb-1 font-bold">Sélectionner l'Opérateur</label>
+                <label className="block text-[10px] uppercase font-mono text-pink-200/80 mb-1 font-bold">Sélectionner l'Opérateur (Togo 🇹🇬)</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {(['Orange Money', 'MTN Money', 'Moov Money', 'Mixx By Yas'] as const).map(net => (
+                  {(['TMoney', 'Moov Money'] as const).map(net => (
                     <button
                       type="button"
                       key={net}
@@ -768,7 +746,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                           : 'bg-[#270b42] text-pink-200 hover:bg-[#340f56] border-pink-500/20'
                       }`}
                     >
-                      {net}
+                      {net === 'TMoney' ? 'TMoney (Mixx By Yas)' : 'Moov Money (Flooz)'}
                     </button>
                   ))}
                 </div>
@@ -778,7 +756,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <div className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-xl space-y-1 font-mono text-[11px]">
                 <span className="text-pink-200/80 font-sans block text-[10px]">Numéro marchand pour le transfert ({activeModalChannel ? activeModalChannel.name : depMethod}) :</span>
                 <div className="text-white font-extrabold text-sm flex items-center justify-between">
-                  <span>{activeModalChannel ? activeModalChannel.accountNumber : '+237 670 00 00 00'}</span>
+                  <span>{activeModalChannel ? activeModalChannel.accountNumber : '+228 90 00 00 00'}</span>
                   <span className="text-[9px] bg-pink-500/30 text-pink-200 border border-pink-500/40 px-1.5 py-0.5 rounded uppercase font-bold">
                     {activeModalChannel?.accountHolder || 'Officiel'}
                   </span>
@@ -840,9 +818,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
             <form onSubmit={handleWithdrawalSubmit} className="space-y-4 text-xs font-medium">
               <div>
-                <label className="block text-[10px] uppercase font-mono text-pink-200/80 mb-1 font-bold">Réseau de Réception</label>
+                <label className="block text-[10px] uppercase font-mono text-pink-200/80 mb-1 font-bold">Réseau de Réception (Togo 🇹🇬)</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {(['Orange Money', 'MTN Money', 'Moov Money', 'Mixx By Yas'] as const).map(net => (
+                  {(['TMoney', 'Moov Money'] as const).map(net => (
                     <button
                       type="button"
                       key={net}
@@ -853,7 +831,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                           : 'bg-[#270b42] text-pink-200 hover:bg-[#340f56] border-pink-500/20'
                       }`}
                     >
-                      {net}
+                      {net === 'TMoney' ? 'TMoney (Mixx By Yas)' : 'Moov Money (Flooz)'}
                     </button>
                   ))}
                 </div>

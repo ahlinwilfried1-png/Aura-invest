@@ -102,8 +102,8 @@ export interface DepositRequest {
 
 export interface RechargeChannel {
   id: string;
-  name: string; // Nom du canal/opérateur (ex: MTN Mobile Money, Orange Money)
-  countryCode?: 'CM' | string; // Code pays (CM pour Cameroun)
+  name: string; // Nom du canal/opérateur (ex: TMoney, Moov Money)
+  countryCode?: 'TG' | string; // Code pays (TG pour Togo)
   accountNumber: string; // Numéro de recharge
   accountHolder?: string; // Nom du titulaire (optionnel)
   instructions?: string; // Instructions spécifiques (optionnel)
@@ -119,7 +119,7 @@ export interface WithdrawalRequest {
   userPhone: string;
   amount: number;
   receivedAmount?: number;
-  network: 'Mixx By Yas' | 'Moov Money' | 'MTN Money' | 'Orange Money' | string;
+  network: 'TMoney' | 'Mixx By Yas' | 'Moov Money' | string;
   accountNumber: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;

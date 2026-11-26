@@ -145,7 +145,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
 
           <div>
             <h3 className="text-sm sm:text-base font-black text-white tracking-tight">
-              Service Client <span className="text-pink-400">AirPods</span>
+              Service Client <span className="text-pink-400">Gold Speed</span>
             </h3>
             <p className="text-[11px] text-pink-300/70 font-medium">Assistance instantanée VIP • Réponse en 5 min</p>
           </div>
@@ -168,7 +168,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
           {/* Header Line with Emojis */}
           <div className="space-y-3 font-medium text-white">
             <h2 className="text-base sm:text-lg font-black text-white flex items-center space-x-2">
-              <span>🎧✨</span> <span>AirPods — Avancez vers la réalisation de vos rêves !</span>
+              <span>⚡✨</span> <span>Gold Speed — Avancez vers la réalisation de vos rêves !</span>
             </h2>
 
             <div className="py-2 flex items-center space-x-2 text-pink-200 font-medium">
@@ -184,7 +184,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
           </div>
 
           <p className="text-pink-200/90 text-sm sm:text-base leading-relaxed">
-            Chez AirPods, nous croyons que les opportunités appartiennent à ceux qui osent agir. Grâce à une participation active, à l'apprentissage continu et au partage d'expériences, vous pouvez non seulement vous épanouir personnellement, mais aussi grandir aux côtés de votre équipe pour bâtir ensemble un avenir meilleur.
+            Chez Gold Speed, nous croyons que les opportunités appartiennent à ceux qui osent agir. Grâce à une participation active, à l'apprentissage continu et au partage d'expériences, vous pouvez non seulement vous épanouir personnellement, mais aussi grandir aux côtés de votre équipe pour bâtir ensemble un avenir meilleur.
           </p>
 
           <p className="text-white font-bold text-sm sm:text-base leading-relaxed flex items-start space-x-2">
@@ -198,13 +198,13 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
 
           <p className="font-extrabold text-pink-400 text-sm sm:text-base flex items-center space-x-2 pt-2">
             <span className="text-lg">💪</span>
-            <span>Rejoignez AirPods et ouvrez la voie à un avenir brillant !</span>
+            <span>Rejoignez Gold Speed et ouvrez la voie à un avenir brillant !</span>
           </p>
 
           {/* Bullet Points Section */}
           <div className="space-y-3 pt-4 text-xs sm:text-sm">
             <p className="font-bold text-white flex items-center space-x-2">
-              <span>💡</span> <span>Pourquoi choisir AirPods ?</span>
+              <span>💡</span> <span>Pourquoi choisir Gold Speed ?</span>
             </p>
 
             <ul className="space-y-2.5 pl-1 text-pink-200/90 font-medium">
@@ -243,7 +243,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
 
         {/* DYNAMIC USER SUPPORT TICKETS & MESSAGES */}
         {userTickets.map((tkt) => {
-          const isAdminDirect = tkt.id.startsWith('tkt-adm-') || tkt.message === "Message direct du Support Client AirPods." || tkt.message === "Message direct du Support Client Nutrien." || tkt.subject?.includes("Administration");
+          const isAdminDirect = tkt.id.startsWith('tkt-adm-') || tkt.message === "Message direct du Support Client Gold Speed." || tkt.message === "Message direct du Support Client AirPods." || tkt.message === "Message direct du Support Client Nutrien." || tkt.subject?.includes("Administration");
           const adminReplyText = tkt.reply || (isAdminDirect ? tkt.message : '');
 
           return (
@@ -287,7 +287,7 @@ export const ChatMessenger: React.FC<ChatMessengerProps> = ({
 
                   <div className="space-y-1 text-xs sm:text-sm text-white font-medium leading-relaxed">
                     <span className="text-[10px] font-black uppercase tracking-wider text-pink-400 font-mono block">
-                      Administration AirPods
+                      Administration Gold Speed
                     </span>
 
                     <p className="whitespace-pre-wrap text-pink-100 bg-[#1a082b] p-3 rounded-2xl border border-pink-500/30 shadow-md">

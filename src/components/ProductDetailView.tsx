@@ -23,11 +23,14 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const cycleDays = product.duration || 180;
+  const cycleDays = product.duration || 150;
   const totalPrice = product.price * quantity;
   const totalDailyGain = product.dailyGain * quantity;
-  const totalPeriodGain = (product.gain180Days || product.gain120Days || product.gain40Days || (product.dailyGain * cycleDays)) * quantity;
-  const totalGain = (product.totalGain ? product.totalGain * quantity : (totalPrice + totalPeriodGain));
+  const dailyPercent = product.price > 0
+    ? Number(((product.dailyGain / product.price) * 100).toFixed(1))
+    : (product.dailyRatePercent || 0);
+  const totalPeriodGain = (product.totalGain || (product.dailyGain * cycleDays)) * quantity;
+  const totalGain = totalPeriodGain;
 
   const hasSufficientBalance = (Number(currentUser.balance) || 0) >= totalPrice;
 
@@ -151,14 +154,14 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
         </div>
 
         <div className="flex items-center justify-between text-xs sm:text-sm font-medium py-1">
-          <span className="text-pink-200/90 font-semibold">Rendement quotidien (15% chaque 24h) :</span>
+          <span className="text-pink-200/90 font-semibold">Rendement quotidien ({dailyPercent}% chaque 24h) :</span>
           <span className="font-extrabold text-amber-400 font-mono text-sm sm:text-base">
             +{(Number(totalDailyGain) || 0).toLocaleString('fr-FR')} FCFA / jour
           </span>
         </div>
 
         <div className="flex items-center justify-between text-xs sm:text-sm font-medium py-1">
-          <span className="text-pink-200/90 font-semibold">Durée du cycle énergétique :</span>
+          <span className="text-pink-200/90 font-semibold">Durée du cycle :</span>
           <span className="font-extrabold text-pink-300 font-mono text-sm sm:text-base">
             {cycleDays} jours
           </span>
@@ -169,8 +172,8 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
       <div className="py-2 px-2 space-y-4">
         <div className="space-y-2.5 text-sm sm:text-base font-bold text-white leading-relaxed font-sans">
           <div className="flex items-center space-x-2">
-            <span>☀️⚡</span>
-            <span className="text-pink-200">Formule {product.name} — PLAN AirProds</span>
+            <span>📱⚡</span>
+            <span className="text-pink-200">Formule {product.name} — PLAN Gold Speed</span>
           </div>
           <div className="flex items-center space-x-2">
             <span>💰</span>
@@ -178,24 +181,20 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
           </div>
           <div className="flex items-center space-x-2">
             <span>📈</span>
-            <span className="text-amber-300">Revenu journalier (15%) : +{(Number(totalDailyGain) || 0).toLocaleString('fr-FR')} FCFA</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span>⚡</span>
-            <span className="text-pink-300">Gain sur {cycleDays} jours : {(Number(totalPeriodGain) || 0).toLocaleString('fr-FR')} FCFA</span>
+            <span className="text-amber-300">Revenu quotidien ({dailyPercent}%) : +{(Number(totalDailyGain) || 0).toLocaleString('fr-FR')} FCFA</span>
           </div>
           <div className="flex items-center space-x-2">
             <span>🏆</span>
-            <span className="text-purple-300">Total à {cycleDays} jours : {(Number(totalGain) || 0).toLocaleString('fr-FR')} FCFA</span>
+            <span className="text-purple-300">Revenu total ({cycleDays} jours) : {(Number(totalGain) || 0).toLocaleString('fr-FR')} FCFA</span>
           </div>
         </div>
 
         <div className="pt-2 space-y-3 text-pink-200/80 font-medium text-xs sm:text-sm leading-relaxed">
           <p>
-            {product.description || `La formule ${product.name} de AirProds génère un rendement quotidien garanti pendant un cycle complet de ${cycleDays} jours.`}
+            {product.description || `La formule ${product.name} génère un revenu quotidien garanti pendant un cycle complet de ${cycleDays} jours.`}
           </p>
           <p>
-            Vos revenus sont automatiquement crédités toutes les 24 heures sur votre compte et sont immédiatement retirables via Mobile Money (TMoney, Moov Money, MTN, Orange, Wave).
+            Vos revenus sont automatiquement crédités toutes les 24 heures sur votre compte et sont immédiatement retirables via Mobile Money au Togo (TMoney / Mixx By Yas & Moov Money).
           </p>
         </div>
       </div>

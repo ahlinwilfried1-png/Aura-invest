@@ -19,25 +19,25 @@ export interface WithdrawalFeedItem {
 
 // Liste enrichie de retraits simules (irréels) en direct pour dynamiser le flux
 const SIMULATED_WITHDRAWALS: WithdrawalFeedItem[] = [
-  { id: 'sim-1', handle: '+237 67****34', amount: 15000, network: 'MTN Mobile', statusText: 'Paiement Effectué', timeAgo: 'À l’instant', vipBadge: 'VIP 2' },
-  { id: 'sim-2', handle: '+237 69****89', amount: 50000, network: 'Orange Money', statusText: 'Retrait Validé', timeAgo: 'Il y a 5s', vipBadge: 'VIP 4' },
-  { id: 'sim-3', handle: '+237 65****56', amount: 25000, network: 'MTN Mobile', statusText: 'Transfert Réussi', timeAgo: 'Il y a 12s', vipBadge: 'VIP 3' },
-  { id: 'sim-4', handle: '+237 68****12', amount: 4000, network: 'Orange Money', statusText: 'Paiement Effectué', timeAgo: 'Il y a 18s', vipBadge: 'VIP 1' },
-  { id: 'sim-5', handle: '+237 69****44', amount: 100000, network: 'MTN Mobile', statusText: 'Succès 100%', timeAgo: 'Il y a 25s', vipBadge: 'VIP 5' },
-  { id: 'sim-6', handle: '+237 67****88', amount: 150000, network: 'Orange Money', statusText: 'Paiement Effectué', timeAgo: 'Il y a 32s', vipBadge: 'VIP 6' },
-  { id: 'sim-7', handle: '+237 65****01', amount: 200000, network: 'MTN Mobile', statusText: 'Retrait Validé', timeAgo: 'Il y a 40s', vipBadge: 'VIP 7' },
-  { id: 'sim-8', handle: '+237 69****67', amount: 300000, network: 'Orange Money', statusText: 'Transfert Réussi', timeAgo: 'Il y a 48s', vipBadge: 'VIP 8' },
-  { id: 'sim-9', handle: '+237 67****82', amount: 25000, network: 'MTN Mobile', statusText: 'Paiement Effectué', timeAgo: 'Il y a 55s', vipBadge: 'VIP 3' },
-  { id: 'sim-10', handle: '+237 68****21', amount: 400000, network: 'Orange Money', statusText: 'Paiement Effectué', timeAgo: 'Il y a 1 min', vipBadge: 'VIP 9' },
-  { id: 'sim-11', handle: '+237 69****90', amount: 250000, network: 'MTN Mobile', statusText: 'Retrait Validé', timeAgo: 'Il y a 1 min', vipBadge: 'VIP 8' },
-  { id: 'sim-12', handle: '+237 67****15', amount: 15000, network: 'Orange Money', statusText: 'Succès 100%', timeAgo: 'Il y a 2 min', vipBadge: 'VIP 2' },
-  { id: 'sim-13', handle: '+237 65****78', amount: 50000, network: 'MTN Mobile', statusText: 'Transfert Réussi', timeAgo: 'Il y a 2 min', vipBadge: 'VIP 4' },
-  { id: 'sim-14', handle: '+237 69****33', amount: 100000, network: 'Orange Money', statusText: 'Paiement Effectué', timeAgo: 'Il y a 3 min', vipBadge: 'VIP 5' },
-  { id: 'sim-15', handle: '+237 68****04', amount: 4000, network: 'MTN Mobile', statusText: 'Paiement Effectué', timeAgo: 'Il y a 3 min', vipBadge: 'VIP 1' },
+  { id: 'sim-1', handle: '+228 90****34', amount: 15000, network: 'TMoney', statusText: 'Paiement Effectué', timeAgo: 'À l’instant', vipBadge: 'GOLD 2' },
+  { id: 'sim-2', handle: '+228 99****89', amount: 50000, network: 'Moov Money', statusText: 'Retrait Validé', timeAgo: 'Il y a 5s', vipBadge: 'GOLD 4' },
+  { id: 'sim-3', handle: '+228 91****56', amount: 25000, network: 'TMoney', statusText: 'Transfert Réussi', timeAgo: 'Il y a 12s', vipBadge: 'GOLD 3' },
+  { id: 'sim-4', handle: '+228 98****12', amount: 4000, network: 'Moov Money', statusText: 'Paiement Effectué', timeAgo: 'Il y a 18s', vipBadge: 'GOLD 1' },
+  { id: 'sim-5', handle: '+228 92****44', amount: 100000, network: 'TMoney', statusText: 'Succès 100%', timeAgo: 'Il y a 25s', vipBadge: 'GOLD 5' },
+  { id: 'sim-6', handle: '+228 97****88', amount: 150000, network: 'Moov Money', statusText: 'Paiement Effectué', timeAgo: 'Il y a 32s', vipBadge: 'GOLD 6' },
+  { id: 'sim-7', handle: '+228 93****01', amount: 200000, network: 'TMoney', statusText: 'Retrait Validé', timeAgo: 'Il y a 40s', vipBadge: 'GOLD 7' },
+  { id: 'sim-8', handle: '+228 96****67', amount: 300000, network: 'Moov Money', statusText: 'Transfert Réussi', timeAgo: 'Il y a 48s', vipBadge: 'GOLD 8' },
+  { id: 'sim-9', handle: '+228 90****82', amount: 25000, network: 'TMoney', statusText: 'Paiement Effectué', timeAgo: 'Il y a 55s', vipBadge: 'GOLD 3' },
+  { id: 'sim-10', handle: '+228 98****21', amount: 400000, network: 'Moov Money', statusText: 'Paiement Effectué', timeAgo: 'Il y a 1 min', vipBadge: 'GOLD 8' },
+  { id: 'sim-11', handle: '+228 91****90', amount: 250000, network: 'TMoney', statusText: 'Retrait Validé', timeAgo: 'Il y a 1 min', vipBadge: 'GOLD 7' },
+  { id: 'sim-12', handle: '+228 99****15', amount: 15000, network: 'Moov Money', statusText: 'Succès 100%', timeAgo: 'Il y a 2 min', vipBadge: 'GOLD 2' },
+  { id: 'sim-13', handle: '+228 92****78', amount: 50000, network: 'TMoney', statusText: 'Transfert Réussi', timeAgo: 'Il y a 2 min', vipBadge: 'GOLD 4' },
+  { id: 'sim-14', handle: '+228 97****33', amount: 100000, network: 'Moov Money', statusText: 'Paiement Effectué', timeAgo: 'Il y a 3 min', vipBadge: 'GOLD 5' },
+  { id: 'sim-15', handle: '+228 90****04', amount: 4000, network: 'TMoney', statusText: 'Paiement Effectué', timeAgo: 'Il y a 3 min', vipBadge: 'GOLD 1' },
 ];
 
 /**
- * Format phone or account number into masked handle like +237 67****95
+ * Format phone or account number into masked handle like +228 90****95
  */
 const formatMaskedHandle = (phoneOrAcc: string, userName?: string): string => {
   const raw = (phoneOrAcc || '').trim();
@@ -51,7 +51,7 @@ const formatMaskedHandle = (phoneOrAcc: string, userName?: string): string => {
   }
   const digits = raw.replace(/\D/g, '');
   if (digits.length >= 8) {
-    return `+237 ${digits.slice(0, 2)}****${digits.slice(-2)}`;
+    return `+228 ${digits.slice(0, 2)}****${digits.slice(-2)}`;
   }
   if (digits.length >= 4) {
     return `${digits.slice(0, 2)}****${digits.slice(-2)}`;
@@ -59,7 +59,7 @@ const formatMaskedHandle = (phoneOrAcc: string, userName?: string): string => {
   if (userName && userName.length >= 2) {
     return `${userName.slice(0, 2)}****`;
   }
-  return '+237 67****95';
+  return '+228 90****95';
 };
 
 /**

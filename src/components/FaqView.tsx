@@ -184,7 +184,7 @@ export const FaqView: React.FC<FaqViewProps> = ({
             <div>
               <h4 className="text-sm font-extrabold text-white">Vous n'avez pas trouvé votre réponse ?</h4>
               <p className="text-xs text-pink-200/80 font-normal mt-0.5">
-                Notre équipe du service client répond instantanément en direct sur le chat.
+                Notre équipe du service client est disponible pour vous répondre sur WhatsApp.
               </p>
             </div>
           </div>

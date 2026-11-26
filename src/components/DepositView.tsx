@@ -1,24 +1,21 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  ArrowLeft, 
-  Wallet, 
-  ShieldCheck, 
-  CreditCard, 
-  Lock, 
-  CheckCircle2, 
-  AlertCircle, 
-  Clock, 
+import React, { useState, useMemo } from 'react';
+import {
+  ArrowLeft,
+  Wallet,
+  ShieldCheck,
+  CreditCard,
+  Lock,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
   Copy,
   Check,
   RefreshCw,
-  Info,
-  ExternalLink,
-  Zap,
-  Globe
+  Info
 } from 'lucide-react';
 import { User, DepositRequest, RechargeChannel } from '../types';
 import { useApp } from '../context/AppContext';
-import { ALLOWED_COUNTRIES, AllowedCountry, getCountryByCode, getCountryByPhone } from '../constants/countries';
+import { DEFAULT_COUNTRY } from '../constants/countries';
 
 interface DepositViewProps {
   currentUser: User;
@@ -28,8 +25,8 @@ interface DepositViewProps {
   onShowToast: (status: 'success' | 'err', text: string) => void;
 }
 
-// Montants de recharge rapides recommandés (alignés sur les packs AirPods)
-const QUICK_AMOUNTS = [3000, 8000, 15000, 30000, 50000, 75000, 120000, 250000, 400000];
+// Montants de recharge rapides recommandés (alignés sur les packs Gold Speed)
+const QUICK_AMOUNTS = [3000, 7000, 15000, 40000, 100000, 250000, 500000, 1000000];
 
 export const DepositView: React.FC<DepositViewProps> = ({
   currentUser,
@@ -38,85 +35,60 @@ export const DepositView: React.FC<DepositViewProps> = ({
   onBack,
   onShowToast
 }) => {
-  const { rechargeChannels, requestDeposit, initiateDepositCheckout } = useApp();
+  const { rechargeChannels, requestDeposit } = useApp();
 
   // Onglet actif : 'form' (Formulaire de recharge) ou 'history' (Historique des dépôts)
   const [activeTab, setActiveTab] = useState<'form' | 'history'>('form');
 
-  // Mode de paiement : 'online' (Passerelle sécurisée Tchin) ou 'manual' (Transfert Mobile Money manuel)
-  const [paymentMode, setPaymentMode] = useState<'online' | 'manual'>('online');
-
-  // Pays initial basé sur le profil de l'utilisateur ou son téléphone
-  const initialCountry = useMemo(() => {
-    if (currentUser.country) {
-      return getCountryByCode(currentUser.country);
-    }
-    return getCountryByPhone(currentUser.phone);
-  }, [currentUser.country, currentUser.phone]);
-
-  // Code du pays sélectionné pour la recharge
-  const [selectedCountryCode, setSelectedCountryCode] = useState<string>(initialCountry.code);
-
-  const selectedCountry: AllowedCountry = useMemo(() => {
-    return ALLOWED_COUNTRIES.find(c => c.code === selectedCountryCode) || initialCountry;
-  }, [selectedCountryCode, initialCountry]);
-
-  // Réseaux disponibles pour le pays sélectionné
-  const availableNetworks = useMemo(() => {
-    return [
-      ...selectedCountry.networks,
-      'Carte Visa / Mastercard'
-    ];
-  }, [selectedCountry]);
+  // Pays exclusif : Togo (+228)
+  const selectedCountry = DEFAULT_COUNTRY;
+  const availableNetworks = selectedCountry.networks; // ['TMoney', 'Moov Money']
 
   // Réseau actuellement sélectionné
-  const [selectedNetwork, setSelectedNetwork] = useState<string>(selectedCountry.networks[0] || 'Mobile Money');
+  const [selectedNetwork, setSelectedNetwork] = useState<string>(availableNetworks[0] || 'TMoney');
 
-  // Mettre à jour le réseau sélectionné si le pays change
-  useEffect(() => {
-    if (selectedCountry && selectedCountry.networks.length > 0) {
-      setSelectedNetwork(selectedCountry.networks[0]);
-    }
-  }, [selectedCountryCode]);
-
-  // Canaux actifs configurés par l'administrateur
+  // Canaux actifs configurés par l'administrateur pour le Togo
   const activeChannels: RechargeChannel[] = useMemo(() => {
-    return (rechargeChannels || []).filter(c => c.isActive !== false);
+    return (rechargeChannels || []).filter(
+      c => c.isActive !== false && (!c.countryCode || c.countryCode.toUpperCase() === 'TG')
+    );
   }, [rechargeChannels]);
 
-  // Canal correspondant au pays sélectionné
+  // Canal correspondant au réseau sélectionné au Togo
   const matchingChannel: RechargeChannel | null = useMemo(() => {
     if (activeChannels.length === 0) return null;
-    // Recherche par code de pays
-    const byCountry = activeChannels.find(c => c.countryCode === selectedCountry.code);
-    if (byCountry) return byCountry;
-    // Recherche par nom de réseau
     const netLower = (selectedNetwork || '').toLowerCase();
-    const byNetwork = activeChannels.find(c => (c.name || '').toLowerCase().includes(netLower));
+    const byNetwork = activeChannels.find(c => {
+      const chName = (c.name || '').toLowerCase();
+      return (
+        chName.includes(netLower) ||
+        (netLower.includes('tmoney') && (chName.includes('tmoney') || chName.includes('yas') || chName.includes('mixx'))) ||
+        (netLower.includes('moov') && (chName.includes('moov') || chName.includes('flooz')))
+      );
+    });
     if (byNetwork) return byNetwork;
     return activeChannels[0] || null;
-  }, [activeChannels, selectedCountry, selectedNetwork]);
+  }, [activeChannels, selectedNetwork]);
 
   // Montant à recharger (par défaut 15 000 FCFA)
   const [depAmount, setDepAmount] = useState<number>(15000);
   const [customAmountStr, setCustomAmountStr] = useState<string>('15000');
 
-  // Numéro de téléphone de l'émetteur
+  // Numéro de téléphone de l'émetteur (+228 Togo)
   const initialPhoneDigits = useMemo(() => {
     if (!currentUser.phone) return '';
     let p = currentUser.phone.trim();
-    for (const c of ALLOWED_COUNTRIES) {
-      if (p.startsWith(c.prefix)) {
-        p = p.substring(c.prefix.length).trim();
-        break;
-      }
+    if (p.startsWith(selectedCountry.prefix)) {
+      p = p.substring(selectedCountry.prefix.length).trim();
+    } else if (p.startsWith('228')) {
+      p = p.substring(3).trim();
     }
     return p;
-  }, [currentUser.phone]);
+  }, [currentUser.phone, selectedCountry.prefix]);
 
   const [senderPhone, setSenderPhone] = useState<string>(initialPhoneDigits);
 
-  // Référence SMS / ID de transaction obligatoire pour dépôt manuel
+  // Référence SMS / ID de transaction obligatoire
   const [transactionRef, setTransactionRef] = useState<string>('');
 
   // État de copie du numéro
@@ -124,7 +96,6 @@ export const DepositView: React.FC<DepositViewProps> = ({
 
   // États de chargement et modales
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
   const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
   const [submittedDepositInfo, setSubmittedDepositInfo] = useState<{
     amount: number;
@@ -164,29 +135,14 @@ export const DepositView: React.FC<DepositViewProps> = ({
     onShowToast('success', `Numéro ${num} copié dans le presse-papier !`);
   };
 
-  // Validation pour paiement en ligne
-  const onlineValidationError = useMemo(() => {
+  // Validation pour dépôt Mobile Money (Togo)
+  const validationError = useMemo(() => {
     if (!depAmount || depAmount < 3000) {
       return "Le montant minimum de recharge est de 3 000 FCFA.";
     }
     const cleanSender = senderPhone.replace(/[^0-9]/g, '');
-    if (!cleanSender || cleanSender.length < 6) {
-      return "Veuillez saisir votre numéro de téléphone émetteur.";
-    }
-    if (!selectedNetwork) {
-      return "Veuillez choisir un réseau de paiement.";
-    }
-    return null;
-  }, [depAmount, senderPhone, selectedNetwork]);
-
-  // Validation pour dépôt manuel
-  const manualValidationError = useMemo(() => {
-    if (!depAmount || depAmount < 3000) {
-      return "Le montant minimum de recharge est de 3 000 FCFA.";
-    }
-    const cleanSender = senderPhone.replace(/[^0-9]/g, '');
-    if (!cleanSender || cleanSender.length < 6) {
-      return "Veuillez saisir votre numéro de téléphone émetteur.";
+    if (!cleanSender || cleanSender.length < 8) {
+      return "Veuillez saisir votre numéro Togolais émetteur (8 chiffres).";
     }
     if (!transactionRef.trim() || transactionRef.trim().length < 3) {
       return "Veuillez renseigner la référence ou l'ID de transaction SMS reçue.";
@@ -194,58 +150,11 @@ export const DepositView: React.FC<DepositViewProps> = ({
     return null;
   }, [depAmount, senderPhone, transactionRef]);
 
-  // 1. Procéder au paiement sécurisé en ligne (Tchin)
-  const handleOnlineCheckout = async (e: React.FormEvent) => {
+  // Validation et confirmation du dépôt Mobile Money
+  const handleConfirmDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (onlineValidationError) {
-      onShowToast('err', onlineValidationError);
-      return;
-    }
-
-    setIsSubmitting(true);
-    setIsRedirecting(true);
-
-    try {
-      const cleanPhone = senderPhone.trim();
-      const fullPhone = cleanPhone.startsWith(selectedCountry.prefix) 
-        ? cleanPhone 
-        : `${selectedCountry.prefix} ${cleanPhone}`;
-
-      // Appel sécurisé au backend via initiateDepositCheckout
-      const res = await initiateDepositCheckout({
-        amount: depAmount,
-        country: selectedCountry.name,
-        countryCode: selectedCountry.code,
-        method: selectedNetwork,
-        phoneNumber: fullPhone
-      });
-
-      if (res && res.success) {
-        onShowToast('success', "Session de paiement sécurisée créée. Redirection en cours...");
-
-        // Rediriger vers l'endpoint serveur /api/pay-redirect (qui protège le lien réel)
-        const targetRedirect = res.redirectUrl || (res as any).paymentUrl || `/api/pay-redirect/${res.deposit?.id || ''}`;
-        
-        setTimeout(() => {
-          window.location.href = targetRedirect;
-        }, 800);
-      } else {
-        setIsSubmitting(false);
-        setIsRedirecting(false);
-        onShowToast('err', res?.error || "Erreur lors de l'initialisation du paiement sécurisé.");
-      }
-    } catch (err: any) {
-      setIsSubmitting(false);
-      setIsRedirecting(false);
-      onShowToast('err', err?.message || "Une erreur réseau est survenue.");
-    }
-  };
-
-  // 2. Validation et confirmation du dépôt manuel (SMS)
-  const handleConfirmManualDeposit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (manualValidationError) {
-      onShowToast('err', manualValidationError);
+    if (validationError) {
+      onShowToast('err', validationError);
       return;
     }
 
@@ -257,12 +166,12 @@ export const DepositView: React.FC<DepositViewProps> = ({
         ? cleanSender
         : `${selectedCountry.prefix} ${cleanSender}`;
 
-      const channelName = matchingChannel 
-        ? matchingChannel.name 
-        : `${selectedNetwork} (${selectedCountry.name})`;
-      
-      const channelAccount = matchingChannel 
-        ? matchingChannel.accountNumber 
+      const channelName = matchingChannel
+        ? matchingChannel.name
+        : `${selectedNetwork} (Togo)`;
+
+      const channelAccount = matchingChannel
+        ? matchingChannel.accountNumber
         : `${selectedCountry.prefix} 90 00 00 00`;
 
       const channelLabel = `${channelName} - ${channelAccount}`;
@@ -278,7 +187,7 @@ export const DepositView: React.FC<DepositViewProps> = ({
           amount: depAmount,
           channelName,
           accountNumber: channelAccount,
-          accountHolder: matchingChannel?.accountHolder || 'Service Recharge AirPods',
+          accountHolder: matchingChannel?.accountHolder || 'Service Recharge Gold Speed Togo',
           senderPhone: fullSenderPhone,
           transactionId: cleanRef,
           date: new Date().toISOString()
@@ -297,7 +206,6 @@ export const DepositView: React.FC<DepositViewProps> = ({
 
   return (
     <div className="bg-[#0d0417] text-pink-50 min-h-screen pb-20 font-sans max-w-lg mx-auto select-none">
-      
       {/* 1. EN-TÊTE FIXE */}
       <header className="bg-[#140624]/95 backdrop-blur-md border-b border-pink-500/20 sticky top-0 z-20 px-4 py-3 flex items-center justify-between shadow-lg">
         <button
@@ -326,11 +234,10 @@ export const DepositView: React.FC<DepositViewProps> = ({
       </header>
 
       <div className="p-3.5 space-y-3.5">
-
         {/* 2. SOLDE ACTUEL DE L'UTILISATEUR */}
         <section className="bg-gradient-to-br from-[#2c0b48] via-[#1b072e] to-[#120420] rounded-2xl p-4 text-white shadow-xl border border-pink-500/30 relative overflow-hidden">
           <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-32 h-32 bg-pink-500/20 rounded-full blur-2xl pointer-events-none" />
-          
+
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
               <div className="w-7 h-7 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center border border-pink-500/30">
@@ -342,7 +249,7 @@ export const DepositView: React.FC<DepositViewProps> = ({
             </div>
             <div className="flex items-center space-x-1.5 text-[11px] font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30 px-2.5 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>{selectedCountry.flag} {selectedCountry.name}</span>
+              <span>{selectedCountry.flag} {selectedCountry.name} ({selectedCountry.prefix})</span>
             </div>
           </div>
 
@@ -356,7 +263,7 @@ export const DepositView: React.FC<DepositViewProps> = ({
           <div className="mt-3 pt-2.5 border-t border-pink-500/20 flex items-center justify-between text-[11px] text-pink-200/80">
             <span className="flex items-center space-x-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-pink-400" />
-              <span>Paiement 100% sécurisé</span>
+              <span>Transfert Mobile Money sécurisé</span>
             </span>
             <span className="font-mono text-pink-300 font-bold">
               {selectedNetwork}
@@ -386,8 +293,8 @@ export const DepositView: React.FC<DepositViewProps> = ({
             ) : (
               <div className="space-y-2.5">
                 {userDeposits.map((dep) => (
-                  <div 
-                    key={dep.id} 
+                  <div
+                    key={dep.id}
                     className="p-3.5 bg-[#240c3c] rounded-xl border border-pink-500/25 flex items-center justify-between text-xs hover:border-pink-400/60 transition-colors"
                   >
                     <div className="space-y-1">
@@ -426,124 +333,52 @@ export const DepositView: React.FC<DepositViewProps> = ({
             )}
           </section>
         ) : (
-          /* FORMULAIRE DE RECHARGE MULTI-PAYS */
-          <div className="space-y-3.5 animate-fadeIn">
+          /* FORMULAIRE DE RECHARGE TOGO UNIQUEMENT (TRANSFERT MOBILE MONEY) */
+          <form onSubmit={handleConfirmDeposit} className="space-y-3.5 animate-fadeIn">
 
-            {/* 3. SÉLECTION DU PAYS (TOGO, BÉNIN, BURKINA FASO, CÔTE D'IVOIRE, CAMEROUN) */}
-            <div className="bg-[#1a082b] rounded-2xl p-3.5 border border-pink-500/25 shadow-xl space-y-2.5">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-extrabold uppercase tracking-wider text-pink-200 font-mono flex items-center space-x-1.5">
-                  <Globe className="w-3.5 h-3.5 text-pink-400" />
-                  <span>1. Sélectionner votre pays</span>
-                </label>
-                <span className="text-[10px] font-bold text-pink-300 bg-pink-500/20 px-2 py-0.5 rounded-full border border-pink-500/30">
-                  {ALLOWED_COUNTRIES.length} pays disponibles
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                {ALLOWED_COUNTRIES.map((c) => {
-                  const isSel = selectedCountryCode === c.code;
-                  return (
-                    <button
-                      key={c.code}
-                      type="button"
-                      onClick={() => setSelectedCountryCode(c.code)}
-                      className={`flex items-center space-x-1.5 px-2.5 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                        isSel
-                          ? 'bg-pink-500/30 border-pink-400 text-white shadow-md ring-1 ring-pink-400/50'
-                          : 'bg-[#240c3c] border-pink-500/20 text-pink-200/80 hover:bg-[#320f50]'
-                      }`}
-                    >
-                      <span className="text-base">{c.flag}</span>
-                      <span className="truncate">{c.name}</span>
-                      <span className="text-[10px] font-mono text-pink-300 ml-auto">{c.prefix}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 4. CHOIX DU RÉSEAU MOBILE MONEY / PAIEMENT POUR CE PAYS */}
+            {/* 1. CHOIX DU RÉSEAU MOBILE MONEY AU TOGO */}
             <div className="bg-[#1a082b] rounded-2xl p-3.5 border border-pink-500/25 shadow-xl space-y-2.5">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-extrabold uppercase tracking-wider text-pink-200 font-mono flex items-center space-x-1.5">
                   <CreditCard className="w-3.5 h-3.5 text-pink-400" />
-                  <span>2. Réseau de paiement ({selectedCountry.name})</span>
+                  <span>1. Réseau Mobile Money (Togo)</span>
                 </label>
                 <span className="text-[10px] font-bold text-pink-300">
                   {selectedCountry.flag} {selectedCountry.currency}
                 </span>
               </div>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {availableNetworks.map((net) => {
                   const isSel = selectedNetwork === net;
-                  const isTmoney = net.toLowerCase().includes('tmoney');
-                  const isWave = net.toLowerCase().includes('wave');
-                  const isMoov = net.toLowerCase().includes('moov');
-                  const isMtn = net.toLowerCase().includes('mtn');
-                  const isOrange = net.toLowerCase().includes('orange');
-                  const isCeltiis = net.toLowerCase().includes('celtiis');
-
                   return (
                     <button
                       key={net}
                       type="button"
                       onClick={() => setSelectedNetwork(net)}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer border flex items-center space-x-1.5 ${
+                      className={`px-3.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer border flex items-center justify-center space-x-1.5 ${
                         isSel
                           ? 'bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 border-pink-400 text-white shadow-md ring-2 ring-pink-400/40'
                           : 'bg-[#240c3c] border-pink-500/20 text-pink-200 hover:bg-[#320f50]'
                       }`}
                     >
-                      <span>{net}</span>
-                      {isSel && <Check className="w-3 h-3 text-white" />}
+                      <span>{net === 'TMoney' ? 'TMoney (Mixx By Yas)' : 'Moov Money (Flooz)'}</span>
+                      {isSel && <Check className="w-3.5 h-3.5 text-white shrink-0" />}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* 5. CHOIX DU MODE DE RECHARGE (EN LIGNE AUTOMATIQUE OU MANUEL SMS) */}
-            <div className="grid grid-cols-2 gap-2 bg-[#140624] p-1.5 rounded-2xl border border-pink-500/20">
-              <button
-                type="button"
-                onClick={() => setPaymentMode('online')}
-                className={`py-2.5 px-3 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center space-x-1.5 border ${
-                  paymentMode === 'online'
-                    ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white border-pink-400/50 shadow-md shadow-pink-600/30'
-                    : 'bg-transparent text-pink-300/70 border-transparent hover:text-white'
-                }`}
-              >
-                <Zap className="w-3.5 h-3.5 text-pink-300" />
-                <span>Paiement en ligne</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMode('manual')}
-                className={`py-2.5 px-3 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center space-x-1.5 border ${
-                  paymentMode === 'manual'
-                    ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white border-pink-400/50 shadow-md shadow-pink-600/30'
-                    : 'bg-transparent text-pink-300/70 border-transparent hover:text-white'
-                }`}
-              >
-                <Clock className="w-3.5 h-3.5 text-pink-300" />
-                <span>Transfert manuel (SMS)</span>
-              </button>
-            </div>
-
-            {/* 6. MONTANT À DÉPOSER (FCFA) & BOUTONS RAPIDES */}
+            {/* 2. MONTANT À DÉPOSER (FCFA) & BOUTONS RAPIDES */}
             <div className="bg-[#1a082b] rounded-2xl p-3.5 border border-pink-500/25 shadow-xl space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-extrabold uppercase tracking-wider text-pink-200 font-mono block">
-                  3. Montant à recharger ({selectedCountry.currency})
+                  2. Montant à recharger ({selectedCountry.currency})
                 </label>
                 <span className="text-[10px] font-bold text-pink-300/80">Min. 3 000 FCFA</span>
               </div>
 
-              {/* Champ de saisie du montant */}
               <div className="relative flex items-center bg-[#250d3c] border-2 border-pink-500/30 rounded-xl px-3.5 py-2.5 focus-within:border-pink-400 transition-all">
                 <input
                   type="text"
@@ -560,7 +395,6 @@ export const DepositView: React.FC<DepositViewProps> = ({
                 </span>
               </div>
 
-              {/* Boutons de montants rapides */}
               <div>
                 <span className="text-[9px] uppercase font-bold text-pink-300/80 tracking-wider block mb-1.5">
                   Montants recommandés :
@@ -587,10 +421,10 @@ export const DepositView: React.FC<DepositViewProps> = ({
               </div>
             </div>
 
-            {/* 7. NUMÉRO DE TÉLÉPHONE ÉMETTEUR */}
+            {/* 3. NUMÉRO DE TÉLÉPHONE ÉMETTEUR (TOGO) */}
             <div className="bg-[#1a082b] rounded-2xl p-3.5 border border-pink-500/25 shadow-xl space-y-2">
               <label className="text-[10px] font-extrabold uppercase tracking-wider text-pink-200 font-mono block">
-                4. Votre numéro émetteur ({selectedCountry.name})
+                3. Votre numéro émetteur ({selectedCountry.name})
               </label>
               <div className="flex items-center bg-[#250d3c] border-2 border-pink-500/30 rounded-xl px-3 py-2.5 focus-within:border-pink-400 transition-all">
                 <div className="flex items-center space-x-1.5 mr-2.5 pr-2.5 border-r border-pink-500/30 shrink-0">
@@ -610,193 +444,137 @@ export const DepositView: React.FC<DepositViewProps> = ({
               </div>
             </div>
 
-            {/* MODE 1: PAIEMENT EN LIGNE SÉCURISÉ (TCHIN) */}
-            {paymentMode === 'online' && (
-              <form onSubmit={handleOnlineCheckout} className="space-y-3">
-                <div className="bg-gradient-to-br from-[#270c44] to-[#160528] rounded-2xl p-4 border border-pink-500/30 space-y-2.5 shadow-xl">
-                  <div className="flex items-center space-x-2 text-white font-bold text-xs">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    <span>Passerelle de paiement sécurisée Tchin</span>
-                  </div>
-                  <p className="text-[11px] text-pink-200/80 leading-relaxed">
-                    Vous allez être redirigé vers l'interface de paiement sécurisée compatible avec <strong className="text-white">{selectedNetwork}</strong> ({selectedCountry.name}) ainsi que les cartes Visa/Mastercard. Votre solde sera crédité automatiquement dès confirmation.
-                  </p>
-                  <div className="pt-1 flex items-center justify-between text-[10px] text-pink-300/90 font-mono">
-                    <span>Montant : {depAmount.toLocaleString('fr-FR')} FCFA</span>
-                    <span className="text-emerald-400 font-bold">Frais : 0 FCFA (Gratuit)</span>
-                  </div>
+            {/* 4. COORDONNÉES OFFICIELLES DU COMPTE TOGO & RÉFÉRENCE SMS */}
+            <div className="bg-gradient-to-br from-[#23093b] to-[#170529] rounded-2xl p-4 border-2 border-pink-500/40 shadow-xl space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-pink-500/25">
+                <div className="flex items-center space-x-2">
+                  <span className="text-base leading-none">{selectedCountry.flag}</span>
+                  <span className="text-xs font-black uppercase text-white tracking-wide">
+                    Numéro officiel : {matchingChannel ? matchingChannel.name : `${selectedNetwork} (Togo)`}
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold text-pink-300/80 bg-pink-500/20 px-2 py-0.5 rounded-full border border-pink-500/30">
+                  Officiel
+                </span>
+              </div>
+
+              {/* Numéro avec bouton Copier */}
+              <div className="bg-[#120420] border border-pink-500/30 rounded-xl p-3 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <span className="text-[10px] uppercase font-bold text-pink-300/70 block font-mono">
+                    Numéro à créditer
+                  </span>
+                  <span className="text-base sm:text-lg font-black text-white font-mono tracking-wider">
+                    {matchingChannel ? matchingChannel.accountNumber : `${selectedCountry.prefix} 90 00 00 00`}
+                  </span>
                 </div>
 
-                {onlineValidationError && (
-                  <div className="bg-[#3c0d1d] border border-red-500/40 rounded-xl p-2.5 text-xs text-red-200 flex items-center space-x-2 animate-fadeIn">
-                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-                    <span className="text-[11px] font-semibold">{onlineValidationError}</span>
-                  </div>
-                )}
-
                 <button
-                  type="submit"
-                  disabled={Boolean(onlineValidationError) || isSubmitting}
-                  id="btn-online-checkout"
-                  className={`w-full py-4 px-5 font-black text-sm uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer border ${
-                    onlineValidationError || isSubmitting
-                      ? 'bg-[#270b42] text-pink-400/40 cursor-not-allowed border-pink-500/20'
-                      : 'bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white border-pink-400/40 shadow-pink-600/40 active:scale-[0.99]'
+                  type="button"
+                  onClick={() => handleCopyNumber(matchingChannel ? matchingChannel.accountNumber : `${selectedCountry.prefix} 90 00 00 00`)}
+                  className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer border ${
+                    isCopied
+                      ? 'bg-emerald-600 text-white border-emerald-400 shadow-md scale-105'
+                      : 'bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white border-pink-400/50 shadow-sm active:scale-95'
                   }`}
                 >
-                  {isSubmitting ? (
+                  {isCopied ? (
                     <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>{isRedirecting ? 'Redirection sécurisée...' : 'Génération de la session...'}</span>
+                      <Check className="w-3.5 h-3.5 text-white" />
+                      <span>Copié !</span>
                     </>
                   ) : (
                     <>
-                      <Lock className="w-4 h-4" />
-                      <span>Payer {depAmount > 0 ? `${depAmount.toLocaleString('fr-FR')} FCFA` : ''} en Ligne</span>
-                      <ExternalLink className="w-4 h-4 ml-1" />
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copier</span>
                     </>
                   )}
                 </button>
-              </form>
+              </div>
+
+              {/* Titulaire */}
+              <div className="bg-[#240c3c]/80 border border-pink-500/20 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                <span className="text-pink-300/80 font-medium">Titulaire :</span>
+                <span className="font-bold text-white font-mono">
+                  {matchingChannel?.accountHolder || 'Service Recharge Gold Speed Togo'}
+                </span>
+              </div>
+
+              {/* Instructions */}
+              <div className="bg-[#240c3c]/90 border border-pink-500/25 rounded-xl p-3 text-xs text-pink-100 space-y-1">
+                <div className="flex items-center space-x-1.5 text-pink-300 font-bold text-[11px] mb-1">
+                  <Info className="w-3.5 h-3.5 text-pink-400" />
+                  <span>Instructions :</span>
+                </div>
+                <p className="text-[11px] text-pink-200/90 leading-relaxed whitespace-pre-line font-normal">
+                  {matchingChannel?.instructions?.trim() ||
+                    `Effectuez le transfert ${selectedNetwork} vers ce numéro au Togo, puis copiez l'ID de transaction reçu par SMS ci-dessous pour validation.`}
+                </p>
+              </div>
+            </div>
+
+            {/* Saisie de l'ID de transaction SMS */}
+            <div className="bg-[#1a082b] rounded-2xl p-3.5 border border-pink-500/25 shadow-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-pink-200 block">
+                  ID / Référence de la transaction SMS reçue *
+                </label>
+                <span className="text-[10px] text-pink-400 font-mono font-bold">Obligatoire</span>
+              </div>
+              <input
+                type="text"
+                value={transactionRef}
+                onChange={(e) => setTransactionRef(e.target.value)}
+                placeholder="Ex: 240916.1234.A00123 ou Réf SMS"
+                id="input-deposit-transaction-id"
+                className="w-full bg-[#250d3c] border-2 border-pink-500/30 rounded-xl px-3.5 py-2.5 focus:border-pink-400 outline-none text-white font-mono font-bold text-xs sm:text-sm placeholder:text-pink-300/40 transition-all"
+                required
+              />
+            </div>
+
+            {validationError && (
+              <div className="bg-[#3c0d1d] border border-red-500/40 rounded-xl p-2.5 text-xs text-red-200 flex items-center space-x-2 animate-fadeIn">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                <span className="text-[11px] font-semibold">{validationError}</span>
+              </div>
             )}
 
-            {/* MODE 2: TRANSFERT MANUEL (SMS) */}
-            {paymentMode === 'manual' && (
-              <form onSubmit={handleConfirmManualDeposit} className="space-y-3">
-                {/* Coordonnées officielles du compte */}
-                <div className="bg-gradient-to-br from-[#23093b] to-[#170529] rounded-2xl p-4 border-2 border-pink-500/40 shadow-xl space-y-3">
-                  <div className="flex items-center justify-between pb-2 border-b border-pink-500/25">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-base leading-none">{selectedCountry.flag}</span>
-                      <span className="text-xs font-black uppercase text-white tracking-wide">
-                        Numéro officiel : {matchingChannel ? matchingChannel.name : `${selectedNetwork} (${selectedCountry.name})`}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-bold text-pink-300/80 bg-pink-500/20 px-2 py-0.5 rounded-full border border-pink-500/30">
-                      Officiel
-                    </span>
-                  </div>
-
-                  {/* Numéro avec bouton Copier */}
-                  <div className="bg-[#120420] border border-pink-500/30 rounded-xl p-3 flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <span className="text-[10px] uppercase font-bold text-pink-300/70 block font-mono">
-                        Numéro à créditer
-                      </span>
-                      <span className="text-base sm:text-lg font-black text-white font-mono tracking-wider">
-                        {matchingChannel ? matchingChannel.accountNumber : `${selectedCountry.prefix} 90 00 00 00`}
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleCopyNumber(matchingChannel ? matchingChannel.accountNumber : `${selectedCountry.prefix} 90 00 00 00`)}
-                      className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer border ${
-                        isCopied
-                          ? 'bg-emerald-600 text-white border-emerald-400 shadow-md scale-105'
-                          : 'bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white border-pink-400/50 shadow-sm active:scale-95'
-                      }`}
-                    >
-                      {isCopied ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-white" />
-                          <span>Copié !</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Copier</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Titulaire */}
-                  <div className="bg-[#240c3c]/80 border border-pink-500/20 rounded-xl p-2.5 flex items-center justify-between text-xs">
-                    <span className="text-pink-300/80 font-medium">Titulaire :</span>
-                    <span className="font-bold text-white font-mono">
-                      {matchingChannel?.accountHolder || `Service Recharge AirPods ${selectedCountry.name}`}
-                    </span>
-                  </div>
-
-                  {/* Instructions */}
-                  <div className="bg-[#240c3c]/90 border border-pink-500/25 rounded-xl p-3 text-xs text-pink-100 space-y-1">
-                    <div className="flex items-center space-x-1.5 text-pink-300 font-bold text-[11px] mb-1">
-                      <Info className="w-3.5 h-3.5 text-pink-400" />
-                      <span>Instructions :</span>
-                    </div>
-                    <p className="text-[11px] text-pink-200/90 leading-relaxed whitespace-pre-line font-normal">
-                      {matchingChannel?.instructions?.trim() || 
-                        `Effectuez le transfert ${selectedNetwork} vers ce numéro, puis copiez l'ID de transaction reçu par SMS ci-dessous pour validation.`}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Saisie de l'ID de transaction SMS */}
-                <div className="bg-[#1a082b] rounded-2xl p-3.5 border border-pink-500/25 shadow-xl space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-bold text-pink-200 block">
-                      ID / Référence de la transaction SMS reçue *
-                    </label>
-                    <span className="text-[10px] text-pink-400 font-mono font-bold">Obligatoire</span>
-                  </div>
-                  <input
-                    type="text"
-                    value={transactionRef}
-                    onChange={(e) => setTransactionRef(e.target.value)}
-                    placeholder="Ex: 240916.1234.A00123 ou Réf SMS"
-                    id="input-deposit-transaction-id"
-                    className="w-full bg-[#250d3c] border-2 border-pink-500/30 rounded-xl px-3.5 py-2.5 focus:border-pink-400 outline-none text-white font-mono font-bold text-xs sm:text-sm placeholder:text-pink-300/40 transition-all"
-                    required
-                  />
-                </div>
-
-                {manualValidationError && (
-                  <div className="bg-[#3c0d1d] border border-red-500/40 rounded-xl p-2.5 text-xs text-red-200 flex items-center space-x-2 animate-fadeIn">
-                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-                    <span className="text-[11px] font-semibold">{manualValidationError}</span>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={Boolean(manualValidationError) || isSubmitting}
-                  id="btn-confirm-deposit"
-                  className={`w-full py-4 px-5 font-black text-sm uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer border ${
-                    manualValidationError || isSubmitting
-                      ? 'bg-[#270b42] text-pink-400/40 cursor-not-allowed border-pink-500/20'
-                      : 'bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white border-pink-400/40 shadow-pink-600/40 active:scale-[0.99]'
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Enregistrement du dépôt...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4" />
-                      <span>Confirmer le dépôt manuel ({depAmount > 0 ? `${depAmount.toLocaleString('fr-FR')} FCFA` : ''})</span>
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
+            <button
+              type="submit"
+              disabled={Boolean(validationError) || isSubmitting}
+              id="btn-confirm-deposit"
+              className={`w-full py-4 px-5 font-black text-sm uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer border ${
+                validationError || isSubmitting
+                  ? 'bg-[#270b42] text-pink-400/40 cursor-not-allowed border-pink-500/20'
+                  : 'bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white border-pink-400/40 shadow-pink-600/40 active:scale-[0.99]'
+              }`}
+            >
+              {isSubmitting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Enregistrement du dépôt...</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4" />
+                  <span>Confirmer le dépôt ({depAmount > 0 ? `${depAmount.toLocaleString('fr-FR')} FCFA` : ''})</span>
+                </>
+              )}
+            </button>
 
             {/* NOTE DE SÉCURITÉ */}
             <div className="bg-[#1a082b] border border-pink-500/20 rounded-xl p-3 text-[11px] text-pink-300/80 text-center flex items-center justify-center space-x-1.5">
               <ShieldCheck className="w-4 h-4 text-pink-400 shrink-0" />
               <span>Paiement sécurisé et vérifié. Votre dépôt est immédiatement synchronisé au statut <strong>« En attente »</strong>.</span>
             </div>
-          </div>
+          </form>
         )}
       </div>
 
-      {/* MODAL DE CONFIRMATION DU DÉPÔT MANUEL */}
+      {/* MODAL DE CONFIRMATION DU DÉPÔT */}
       {showSuccessModal && submittedDepositInfo && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-gradient-to-b from-[#1f0a33] to-[#120521] rounded-3xl max-w-xs sm:max-w-sm w-full p-5 space-y-4 shadow-2xl border border-pink-500/30 text-center text-pink-50">
-            
             <div className="w-14 h-14 rounded-2xl bg-pink-500/20 text-pink-400 border border-pink-500/30 mx-auto flex items-center justify-center shadow-md">
               <CheckCircle2 className="w-8 h-8" />
             </div>
@@ -810,7 +588,6 @@ export const DepositView: React.FC<DepositViewProps> = ({
               </div>
             </div>
 
-            {/* Récapitulatif du dépôt */}
             <div className="bg-[#240c3c] border border-pink-500/25 rounded-2xl p-3.5 space-y-2 text-left text-xs">
               <div className="flex justify-between items-center py-0.5 border-b border-pink-500/20">
                 <span className="text-pink-300 font-medium">Montant :</span>

@@ -12,18 +12,18 @@ interface WithdrawalItem {
 }
 
 const LIVE_WITHDRAWALS: WithdrawalItem[] = [
-  { id: 'w1', phone: '+237 67****34', amount: '15 000 XOF', method: 'MTN Mobile', status: 'Paiement Effectué', timeAgo: "à l'instant", vipBadge: 'VIP 2' },
-  { id: 'w2', phone: '+237 69****89', amount: '50 000 XOF', method: 'Orange Money', status: 'Retrait Validé', timeAgo: 'il y a 1 min', vipBadge: 'VIP 4' },
-  { id: 'w3', phone: '+237 65****56', amount: '25 000 XOF', method: 'MTN Mobile', status: 'Transfert Réussi', timeAgo: 'il y a 2 min', vipBadge: 'VIP 3' },
-  { id: 'w4', phone: '+237 68****12', amount: '4 000 XOF', method: 'Orange Money', status: 'Paiement Effectué', timeAgo: 'il y a 2 min', vipBadge: 'VIP 1' },
-  { id: 'w5', phone: '+237 69****44', amount: '100 000 XOF', method: 'MTN Mobile', status: 'Succès 100%', timeAgo: 'il y a 3 min', vipBadge: 'VIP 5' },
-  { id: 'w6', phone: '+237 67****88', amount: '150 000 XOF', method: 'Orange Money', status: 'Paiement Effectué', timeAgo: 'il y a 4 min', vipBadge: 'VIP 6' },
-  { id: 'w7', phone: '+237 65****01', amount: '200 000 XOF', method: 'MTN Mobile', status: 'Retrait Validé', timeAgo: 'il y a 5 min', vipBadge: 'VIP 7' },
-  { id: 'w8', phone: '+237 69****67', amount: '300 000 XOF', method: 'Orange Money', status: 'Transfert Réussi', timeAgo: 'il y a 5 min', vipBadge: 'VIP 8' },
-  { id: 'w9', phone: '+237 68****21', amount: '400 000 XOF', method: 'MTN Mobile', status: 'Paiement Effectué', timeAgo: 'il y a 6 min', vipBadge: 'VIP 9' },
-  { id: 'w10', phone: '+237 67****90', amount: '250 000 XOF', method: 'Orange Money', status: 'Retrait Validé', timeAgo: 'il y a 7 min', vipBadge: 'VIP 8' },
-  { id: 'w11', phone: '+237 69****15', amount: '15 000 XOF', method: 'MTN Mobile', status: 'Succès 100%', timeAgo: 'il y a 8 min', vipBadge: 'VIP 2' },
-  { id: 'w12', phone: '+237 65****82', amount: '25 000 XOF', method: 'Orange Money', status: 'Paiement Effectué', timeAgo: 'il y a 9 min', vipBadge: 'VIP 3' },
+  { id: 'w1', phone: '+228 90****34', amount: '15 000 XOF', method: 'TMoney', status: 'Paiement Effectué', timeAgo: "à l'instant", vipBadge: 'GOLD 2' },
+  { id: 'w2', phone: '+228 99****89', amount: '50 000 XOF', method: 'Moov Money', status: 'Retrait Validé', timeAgo: 'il y a 1 min', vipBadge: 'GOLD 4' },
+  { id: 'w3', phone: '+228 91****56', amount: '25 000 XOF', method: 'TMoney', status: 'Transfert Réussi', timeAgo: 'il y a 2 min', vipBadge: 'GOLD 3' },
+  { id: 'w4', phone: '+228 98****12', amount: '4 000 XOF', method: 'Moov Money', status: 'Paiement Effectué', timeAgo: 'il y a 2 min', vipBadge: 'GOLD 1' },
+  { id: 'w5', phone: '+228 92****44', amount: '100 000 XOF', method: 'TMoney', status: 'Succès 100%', timeAgo: 'il y a 3 min', vipBadge: 'GOLD 5' },
+  { id: 'w6', phone: '+228 96****88', amount: '150 000 XOF', method: 'Moov Money', status: 'Paiement Effectué', timeAgo: 'il y a 4 min', vipBadge: 'GOLD 6' },
+  { id: 'w7', phone: '+228 93****01', amount: '200 000 XOF', method: 'TMoney', status: 'Retrait Validé', timeAgo: 'il y a 5 min', vipBadge: 'GOLD 7' },
+  { id: 'w8', phone: '+228 97****67', amount: '300 000 XOF', method: 'Moov Money', status: 'Transfert Réussi', timeAgo: 'il y a 5 min', vipBadge: 'GOLD 8' },
+  { id: 'w9', phone: '+228 70****21', amount: '400 000 XOF', method: 'TMoney', status: 'Paiement Effectué', timeAgo: 'il y a 6 min', vipBadge: 'GOLD 8' },
+  { id: 'w10', phone: '+228 99****90', amount: '250 000 XOF', method: 'Moov Money', status: 'Retrait Validé', timeAgo: 'il y a 7 min', vipBadge: 'GOLD 8' },
+  { id: 'w11', phone: '+228 90****15', amount: '15 000 XOF', method: 'TMoney', status: 'Succès 100%', timeAgo: 'il y a 8 min', vipBadge: 'GOLD 2' },
+  { id: 'w12', phone: '+228 98****82', amount: '25 000 XOF', method: 'Moov Money', status: 'Paiement Effectué', timeAgo: 'il y a 9 min', vipBadge: 'GOLD 3' },
 ];
 
 export const RecentRechargesTicker: React.FC<{ notificationText?: string }> = () => {

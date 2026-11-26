@@ -245,7 +245,7 @@ export const TaskCenterView: React.FC<TaskCenterViewProps> = ({
             <Coins className="w-5 h-5 text-pink-400 animate-pulse" />
             Centre de tâches
           </h1>
-          <p className="text-[10px] text-pink-300/70 font-mono">AirProds Rewards Hub</p>
+          <p className="text-[10px] text-pink-300/70 font-mono">Gold Speed Rewards Hub</p>
         </div>
         <button
           onClick={() => setShowHistoryModal(true)}
@@ -317,7 +317,7 @@ export const TaskCenterView: React.FC<TaskCenterViewProps> = ({
       <div className="flex items-start space-x-2 bg-amber-950/40 border border-amber-500/30 rounded-xl p-2.5 mb-3 text-[11px] text-amber-200/90 leading-snug">
         <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
         <p>
-          <strong className="font-bold text-amber-300">Note légale et promotionnelle :</strong> Les récompenses sont accordées selon les conditions promotionnelles officielles AirProds et ne garantissent en aucun cas un revenu fixe permanent.
+          <strong className="font-bold text-amber-300">Note légale et promotionnelle :</strong> Les récompenses sont accordées selon les conditions promotionnelles officielles Gold Speed et ne garantissent en aucun cas un revenu fixe permanent.
         </p>
       </div>
 
@@ -351,7 +351,7 @@ export const TaskCenterView: React.FC<TaskCenterViewProps> = ({
               : 'bg-[#1a082b] text-pink-300/70 hover:text-white border border-pink-500/20'
           }`}
         >
-          AirProds (VIP)
+          Gold Speed (VIP)
         </button>
         <button
           onClick={() => setActiveTab('team_salary')}

@@ -13,11 +13,17 @@ import {
   XCircle, 
   ArrowLeft,
   Headphones,
-  ChevronDown
+  ChevronDown,
+  Globe,
+  Lock,
+  Phone,
+  Gift,
+  HelpCircle,
+  ShieldCheck,
+  Check
 } from 'lucide-react';
-import { ALLOWED_COUNTRIES, DEFAULT_COUNTRY, AllowedCountry } from '../constants/countries';
+import { DEFAULT_COUNTRY } from '../constants/countries';
 import { normalizePhoneNumber } from '../lib/phoneUtils';
-
 import { 
   safeGetLocalStorage, 
   safeSetLocalStorage 
@@ -40,13 +46,6 @@ interface AuthPagesProps {
   };
 }
 
-const COUNTRIES = ALLOWED_COUNTRIES.map(c => ({
-  name: c.name,
-  code: c.code,
-  prefix: c.prefix,
-  flag: c.flag
-}));
-
 export const AuthPages: React.FC<AuthPagesProps> = ({ 
   initialMode, 
   onSuccess,
@@ -60,21 +59,19 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
     }
   }, [initialMode]);
 
-  // Selected Country State (Togo, Bénin, Burkina Faso, Côte d'Ivoire, Cameroun)
-  const [selectedCountry, setSelectedCountry] = useState<AllowedCountry>(DEFAULT_COUNTRY);
-  const countryPrefix = selectedCountry.prefix;
-  const countryName = selectedCountry.name;
+  // Pays exclusif : Togo (+228)
+  const selectedCountry = DEFAULT_COUNTRY;
 
   // Login Form State
   const [loginPhone, setLoginPhone] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  // Register Form State
+  // Register Form State (Clean White UI matching Dell design system)
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
   const [regReferrer, setRegReferrer] = useState('');
-  const [isReferralFromUrl, setIsReferralFromUrl] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(true);
 
   // Visibility Toggles
   const [showLoginPassword, setShowLoginPassword] = useState(false);
@@ -86,8 +83,16 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Forgot Password State
+  // Language Dropdown (Optional visual touch)
+  const [selectedLang, setSelectedLang] = useState('Français');
+  const [showLangMenu, setShowLangMenu] = useState(false);
+
+  // Forgot Account Number & Password State
+  const [recoveryType, setRecoveryType] = useState<'password' | 'account_number' | 'both'>('both');
   const [forgotPhone, setForgotPhone] = useState('');
+  const [forgotIdentifier, setForgotIdentifier] = useState('');
+  const [forgotContact, setForgotContact] = useState('');
+  const [forgotNote, setForgotNote] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
 
   // Detect referral code from URL or localStorage
@@ -104,20 +109,15 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
       params.get('invitation') ||
       params.get('referral') ||
       safeGetLocalStorage('aurainvest_ref_code');
-
+    
     if (refFromUrl) {
       setRegReferrer(refFromUrl);
-      setIsReferralFromUrl(true);
       setMode('register');
       if (!safeGetLocalStorage('aurainvest_ref_code')) {
         safeSetLocalStorage('aurainvest_ref_code', refFromUrl);
       }
     }
   }, []);
-
-  const handleCountryChange = (_prefix: string) => {
-    // Exclusively Cameroun (+237)
-  };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,7 +131,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
     try {
       const fullPhone = normalizePhoneNumber(loginPhone, selectedCountry.prefix);
       const res = await authActions.login(fullPhone, loginPassword, selectedCountry.name);
-
+      
       if (res.success) {
         onSuccess();
       } else {
@@ -155,7 +155,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
       return;
     }
     if (!regPassword) {
-      setErrorMsg("Veuillez entrer votre mot de passe.");
+      setErrorMsg("Veuillez entrer votre mot de passe de connexion.");
       return;
     }
     if (regPassword.length < 4) {
@@ -166,8 +166,13 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
       setErrorMsg("Les mots de passe ne correspondent pas.");
       return;
     }
+    if (!agreedToTerms) {
+      setErrorMsg("Veuillez accepter l'accord d'enregistrement et de confidentialité.");
+      return;
+    }
 
     setLoading(true);
+
     try {
       const fullPhone = normalizePhoneNumber(cleanPhone, selectedCountry.prefix);
       const rawDigits = fullPhone.replace(/\D/g, '');
@@ -183,7 +188,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
       });
 
       if (res.success) {
-        setSuccessMsg("Inscription réussie ! Redirection immédiate...");
+        setSuccessMsg("Inscription réussie ! Connexion automatique en cours...");
         setTimeout(() => {
           onSuccess();
         }, 300);
@@ -218,554 +223,711 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
     }
   };
 
-  const handleForgotPasswordSubmit = (e: React.FormEvent) => {
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!forgotPhone.trim()) {
+    setErrorMsg(null);
+    setForgotSuccess(null);
+
+    if (recoveryType === 'password' && !forgotPhone.trim()) {
       setErrorMsg("Veuillez entrer votre numéro de téléphone.");
       return;
     }
-    setErrorMsg(null);
+    if (recoveryType !== 'password' && !forgotIdentifier.trim() && !forgotContact.trim()) {
+      setErrorMsg("Veuillez entrer votre nom, code d'invitation ou numéro de contact.");
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const normalizedMainPhone = forgotPhone.trim()
+        ? normalizePhoneNumber(forgotPhone.trim(), selectedCountry.prefix)
+        : '';
+      const normalizedContactPhone = forgotContact.trim()
+        ? normalizePhoneNumber(forgotContact.trim(), selectedCountry.prefix)
+        : '';
+
+      const res = await fetch('/api/auth/recovery-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recoveryType,
+          phone: normalizedMainPhone,
+          country: selectedCountry.name,
+          identifier: forgotIdentifier.trim(),
+          contactPhone: normalizedContactPhone,
+          note: forgotNote.trim()
+        })
+      });
+
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success) {
+        setForgotSuccess(
+          data.message ||
+            "Demande transmise au service client. Un administrateur va vérifier vos informations et rétablir votre accès."
+        );
+        setForgotNote('');
+      } else {
+        setErrorMsg(data?.error || "Impossible d'envoyer la demande pour le moment. Veuillez réessayer.");
+      }
+    } catch {
+      setErrorMsg("Erreur de connexion au serveur. Vous pouvez aussi contacter notre support WhatsApp directement.");
+    } finally {
       setLoading(false);
-      setForgotSuccess("Instructions de réinitialisation transmises. Un agent du service client va traiter votre demande.");
-    }, 800);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#1b062b] via-[#120422] to-[#0c0216] flex flex-col font-sans select-none antialiased relative overflow-hidden text-white">
+    <div className="min-h-screen bg-[#F4F6F9] flex flex-col font-sans select-none antialiased relative text-gray-800">
       
-      {/* Ambient glowing background accents */}
-      <div className="absolute -top-32 -left-32 w-80 h-80 bg-pink-600/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-1/3 -right-32 w-80 h-80 bg-purple-600/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-fuchsia-600/15 rounded-full blur-3xl pointer-events-none" />
-
-      {/* Background AirPods Audio Product Image Layer */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15 pointer-events-none transform scale-105 mix-blend-luminosity"
-        style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=1200&auto=format&fit=crop&q=80')` }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1b062b]/85 via-[#120422]/80 to-[#0c0216]/95 pointer-events-none" />
-
-      {/* HEADER SECTION (FEATURING AIRPODS BACKDROP) */}
-      <div className="relative text-white pt-8 pb-14 px-5 shadow-md overflow-hidden min-h-[170px] flex flex-col justify-center">
-        {/* AirPods Audio Atmosphere Background Image */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat transform scale-100 transition-all duration-300 opacity-30 mix-blend-luminosity"
-          style={{ backgroundImage: `url('https://images.unsplash.com/photo-1572536147248-ac59a8abfa4b?w=1200&auto=format&fit=crop&q=80')` }}
-        />
-        {/* Rose-violet gradient overlay to ensure text contrast */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#160626] via-[#1b062b]/85 to-[#240b3c]/90" />
-        
-        {/* Top Header Bar: Logo & Centered Title */}
-        <div className="relative z-10 flex items-center justify-between mb-4">
-          {/* Logo "AirPods" on Top Left */}
+      {/* TOP HEADER: White background, Top Bar with Dell Technologies Logo & Language / Help */}
+      <header className="bg-white border-b border-gray-200/80 sticky top-0 z-30 shadow-xs">
+        <div className="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
+          
+          {/* Left: Mode toggle or Back */}
           <div className="flex items-center space-x-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-white font-black text-sm tracking-tight border border-pink-300/40 shadow-md shadow-pink-500/25">
-              <Headphones className="w-5 h-5 text-white stroke-[2.5px]" />
-            </div>
-            <span className="text-2xl font-black tracking-tight text-white drop-shadow-sm">
-              AirPods
+            {mode !== 'register' ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('register');
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                }}
+                className="p-1.5 -ml-1 text-gray-600 hover:text-[#0076CE] rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Retour</span>
+              </button>
+            ) : (
+              <div className="flex items-center space-x-1.5 text-xs text-gray-500 font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                <span>Portail Sécurisé</span>
+              </div>
+            )}
+          </div>
+
+          {/* Centered Brand: DELL Technologies */}
+          <div className="flex items-center justify-center space-x-1.5">
+            <span className="text-xl sm:text-2xl font-black tracking-tight text-[#0076CE] font-sans">
+              DELL
+            </span>
+            <span className="text-xs sm:text-sm font-semibold tracking-wide text-gray-700 uppercase">
+              Technologies
             </span>
           </div>
 
-          {/* Centered Title */}
-          <h1 className="text-lg sm:text-xl font-black tracking-tight text-white text-center flex-1 pr-12">
-            {mode === 'register' ? 'Inscription' : mode === 'login' ? 'Connexion' : 'Mot de passe oublié'}
-          </h1>
-        </div>
-
-        {/* Header Subtitle text */}
-        <p className="relative z-10 text-xs sm:text-sm font-medium text-pink-200/90 max-w-sm leading-relaxed tracking-wide">
-          {mode === 'register' 
-            ? 'Fournissez vos informations pour enregistrer votre compte'
-            : mode === 'login'
-            ? 'Connectez-vous à votre compte pour continuer'
-            : 'Saisissez votre numéro de téléphone pour réinitialiser votre compte'}
-        </p>
-      </div>
-
-      {/* FORM SECTION (ROSE-VIOLET ELEGANT CARD WITH ROUNDED TOP CORNERS) */}
-      <div className="relative z-10 flex-1 bg-[#160626]/95 backdrop-blur-xl -mt-6 rounded-t-[32px] px-5 sm:px-8 pt-7 pb-10 shadow-2xl max-w-md w-full mx-auto flex flex-col justify-between border-t border-x border-pink-500/30 text-white">
-        
-        <AnimatePresence mode="wait">
-          {/* ========================================================= */}
-          {/* 1. PAGE D'INSCRIPTION (REGISTER)                          */}
-          {/* ========================================================= */}
-          {mode === 'register' && (
-            <motion.div
-              key="register"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-4"
+          {/* Right: Language Selector & Support Link */}
+          <div className="relative flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={() => setShowLangMenu(!showLangMenu)}
+              className="flex items-center space-x-1 text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200/80 px-2 py-1 rounded-md transition-colors"
             >
-              {/* Alert Messages */}
-              {errorMsg && (
-                <div className="bg-pink-950/80 border border-pink-500/60 p-3.5 rounded-2xl flex flex-col space-y-2 text-xs text-pink-100 animate-fadeIn font-medium">
-                  <div className="flex items-center space-x-2.5">
-                    <AlertCircle className="w-4 h-4 text-pink-400 shrink-0" />
+              <Globe className="w-3.5 h-3.5 text-gray-500" />
+              <span>{selectedLang}</span>
+              <ChevronDown className="w-3 h-3 text-gray-400" />
+            </button>
+
+            {showLangMenu && (
+              <div className="absolute right-0 top-9 w-32 bg-white rounded-lg shadow-xl border border-gray-200 py-1.5 z-40 animate-fadeIn text-xs">
+                {['Français', 'English', 'Español'].map((lang) => (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => {
+                      setSelectedLang(lang);
+                      setShowLangMenu(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 transition-colors ${selectedLang === lang ? 'text-[#0076CE] font-bold' : 'text-gray-700'}`}
+                  >
+                    {lang}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+        </div>
+      </header>
+
+      {/* MAIN CONTAINER */}
+      <main className="flex-1 flex flex-col justify-start items-center px-4 py-6 sm:py-8 max-w-md w-full mx-auto">
+        
+        <div className="w-full bg-white rounded-2xl shadow-sm border border-gray-200/90 p-5 sm:p-7">
+          
+          <AnimatePresence mode="wait">
+            
+            {/* ========================================================= */}
+            {/* 1. PAGE D'INSCRIPTION EXACTEMENT SELON LA MAQUETTE DELL   */}
+            {/* ========================================================= */}
+            {mode === 'register' && (
+              <motion.div
+                key="register"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
+                className="space-y-4"
+              >
+                {/* Clean Header: Enregistrer un compte */}
+                <div className="pb-1 text-center">
+                  <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+                    Enregistrer un compte
+                  </h1>
+                  <p className="text-xs text-gray-500 mt-1 font-medium">
+                    Rejoignez la plateforme officielle Dell Technologies
+                  </p>
+                </div>
+
+                {/* Error Banner */}
+                {errorMsg && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl flex flex-col space-y-1.5 text-xs animate-fadeIn">
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                      <span className="font-semibold">{errorMsg}</span>
+                    </div>
+                    {errorMsg.toLowerCase().includes('déjà un compte') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('login');
+                          setLoginPhone(regPhone);
+                          setErrorMsg(null);
+                        }}
+                        className="self-start text-[11px] font-bold text-white bg-[#0076CE] hover:bg-[#005da3] px-3 py-1 rounded-lg transition-colors cursor-pointer ml-6"
+                      >
+                        → Se connecter maintenant
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Success Banner */}
+                {successMsg && (
+                  <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl flex items-center space-x-2 text-xs font-bold animate-fadeIn">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{successMsg}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
+                  
+                  {/* Champ 1: Veuillez entrer votre numéro de téléphone */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-gray-700">
+                      Veuillez entrer votre numéro de téléphone
+                    </label>
+                    <div className="flex items-center bg-gray-50/80 rounded-xl px-3 py-2.5 border border-gray-300 focus-within:border-[#0076CE] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0076CE]/15 transition-all">
+                      
+                      {/* Indicatif fixe Togo (+228) */}
+                      <div className="flex items-center space-x-1.5 shrink-0 pr-2.5 border-r border-gray-300 mr-2.5 text-gray-800 font-bold text-xs sm:text-sm">
+                        <span>{selectedCountry.flag}</span>
+                        <span>{selectedCountry.prefix}</span>
+                      </div>
+
+                      {/* Saisie numéro */}
+                      <input
+                        type="tel"
+                        placeholder="Veuillez entrer votre numéro de téléphone"
+                        value={regPhone}
+                        onChange={(e) => setRegPhone(e.target.value)}
+                        className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-gray-900 placeholder:text-gray-400"
+                        id="reg-phone-input"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Champ 2: Veuillez entrer le mot de passe de connexion */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-gray-700">
+                      Veuillez entrer le mot de passe de connexion
+                    </label>
+                    <div className="flex items-center bg-gray-50/80 rounded-xl px-3 py-2.5 border border-gray-300 focus-within:border-[#0076CE] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0076CE]/15 transition-all relative">
+                      <input
+                        type={showRegPassword ? "text" : "password"}
+                        placeholder="Veuillez entrer le mot de passe de connexion"
+                        value={regPassword}
+                        onChange={(e) => setRegPassword(e.target.value)}
+                        className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-gray-900 placeholder:text-gray-400 pr-8"
+                        id="reg-password-input"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowRegPassword(!showRegPassword)}
+                        className="absolute right-3 text-gray-400 hover:text-gray-700 p-0.5 cursor-pointer transition-colors"
+                        title={showRegPassword ? "Masquer" : "Afficher"}
+                      >
+                        {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Champ 3: Veuillez confirmer le mot de passe de connexion */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-gray-700">
+                      Veuillez confirmer le mot de passe de connexion
+                    </label>
+                    <div className="flex items-center bg-gray-50/80 rounded-xl px-3 py-2.5 border border-gray-300 focus-within:border-[#0076CE] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0076CE]/15 transition-all relative">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="Veuillez confirmer le mot de passe de connexion"
+                        value={regConfirmPassword}
+                        onChange={(e) => setRegConfirmPassword(e.target.value)}
+                        className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-gray-900 placeholder:text-gray-400 pr-8"
+                        id="reg-confirm-password-input"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 text-gray-400 hover:text-gray-700 p-0.5 cursor-pointer transition-colors"
+                        title={showConfirmPassword ? "Masquer" : "Afficher"}
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {/* Indicateur de concordance */}
+                    {regConfirmPassword.length > 0 && (
+                      <div className="pt-0.5 text-[11px] font-medium">
+                        {regPassword === regConfirmPassword ? (
+                          <span className="text-emerald-600 flex items-center space-x-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Les mots de passe correspondent</span>
+                          </span>
+                        ) : (
+                          <span className="text-red-500 flex items-center space-x-1 font-medium">
+                            <XCircle className="w-3.5 h-3.5" />
+                            <span>Les mots de passe ne correspondent pas</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Champ 4: Veuillez entrer le code d'invitation */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-gray-700">
+                      Veuillez entrer le code d'invitation
+                    </label>
+                    <div className="flex items-center bg-gray-50/80 rounded-xl px-3 py-2.5 border border-gray-300 focus-within:border-[#0076CE] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0076CE]/15 transition-all">
+                      <input
+                        type="text"
+                        placeholder="Veuillez entrer le code d'invitation"
+                        value={regReferrer}
+                        onChange={(e) => setRegReferrer(e.target.value)}
+                        className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-gray-900 placeholder:text-gray-400"
+                        id="reg-referrer-input"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Accord d'enregistrement et de confidentialité */}
+                  <div className="pt-2 flex items-start space-x-2.5 select-none">
+                    <button
+                      type="button"
+                      onClick={() => setAgreedToTerms(!agreedToTerms)}
+                      className={`w-4 h-4 rounded mt-0.5 shrink-0 flex items-center justify-center border transition-all ${
+                        agreedToTerms 
+                          ? 'bg-[#0076CE] border-[#0076CE] text-white shadow-xs' 
+                          : 'bg-white border-gray-400 hover:border-gray-500'
+                      }`}
+                    >
+                      {agreedToTerms && <Check className="w-3 h-3 stroke-[3px]" />}
+                    </button>
+                    <p className="text-[11px] sm:text-xs text-gray-600 leading-snug">
+                      J'ai lu et j'accepte l'
+                      <span className="text-[#0076CE] font-semibold cursor-pointer hover:underline">
+                        accord d'enregistrement et de confidentialité
+                      </span>
+                    </p>
+                  </div>
+
+                  {/* Bouton d'action principal Bleu Dell: Enregistrer */}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 bg-[#0076CE] hover:bg-[#005da3] active:scale-[0.99] text-white font-bold text-sm sm:text-base rounded-xl shadow-md shadow-blue-500/20 cursor-pointer transition-all flex items-center justify-center space-x-2 mt-4"
+                    id="reg-submit-btn"
+                  >
+                    {loading ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <span>Enregistrer</span>
+                    )}
+                  </button>
+                </form>
+
+                {/* Lien bascule: Vous avez un compte ? Connectez-vous */}
+                <div className="text-center pt-3 border-t border-gray-100 mt-4">
+                  <span className="text-xs text-gray-500 font-medium">Vous avez un compte ? </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('login');
+                      setErrorMsg(null);
+                      setSuccessMsg(null);
+                    }}
+                    className="text-xs font-bold text-[#0076CE] hover:text-[#005da3] hover:underline cursor-pointer transition-colors"
+                    id="switch-to-login-btn"
+                  >
+                    Connectez-vous
+                  </button>
+                </div>
+
+              </motion.div>
+            )}
+
+            {/* ========================================================= */}
+            {/* 2. PAGE DE CONNEXION (LOGIN)                              */}
+            {/* ========================================================= */}
+            {mode === 'login' && (
+              <motion.div
+                key="login"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
+                className="space-y-4"
+              >
+                <div className="pb-1 text-center">
+                  <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+                    Connexion
+                  </h1>
+                  <p className="text-xs text-gray-500 mt-1 font-medium">
+                    Accédez à votre compte officiel Dell Technologies
+                  </p>
+                </div>
+
+                {/* Error Banner */}
+                {errorMsg && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl flex items-center space-x-2 text-xs font-medium animate-fadeIn">
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
                     <span>{errorMsg}</span>
                   </div>
-                  {errorMsg.toLowerCase().includes('déjà un compte') && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode('login');
-                        setLoginPhone(regPhone);
-                        setErrorMsg(null);
-                      }}
-                      className="self-start text-[11px] font-black text-white bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 px-3 py-1 rounded-xl transition-colors cursor-pointer ml-6 shadow-sm border border-pink-300/30"
-                    >
-                      → Se connecter maintenant
-                    </button>
-                  )}
-                </div>
-              )}
+                )}
 
-              {successMsg && (
-                <div className="bg-emerald-950/80 border border-emerald-500/60 p-3.5 rounded-2xl flex items-center space-x-2.5 text-xs text-emerald-200 animate-fadeIn font-bold">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>{successMsg}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleRegisterSubmit} className="space-y-4">
-                
-                {/* 1. Téléphone avec indicatif pays intégré devant le numéro */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-pink-200 tracking-wide">
-                    Numéro de Téléphone
-                  </label>
+                <form onSubmit={handleLoginSubmit} className="space-y-3.5">
                   
-                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
-                    {/* Sélecteur d'indicatif pays intégré devant le numéro */}
-                    <div className="relative flex items-center shrink-0 pr-2 border-r border-pink-500/30 mr-2.5 select-none">
-                      <select
-                        value={selectedCountry.code}
-                        onChange={(e) => {
-                          const found = ALLOWED_COUNTRIES.find(c => c.code === e.target.value);
-                          if (found) setSelectedCountry(found);
+                  {/* Numéro de téléphone */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-gray-700">
+                      Veuillez entrer votre numéro de téléphone
+                    </label>
+                    <div className="flex items-center bg-gray-50/80 rounded-xl px-3 py-2.5 border border-gray-300 focus-within:border-[#0076CE] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0076CE]/15 transition-all">
+                      <div className="flex items-center space-x-1.5 shrink-0 pr-2.5 border-r border-gray-300 mr-2.5 text-gray-800 font-bold text-xs sm:text-sm">
+                        <span>{selectedCountry.flag}</span>
+                        <span>{selectedCountry.prefix}</span>
+                      </div>
+
+                      <input
+                        type="tel"
+                        placeholder="Veuillez entrer votre numéro de téléphone"
+                        value={loginPhone}
+                        onChange={(e) => setLoginPhone(e.target.value)}
+                        className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-gray-900 placeholder:text-gray-400"
+                        id="login-phone-input"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Mot de passe */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <label className="block text-xs font-semibold text-gray-700">
+                        Veuillez entrer le mot de passe de connexion
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('forgot');
+                          setErrorMsg(null);
+                          setForgotSuccess(null);
                         }}
-                        className="appearance-none bg-transparent text-pink-100 font-black text-xs sm:text-sm outline-none cursor-pointer flex items-center pr-4 pl-0.5 focus:outline-none"
-                        title="Sélectionner l'indicatif du pays"
+                        className="text-[11px] font-semibold text-[#0076CE] hover:underline cursor-pointer text-right"
                       >
-                        {ALLOWED_COUNTRIES.map((c) => (
-                          <option key={c.code} value={c.code} className="bg-[#1b052d] text-white">
-                            {c.flag} {c.prefix}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-pink-300 pointer-events-none absolute right-0" />
+                        Numéro ou mot de passe oublié ?
+                      </button>
                     </div>
-
-                    {/* Champ de saisie numéro */}
-                    <input
-                      type="tel"
-                      placeholder="Numéro de téléphone..."
-                      value={regPhone}
-                      onChange={(e) => setRegPhone(e.target.value)}
-                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40"
-                      id="reg-phone-input"
-                      required
-                    />
+                    <div className="flex items-center bg-gray-50/80 rounded-xl px-3 py-2.5 border border-gray-300 focus-within:border-[#0076CE] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0076CE]/15 transition-all relative">
+                      <input
+                        type={showLoginPassword ? "text" : "password"}
+                        placeholder="Veuillez entrer le mot de passe de connexion"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-gray-900 placeholder:text-gray-400 pr-8"
+                        id="login-password-input"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        className="absolute right-3 text-gray-400 hover:text-gray-700 p-0.5 cursor-pointer transition-colors"
+                        title={showLoginPassword ? "Masquer" : "Afficher"}
+                      >
+                        {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Bouton SE CONNECTER Bleu Dell */}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 bg-[#0076CE] hover:bg-[#005da3] active:scale-[0.99] text-white font-bold text-sm sm:text-base rounded-xl shadow-md shadow-blue-500/20 cursor-pointer transition-all flex items-center justify-center space-x-2 mt-4"
+                    id="login-submit-btn"
+                  >
+                    {loading ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <span>SE CONNECTER</span>
+                    )}
+                  </button>
+                </form>
+
+                {/* Lien bascule: Inscription */}
+                <div className="text-center pt-3 border-t border-gray-100 mt-4">
+                  <span className="text-xs text-gray-500 font-medium">Vous n'avez pas encore de compte ? </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('register');
+                      setErrorMsg(null);
+                      setSuccessMsg(null);
+                    }}
+                    className="text-xs font-bold text-[#0076CE] hover:text-[#005da3] hover:underline cursor-pointer transition-colors"
+                    id="switch-to-register-btn"
+                  >
+                    Enregistrer un compte
+                  </button>
                 </div>
 
-                {/* 2. Mot de passe */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-pink-200 tracking-wide">
+              </motion.div>
+            )}
+
+            {/* ========================================================= */}
+            {/* 3. MOT DE PASSE OUBLIÉ (FORGOT PASSWORD)                 */}
+            {/* ========================================================= */}
+            {mode === 'forgot' && (
+              <motion.div
+                key="forgot"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
+                className="space-y-4"
+              >
+                <div className="pb-1 text-center">
+                  <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+                    Récupération de compte
+                  </h1>
+                  <p className="text-xs text-gray-500 mt-1 font-medium">
+                    Numéro de compte ou mot de passe oublié
+                  </p>
+                </div>
+
+                {/* Recovery Type Switcher */}
+                <div className="grid grid-cols-3 gap-1.5 bg-gray-100 p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecoveryType('both');
+                      setErrorMsg(null);
+                    }}
+                    className={`py-2 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                      recoveryType === 'both'
+                        ? 'bg-white text-[#0076CE] shadow-xs'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Les deux
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecoveryType('account_number');
+                      setErrorMsg(null);
+                    }}
+                    className={`py-2 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                      recoveryType === 'account_number'
+                        ? 'bg-white text-[#0076CE] shadow-xs'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    N° de compte
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecoveryType('password');
+                      setErrorMsg(null);
+                    }}
+                    className={`py-2 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                      recoveryType === 'password'
+                        ? 'bg-white text-[#0076CE] shadow-xs'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
                     Mot de passe
-                  </label>
-
-                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all relative shadow-inner">
-                    <input
-                      type={showRegPassword ? "text" : "password"}
-                      placeholder="Veuillez entrer le mot de passe"
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
-                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40 pr-8"
-                      id="reg-password-input"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowRegPassword(!showRegPassword)}
-                      className="absolute right-3.5 text-pink-300 hover:text-white p-1 cursor-pointer transition-colors"
-                      title={showRegPassword ? "Masquer" : "Afficher"}
-                    >
-                      {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
+                  </button>
                 </div>
 
-                {/* 3. Confirmer le mot de passe */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-pink-200 tracking-wide">
-                    Confirmer le mot de passe
-                  </label>
-
-                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all relative shadow-inner">
-                    <input
-                      type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Veuillez confirmer le mot de passe"
-                      value={regConfirmPassword}
-                      onChange={(e) => setRegConfirmPassword(e.target.value)}
-                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40 pr-8"
-                      id="reg-confirm-password-input"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3.5 text-pink-300 hover:text-white p-1 cursor-pointer transition-colors"
-                      title={showConfirmPassword ? "Masquer" : "Afficher"}
-                    >
-                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+                {errorMsg && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl flex items-center space-x-2 text-xs font-medium animate-fadeIn">
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                    <span>{errorMsg}</span>
                   </div>
+                )}
 
-                  {/* Dynamic Match Indicator */}
-                  {regConfirmPassword.length > 0 && (
-                    <div className="pt-0.5 text-[11px] font-medium">
-                      {regPassword === regConfirmPassword ? (
-                        <span className="text-emerald-400 flex items-center space-x-1">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Les mots de passe correspondent</span>
-                        </span>
-                      ) : (
-                        <span className="text-pink-400 flex items-center space-x-1 font-semibold">
-                          <XCircle className="w-3.5 h-3.5" />
-                          <span>Les mots de passe ne correspondent pas</span>
-                        </span>
-                      )}
+                {forgotSuccess && (
+                  <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl text-xs text-emerald-800 leading-relaxed font-medium animate-fadeIn space-y-2">
+                    <div className="flex items-center space-x-1.5 font-bold text-emerald-700">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Demande enregistrée</span>
                     </div>
+                    <p>{forgotSuccess}</p>
+                    <a
+                      href="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center w-full py-2 px-3 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold rounded-lg text-xs transition-colors"
+                    >
+                      Contacter le support sur WhatsApp
+                    </a>
+                  </div>
+                )}
+
+                <form onSubmit={handleForgotPasswordSubmit} className="space-y-3.5">
+                  {recoveryType === 'password' ? (
+                    <div className="space-y-1">
+                      <label className="block text-xs font-semibold text-gray-700">
+                        Numéro de compte (Téléphone)
+                      </label>
+                      <div className="flex items-center bg-gray-50/80 rounded-xl px-3 py-2.5 border border-gray-300 focus-within:border-[#0076CE] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0076CE]/15 transition-all">
+                        <div className="flex items-center space-x-1.5 shrink-0 pr-2.5 border-r border-gray-300 mr-2.5 text-gray-800 font-bold text-xs sm:text-sm">
+                          <span>{selectedCountry.flag}</span>
+                          <span>{selectedCountry.prefix}</span>
+                        </div>
+
+                        <input
+                          type="tel"
+                          placeholder="Numéro de téléphone du compte"
+                          value={forgotPhone}
+                          onChange={(e) => setForgotPhone(e.target.value)}
+                          className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-gray-900 placeholder:text-gray-400"
+                          id="forgot-phone-input"
+                          required
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-gray-700">
+                          Nom, code d&apos;invitation ou numéro de retrait
+                        </label>
+                        <div className="flex items-center bg-gray-50/80 rounded-xl px-3 py-2.5 border border-gray-300 focus-within:border-[#0076CE] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0076CE]/15 transition-all">
+                          <input
+                            type="text"
+                            placeholder="Ex: INV123456, Membre 3065 ou numéro de retrait"
+                            value={forgotIdentifier}
+                            onChange={(e) => setForgotIdentifier(e.target.value)}
+                            className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-gray-900 placeholder:text-gray-400"
+                            id="forgot-identifier-input"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-gray-700">
+                          Numéro WhatsApp / téléphone pour vous répondre
+                        </label>
+                        <div className="flex items-center bg-gray-50/80 rounded-xl px-3 py-2.5 border border-gray-300 focus-within:border-[#0076CE] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0076CE]/15 transition-all">
+                          <div className="flex items-center space-x-1.5 shrink-0 pr-2.5 border-r border-gray-300 mr-2.5 text-gray-800 font-bold text-xs sm:text-sm">
+                            <span>{selectedCountry.flag}</span>
+                            <span>{selectedCountry.prefix}</span>
+                          </div>
+
+                          <input
+                            type="tel"
+                            placeholder="Votre numéro de contact actuel"
+                            value={forgotContact}
+                            onChange={(e) => setForgotContact(e.target.value)}
+                            className="w-full bg-transparent outline-none text-xs sm:text-sm font-medium text-gray-900 placeholder:text-gray-400"
+                            id="forgot-contact-input"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </>
                   )}
-                </div>
 
-                {/* 4. Code d'invitation */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-pink-200 tracking-wide">
-                    Code d'invitation
-                  </label>
-
-                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-gray-700">
+                      Précisions complémentaires (optionnel)
+                    </label>
                     <input
                       type="text"
-                      placeholder="97194059"
-                      value={regReferrer}
-                      onChange={(e) => setRegReferrer(e.target.value)}
-                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40"
-                      id="reg-referrer-input"
+                      placeholder="Ex: dernier dépôt effectué, réseau Mobile Money..."
+                      value={forgotNote}
+                      onChange={(e) => setForgotNote(e.target.value)}
+                      className="w-full bg-gray-50/80 rounded-xl px-3 py-2.5 border border-gray-300 focus:border-[#0076CE] focus:bg-white outline-none text-xs sm:text-sm font-medium text-gray-900 placeholder:text-gray-400 transition-all"
+                      id="forgot-note-input"
                     />
                   </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 bg-[#0076CE] hover:bg-[#005da3] active:scale-[0.99] text-white font-bold text-sm sm:text-base rounded-xl shadow-md shadow-blue-500/20 cursor-pointer transition-all flex items-center justify-center space-x-2 mt-4"
+                    id="forgot-submit-btn"
+                  >
+                    {loading ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <span>ENVOYER LA DEMANDE</span>
+                    )}
+                  </button>
+                </form>
+
+                <div className="text-center pt-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('login');
+                      setErrorMsg(null);
+                      setForgotSuccess(null);
+                    }}
+                    className="text-xs font-bold text-[#0076CE] hover:underline cursor-pointer flex items-center justify-center space-x-1 mx-auto transition-colors"
+                    id="back-to-login-btn"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Retour à la connexion</span>
+                  </button>
                 </div>
+              </motion.div>
+            )}
 
-                {/* Bouton Rose-Violet : S'inscrire */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 bg-gradient-to-r from-pink-500 via-fuchsia-600 to-purple-600 hover:from-pink-400 hover:via-fuchsia-500 hover:to-purple-500 active:scale-[0.99] text-white font-black text-sm sm:text-base rounded-2xl shadow-lg shadow-pink-600/30 cursor-pointer transition-all flex items-center justify-center space-x-2 border border-pink-300/35 mt-4"
-                  id="reg-submit-btn"
-                >
-                  {loading ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <span>S'inscrire</span>
-                  )}
-                </button>
-              </form>
+          </AnimatePresence>
 
-              {/* Link Se connecter */}
-              <div className="text-center pt-2">
-                <span className="text-xs text-pink-200/80">Vous avez déjà un compte ? </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode('login');
-                    setErrorMsg(null);
-                    setSuccessMsg(null);
-                  }}
-                  className="text-xs font-black text-pink-300 hover:text-white underline underline-offset-4 cursor-pointer transition-colors"
-                  id="switch-to-login-btn"
-                >
-                  Se connecter
-                </button>
-              </div>
+        </div>
 
-              {/* Logo AirPods en bas de la page d'inscription */}
-              <div className="pt-5 border-t border-pink-500/20 mt-5 flex flex-col items-center justify-center text-center space-y-2">
-                <div className="p-3 bg-[#240b3c]/80 rounded-2xl border border-pink-500/30 flex items-center justify-center space-x-3 w-full shadow-md">
-                  {/* AirPods Headphones SVG Logo Icon */}
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-pink-500 via-fuchsia-600 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-sm border border-pink-300/40">
-                    <Headphones className="w-6 h-6 stroke-[2.5px] text-white" />
-                  </div>
-                  <div className="text-left min-w-0">
-                    <div className="flex items-center space-x-1.5">
-                      <span className="text-base font-black tracking-tight text-white">AirPods</span>
-                      <span className="text-[10px] font-black text-pink-100 bg-pink-500/40 px-1.5 py-0.5 rounded font-mono border border-pink-400/40">Official</span>
-                    </div>
-                    <p className="text-[10px] font-bold text-pink-200/80 uppercase tracking-wider truncate">
-                      AirPods Official • Audio Premium & FinTech
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[10px] text-pink-300/60 font-medium">
-                  © AirPods — Plateforme Officielle Certifiée
-                </span>
-              </div>
-            </motion.div>
-          )}
+        {/* Footer Security Badges */}
+        <div className="mt-6 flex flex-col items-center justify-center text-center space-y-2">
+          <div className="flex items-center space-x-1.5 text-xs text-gray-500">
+            <ShieldCheck className="w-4 h-4 text-[#0076CE]" />
+            <span className="font-semibold text-gray-600">Connexion chiffrée SSL 256-bit</span>
+          </div>
+          <p className="text-[11px] text-gray-400">
+            © Dell Technologies Inc. Tous droits réservés.
+          </p>
+        </div>
 
-          {/* ========================================================= */}
-          {/* 2. PAGE DE CONNEXION (LOGIN)                              */}
-          {/* ========================================================= */}
-          {mode === 'login' && (
-            <motion.div
-              key="login"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-5"
-            >
-              {/* Alert Messages */}
-              {errorMsg && (
-                <div className="bg-pink-950/80 border border-pink-500/60 p-3.5 rounded-2xl flex items-center space-x-2.5 text-xs text-pink-100 animate-fadeIn font-medium">
-                  <AlertCircle className="w-4 h-4 text-pink-400 shrink-0" />
-                  <span>{errorMsg}</span>
-                </div>
-              )}
+      </main>
 
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
-                
-                {/* 1. Téléphone avec indicatif pays intégré devant le numéro */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-pink-200 tracking-wide">
-                    Numéro de Téléphone
-                  </label>
-
-                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
-                    {/* Sélecteur d'indicatif pays intégré devant le numéro */}
-                    <div className="relative flex items-center shrink-0 pr-2 border-r border-pink-500/30 mr-2.5 select-none">
-                      <select
-                        value={selectedCountry.code}
-                        onChange={(e) => {
-                          const found = ALLOWED_COUNTRIES.find(c => c.code === e.target.value);
-                          if (found) setSelectedCountry(found);
-                        }}
-                        className="appearance-none bg-transparent text-pink-100 font-black text-xs sm:text-sm outline-none cursor-pointer flex items-center pr-4 pl-0.5 focus:outline-none"
-                        title="Sélectionner l'indicatif du pays"
-                      >
-                        {ALLOWED_COUNTRIES.map((c) => (
-                          <option key={c.code} value={c.code} className="bg-[#1b052d] text-white">
-                            {c.flag} {c.prefix}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-pink-300 pointer-events-none absolute right-0" />
-                    </div>
-
-                    {/* Champ de saisie numéro */}
-                    <input
-                      type="tel"
-                      placeholder="Numéro de téléphone..."
-                      value={loginPhone}
-                      onChange={(e) => setLoginPhone(e.target.value)}
-                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40"
-                      id="login-phone-input"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* 2. Mot de passe */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-pink-200 tracking-wide">
-                    Mot de passe
-                  </label>
-
-                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3.5 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all relative shadow-inner">
-                    <input
-                      type={showLoginPassword ? "text" : "password"}
-                      placeholder="Veuillez entrer le mot de passe"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40 pr-8"
-                      id="login-password-input"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowLoginPassword(!showLoginPassword)}
-                      className="absolute right-3.5 text-pink-300 hover:text-white p-1 cursor-pointer transition-colors"
-                      title={showLoginPassword ? "Masquer" : "Afficher"}
-                    >
-                      {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Bouton Rose-Violet : SE CONNECTER */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 bg-gradient-to-r from-pink-500 via-fuchsia-600 to-purple-600 hover:from-pink-400 hover:via-fuchsia-500 hover:to-purple-500 active:scale-[0.99] text-white font-black text-sm sm:text-base rounded-2xl shadow-lg shadow-pink-600/30 cursor-pointer transition-all flex items-center justify-center space-x-2 border border-pink-300/35 mt-2"
-                  id="login-submit-btn"
-                >
-                  {loading ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <span>SE CONNECTER</span>
-                  )}
-                </button>
-              </form>
-
-              {/* Link S'inscrire */}
-              <div className="text-center pt-2">
-                <span className="text-xs text-pink-200/80">Vous n'avez pas encore de compte ? </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode('register');
-                    setErrorMsg(null);
-                    setSuccessMsg(null);
-                  }}
-                  className="text-xs font-black text-pink-300 hover:text-white underline underline-offset-4 cursor-pointer transition-colors"
-                  id="switch-to-register-btn"
-                >
-                  S'inscrire
-                </button>
-              </div>
-
-              {/* Logo AirPods en bas de la page de connexion */}
-              <div className="pt-5 border-t border-pink-500/20 mt-5 flex flex-col items-center justify-center text-center space-y-2">
-                <div className="p-3 bg-[#240b3c]/80 rounded-2xl border border-pink-500/30 flex items-center justify-center space-x-3 w-full shadow-md">
-                  {/* AirPods Headphones SVG Logo Icon */}
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-pink-500 via-fuchsia-600 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-sm border border-pink-300/40">
-                    <Headphones className="w-6 h-6 stroke-[2.5px] text-white" />
-                  </div>
-                  <div className="text-left min-w-0">
-                    <div className="flex items-center space-x-1.5">
-                      <span className="text-base font-black tracking-tight text-white">AirPods</span>
-                      <span className="text-[10px] font-black text-pink-100 bg-pink-500/40 px-1.5 py-0.5 rounded font-mono border border-pink-400/40">Official</span>
-                    </div>
-                    <p className="text-[10px] font-bold text-pink-200/80 uppercase tracking-wider truncate">
-                      AirPods Official • Audio Premium & FinTech
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[10px] text-pink-300/60 font-medium">
-                  © AirPods — Plateforme Officielle Certifiée
-                </span>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ========================================================= */}
-          {/* 3. MOT DE PASSE OUBLIÉ (FORGOT PASSWORD)                 */}
-          {/* ========================================================= */}
-          {mode === 'forgot' && (
-            <motion.div
-              key="forgot"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-5"
-            >
-              {/* Alert Messages */}
-              {errorMsg && (
-                <div className="bg-pink-950/80 border border-pink-500/60 p-3.5 rounded-2xl flex items-center space-x-2.5 text-xs text-pink-100 animate-fadeIn font-medium">
-                  <AlertCircle className="w-4 h-4 text-pink-400 shrink-0" />
-                  <span>{errorMsg}</span>
-                </div>
-              )}
-
-              {forgotSuccess && (
-                <div className="bg-emerald-950/80 border border-emerald-500/60 p-4 rounded-2xl text-xs text-emerald-200 leading-relaxed font-medium animate-fadeIn space-y-2">
-                  <div className="flex items-center space-x-1.5 font-bold text-emerald-300">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>Demande enregistrée</span>
-                  </div>
-                  <p>{forgotSuccess}</p>
-                </div>
-              )}
-
-              <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-pink-200 tracking-wide">
-                    Numéro de Téléphone
-                  </label>
-
-                  <div className="flex items-center bg-[#250d3c]/90 rounded-2xl px-3 py-3 border border-pink-500/30 focus-within:border-pink-400 focus-within:bg-[#2e0f4a] focus-within:ring-2 focus-within:ring-pink-500/25 transition-all shadow-inner">
-                    {/* Sélecteur d'indicatif pays intégré devant le numéro */}
-                    <div className="relative flex items-center shrink-0 pr-2 border-r border-pink-500/30 mr-2.5 select-none">
-                      <select
-                        value={selectedCountry.code}
-                        onChange={(e) => {
-                          const found = ALLOWED_COUNTRIES.find(c => c.code === e.target.value);
-                          if (found) setSelectedCountry(found);
-                        }}
-                        className="appearance-none bg-transparent text-pink-100 font-black text-xs sm:text-sm outline-none cursor-pointer flex items-center pr-4 pl-0.5 focus:outline-none"
-                        title="Sélectionner l'indicatif du pays"
-                      >
-                        {ALLOWED_COUNTRIES.map((c) => (
-                          <option key={c.code} value={c.code} className="bg-[#1b052d] text-white">
-                            {c.flag} {c.prefix}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-pink-300 pointer-events-none absolute right-0" />
-                    </div>
-
-                    <input
-                      type="tel"
-                      placeholder="Numéro de téléphone..."
-                      value={forgotPhone}
-                      onChange={(e) => setForgotPhone(e.target.value)}
-                      className="w-full bg-transparent outline-none text-xs sm:text-sm font-semibold text-white placeholder:text-pink-300/40"
-                      id="forgot-phone-input"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 bg-gradient-to-r from-pink-500 via-fuchsia-600 to-purple-600 hover:from-pink-400 hover:via-fuchsia-500 hover:to-purple-500 active:scale-[0.99] text-white font-black text-sm sm:text-base rounded-2xl shadow-lg shadow-pink-600/30 cursor-pointer transition-all flex items-center justify-center space-x-2 border border-pink-300/35 mt-2"
-                  id="forgot-submit-btn"
-                >
-                  {loading ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <span>ENVOYER LA DEMANDE</span>
-                  )}
-                </button>
-              </form>
-
-              <div className="text-center pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode('login');
-                    setErrorMsg(null);
-                    setForgotSuccess(null);
-                  }}
-                  className="text-xs font-black text-pink-300 hover:text-white underline underline-offset-4 cursor-pointer flex items-center justify-center space-x-1 mx-auto transition-colors"
-                  id="back-to-login-btn"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Retour à la connexion</span>
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-      </div>
     </div>
   );
 };

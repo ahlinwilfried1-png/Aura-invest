@@ -1,19 +1,31 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState } from 'react';
-import { ChevronRight, Sun, Zap, ShieldCheck, Clock, AlertCircle } from 'lucide-react';
-import { InvestmentProduct, User } from '../types';
+import { ChevronRight, Clock, TrendingUp, Sparkles } from 'lucide-react';
+import { InvestmentProduct, User, UserInvestment } from '../types';
 import { ProductDetailView } from './ProductDetailView';
 
 interface ProductsViewProps {
   products: InvestmentProduct[];
   currentUser: User;
+  userInvestments?: UserInvestment[];
   onConfirmPurchase: (product: InvestmentProduct, quantity: number) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string };
   onOpenDeposit: () => void;
   onShowToast: (status: 'success' | 'err' | 'info', text: string) => void;
 }
 
+const formatAmount = (num: number | undefined | null): string => {
+  const n = Number(num) || 0;
+  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
+
 export const ProductsView: React.FC<ProductsViewProps> = ({
   products,
   currentUser,
+  userInvestments = [],
   onConfirmPurchase,
   onOpenDeposit,
   onShowToast
@@ -24,6 +36,16 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const activeProducts = products
     .filter((p) => p.isActive !== false)
     .sort((a, b) => (a.order || 99) - (b.order || 99));
+
+  // User investments calculations
+  const myInvestments = userInvestments.filter((inv) => inv.userId === currentUser.id);
+  const activeDevicesCount = myInvestments.reduce((acc, inv) => acc + (inv.quantity || 1), 0);
+
+  // Total revenues collected from investments
+  const totalRevenues = myInvestments.reduce(
+    (sum, inv) => sum + (inv.totalGain || ((inv.duration - inv.daysRemaining) * inv.dailyGain)),
+    0
+  );
 
   // If a product is selected, show the full detail & purchase flow
   if (selectedProduct) {
@@ -40,155 +62,166 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4 animate-fadeIn pb-6 font-sans text-pink-50">
-      {/* 1. Header Banner */}
-      <div className="bg-gradient-to-br from-[#2c0b46] via-[#1a072c] to-[#10031c] text-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-pink-500/30 relative overflow-hidden">
-        {/* Subtle background glow */}
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-48 h-48 bg-pink-500/15 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-[#070709] text-white font-sans pb-24 select-none antialiased">
+      <div className="max-w-md mx-auto px-4 pt-4 space-y-5">
 
-        <div className="relative z-10 space-y-2">
-          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold">
-            <Sun className="w-3.5 h-3.5 text-amber-400" />
-            <span>PLAN AirProds</span>
+        {/* 1. DUAL SUMMARY TILES (MON APPAREIL & MES REVENUS) */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Tile 1: Mon appareil */}
+          <div className="bg-gradient-to-b from-[#2b2c32] to-[#17181d] border border-gray-700/80 rounded-2xl p-4 shadow-xl flex flex-col justify-between min-h-[88px]">
+            <span className="text-xs font-medium text-gray-300 block">
+              Mon appareil
+            </span>
+            <span className="text-xl sm:text-2xl font-black text-white font-mono mt-1.5 block">
+              {activeDevicesCount}
+            </span>
           </div>
 
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight">
-            L'univers AirProds à votre portée
-          </h2>
-
-          <p className="text-xs sm:text-sm text-pink-200/80 max-w-xl leading-relaxed">
-            Profitez de revenus réguliers avec nos packs technologiques AirProds pendant un cycle officiel de <span className="font-bold text-amber-400">180 jours</span> avec versement automatique de vos gains chaque 24h.
-          </p>
-
-          {/* Quick value props */}
-          <div className="grid grid-cols-3 gap-2 pt-2 text-center font-mono">
-            <div className="bg-[#240c3c]/80 backdrop-blur-xs rounded-xl p-2 border border-pink-500/25">
-              <div className="text-[11px] sm:text-xs font-black text-amber-300">AirProds</div>
-              <div className="text-[9px] sm:text-[10px] text-pink-200/70 font-sans font-medium">Technologie VIP</div>
-            </div>
-            <div className="bg-[#240c3c]/80 backdrop-blur-xs rounded-xl p-2 border border-pink-500/25">
-              <div className="text-[11px] sm:text-xs font-black text-pink-300">180 Jours</div>
-              <div className="text-[9px] sm:text-[10px] text-pink-200/70 font-sans font-medium">Cycle officiel</div>
-            </div>
-            <div className="bg-[#240c3c]/80 backdrop-blur-xs rounded-xl p-2 border border-pink-500/25">
-              <div className="text-[11px] sm:text-xs font-black text-emerald-300">Retraits 7j/7</div>
-              <div className="text-[9px] sm:text-[10px] text-pink-200/70 font-sans font-medium">Dès 1 500 XOF</div>
-            </div>
+          {/* Tile 2: Mes revenus */}
+          <div className="bg-gradient-to-b from-[#2b2c32] to-[#17181d] border border-gray-700/80 rounded-2xl p-4 shadow-xl flex flex-col justify-between min-h-[88px]">
+            <span className="text-xs font-medium text-gray-300 block">
+              Mes revenus
+            </span>
+            <span className="text-lg sm:text-xl font-black text-[#00E575] font-mono mt-1.5 block">
+              FCFA {formatAmount(totalRevenues)}
+            </span>
           </div>
         </div>
-      </div>
 
-      {/* 2. Products List */}
-      {activeProducts.length === 0 ? (
-        <div className="bg-[#1a082b] rounded-3xl p-8 text-center border border-pink-500/25 space-y-2">
-          <AlertCircle className="w-10 h-10 text-pink-400 mx-auto" />
-          <h4 className="font-bold text-pink-200">Aucune formule active pour le moment</h4>
-          <p className="text-xs text-pink-300/70">Les nouvelles formules solaires seront bientôt disponibles.</p>
-        </div>
-      ) : (
-        <div className="space-y-3.5">
-          {activeProducts.map((product) => {
-            const cycleDays = product.duration || 180;
-            const gainCycle = product.gain180Days || product.gain120Days || (product.dailyGain * cycleDays);
-            const totalCycle = product.totalGain || (product.price + gainCycle);
-            const ratePercent = product.dailyRatePercent ? `${product.dailyRatePercent}%` : `${((product.dailyGain / product.price) * 100).toFixed(1)}%`;
-            return (
-              <div
-                key={product.id}
-                onClick={() => setSelectedProduct(product)}
-                className="bg-gradient-to-br from-[#1d0831] to-[#140523] rounded-2xl p-4 sm:p-5 shadow-xl space-y-3 border border-pink-500/25 hover:border-amber-400/60 hover:shadow-pink-900/30 transition-all cursor-pointer group"
-              >
-                {/* Top row: Title + Badges on left, Image on right */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="text-base sm:text-lg font-black text-white leading-snug group-hover:text-amber-300 transition-colors">
-                        {product.name}
-                      </h4>
-                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                        {product.badge || `${ratePercent} / j`}
-                      </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                        {cycleDays} jours
-                      </span>
-                    </div>
-                    {product.description && (
-                      <p className="text-xs text-pink-200/70 line-clamp-1">
-                        {product.description}
-                      </p>
-                    )}
-                  </div>
+        {/* 2. ACTIVE USER INVESTMENTS (IF ANY) */}
+        {myInvestments.length > 0 && (
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider font-mono">
+                Mes produits actifs ({myInvestments.length})
+              </span>
+            </div>
 
-                  <img
-                    src={
-                      product.image && product.image.trim() !== ''
-                        ? product.image
-                        : 'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=800&auto=format&fit=crop&q=80'
-                    }
-                    alt={product.name}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=800&auto=format&fit=crop&q=80';
-                    }}
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 border border-pink-500/30 bg-[#250d3c]"
-                  />
-                </div>
-
-                {/* Middle row: Official Plan Grid (Matching Image Columns) */}
-                <div className="bg-[#240b3c]/80 border border-pink-500/30 rounded-2xl p-3 sm:p-4 grid grid-cols-3 gap-2 text-center font-mono">
-                  <div className="border-r border-pink-500/20 pr-1">
-                    <div className="text-amber-400 font-black text-base sm:text-lg tracking-tight">
-                      +{(Number(product.dailyGain) || 0).toLocaleString('fr-FR')} F
-                    </div>
-                    <div className="text-[10px] sm:text-xs font-semibold text-pink-200/80 mt-0.5 font-sans">
-                      / jour ({ratePercent})
-                    </div>
-                  </div>
-                  <div className="border-r border-pink-500/20 pr-1">
-                    <div className="text-pink-300 font-black text-base sm:text-lg tracking-tight">
-                      {(Number(gainCycle) || 0).toLocaleString('fr-FR')} F
-                    </div>
-                    <div className="text-[10px] sm:text-xs font-semibold text-pink-200/80 mt-0.5 font-sans">
-                      Gain sur {cycleDays}j
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-purple-300 font-black text-base sm:text-lg tracking-tight">
-                      {(Number(totalCycle) || 0).toLocaleString('fr-FR')} F
-                    </div>
-                    <div className="text-[10px] sm:text-xs font-semibold text-pink-200/80 mt-0.5 font-sans">
-                      Total à {cycleDays}j
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom row: Price + INVESTIR Button */}
-                <div className="flex items-center justify-between pt-1">
-                  <div className="text-xs sm:text-sm font-medium text-pink-200">
-                    Prix de la formule :{' '}
-                    <span className="text-white font-black ml-1 text-base sm:text-lg font-mono">
-                      {(Number(product.price) || 0).toLocaleString('fr-FR')} XOF
+            <div className="space-y-2.5">
+              {myInvestments.map((inv) => (
+                <div
+                  key={inv.id}
+                  className="bg-[#121318] border border-emerald-500/30 rounded-2xl p-3.5 shadow-md flex items-center justify-between"
+                >
+                  <div className="space-y-0.5">
+                    <span className="text-sm font-bold text-white block">
+                      {inv.productName}
+                    </span>
+                    <span className="text-xs text-[#00E575] block font-mono font-semibold">
+                      Revenu quotidien : +{formatAmount(inv.dailyGain)} FCFA
+                    </span>
+                    <span className="text-[11px] text-gray-400 block">
+                      Jours restants : {inv.daysRemaining} / {inv.duration} j
                     </span>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedProduct(product);
-                    }}
-                    className="bg-gradient-to-r from-amber-500 via-pink-600 to-purple-600 hover:from-amber-400 hover:to-purple-500 text-white font-black text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl tracking-wider transition-all cursor-pointer shadow-lg shadow-pink-600/30 uppercase flex items-center space-x-1.5 border border-amber-400/30"
-                  >
-                    <span>SOUSCRIRE</span>
-                    <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-                  </button>
+                  <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full font-mono shrink-0">
+                    Actif
+                  </span>
                 </div>
-              </div>
-            );
-          })}
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 3. DIRECT PRODUCT PLANS LIST (GOLD 1 - GOLD 8, NO BANNER/POSTER) */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-sm sm:text-base font-extrabold text-white flex items-center space-x-2">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>Plans Gold Speed</span>
+            </h2>
+            <span className="text-[11px] font-mono text-amber-400 font-bold">
+              {activeProducts.length} plans disponibles
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {activeProducts.map((p) => {
+              const durationDays = p.duration || 150;
+              const totalGain = p.totalGain || p.dailyGain * durationDays;
+              return (
+                <div
+                  key={p.id}
+                  onClick={() => setSelectedProduct(p)}
+                  className="bg-[#121318] hover:bg-[#191b22] border border-gray-800 hover:border-amber-500/50 rounded-2xl p-4 shadow-lg cursor-pointer transition-all group space-y-3"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <div className="w-14 h-14 rounded-xl bg-gray-900 border border-gray-700 overflow-hidden shrink-0 flex items-center justify-center">
+                        {p.image ? (
+                          <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xs font-black text-amber-400">GOLD</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-base font-black text-white group-hover:text-amber-400 transition-colors truncate">
+                            {p.name}
+                          </h3>
+                          {p.badge && (
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 shrink-0">
+                              {p.badge}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-400 font-mono mt-0.5 flex items-center space-x-2">
+                          <span className="inline-flex items-center space-x-1">
+                            <Clock className="w-3 h-3 text-gray-500" />
+                            <span>Cycle : {durationDays} jours</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <div className="text-[10px] uppercase text-gray-400 font-semibold">Prix</div>
+                      <div className="text-sm sm:text-base font-black text-amber-400 font-mono">
+                        {formatAmount(p.price)} F
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 bg-[#0a0b0e] rounded-xl p-2.5 border border-gray-800/80 font-mono text-xs">
+                    <div>
+                      <span className="text-[10px] text-gray-400 font-sans block">Revenu quotidien</span>
+                      <span className="font-bold text-[#00E575] flex items-center space-x-1">
+                        <TrendingUp className="w-3 h-3" />
+                        <span>+{formatAmount(p.dailyGain)} FCFA</span>
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-gray-400 font-sans block">Revenu total</span>
+                      <span className="font-bold text-white">
+                        {formatAmount(totalGain)} FCFA
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-0.5">
+                    <span className="text-[11px] text-gray-400 truncate pr-2">
+                      Crédit automatique chaque 24h
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedProduct(p);
+                      }}
+                      className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs px-4 py-2 rounded-xl flex items-center space-x-1 shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+                    >
+                      <span>Investir</span>
+                      <ChevronRight className="w-3.5 h-3.5 stroke-[3]" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      )}
+
+      </div>
     </div>
   );
 };

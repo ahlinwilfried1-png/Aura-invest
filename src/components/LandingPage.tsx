@@ -10,7 +10,7 @@ import {
   ShieldCheck, 
   Zap, 
   Users, 
-  Send, 
+  MessageCircle, 
   Award,
   ChevronRight,
   Sparkles,
@@ -45,17 +45,17 @@ interface LandingPageProps {
 export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, liveStats }) => {
   return (
     <div className="min-h-screen bg-[#f8faf7] text-slate-900 flex flex-col relative overflow-hidden font-sans">
-      {/* Floating Telegram Community Action */}
+      {/* Floating WhatsApp Community Action */}
       <a 
-        href="https://t.me/+_mfGwgAziVtlYjJk" 
+        href="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M" 
         target="_blank" 
         rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-50 bg-[#0088cc] hover:bg-[#0077b5] text-white p-4 rounded-full shadow-2xl shadow-sky-600/30 flex items-center justify-center transition-transform hover:scale-110 group cursor-pointer"
-        id="telegram-floater"
+        className="fixed bottom-6 right-6 z-50 bg-[#25D366] hover:bg-[#1ebe5d] text-white p-4 rounded-full shadow-2xl shadow-emerald-600/30 flex items-center justify-center transition-transform hover:scale-110 group cursor-pointer"
+        id="whatsapp-floater"
       >
-        <Send className="w-6 h-6 -ml-0.5 text-white" />
+        <MessageCircle className="w-6 h-6 text-white" />
         <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out whitespace-nowrap text-sm font-bold pl-0 group-hover:pl-2">
-          Chaîne Officielle Telegram
+          Chaîne Officielle WhatsApp
         </span>
       </a>
 
@@ -68,9 +68,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
             </div>
             <div>
               <span className="text-xl font-black tracking-tight text-emerald-900">
-                AIR<span className="text-amber-600 font-black">PODS</span>
+                GOLD <span className="text-amber-600 font-black">SPEED</span>
               </span>
-              <span className="block text-[8.5px] tracking-[0.22em] uppercase font-mono text-emerald-700 font-black">INVESTISSEMENT AUDIO VIP</span>
+              <span className="block text-[8.5px] tracking-[0.22em] uppercase font-mono text-emerald-700 font-black">INVESTISSEMENT TECH VIP</span>
             </div>
           </div>
 
@@ -93,18 +93,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
         </div>
       </header>
 
-      {/* Hero Section styled after AirPods platform */}
+      {/* Hero Section styled after Gold Speed platform */}
       <main className="flex-grow flex flex-col">
         {/* Banner with Background */}
         <section className="relative bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-800 text-white overflow-hidden py-12 sm:py-20 px-4">
           <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#fbbf24_1px,transparent_1px)] [background-size:16px_16px]"></div>
           
           <div className="max-w-6xl mx-auto text-center relative z-10 space-y-6">
-            {/* AIRPODS Header */}
+            {/* GOLD SPEED Header */}
             <div className="inline-flex flex-col items-center">
               <div className="flex items-center space-x-2 justify-center mb-1">
                 <span className="text-3xl sm:text-6xl md:text-7xl font-black tracking-tight text-white drop-shadow-md">
-                  AIR<span className="text-amber-400">PODS</span>
+                  GOLD <span className="text-amber-400">SPEED</span>
                 </span>
                 <div className="w-9 h-9 sm:w-14 sm:h-14 bg-gradient-to-tr from-amber-400 to-yellow-200 rounded-full border-2 border-amber-300 flex items-center justify-center shadow-lg shadow-amber-400/30">
                   <DollarSign className="w-5 h-5 sm:w-8 sm:h-8 text-emerald-950 stroke-[3px]" />
@@ -118,7 +118,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
             </div>
 
             <p className="text-emerald-100 text-sm sm:text-lg max-w-2xl mx-auto font-medium leading-relaxed">
-              La plateforme officielle d'investissement AirPods à haut rendement au Cameroun 🇨🇲. Choisissez votre pack VIP, vos revenus tombent chaque 24h directement sur votre solde et sont retirables instantanément via Mobile Money (MTN Mobile Money & Orange Money Cameroun).
+              La plateforme officielle d'investissement Gold Speed à haut rendement au Togo 🇹🇬. Choisissez votre pack, vos revenus tombent chaque 24h directement sur votre solde et sont retirables instantanément via Mobile Money (TMoney / Mixx By Yas & Moov Money).
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto pt-2">
@@ -169,15 +169,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
           </div>
         </section>
 
-        {/* OFFICIAL AIRPRODS PRICING TABLE SECTION */}
+        {/* OFFICIAL GOLD SPEED PRICING TABLE SECTION */}
         <section className="py-12 px-4 sm:px-6 max-w-6xl mx-auto w-full">
           {/* Header Badge */}
           <div className="text-center mb-8">
             <div className="inline-block bg-[#0e3d1c] border-2 border-amber-400 text-white font-black text-xs sm:text-base md:text-lg uppercase px-6 sm:px-10 py-2.5 rounded-full shadow-lg tracking-wider font-mono">
-              PLAN AIRPRODS — TECHNOLOGIE VIP IMMERSIVE
+              PLAN GOLD SPEED — FORMULES VIP
             </div>
             <p className="text-slate-600 text-xs sm:text-sm mt-3 font-medium">
-              Formules VIP de 180 jours avec versement automatique chaque 24h et retraits dès 1 500 XOF.
+              8 Formules VIP de 150 jours avec versement automatique chaque 24h et retraits rapides.
             </p>
           </div>
 
@@ -188,7 +188,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                 <tr className="bg-[#fef3c7] text-[#1c1917] border-b-2 border-amber-300 text-xs uppercase font-mono font-black">
                   <th className="py-4 px-6 flex items-center space-x-2">
                     <Sparkles className="w-4 h-4 text-emerald-800" />
-                    <span>FORMULES</span>
+                    <span>PRODUIT</span>
                   </th>
                   <th className="py-4 px-6 text-center">
                     <span className="inline-flex items-center space-x-1 justify-center">
@@ -199,19 +199,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                   <th className="py-4 px-6 text-center">
                     <span className="inline-flex items-center space-x-1 justify-center">
                       <Coins className="w-4 h-4 text-amber-700" />
-                      <span>REVENU / JOUR</span>
+                      <span>REVENU QUOTIDIEN</span>
                     </span>
                   </th>
                   <th className="py-4 px-6 text-center">
                     <span className="inline-flex items-center space-x-1 justify-center">
-                      <Calendar className="w-4 h-4 text-emerald-800" />
-                      <span>GAIN SUR 180 JOURS</span>
+                      <TrendingUp className="w-4 h-4 text-emerald-800" />
+                      <span>REVENU TOTAL</span>
                     </span>
                   </th>
                   <th className="py-4 px-6 text-right">
                     <span className="inline-flex items-center space-x-1 justify-end">
-                      <TrendingUp className="w-4 h-4 text-emerald-800" />
-                      <span>TOTAL À 180 JOURS</span>
+                      <Calendar className="w-4 h-4 text-emerald-800" />
+                      <span>TEMPS</span>
                     </span>
                   </th>
                   <th className="py-4 px-6 text-center">ACTION</th>
@@ -219,9 +219,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
               </thead>
               <tbody className="divide-y divide-slate-200 text-sm font-semibold">
                 {OFFICIAL_INVESTMENT_PRODUCTS.map((item, idx) => {
-                  const cycleDays = item.duration || 180;
-                  const gainCycle = item.gain180Days || item.gain120Days || (item.dailyGain * cycleDays);
-                  const totalCycle = item.totalGain || (item.price + gainCycle);
+                  const cycleDays = item.duration || 150;
+                  const totalCycle = item.totalGain || (item.dailyGain * cycleDays);
                   return (
                     <tr key={item.id || idx} className="hover:bg-amber-50/50 transition-colors">
                       <td className="py-4 px-6">
@@ -239,10 +238,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                         +{(Number(item.dailyGain) || 0).toLocaleString('fr-FR')} F
                       </td>
                       <td className="py-4 px-6 text-center font-black font-mono text-base text-amber-800">
-                        {(Number(gainCycle) || 0).toLocaleString('fr-FR')} F
+                        {(Number(totalCycle) || 0).toLocaleString('fr-FR')} F
                       </td>
                       <td className="py-4 px-6 text-right font-black font-mono text-slate-950 text-base">
-                        {(Number(totalCycle) || 0).toLocaleString('fr-FR')} F
+                        {cycleDays} jours
                       </td>
                       <td className="py-4 px-6 text-center">
                         <button
@@ -262,9 +261,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
           {/* Mobile Card List with exact plans */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
             {OFFICIAL_INVESTMENT_PRODUCTS.map((item, idx) => {
-              const cycleDays = item.duration || 180;
-              const gainCycle = item.gain180Days || item.gain120Days || (item.dailyGain * cycleDays);
-              const totalCycle = item.totalGain || (item.price + gainCycle);
+              const cycleDays = item.duration || 150;
+              const totalCycle = item.totalGain || (item.dailyGain * cycleDays);
               return (
                 <div key={item.id || idx} className="bg-white border-2 border-emerald-900/20 rounded-2xl p-4 shadow-md space-y-3">
                   <div className="flex items-center justify-between">
@@ -285,16 +283,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                       <span className="font-black text-emerald-950 text-sm">{(Number(item.price) || 0).toLocaleString('fr-FR')} F</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block text-[10px] uppercase font-bold font-sans">Revenu / Jour</span>
+                      <span className="text-slate-500 block text-[10px] uppercase font-bold font-sans">Revenu quotidien</span>
                       <span className="font-black text-emerald-700 text-sm">+{(Number(item.dailyGain) || 0).toLocaleString('fr-FR')} F</span>
                     </div>
                     <div className="pt-1 border-t border-amber-200/60">
-                      <span className="text-slate-600 text-[10px] uppercase font-bold font-sans block">Gain {cycleDays}j :</span>
-                      <span className="font-black text-amber-900 text-sm">{(Number(gainCycle) || 0).toLocaleString('fr-FR')} F</span>
+                      <span className="text-slate-600 text-[10px] uppercase font-bold font-sans block">Revenu total :</span>
+                      <span className="font-black text-amber-900 text-sm">{(Number(totalCycle) || 0).toLocaleString('fr-FR')} F</span>
                     </div>
                     <div className="pt-1 border-t border-amber-200/60">
-                      <span className="text-slate-600 text-[10px] uppercase font-bold font-sans block">Total à {cycleDays}j :</span>
-                      <span className="font-black text-slate-950 text-sm">{(Number(totalCycle) || 0).toLocaleString('fr-FR')} F</span>
+                      <span className="text-slate-600 text-[10px] uppercase font-bold font-sans block">Temps :</span>
+                      <span className="font-black text-slate-950 text-sm">{cycleDays} jours</span>
                     </div>
                   </div>
 
@@ -327,7 +325,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                   <div>
                     <h4 className="font-black text-emerald-950 text-sm uppercase font-mono">PRINCIPE :</h4>
                     <p className="text-xs sm:text-sm text-slate-700 font-semibold mt-0.5">
-                      Tu investis un montant selon le modèle d'AirPods que tu choisis.
+                      Tu investis un montant selon le plan Gold Speed que tu choisis.
                     </p>
                   </div>
                 </div>
@@ -365,7 +363,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
                   <ShieldCheck className="w-10 h-10 text-emerald-950" />
                 </div>
                 <h3 className="text-xl sm:text-2xl font-black text-amber-400 tracking-tight">
-                  AIRPODS
+                  GOLD SPEED
                 </h3>
                 <p className="text-xs text-emerald-100 font-bold uppercase tracking-wider mt-1">
                   VOTRE PARTENAIRE POUR UN AVENIR PROSPÈRE
@@ -413,8 +411,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin, live
       {/* Footer Standard Info */}
       <footer className="bg-slate-900 text-slate-400 py-6 px-4 text-center text-xs">
         <div className="max-w-7xl mx-auto space-y-1">
-          <p className="font-bold text-slate-200">© 2026 AirPods Solutions Cameroun. Tous droits réservés.</p>
-          <p>Dépôts et retraits sécurisés Mobile Money au Cameroun 🇨🇲 (MTN Mobile Money & Orange Money Cameroun).</p>
+          <p className="font-bold text-slate-200">© 2026 Gold Speed Solutions Togo. Tous droits réservés.</p>
+          <p>Dépôts et retraits sécurisés Mobile Money au Togo 🇹🇬 (TMoney / Mixx By Yas & Moov Money).</p>
         </div>
       </footer>
     </div>

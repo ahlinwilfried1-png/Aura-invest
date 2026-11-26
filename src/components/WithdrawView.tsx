@@ -3,7 +3,7 @@ import { ArrowLeft, CreditCard, History, X, PlusCircle, Edit3, ShieldCheck, Lock
 import { User, WithdrawalRequest } from '../types';
 import { useApp } from '../context/AppContext';
 import { WithdrawalHistoryView } from './WithdrawalHistoryView';
-import { ALLOWED_COUNTRIES, getCountryByCode, getCountryByPhone } from '../constants/countries';
+import { DEFAULT_COUNTRY } from '../constants/countries';
 
 interface WithdrawViewProps {
   currentUser: User;
@@ -29,32 +29,21 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [showBindModal, setShowBindModal] = useState<boolean>(false);
 
-  // Form states for account binding
-  const userCountry = currentUser.withdrawalCountry 
-    ? getCountryByCode(currentUser.withdrawalCountry) 
-    : getCountryByPhone(currentUser.phone);
-
-  const [bindCountryCode, setBindCountryCode] = useState<string>(userCountry.code);
-  
-  const currentBindCountry = ALLOWED_COUNTRIES.find(c => c.code === bindCountryCode) || userCountry;
+  // Pays exclusif : Togo (+228)
+  const currentBindCountry = DEFAULT_COUNTRY;
+  const bindCountryCode = currentBindCountry.code;
   const [bindNetwork, setBindNetwork] = useState<string>(
-    currentUser.withdrawalNetwork || currentBindCountry.networks[0]
+    currentBindCountry.networks.includes(currentUser.withdrawalNetwork || '')
+      ? (currentUser.withdrawalNetwork as string)
+      : currentBindCountry.networks[0]
   );
-  
+
   const [bindName, setBindName] = useState<string>(currentUser.withdrawalAccountName || currentUser.name || '');
   const [bindPhone, setBindPhone] = useState<string>(currentUser.withdrawalAccountNumber || currentUser.phone || '');
   const [bindPin, setBindPin] = useState<string>('');
 
   // User withdrawals history
   const myWithdrawals = withdrawals.filter(w => w.userId === currentUser.id);
-
-  const handleCountrySelect = (code: string) => {
-    setBindCountryCode(code);
-    const country = ALLOWED_COUNTRIES.find(c => c.code === code);
-    if (country && country.networks.length > 0) {
-      setBindNetwork(country.networks[0]);
-    }
-  };
 
   const handleSaveAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -243,11 +232,9 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
                 <div>
                   <div className="text-sm sm:text-base font-extrabold tracking-tight flex items-center gap-1.5">
                     <span>{currentUser.withdrawalAccountName || currentUser.name}</span>
-                    {currentUser.withdrawalCountry && (
                       <span className="text-xs bg-black/20 px-1.5 py-0.5 rounded font-mono font-bold">
-                        {ALLOWED_COUNTRIES.find(c => c.code === currentUser.withdrawalCountry)?.flag || '🇹🇬'}
+                        {DEFAULT_COUNTRY.flag}
                       </span>
-                    )}
                   </div>
                   <div className="text-xs sm:text-sm font-mono font-bold text-pink-100 flex items-center gap-2">
                     <span>{currentUser.withdrawalAccountNumber || currentUser.phone}</span>
@@ -405,48 +392,31 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
             </div>
 
             <form onSubmit={handleSaveAccount} className="space-y-3.5 text-xs sm:text-sm">
-              {/* Pays */}
-              <div>
-                <label className="block text-xs font-bold text-pink-200 mb-1">
-                  Pays de votre compte Mobile Money / Banque
-                </label>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {ALLOWED_COUNTRIES.map((c) => {
-                    const isSel = bindCountryCode === c.code;
-                    return (
-                      <button
-                        key={c.code}
-                        type="button"
-                        onClick={() => handleCountrySelect(c.code)}
-                        className={`flex items-center space-x-1.5 px-2.5 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                          isSel
-                            ? 'bg-pink-500/30 border-pink-400 text-white shadow-md ring-1 ring-pink-400/50'
-                            : 'bg-[#240c3c] border-pink-500/20 text-pink-200/80 hover:bg-[#320f50]'
-                        }`}
-                      >
-                        <span className="text-base">{c.flag}</span>
-                        <span className="truncate">{c.name}</span>
-                        <span className="text-[10px] font-mono text-pink-300 ml-auto">{c.prefix}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+              {/* Pays fixe Togo */}
+              <div className="flex items-center justify-between bg-[#240c3c] border border-pink-500/25 rounded-xl px-3 py-2">
+                <span className="text-xs font-bold text-pink-200 flex items-center space-x-1.5">
+                  <Globe className="w-3.5 h-3.5 text-pink-400" />
+                  <span>Pays du compte Mobile Money</span>
+                </span>
+                <span className="text-xs font-black text-white">
+                  {currentBindCountry.flag} {currentBindCountry.name} ({currentBindCountry.prefix})
+                </span>
               </div>
 
-              {/* Choix du réseau Mobile Money pour ce pays */}
+              {/* Choix du réseau Mobile Money Togo */}
               <div>
                 <label className="block text-xs font-bold text-pink-200 mb-1">
-                  Moyen de réseau ({currentBindCountry.name})
+                  Réseau Mobile Money ({currentBindCountry.name})
                 </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {[...currentBindCountry.networks, 'Carte Visa / Mastercard', 'Virement Bancaire (RIB)'].map((net) => {
+                <div className="grid grid-cols-2 gap-2">
+                  {currentBindCountry.networks.map((net) => {
                     const isSel = bindNetwork === net;
                     return (
                       <button
                         key={net}
                         type="button"
                         onClick={() => setBindNetwork(net)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer border ${
+                        className={`px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer border ${
                           isSel
                             ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white border-pink-400 shadow-md'
                             : 'bg-[#240c3c] border-pink-500/20 text-pink-200 hover:bg-[#320f50]'
@@ -467,7 +437,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
                   type="text"
                   value={bindName}
                   onChange={(e) => setBindName(e.target.value)}
-                  placeholder="Ex: Jean Dupont"
+                  placeholder="Ex: Kofi Mensah"
                   className="w-full bg-[#250d3c] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-white font-bold outline-none focus:border-pink-400"
                   required
                 />
@@ -483,7 +453,7 @@ export const WithdrawView: React.FC<WithdrawViewProps> = ({
                     type="tel"
                     value={bindPhone}
                     onChange={(e) => setBindPhone(e.target.value)}
-                    placeholder="Ex: 0701020304"
+                    placeholder="Ex: 90 12 34 56"
                     className="w-full bg-transparent text-white font-mono font-bold outline-none text-xs sm:text-sm"
                     required
                   />

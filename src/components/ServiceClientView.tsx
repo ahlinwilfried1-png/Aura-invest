@@ -1,18 +1,16 @@
 import React from 'react';
-import { ChevronLeft, Send, MessageCircle, Users, Headset } from 'lucide-react';
+import { ChevronLeft, MessageCircle, Users, Headset } from 'lucide-react';
 
 interface ServiceClientViewProps {
   onBack: () => void;
-  telegramUrl?: string;
-  telegramGroupUrl?: string;
   whatsappUrl?: string;
+  whatsappGroupUrl?: string;
 }
 
 export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
   onBack,
-  telegramUrl = "https://t.me/+_mfGwgAziVtlYjJk",
-  telegramGroupUrl = "https://t.me/+_mfGwgAziVtlYjJk",
-  whatsappUrl = "https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
+  whatsappUrl = "https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M",
+  whatsappGroupUrl = "https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
 }) => {
   return (
     <div className="min-h-screen bg-[#0d0417] text-white pb-20 font-sans animate-fadeIn">
@@ -28,16 +26,16 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
         </button>
 
         <h1 className="text-base sm:text-lg font-bold text-white tracking-tight text-center flex-1 pr-6">
-          Service client
+          Service client WhatsApp
         </h1>
       </div>
 
       <div className="max-w-md mx-auto px-4 py-4 space-y-6">
 
-        {/* 2. Channels List Card */}
+        {/* 2. WhatsApp Channels List Card */}
         <div className="bg-[#1a082b] border border-pink-500/25 rounded-3xl p-4 sm:p-5 shadow-lg space-y-4">
           
-          {/* Row 0: WhatsApp AirProds Official Channel */}
+          {/* Row 1: WhatsApp Gold Speed Official Channel */}
           <div className="flex items-center justify-between gap-3 py-1">
             <div className="flex items-center space-x-3 min-w-0">
               <div className="w-11 h-11 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-xs">
@@ -45,10 +43,10 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
               </div>
               <div className="min-w-0">
                 <span className="text-xs sm:text-sm font-bold text-white block truncate">
-                  Chaîne WhatsApp AirProds
+                  Chaîne WhatsApp Gold Speed
                 </span>
                 <span className="text-[10px] text-emerald-300 font-medium block">
-                  Informations & actualités exclusives
+                  Canal officiel & annonces exclusives
                 </span>
               </div>
             </div>
@@ -57,85 +55,59 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer active:scale-95 shrink-0 border border-emerald-400/40 flex items-center space-x-1"
+              className="bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer active:scale-95 shrink-0 border border-emerald-400/40 flex items-center space-x-1"
             >
               <span>Rejoindre</span>
             </a>
           </div>
 
-          {/* Row 1: Telegram Channel */}
+          {/* Row 2: WhatsApp Community Group */}
           <div className="flex items-center justify-between gap-3 py-1">
             <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-11 h-11 rounded-full bg-[#0088cc] text-white flex items-center justify-center shrink-0 shadow-xs">
-                <Send className="w-5 h-5 -ml-0.5" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-xs sm:text-sm font-bold text-white block truncate">
-                  Canal Telegram AirProds
-                </span>
-                <span className="text-[10px] text-cyan-300 font-medium block">
-                  Canal officiel & annonces
-                </span>
-              </div>
-            </div>
-
-            <a
-              href={telegramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer active:scale-95 shrink-0 border border-pink-300/30"
-            >
-              Rejoindre
-            </a>
-          </div>
-
-          {/* Row 2: Telegram Discussion Group */}
-          <div className="flex items-center justify-between gap-3 py-1">
-            <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-11 h-11 rounded-full bg-[#0088cc] text-white flex items-center justify-center shrink-0 shadow-xs">
+              <div className="w-11 h-11 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-xs">
                 <Users className="w-5 h-5" />
               </div>
               <div className="min-w-0">
                 <span className="text-xs sm:text-sm font-bold text-white block truncate">
-                  Groupe de discussion Telegram
+                  Groupe de discussion WhatsApp
                 </span>
-                <span className="text-[10px] text-pink-200/80 font-medium block">
+                <span className="text-[10px] text-emerald-300 font-medium block">
                   Discussions & entraide entre membres
                 </span>
               </div>
             </div>
 
             <a
-              href={telegramGroupUrl}
+              href={whatsappGroupUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer active:scale-95 shrink-0 border border-pink-300/30"
+              className="bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer active:scale-95 shrink-0 border border-emerald-400/40"
             >
               Rejoindre
             </a>
           </div>
 
-          {/* Row 3: Telegram Service */}
+          {/* Row 3: WhatsApp Support Service */}
           <div className="flex items-center justify-between gap-3 py-1">
             <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-11 h-11 rounded-full bg-[#0088cc] text-white flex items-center justify-center shrink-0 shadow-xs">
+              <div className="w-11 h-11 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-xs">
                 <Headset className="w-5 h-5" />
               </div>
               <div className="min-w-0">
                 <span className="text-xs sm:text-sm font-bold text-white block truncate">
-                  Service Client Telegram 24/7
+                  Service Client WhatsApp 24/7
                 </span>
-                <span className="text-[10px] text-pink-200/70 font-medium block">
-                  Assistance immédiate
+                <span className="text-[10px] text-emerald-300 font-medium block">
+                  Assistance immédiate sur WhatsApp
                 </span>
               </div>
             </div>
 
             <a
-              href={telegramUrl}
+              href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer active:scale-95 shrink-0 border border-pink-300/30"
+              className="bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer active:scale-95 shrink-0 border border-emerald-400/40"
             >
               Contacter
             </a>
@@ -174,13 +146,13 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
                 2
               </div>
               <p className="text-white">
-                Pour toute question concernant notre plateforme, veuillez contacter notre service client en ligne.
+                Pour toute question concernant notre plateforme, veuillez contacter notre service client officiel sur WhatsApp.
               </p>
             </div>
 
             {/* Notice paragraph */}
             <p className="text-pink-200/80 pt-1 leading-relaxed">
-              Si notre service client en ligne ne répond pas immédiatement à votre message, veuillez patienter.
+              Si notre service client ne répond pas immédiatement à votre message WhatsApp, veuillez patienter quelques instants.
             </p>
 
             {/* Rule 3 */}
@@ -189,7 +161,7 @@ export const ServiceClientView: React.FC<ServiceClientViewProps> = ({
                 3
               </div>
               <p className="text-white">
-                Problèmes de dépôt : si votre dépôt n'apparaît pas sur votre compte, veuillez envoyer le reçu de paiement au service client dès que possible. Quel que soit le problème rencontré lors de l'utilisation de la plateforme.
+                Problèmes de dépôt : si votre dépôt n'apparaît pas sur votre compte, veuillez envoyer le reçu de paiement au service client WhatsApp dès que possible.
               </p>
             </div>
 

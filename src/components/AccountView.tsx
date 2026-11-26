@@ -47,7 +47,9 @@ import {
   MessageCircle,
   Users,
   HeartHandshake,
-  RefreshCw
+  RefreshCw,
+  X,
+  TrendingUp
 } from 'lucide-react';
 
 interface AccountViewProps {
@@ -70,7 +72,7 @@ interface AccountViewProps {
   onLogout: () => void;
   onShowToast: (type: 'success' | 'err' | 'info', message: string) => void;
   onBuyProduct?: (product: InvestmentProduct) => void;
-  onOpenTab?: (tab: 'deposit' | 'withdraw' | 'announcements' | 'chat' | 'products') => void;
+  onOpenTab?: (tab: 'deposit' | 'withdraw' | 'announcements' | 'service_client' | 'products') => void;
   onToggleAdmin?: () => void;
   onClaimDailyEarning?: (investmentId: string) => { success: boolean; error?: string };
 }
@@ -145,17 +147,17 @@ export const AccountView: React.FC<AccountViewProps> = ({
     country: currentUser.country,
   });
 
-  // Deposit form
+  // Deposit form (Togo only)
   const [depForm, setDepForm] = useState({
     amount: 5000,
-    method: 'Orange Money' as any,
+    method: 'TMoney' as any,
     transactionId: '',
   });
 
-  // Withdraw form
+  // Withdraw form (Togo only)
   const [wthForm, setWthForm] = useState({
     amount: 3000,
-    network: 'Orange Money' as any,
+    network: 'TMoney' as any,
     accountNumber: currentUser.phone,
   });
 
@@ -227,34 +229,29 @@ export const AccountView: React.FC<AccountViewProps> = ({
     (currentUser.name && t.userName === currentUser.name)
   );
 
-  const userCountry = ALLOWED_COUNTRIES.find(c => 
-    c.name.toLowerCase() === (currentUser.country || '').toLowerCase() || 
-    c.code.toLowerCase() === (currentUser.country || '').toLowerCase() ||
-    (currentUser.phone && currentUser.phone.startsWith(c.prefix)) ||
-    c.code === currentUser.withdrawalCountry
-  ) || (currentUser.country?.toLowerCase().includes('cameroun') ? ALLOWED_COUNTRIES[1] : ALLOWED_COUNTRIES[0]);
+  const userCountry = ALLOWED_COUNTRIES[0];
 
   // Render Sub-Page Header with Back Button
   const renderHeader = (title: string) => (
-    <div className="flex items-center space-x-3 pb-3 border-b border-pink-500/25 mb-5 text-white">
+    <div className="flex items-center space-x-3 pb-3.5 border-b border-gray-800 mb-5 text-white">
       <button
         onClick={() => setActiveSubPage(null)}
-        className="p-2 rounded-xl bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 transition-all cursor-pointer border border-pink-500/30"
-        title="Retour à Mon compte"
+        className="p-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-all cursor-pointer border border-gray-700"
+        title="Retour"
       >
         <ArrowLeft className="w-5 h-5" />
       </button>
-      <h2 className="text-lg sm:text-xl font-black text-white">{title}</h2>
+      <h2 className="text-base sm:text-lg font-bold text-white">{title}</h2>
     </div>
   );
 
   return (
-    <div className="max-w-xl mx-auto space-y-6 animate-fadeIn pb-12 font-sans text-pink-50">
+    <div className="min-h-screen bg-[#070709] text-white font-sans pb-24 select-none antialiased">
       {/* ========================================================= */}
       {/* SUB-PAGE 0: MAIN ACCOUNT HUB (When activeSubPage === null) */}
       {/* ========================================================= */}
       {activeSubPage === null && (
-        <div className="space-y-4 animate-fadeIn max-w-lg mx-auto pb-6 font-sans">
+        <div className="max-w-md mx-auto px-3.5 sm:px-4 space-y-3.5 pb-6 font-sans">
           {/* SPECIAL ADMIN ACCESS HUB (DISPLAYED PROMINENTLY FOR ADMINISTRATOR ROLES) */}
           {currentUser.role === 'admin' && (
             <div 
@@ -276,7 +273,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                           PRO
                         </span>
                       </div>
-                      <p className="text-[11px] text-pink-100 font-medium">Gestion centrale, utilisateurs, transactions & chat</p>
+                      <p className="text-[11px] text-pink-100 font-medium">Gestion centrale, utilisateurs & transactions</p>
                     </div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-white/80 group-hover:translate-x-1 transition-transform" />
@@ -336,331 +333,263 @@ export const AccountView: React.FC<AccountViewProps> = ({
             </div>
           )}
 
-          {/* 1. Top Header Card: "Mon portefeuille" in Rose-Violet Theme */}
-          <div 
-            className="py-4 px-4 relative overflow-hidden space-y-4 text-pink-50 bg-[#1a082b] rounded-3xl border border-pink-500/25 shadow-xl"
-          >
-            {/* AirPods Badge & User Info */}
-            <div className="flex items-center justify-between pb-1">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-9 h-9 rounded-full bg-pink-500/20 border border-pink-500/30 text-pink-300 flex items-center justify-center font-bold">
-                  <Wallet className="w-4.5 h-4.5" />
-                </div>
-                <div>
-                  <h3 className="text-base sm:text-lg font-black text-white">Mon portefeuille</h3>
-                  <div className="text-[11px] text-pink-200/80 font-medium flex items-center space-x-1.5">
-                    <span>{currentUser.phone}</span>
-                    <span>•</span>
-                    <span className="font-bold text-pink-200 flex items-center space-x-1">
-                      <span>{userCountry.flag}</span>
-                      <span>{userCountry.name}</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-pink-500/20 border border-pink-500/30 px-2.5 py-1 rounded-full flex items-center space-x-1.5">
-                <span className="w-2 h-2 rounded-full bg-pink-400 animate-pulse" />
-                <span className="text-[10px] font-black font-mono text-pink-300 uppercase tracking-widest">AirPods Official</span>
-              </div>
-            </div>
-
-            {/* Balance ("Équilibre") */}
-            <div className="relative z-10 pt-0.5">
-              <div className="text-xs sm:text-sm text-pink-200/90 font-medium flex items-baseline space-x-2">
-                <span>Équilibre disponible:</span>
-                <span className="text-2xl sm:text-3xl font-black text-pink-400 tracking-tight font-mono">
-                  {currentUser.balance.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} <span className="text-xs font-sans text-pink-300 font-bold">FCFA</span>
-                </span>
+          {/* TOP HERO HEADER WITH ABSTRACT BACKDROP & USER WALLET CARD */}
+          <div className="relative -mx-3.5 sm:-mx-4 pb-2 overflow-hidden">
+            {/* Dark background with subtle abstract texture/waves matching screenshot */}
+            <div className="relative h-44 sm:h-48 w-full bg-[#0d0f14] overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80"
+                alt="Banner abstract wave"
+                className="w-full h-full object-cover opacity-35 filter contrast-125"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-[#070709]" />
+              
+              {/* Subtle top-right refresh action without any white pill overlay */}
+              <div className="absolute top-3 right-3 z-20">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setIsSyncingAdmin(true);
+                    try {
+                      if (refreshData) await refreshData(true);
+                      onShowToast('success', 'Page et solde actualisés !');
+                    } catch {
+                      onShowToast('info', 'Compte synchronisé.');
+                    } finally {
+                      setIsSyncingAdmin(false);
+                    }
+                  }}
+                  className="w-8 h-8 rounded-full bg-black/45 backdrop-blur-md border border-white/15 flex items-center justify-center text-gray-200 hover:text-white transition-all cursor-pointer"
+                  title="Actualiser la page"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isSyncingAdmin ? 'animate-spin text-[#00E575]' : ''}`} />
+                </button>
               </div>
             </div>
 
-            {/* 6 Grid items (2 rows x 3 cols) */}
-            <div className="grid grid-cols-3 gap-y-3.5 gap-x-2 pt-3 text-center font-mono border-t border-pink-500/20">
-              <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-black text-white">
-                  {myInvestments.reduce((acc, inv) => acc + (inv.claimsHistory ? inv.claimsHistory.filter(c => new Date(c).toDateString() === new Date().toDateString()).length * inv.dailyGain : 0), 0)}
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-medium text-pink-300/80 leading-tight">
-                  Revenu du jour (FCFA)
-                </div>
-              </div>
-
-              <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-black text-pink-400">
-                  {myInvestments.reduce((acc, inv) => acc + (inv.totalGain || 0), 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-medium text-pink-300/80 leading-tight">
-                  Revenu cumulé (FCFA)
-                </div>
-              </div>
-
-              <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-black text-white">
-                  {myWithdrawals.filter(w => new Date(w.createdAt).toDateString() === new Date().toDateString()).reduce((acc, w) => acc + w.amount, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-medium text-pink-300/80 leading-tight">
-                  Retiré aujourd'hui (FCFA)
-                </div>
-              </div>
-
-              <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-black text-emerald-400">
-                  {myWithdrawals.filter(w => w.status === 'approved').reduce((acc, w) => acc + w.amount, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-medium text-pink-300/80 leading-tight">
-                  Retraits totaux (FCFA)
-                </div>
-              </div>
-
-              <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-black text-purple-300">
-                  {currentUser.referralsCount || 0}
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-medium text-pink-300/80 leading-tight">
-                  Taille de l'équipe
-                </div>
-              </div>
-
-              <div className="space-y-0.5">
-                <div className="text-sm sm:text-base font-black text-pink-400">
-                  {currentUser.teamBenefits || 0}
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-medium text-pink-300/80 leading-tight">
-                  Avantages équipe (FCFA)
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 2. Framed Cards for key actions (Commande, Lier carte bancaire, Rechargement enregistré, Retrait enregistré) */}
-          <div className="space-y-2.5 pt-1">
-            {/* Commande */}
-            <div 
-              onClick={() => setActiveSubPage('order_history')}
-              className="bg-[#1a082b] hover:bg-[#240c3c] border border-pink-500/25 rounded-2xl p-3.5 sm:p-4 shadow-xl cursor-pointer flex items-center justify-between transition-all group"
-            >
-              <div className="flex items-center space-x-3.5">
-                <div className="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center font-bold shrink-0 group-hover:bg-gradient-to-r group-hover:from-pink-600 group-hover:to-purple-600 group-hover:text-white transition-all border border-pink-500/30">
-                  <ShoppingBag className="w-5 h-5 stroke-[2.2]" />
-                </div>
+            {/* WHITE FLOATING WALLET CARD (SOLDE DU COMPTE + TÉLÉPHONE MOBILE) */}
+            <div className="px-4 -mt-16 sm:-mt-20 relative z-20">
+              <div className="bg-white text-gray-900 rounded-2xl p-4 sm:p-5 shadow-xl flex items-center justify-between">
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs sm:text-sm font-extrabold text-white block">Commande</span>
-                    {myInvestments.length > 0 && (
-                      <span className="bg-pink-500/20 text-pink-300 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full border border-pink-500/30">
-                        {myInvestments.length} active{myInvestments.length > 1 ? 's' : ''}
-                      </span>
-                    )}
+                    <div className="text-lg sm:text-xl font-bold tracking-tight text-gray-900 font-sans">
+                      <span className="text-xs sm:text-sm font-bold text-gray-500 mr-1.5">FCFA</span>
+                      <span className="text-xl sm:text-2xl font-black">{currentUser.balance.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}</span>
+                    </div>
+                    {/* Instant refresh balance button */}
+                    <button
+                      type="button"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        setIsSyncingAdmin(true);
+                        try {
+                          if (refreshData) await refreshData(true);
+                          onShowToast('success', 'Solde et données du compte actualisés avec succès !');
+                        } catch {
+                          onShowToast('info', 'Compte synchronisé.');
+                        } finally {
+                          setIsSyncingAdmin(false);
+                        }
+                      }}
+                      className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                      title="Actualiser mon solde"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isSyncingAdmin ? 'animate-spin text-[#00E575]' : ''}`} />
+                    </button>
                   </div>
-                  <span className="text-[10px] sm:text-[11px] text-pink-300/80 font-medium">Consulter mes commandes, achats & gains quotidiens</span>
+                  <div className="text-xs text-gray-500 font-medium mt-0.5">
+                    Solde du compte
+                  </div>
                 </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-pink-400 group-hover:translate-x-0.5 transition-transform" />
-            </div>
 
-            {/* Lier carte bancaire */}
-            <div 
-              onClick={() => setActiveSubPage('link_card')}
-              className="bg-[#1a082b] hover:bg-[#240c3c] border border-pink-500/25 rounded-2xl p-3.5 sm:p-4 shadow-xl cursor-pointer flex items-center justify-between transition-all group"
-            >
-              <div className="flex items-center space-x-3.5">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold shrink-0 group-hover:bg-gradient-to-r group-hover:from-pink-600 group-hover:to-purple-600 group-hover:text-white transition-all border border-purple-500/30">
-                  <CreditCard className="w-5 h-5 stroke-[2.2]" />
-                </div>
-                <div>
-                  <span className="text-xs sm:text-sm font-extrabold text-white block">Lier carte bancaire</span>
-                  <span className="text-[10px] sm:text-[11px] text-pink-300/80 font-medium">Coordonnées de retrait & RIB bancaire</span>
+                <div className="text-right">
+                  <div className="text-sm sm:text-base font-black tracking-tight text-gray-900 font-sans">
+                    <span className="text-gray-500 font-bold text-xs mr-1">{userCountry.prefix || '+228'}</span>
+                    <span>{currentUser.phone ? currentUser.phone.replace(/\D/g, '').slice(-8) : '97783065'}</span>
+                  </div>
+                  <div className="text-xs text-gray-500 font-medium mt-0.5">
+                    Téléphone mobile
+                  </div>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-pink-400 group-hover:translate-x-0.5 transition-transform" />
-            </div>
-
-            {/* Rechargement enregistré */}
-            <div 
-              onClick={() => setActiveSubPage('deposit_history')}
-              className="bg-[#1a082b] hover:bg-[#240c3c] border border-pink-500/25 rounded-2xl p-3.5 sm:p-4 shadow-xl cursor-pointer flex items-center justify-between transition-all group"
-            >
-              <div className="flex items-center space-x-3.5">
-                <div className="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center font-bold shrink-0 group-hover:bg-gradient-to-r group-hover:from-pink-600 group-hover:to-purple-600 group-hover:text-white transition-all border border-pink-500/30">
-                  <ArrowUpRight className="w-5 h-5 stroke-[2.2]" />
-                </div>
-                <div>
-                  <span className="text-xs sm:text-sm font-extrabold text-white block">Rechargement enregistré</span>
-                  <span className="text-[10px] sm:text-[11px] text-pink-300/80 font-medium">Historique de tous vos dépôts</span>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-pink-400 group-hover:translate-x-0.5 transition-transform" />
-            </div>
-
-            {/* Retrait enregistré */}
-            <div 
-              onClick={() => setActiveSubPage('withdraw_history')}
-              className="bg-[#1a082b] hover:bg-[#240c3c] border border-pink-500/25 rounded-2xl p-3.5 sm:p-4 shadow-xl cursor-pointer flex items-center justify-between transition-all group"
-            >
-              <div className="flex items-center space-x-3.5">
-                <div className="w-10 h-10 rounded-xl bg-fuchsia-500/20 text-fuchsia-300 flex items-center justify-center font-bold shrink-0 group-hover:bg-gradient-to-r group-hover:from-pink-600 group-hover:to-purple-600 group-hover:text-white transition-all border border-fuchsia-500/30">
-                  <ArrowDownLeft className="w-5 h-5 stroke-[2.2]" />
-                </div>
-                <div>
-                  <span className="text-xs sm:text-sm font-extrabold text-white block">Retrait enregistré</span>
-                  <span className="text-[10px] sm:text-[11px] text-pink-300/80 font-medium">Historique de vos retraits</span>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-pink-400 group-hover:translate-x-0.5 transition-transform" />
             </div>
           </div>
 
-          {/* 3. Navigation items group */}
-          <div className="bg-[#1a082b] border border-pink-500/25 rounded-2xl p-2 shadow-xl divide-y divide-pink-500/15 mt-3">
-            {/* Code cadeau */}
-            <div 
+          {/* DUAL ACTION BUTTONS: PAIEMENT / RECHARGE & RETRAIT */}
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenTab) onOpenTab('deposit');
+                else setActiveSubPage('deposit');
+              }}
+              className="bg-white hover:bg-gray-100 active:scale-[0.99] text-gray-900 font-bold text-sm sm:text-base py-3.5 px-4 rounded-xl shadow-md transition-all text-center cursor-pointer border border-gray-100 flex items-center justify-center space-x-1.5"
+            >
+              <span>Paiement</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenTab) onOpenTab('withdraw');
+                else setActiveSubPage('withdraw');
+              }}
+              className="bg-white hover:bg-gray-100 active:scale-[0.99] text-gray-900 font-bold text-sm sm:text-base py-3.5 px-4 rounded-xl shadow-md transition-all text-center cursor-pointer border border-gray-100 flex items-center justify-center space-x-1.5"
+            >
+              <span>Retrait</span>
+            </button>
+          </div>
+
+          {/* FIRST MENU GROUP (5 ITEMS: CODE CADEAU, DÉTAILS DU COMPTE, REGISTRES DES PAIEMENTS, REGISTRES DES RETRAITS, COMPTE DE RETRAIT) */}
+          <div className="bg-[#121316] rounded-xl overflow-hidden border border-gray-800 shadow-md divide-y divide-gray-800/80 text-white font-medium text-xs sm:text-sm">
+            
+            {/* 1. Code cadeau */}
+            <div
               onClick={() => {
                 setBonusFeedback(null);
                 setActiveSubPage('code_cadeau');
               }}
-              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-pink-500/10 transition-colors rounded-xl"
+              className="py-3.5 px-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center shrink-0 border border-pink-500/30">
-                  <Gift className="w-4.5 h-4.5" />
+                <div className="w-7 h-7 rounded-full bg-blue-500/20 text-sky-400 flex items-center justify-center shrink-0">
+                  <Award className="w-4 h-4 text-sky-400" />
                 </div>
-                <div>
-                  <span className="text-xs sm:text-sm font-bold text-white block">Code cadeau</span>
-                  <span className="text-[10px] text-pink-300/80 font-medium">Entrer un code cadeau ou coupon bonus</span>
-                </div>
+                <span className="text-gray-200">Code cadeau</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-pink-400" />
+              <ChevronRight className="w-4 h-4 text-gray-500" />
             </div>
 
-            {/* Tirage au sort */}
-            <div 
-              onClick={() => setActiveSubPage('bonus')}
-              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-pink-500/10 transition-colors rounded-xl"
+            {/* 2. Détails du compte */}
+            <div
+              onClick={() => setActiveSubPage('order_history')}
+              className="py-3.5 px-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0 border border-purple-500/30">
-                  <Sparkles className="w-4.5 h-4.5" />
+                <div className="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                  <TrendingUp className="w-4 h-4 text-amber-400" />
                 </div>
-                <span className="text-xs sm:text-sm font-semibold text-white">Tirage au sort</span>
+                <span className="text-gray-200">Détails du compte</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-pink-400" />
+              <ChevronRight className="w-4 h-4 text-gray-500" />
             </div>
 
-            {/* Modifier le mot de passe */}
-            <div 
-              onClick={() => setActiveSubPage('security')}
-              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-pink-500/10 transition-colors rounded-xl"
+            {/* 3. Registres des paiements */}
+            <div
+              onClick={() => setActiveSubPage('deposit_history')}
+              className="py-3.5 px-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center shrink-0 border border-pink-500/30">
-                  <Lock className="w-4.5 h-4.5" />
+                <div className="w-7 h-7 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+                  <FileText className="w-4 h-4 text-purple-400" />
                 </div>
-                <span className="text-xs sm:text-sm font-semibold text-white">Modifier le mot de passe</span>
+                <span className="text-gray-200">Registres des paiements</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-pink-400" />
+              <ChevronRight className="w-4 h-4 text-gray-500" />
             </div>
 
-            {/* À propos d'AirPods */}
-            <div 
+            {/* 4. Registres des retraits */}
+            <div
+              onClick={() => setActiveSubPage('withdraw_history')}
+              className="py-3.5 px-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
+            >
+              <div className="flex items-center space-x-3.5">
+                <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                  <FileText className="w-4 h-4 text-emerald-400" />
+                </div>
+                <span className="text-gray-200">Registres des retraits</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            </div>
+
+            {/* 5. Compte de retrait */}
+            <div
+              onClick={() => setActiveSubPage('link_card')}
+              className="py-3.5 px-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
+            >
+              <div className="flex items-center space-x-3.5">
+                <div className="w-7 h-7 rounded-full bg-gray-500/20 text-gray-300 flex items-center justify-center shrink-0">
+                  <CreditCard className="w-4 h-4 text-gray-300" />
+                </div>
+                <span className="text-gray-200">Compte de retrait</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            </div>
+
+          </div>
+
+          {/* SECOND MENU GROUP (3 ITEMS: À PROPOS DE NOUS, RÈGLES DE LA PLATEFORME, SERVICE CLIENT) */}
+          <div className="bg-[#121316] rounded-xl overflow-hidden border border-gray-800 shadow-md divide-y divide-gray-800/80 text-white font-medium text-xs sm:text-sm mt-3.5">
+            
+            {/* 1. À propos de nous */}
+            <div
               onClick={() => setActiveSubPage('profile')}
-              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-pink-500/10 transition-colors rounded-xl"
+              className="py-3.5 px-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0 border border-purple-500/30">
-                  <Info className="w-4.5 h-4.5" />
+                <div className="w-7 h-7 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                  <Info className="w-4 h-4 text-blue-400" />
                 </div>
-                <span className="text-xs sm:text-sm font-semibold text-white">À propos</span>
+                <span className="text-gray-200">À propos de nous</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-pink-400" />
+              <ChevronRight className="w-4 h-4 text-gray-500" />
             </div>
 
-            {/* Foire Aux Questions (FAQ) */}
-            <div 
+            {/* 2. Règles de la plateforme */}
+            <div
               onClick={() => setActiveSubPage('faq')}
-              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-pink-500/10 transition-colors rounded-xl"
+              className="py-3.5 px-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-fuchsia-500/20 text-fuchsia-300 flex items-center justify-center shrink-0 border border-fuchsia-500/30">
-                  <HelpCircle className="w-4.5 h-4.5 stroke-[2.2]" />
+                <div className="w-7 h-7 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                  <HelpCircle className="w-4 h-4 text-rose-400" />
                 </div>
-                <div>
-                  <span className="text-xs sm:text-sm font-semibold text-white block">Foire Aux Questions (FAQ)</span>
-                  <span className="text-[10px] text-pink-300/80 font-medium">Réponses instantanées à vos questions</span>
-                </div>
+                <span className="text-gray-200">Règles de la plateforme</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-pink-400" />
+              <ChevronRight className="w-4 h-4 text-gray-500" />
             </div>
 
-            {/* Service Client (Chat Support) */}
-            <div 
+            {/* 3. Service client */}
+            <div
               onClick={() => {
-                if (onOpenTab) {
-                  onOpenTab('chat');
-                } else {
-                  setActiveSubPage('support');
-                }
+                if (onOpenTab) onOpenTab('service_client');
+                else setActiveSubPage('support');
               }}
-              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-pink-500/10 transition-colors rounded-xl relative"
+              className="py-3.5 px-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center shrink-0 relative border border-pink-500/30">
-                  <Headphones className="w-4.5 h-4.5" />
-                  {unreadChatCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-pink-600 text-white font-black text-[9px] min-w-[16px] h-[16px] px-1 rounded-full flex items-center justify-center border-2 border-[#1a082b] animate-bounce shadow-xs">
-                      {unreadChatCount}
-                    </span>
-                  )}
+                <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                  <Headphones className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs sm:text-sm font-semibold text-white">Service Client (Chat)</span>
-                  {unreadChatCount > 0 && (
-                    <span className="bg-pink-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
-                      Nouveau message ({unreadChatCount})
-                    </span>
-                  )}
+                  <span className="text-gray-200">Service client WhatsApp</span>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-pink-400" />
+              <ChevronRight className="w-4 h-4 text-gray-500" />
             </div>
 
-            {/* Panneau Administratif (RÉSERVÉ UNIQUEMENT AUX ADMINISTRATEURS) */}
+          </div>
+
+          {/* ADMIN & LOGOUT FOOTER */}
+          <div className="pt-2 pb-4 space-y-2">
             {currentUser.role === 'admin' && (
-              <div 
-                onClick={() => {
-                  if (onToggleAdmin) {
-                    onToggleAdmin();
-                  } else {
-                    onShowToast('info', "Accès au panneau d'administration");
-                  }
-                }}
-                className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-pink-600/20 transition-colors rounded-xl border border-pink-500/40 bg-pink-950/40"
+              <button
+                type="button"
+                onClick={() => onToggleAdmin && onToggleAdmin()}
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md cursor-pointer transition-all flex items-center justify-center space-x-2"
               >
-                <div className="flex items-center space-x-3.5">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs border border-pink-400/40">
-                    <LockKeyhole className="w-4.5 h-4.5 stroke-[2.5]" />
-                  </div>
-                  <div>
-                    <span className="text-xs sm:text-sm font-bold text-white block">Panneau Administratif</span>
-                    <span className="text-[10px] font-semibold text-pink-300">Gestion globale du site & utilisateurs</span>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-pink-300" />
-              </div>
+                <LockKeyhole className="w-4 h-4" />
+                <span>Ouvrir le Panneau Admin</span>
+              </button>
             )}
 
-            {/* Se déconnecter */}
-            <div 
+            <button
+              type="button"
               onClick={onLogout}
-              className="py-3 px-3 flex items-center justify-between cursor-pointer hover:bg-red-500/15 transition-colors rounded-xl"
+              className="w-full py-2.5 text-center text-xs text-red-400 hover:text-red-300 font-bold transition-colors cursor-pointer"
             >
-              <div className="flex items-center space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-red-500/20 text-red-300 flex items-center justify-center shrink-0 border border-red-500/30">
-                  <LogOut className="w-4.5 h-4.5" />
-                </div>
-                <span className="text-xs sm:text-sm font-semibold text-red-400">Se déconnecter</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-red-400" />
-            </div>
+              Se déconnecter
+            </button>
           </div>
         </div>
       )}
@@ -669,7 +598,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
       {/* SUB-PAGE: CODE CADEAU */}
       {/* ========================================================= */}
       {activeSubPage === 'code_cadeau' && (
-        <div className="space-y-4 animate-fadeIn max-w-lg mx-auto pb-6 font-sans">
+        <div className="max-w-md mx-auto px-3.5 sm:px-4 space-y-3.5 pb-6 font-sans">
           {renderHeader('Code cadeau')}
 
           {/* Clean, modern framed card */}
@@ -755,44 +684,44 @@ export const AccountView: React.FC<AccountViewProps> = ({
             )}
           </div>
 
-          {/* Telegram Channel Banner for Gift Codes */}
-          <div className="bg-gradient-to-br from-pink-800 via-purple-800 to-indigo-900 text-white rounded-2xl p-4 sm:p-5 shadow-xl border border-pink-500/30 space-y-3.5">
+          {/* WhatsApp Channel Banner for Gift Codes */}
+          <div className="bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-xl border border-emerald-500/30 space-y-3.5">
             <div className="flex items-start space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-[#0088cc] flex items-center justify-center shrink-0 border border-white/20 shadow-xs">
-                <Send className="w-5 h-5 text-white -ml-0.5" />
+              <div className="w-10 h-10 rounded-xl bg-[#25D366] flex items-center justify-center shrink-0 border border-white/20 shadow-xs">
+                <MessageCircle className="w-5 h-5 text-white" />
               </div>
               <div className="space-y-1 min-w-0 flex-1">
-                <div className="text-[10px] font-black uppercase tracking-wider text-pink-200">
+                <div className="text-[10px] font-black uppercase tracking-wider text-emerald-300">
                   Codes Cadeaux & Privilèges
                 </div>
                 <h4 className="text-sm sm:text-base font-extrabold tracking-tight leading-snug">
-                  Rejoignez notre chaîne Telegram officielle
+                  Rejoignez notre chaîne WhatsApp officielle
                 </h4>
-                <p className="text-xs text-pink-100/80 font-medium leading-relaxed">
+                <p className="text-xs text-emerald-100/80 font-medium leading-relaxed">
                   Abonnez-vous à la chaîne pour recevoir quotidiennement de nouveaux codes coupons et bonus exclusifs publiés par l'équipe.
                 </p>
               </div>
             </div>
 
             <a
-              href="https://t.me/+_mfGwgAziVtlYjJk"
+              href="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full bg-[#0088cc] hover:bg-[#0077b5] active:scale-[0.99] text-white font-extrabold text-xs py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md border border-pink-300/40"
+              className="w-full bg-[#25D366] hover:bg-[#1ebe5d] active:scale-[0.99] text-white font-extrabold text-xs py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md border border-emerald-300/40"
             >
-              <Send className="w-4 h-4 -ml-0.5" />
-              <span>Rejoindre la chaîne officielle Telegram</span>
+              <MessageCircle className="w-4 h-4" />
+              <span>Rejoindre la chaîne officielle WhatsApp</span>
             </a>
           </div>
         </div>
       )}
 
       {/* ========================================================= */}
-      {/* SUB-PAGE 1: À PROPOS D'AIRPODS */}
+      {/* SUB-PAGE 1: À PROPOS DE GOLD SPEED */}
       {/* ========================================================= */}
       {activeSubPage === 'profile' && (
         <div className="space-y-6 animate-fadeIn pb-8">
-          {renderHeader("À propos d'AirPods")}
+          {renderHeader("À propos de Gold Speed")}
 
           <div className="space-y-6 text-pink-50 font-sans px-1">
             
@@ -804,7 +733,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
             >
               <img 
                 src={partnershipImage} 
-                alt="Accord de Partenariat International - AirPods Audio & FinTech" 
+                alt="Accord de Partenariat International - Gold Speed Tech & FinTech" 
                 className="w-full h-auto object-cover block"
                 referrerPolicy="no-referrer"
                 loading="eager"
@@ -815,13 +744,13 @@ export const AccountView: React.FC<AccountViewProps> = ({
             <div className="space-y-2 bg-[#1a082b] p-5 rounded-2xl border border-pink-500/25">
               <div className="flex items-center space-x-2 text-pink-400 font-mono font-extrabold text-xs uppercase tracking-wider">
                 <Globe className="w-4 h-4 text-pink-400" />
-                <span>Plateforme Officielle Audio Premium & FinTech</span>
+                <span>Plateforme Officielle Tech Premium & FinTech</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                AirPods Official
+                Gold Speed Official
               </h2>
               <p className="text-xs sm:text-sm text-pink-200/90 leading-relaxed font-medium">
-                AirPods est la première plateforme d'investissement et de distribution exclusive de solutions audio intelligentes et d'écouteurs sans fil haute fidélité en Afrique. En partenariat avec les fabricants et centres logistiques certifiés, nous permettons aux membres d'obtenir des rendements quotidiens réguliers et garantis en soutenant les volumes de distribution de toute la gamme AirPods.
+                Gold Speed est la première plateforme d'investissement et de distribution exclusive de solutions mobiles et équipements connectés haute performance en Afrique. En partenariat avec les fabricants et centres logistiques certifiés, nous permettons aux membres d'obtenir des rendements quotidiens réguliers et garantis en soutenant les volumes de distribution de toute la gamme Gold Speed.
               </p>
             </div>
 
@@ -832,7 +761,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 <span>Notre Mission & Vision Globale</span>
               </h3>
               <p className="text-xs sm:text-sm text-pink-200/90 leading-relaxed font-medium">
-                Notre mission est de démocratiser l'accès aux technologies audio de pointe tout en offrant des rendements financiers réels, transparents et payés quotidiennement 24h/24 via Mobile Money à nos membres.
+                Notre mission est de démocratiser l'accès aux technologies mobiles de pointe tout en offrant des rendements financiers réels, transparents et payés quotidiennement 24h/24 via Mobile Money à nos membres.
               </p>
             </div>
 
@@ -844,7 +773,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                   <span>Contrats & Accords Internationaux Majeurs</span>
                 </h3>
                 <p className="text-xs text-pink-300/80 font-medium">
-                  AirPods entretient des partenariats industriels et logistiques majeurs pour assurer la rentabilité de chaque plan :
+                  Gold Speed entretient des partenariats industriels et logistiques majeurs pour assurer la rentabilité de chaque plan :
                 </p>
               </div>
 
@@ -852,11 +781,11 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
                     <Building2 className="w-4 h-4 text-pink-400 shrink-0" />
-                    <span className="font-extrabold text-xs sm:text-sm text-white">Apple Audio Supply</span>
+                    <span className="font-extrabold text-xs sm:text-sm text-white">Apple Tech Supply</span>
                     <span className="text-[10px] font-mono font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30 px-2 py-0.5 rounded-full">Certification Originale</span>
                   </div>
                   <p className="text-xs text-pink-200/80 leading-relaxed font-medium pl-6">
-                    Approvisionnement direct et certification des composants acoustiques haute fidélité pour l'ensemble des gammes AirPods.
+                    Approvisionnement direct et certification des composants mobiles haute performance pour l'ensemble des gammes Gold Speed.
                   </p>
                 </div>
 
@@ -878,18 +807,18 @@ export const AccountView: React.FC<AccountViewProps> = ({
                     <span className="text-[10px] font-mono font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30 px-2 py-0.5 rounded-full">Hub Logistique Africain</span>
                   </div>
                   <p className="text-xs text-pink-200/80 leading-relaxed font-medium pl-6">
-                    Réseau logistique express garantissant la livraison rapide et la rotation active des stocks d'AirPods sur les 5 pays partenaires.
+                    Réseau logistique express garantissant la livraison rapide et la rotation active des stocks Gold Speed sur les 5 pays partenaires.
                   </p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
                     <Building2 className="w-4 h-4 text-pink-400 shrink-0" />
-                    <span className="font-extrabold text-xs sm:text-sm text-white">Qualcomm Audio Tech</span>
+                    <span className="font-extrabold text-xs sm:text-sm text-white">Qualcomm Mobile Tech</span>
                     <span className="text-[10px] font-mono font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30 px-2 py-0.5 rounded-full">Technologies Puces</span>
                   </div>
                   <p className="text-xs text-pink-200/80 leading-relaxed font-medium pl-6">
-                    Intégration des processeurs H2 et réduction active du bruit pour garantir la performance des écouteurs.
+                    Intégration des processeurs nouvelle génération pour garantir la performance et la durabilité des équipements.
                   </p>
                 </div>
 
@@ -900,7 +829,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                     <span className="text-[10px] font-mono font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30 px-2 py-0.5 rounded-full">Paiements Sécurisés</span>
                   </div>
                   <p className="text-xs text-pink-200/80 leading-relaxed font-medium pl-6">
-                    Passerelles automatisées garantissant des dépôts instantanés et des retraits fluides 24/7 vers Orange, MTN, Moov et Yas.
+                    Paiements mobiles rapides et fiables 24/7 au Togo via TMoney (Mixx By Yas) et Moov Money (Flooz).
                   </p>
                 </div>
               </div>
@@ -913,11 +842,11 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 <span>Certifications & Garanties d'Investissement</span>
               </h3>
               <p className="text-xs sm:text-sm text-pink-200/90 leading-relaxed font-medium">
-                AirPods opère sous licence internationale (#AIRPODS-2026-8890). Tous les projets distribués font l'objet d'un audit de conformité rigoureux assurant la transparence totale et la régularité des paiements quotidiens.
+                Gold Speed opère sous licence internationale (#GOLDSPEED-2026-8890). Tous les projets distribués font l'objet d'un audit de conformité rigoureux assurant la transparence totale et la régularité des paiements quotidiens.
               </p>
             </div>
 
-            {/* Section: Équipe AirPods & Engagement Communautaire (En bas de page) */}
+            {/* Section: Équipe Gold Speed & Engagement Communautaire (En bas de page) */}
             <div className="space-y-3 pt-5 border-t border-pink-500/25">
               <div className="space-y-1">
                 <div className="flex items-center space-x-2 text-pink-400 font-extrabold text-xs uppercase tracking-wider">
@@ -925,14 +854,14 @@ export const AccountView: React.FC<AccountViewProps> = ({
                   <span>Notre Équipe & Engagement Communautaire</span>
                 </div>
                 <h3 className="text-sm sm:text-base font-extrabold text-white">
-                  L'Équipe AirPods sur le Terrain
+                  L'Équipe Gold Speed sur le Terrain
                 </h3>
                 <p className="text-xs sm:text-sm text-pink-200/90 leading-relaxed font-medium">
-                  Nos ambassadeurs et experts techniques AirPods s'engagent activement au quotidien pour apporter un support de proximité et maximiser la rentabilité de nos investisseurs.
+                  Nos ambassadeurs et experts techniques Gold Speed s'engagent activement au quotidien pour apporter un support de proximité et maximiser la rentabilité de nos investisseurs.
                 </p>
               </div>
 
-              {/* IMAGE DE L'ÉQUIPE AIRPODS */}
+              {/* IMAGE DE L'ÉQUIPE GOLD SPEED */}
               <div 
                 className="relative rounded-2xl overflow-hidden border border-pink-500/30 shadow-xl bg-[#1a082b] select-none pointer-events-none touch-none"
                 style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none' }}
@@ -940,7 +869,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
               >
                 <img 
                   src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200&auto=format&fit=crop&q=80" 
-                  alt="Équipe AirPods - Action Communautaire & Support" 
+                  alt="Équipe Gold Speed - Action Communautaire & Support" 
                   className="w-full h-auto object-cover block"
                   referrerPolicy="no-referrer"
                   loading="eager"
@@ -951,7 +880,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                     <span>Équipe Support & Ambassadeurs Régionaux</span>
                   </span>
                   <span className="text-[10px] bg-pink-500/30 text-pink-200 px-2.5 py-0.5 rounded-full border border-pink-400/30 font-mono">
-                    AirPods Official Team
+                    Gold Speed Official Team
                   </span>
                 </div>
               </div>
@@ -970,23 +899,21 @@ export const AccountView: React.FC<AccountViewProps> = ({
 
           <div className="space-y-4 pt-2 bg-[#1a082b] border border-pink-500/25 p-5 rounded-2xl">
             <div className="bg-pink-950/40 border border-pink-500/30 p-3.5 rounded-xl text-xs text-pink-200 space-y-1">
-              <p className="font-bold text-pink-100">Instructions de Dépôt Mobile Money :</p>
+              <p className="font-bold text-pink-100">Instructions de Dépôt Mobile Money (Togo 🇹🇬) :</p>
               <p className="text-[11px] text-pink-200/80 leading-relaxed">
-                Renseignez le montant et le réseau souhaité, puis cliquez sur Recharger pour être redirigé vers la validation sécurisée.
+                Effectuez le transfert TMoney ou Moov Money vers notre numéro officiel au Togo puis renseignez le montant et la référence SMS reçue.
               </p>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-pink-200 font-mono">RÉSEAU MOBILE MONEY</label>
+              <label className="text-xs font-bold text-pink-200 font-mono">RÉSEAU MOBILE MONEY (TOGO)</label>
               <select
                 value={depForm.method}
                 onChange={(e) => setDepForm({ ...depForm, method: e.target.value as any })}
                 className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white outline-none focus:border-pink-400"
               >
-                <option value="Orange Money">Orange Money</option>
-                <option value="MTN Money">MTN Money</option>
-                <option value="Moov Money">Moov Money</option>
-                <option value="Wave">Wave</option>
+                <option value="TMoney">TMoney (Mixx By Yas)</option>
+                <option value="Moov Money">Moov Money (Flooz)</option>
               </select>
             </div>
 
@@ -1013,20 +940,10 @@ export const AccountView: React.FC<AccountViewProps> = ({
 
             <button
               onClick={() => {
-                const res = onRequestDeposit(depForm.amount, depForm.method, depForm.transactionId || `WP-${Date.now().toString().slice(-6)}`, null);
+                const res = onRequestDeposit(depForm.amount, depForm.method, depForm.transactionId, null);
                 if (res.success) {
-                  onShowToast('success', 'Demande de recharge enregistrée ! Redirection vers la passerelle sécurisée...');
-                  const paymentUrl = 'https://tchin.tech/pay/6wy9goqpge';
-                  try {
-                    if (window.top && window.top !== window) {
-                      window.open(paymentUrl, '_blank', 'noopener,noreferrer');
-                    } else {
-                      window.location.href = paymentUrl;
-                    }
-                  } catch {
-                    window.open(paymentUrl, '_blank', 'noopener,noreferrer');
-                  }
-                  setDepForm({ amount: 5000, method: 'Orange Money', transactionId: '' });
+                  onShowToast('success', 'Demande de recharge enregistrée et en attente de validation !');
+                  setDepForm({ amount: 5000, method: 'TMoney', transactionId: '' });
                   setActiveSubPage('deposit_history');
                 } else {
                   onShowToast('err', res.error || 'Erreur lors du dépôt.');
@@ -1034,7 +951,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
               }}
               className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-extrabold py-3.5 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-md flex items-center justify-center space-x-2 border border-pink-300/30"
             >
-              <span>Recharger maintenant ({(Number(depForm.amount) || 0).toLocaleString('fr-FR')} FCFA)</span>
+              <span>Confirmer le dépôt ({(Number(depForm.amount) || 0).toLocaleString('fr-FR')} FCFA)</span>
             </button>
           </div>
         </div>
@@ -1062,10 +979,8 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 onChange={(e) => setWthForm({ ...wthForm, network: e.target.value as any })}
                 className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white outline-none focus:border-pink-400"
               >
-                <option value="Orange Money">Orange Money</option>
-                <option value="MTN Money">MTN Money</option>
-                <option value="Moov Money">Moov Money</option>
-                <option value="Mixx By Yas">Mixx By Yas</option>
+                <option value="TMoney">TMoney (Mixx By Yas)</option>
+                <option value="Moov Money">Moov Money (Flooz)</option>
               </select>
             </div>
 
@@ -1348,7 +1263,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
           onBack={() => setActiveSubPage(null)}
           onOpenSupport={() => {
             if (onOpenTab) {
-              onOpenTab('chat');
+              onOpenTab('service_client');
             } else {
               setActiveSubPage('support');
             }

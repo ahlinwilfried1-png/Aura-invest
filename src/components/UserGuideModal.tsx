@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Send } from 'lucide-react';
+import { X, MessageCircle } from 'lucide-react';
 
 interface UserGuideModalProps {
   isOpen: boolean;
@@ -9,7 +9,7 @@ interface UserGuideModalProps {
 export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
-  const telegramChannelUrl = "https://t.me/+_mfGwgAziVtlYjJk";
+  const whatsappChannelUrl = "https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 bg-[#0d0417]/85 backdrop-blur-sm animate-fadeIn">
@@ -51,12 +51,12 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
           
           <div className="text-center pb-0.5">
             <h3 className="text-sm sm:text-base font-extrabold text-white tracking-tight leading-snug">
-              ✨ Lancement officiel d'AirPods ✨
+              ✨ Lancement officiel de Gold Speed ✨
             </h3>
           </div>
 
           <p className="text-[11px] sm:text-xs text-pink-200 leading-snug font-normal bg-pink-500/20 p-2 rounded-xl border border-pink-500/30">
-            <span className="text-pink-400 font-bold">🔻</span> Invitez vos amis à investir et gagnez jusqu'à <strong className="text-white font-bold">20% - 2% - 1%</strong> de commissions sur les investissements.
+            <span className="text-pink-400 font-bold">🔻</span> Invitez vos amis à investir et gagnez jusqu'à <strong className="text-white font-bold">15% - 1% - 1%</strong> de commissions sur les investissements.
           </p>
 
           <div className="space-y-1.5 text-[11px] font-medium text-pink-100 bg-[#120422] p-2.5 rounded-xl border border-pink-500/20">
@@ -90,11 +90,11 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             </div>
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">👥</span>
-              <span><strong>Commissions parrainage :</strong> 20 % - 2 % - 1 %</span>
+              <span><strong>Commissions parrainage :</strong> 15 % - 1 % - 1 %</span>
             </div>
             <div className="flex items-start space-x-1.5">
               <span className="text-xs shrink-0">📍</span>
-              <span><strong>Pays supportés :</strong> Togo 🇹🇬, Bénin 🇧🇯, Burkina Faso 🇧🇫, Côte d’Ivoire 🇨🇮, Cameroun 🇨🇲</span>
+              <span><strong>Pays supporté :</strong> Togo 🇹🇬 (TMoney & Moov Money)</span>
             </div>
           </div>
         </div>
@@ -102,13 +102,13 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
         {/* Footer Buttons */}
         <div className="mt-3 pt-2.5 border-t border-pink-500/20 flex items-center justify-between gap-2.5">
           <a
-            href={telegramChannelUrl}
+            href={whatsappChannelUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 py-2 px-3 bg-[#0088cc] hover:bg-[#0077b5] text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1 shadow-xs active:scale-95 border border-sky-400/30"
+            className="flex-1 py-2 px-3 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1 shadow-xs active:scale-95 border border-emerald-400/30"
           >
-            <Send className="w-3.5 h-3.5 -ml-0.5" />
-            <span>Telegram &gt;</span>
+            <MessageCircle className="w-3.5 h-3.5" />
+            <span>WhatsApp &gt;</span>
           </a>
 
           <button

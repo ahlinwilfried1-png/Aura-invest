@@ -19,8 +19,8 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
     name: currentUser.name || '',
     phone: currentUser.phone || '',
     whatsapp: currentUser.whatsapp || '',
-    country: currentUser.country || 'Cameroun',
-    paymentNetwork: currentUser.withdrawalNetwork || 'MTN Mobile Money',
+    country: 'Togo',
+    paymentNetwork: currentUser.withdrawalNetwork || 'TMoney',
     paymentAccount: currentUser.withdrawalAccountNumber || currentUser.phone || '',
     idNumber: '',
     email: ''
@@ -45,7 +45,7 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
     onUpdateProfile({
       name: formData.name.trim(),
       whatsapp: formData.whatsapp.trim(),
-      country: 'Cameroun'
+      country: 'Togo'
     });
 
     setIsSaved(true);
@@ -155,7 +155,7 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
               required
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="Ex: 0707070707"
+              placeholder="Ex: 90000000"
               className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-white placeholder:text-pink-300/40 outline-none focus:border-pink-400 transition-colors"
             />
           </div>
@@ -170,7 +170,7 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
               required
               value={formData.whatsapp}
               onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-              placeholder="Ex: +237690000000"
+              placeholder="Ex: +22890000000"
               className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-white placeholder:text-pink-300/40 outline-none focus:border-pink-400 transition-colors"
             />
           </div>
@@ -188,10 +188,8 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
               onChange={(e) => setFormData({ ...formData, paymentNetwork: e.target.value })}
               className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white outline-none focus:border-pink-400 transition-colors"
             >
-              <option value="MTN Mobile Money" className="bg-[#120422] text-white">MTN Mobile Money</option>
-              <option value="Orange Money" className="bg-[#120422] text-white">Orange Money</option>
-              <option value="Carte Visa / Mastercard" className="bg-[#120422] text-white">Carte Visa / Mastercard</option>
-              <option value="Virement Bancaire" className="bg-[#120422] text-white">Virement Bancaire</option>
+              <option value="TMoney" className="bg-[#120422] text-white">TMoney (Mixx By Yas - Togo)</option>
+              <option value="Moov Money" className="bg-[#120422] text-white">Moov Money (Flooz - Togo)</option>
             </select>
           </div>
 
@@ -205,7 +203,7 @@ export const InformationFillView: React.FC<InformationFillViewProps> = ({
               required
               value={formData.paymentAccount}
               onChange={(e) => setFormData({ ...formData, paymentAccount: e.target.value })}
-              placeholder="Ex: 07070707"
+              placeholder="Ex: 90123456"
               className="w-full bg-[#120422] border border-pink-500/30 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-white placeholder:text-pink-300/40 outline-none focus:border-pink-400 transition-colors"
             />
           </div>

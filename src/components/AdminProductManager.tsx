@@ -26,29 +26,29 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
   const [formImage, setFormImage] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formPrice, setFormPrice] = useState<number>(3000);
-  const [formDailyGain, setFormDailyGain] = useState<number>(450);
-  const [formDuration, setFormDuration] = useState<number>(120);
-  const [formTotalGain, setFormTotalGain] = useState<number>(57000);
-  const [formBadge, setFormBadge] = useState('15% / jour');
+  const [formDailyGain, setFormDailyGain] = useState<number>(900);
+  const [formDuration, setFormDuration] = useState<number>(150);
+  const [formTotalGain, setFormTotalGain] = useState<number>(135000);
+  const [formBadge, setFormBadge] = useState('VIP1');
   const [formOrder, setFormOrder] = useState<number>(1);
   const [formIsActive, setFormIsActive] = useState(true);
 
   // Auto calculate total gain
   const handleCalculateTotal = () => {
-    setFormTotalGain(formPrice + (formDailyGain * formDuration));
+    setFormTotalGain(formDailyGain * formDuration);
   };
 
   const openNewForm = () => {
     setEditingProduct(null);
-    setFormId(`airprods-vip-${products.length + 1}`);
-    setFormName(`AirProds VIP${products.length + 1}`);
-    setFormImage('https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=800&auto=format&fit=crop&q=80');
-    setFormDescription('Formule VIP AirProds avec cycle officiel de 180 jours et gains journaliers.');
-    setFormPrice(4000);
-    setFormDailyGain(150);
-    setFormDuration(180);
-    setFormTotalGain(27000);
-    setFormBadge('VIP');
+    setFormId(`iphone-vip-${products.length + 1}`);
+    setFormName(`Gold ${products.length + 1}`);
+    setFormImage('https://images.unsplash.com/photo-1678685888221-cda773a3dcdb?w=800&auto=format&fit=crop&q=80');
+    setFormDescription('Formule Gold Speed avec cycle officiel de 150 jours et gains quotidiens.');
+    setFormPrice(3000);
+    setFormDailyGain(900);
+    setFormDuration(150);
+    setFormTotalGain(135000);
+    setFormBadge(`GOLD ${products.length + 1}`);
     setFormOrder(products.length + 1);
     setFormIsActive(true);
     setIsFormOpen(true);
@@ -70,7 +70,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
     setEditingProduct(prod);
     setFormId(prod.id);
     setFormName(prod.name);
-    setFormImage(prod.image || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80');
+    setFormImage(prod.image || 'https://images.unsplash.com/photo-1678685888221-cda773a3dcdb?w=800&auto=format&fit=crop&q=80');
     setFormDescription(prod.description || '');
     setFormPrice(prod.price);
     setFormDailyGain(prod.dailyGain);
@@ -94,7 +94,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
       duration: Number(formDuration),
       totalGain: Number(formTotalGain),
       isActive: formIsActive,
-      image: formImage.trim() || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80',
+      image: formImage.trim() || 'https://images.unsplash.com/photo-1678685888221-cda773a3dcdb?w=800&auto=format&fit=crop&q=80',
       description: formDescription.trim(),
       order: Number(formOrder),
       badge: formBadge.trim()
@@ -136,17 +136,17 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                 ? 'bg-emerald-600 text-white border-emerald-500' 
                 : 'bg-emerald-800 hover:bg-emerald-700 text-white border-emerald-900/40'
             }`}
-            title="Réinitialiser et enregistrer les 8 plans officiels AirPods"
+            title="Réinitialiser et enregistrer les 8 plans officiels Gold"
           >
             {isResetDone ? (
               <>
                 <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-                <span>9 Plans VIP Synchronisés !</span>
+                <span>8 Plans Synchronisés !</span>
               </>
             ) : (
               <>
                 <RefreshCw className="w-4 h-4 text-amber-300" />
-                <span>Restaurer les 9 VIP Officiels</span>
+                <span>Restaurer les 8 Plans Officiels</span>
               </>
             )}
           </button>
@@ -184,7 +184,7 @@ export const AdminProductManager: React.FC<AdminProductManagerProps> = ({
                 type="text"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                placeholder="Ex: VIP 1 - AirPods Pro"
+                placeholder="Ex: Gold 1"
                 className="w-full bg-white outline-none rounded-xl py-2 px-3 text-slate-900 font-bold"
                 required
               />

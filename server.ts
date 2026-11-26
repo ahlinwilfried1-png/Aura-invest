@@ -55,11 +55,43 @@ const SUPABASE_SERVICE_ROLE_KEY = resolveServerServiceRoleKey();
 let isSupabaseQuotaExceeded = false;
 let lastSupabaseErrorMsg: string | null = null;
 let lastSupabaseSuccessTimestamp = 0;
+let supabaseUnreachableUntil = 0;
+let lastOfflineNoticeTimestamp = 0;
 
-// Safe Node.js fetch for Supabase Admin with 8000ms timeout and accurate status reporting
+function isNetworkUnavailableError(msg: string = '', code: string = ''): boolean {
+  const lower = String(msg).toLowerCase();
+  const codeUpper = String(code).toUpperCase();
+  return (
+    codeUpper === 'NETWORK_ERROR' ||
+    codeUpper === 'ENOTFOUND' ||
+    codeUpper === 'ECONNREFUSED' ||
+    codeUpper === 'ETIMEDOUT' ||
+    codeUpper === 'EAI_AGAIN' ||
+    lower.includes('fetch failed') ||
+    lower.includes('enotfound') ||
+    lower.includes('econnrefused') ||
+    lower.includes('etimedout') ||
+    lower.includes('eai_again') ||
+    lower.includes('database connection timeout') ||
+    lower.includes('network_error') ||
+    lower.includes('aborted')
+  );
+}
+
+// Safe Node.js fetch for Supabase Admin with 5000ms timeout and circuit breaker
 const safeServerFetch: typeof fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+  if (Date.now() < supabaseUnreachableUntil) {
+    return new Response(
+      JSON.stringify({ message: 'Local resilience mode active (remote DB unreachable)', code: 'NETWORK_ERROR' }),
+      {
+        status: 504,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
   try {
     const res = await fetch(input, {
       ...init,
@@ -74,13 +106,20 @@ const safeServerFetch: typeof fetch = async (input: RequestInfo | URL, init?: Re
       console.warn('[Supabase Egress Quota Exceeded]: Supabase returned HTTP 402. Switched to high-availability local storage.');
     } else if (res.ok) {
       isSupabaseQuotaExceeded = false;
+      supabaseUnreachableUntil = 0;
       lastSupabaseSuccessTimestamp = Date.now();
     }
 
     return res;
   } catch (err: any) {
     clearTimeout(timeoutId);
-    console.warn('[Supabase Fetch Timeout/Error]:', err?.message);
+    const now = Date.now();
+    supabaseUnreachableUntil = now + 60000;
+    lastSupabaseErrorMsg = 'Mode résilience locale actif (base distante momentanément injoignable).';
+    if (now - lastOfflineNoticeTimestamp > 60000) {
+      lastOfflineNoticeTimestamp = now;
+      console.info('[Supabase Local Resilience]: Base distante injoignable — sauvegarde locale persistante active.');
+    }
     return new Response(
       JSON.stringify({ message: err?.message || 'Database connection timeout', code: 'NETWORK_ERROR' }),
       {
@@ -387,6 +426,9 @@ function prepareDbPayload(tableName: string, jsObject: any, allowDefaults: boole
  */
 async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ success: boolean; error?: string; data?: any; quotaExceeded?: boolean; localOnly?: boolean }> {
   if (!item) return { success: false, error: 'Empty payload' };
+  if (Date.now() < supabaseUnreachableUntil) {
+    return { success: true, localOnly: true };
+  }
 
   // If upserting an existing user, merge with existing state to avoid overwriting existing balance or stats with default values
   let payload: Record<string, any>;
@@ -406,20 +448,29 @@ async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ succe
 
       if (!error) {
         isSupabaseQuotaExceeded = false;
+        supabaseUnreachableUntil = 0;
         lastSupabaseSuccessTimestamp = Date.now();
         return { success: true, data };
       }
 
       const errMsg = error.message || '';
-      console.warn(`[Safe Upsert] '${tableName}' attempt ${attempt + 1} notice:`, errMsg);
+      const errCode = (error as any).code || '';
+
+      // Handle unreachable/network fallback cleanly without noisy warnings
+      if (isNetworkUnavailableError(errMsg, errCode)) {
+        supabaseUnreachableUntil = Date.now() + 60000;
+        return { success: true, localOnly: true };
+      }
 
       // Handle Supabase Egress Quota restriction (HTTP 402 / exceed_egress_quota)
-      if (errMsg.includes('exceed_egress_quota') || errMsg.includes('restricted') || errMsg.includes('402') || (error as any).code === '402') {
+      if (errMsg.includes('exceed_egress_quota') || errMsg.includes('restricted') || errMsg.includes('402') || errCode === '402') {
         isSupabaseQuotaExceeded = true;
         lastSupabaseErrorMsg = errMsg;
         console.warn(`[Supabase Quota Alert]: Project restricted by Supabase quota. Record saved safely in local persistent store.`);
         return { success: true, localOnly: true, quotaExceeded: true };
       }
+
+      console.warn(`[Safe Upsert] '${tableName}' attempt ${attempt + 1} notice:`, errMsg);
 
       // Check unique constraint on phone
       if (errMsg.includes('users_phone_key') || errMsg.includes('unique constraint') || errMsg.includes('23505') || errMsg.includes('already exists')) {
@@ -472,6 +523,10 @@ async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ succe
       }
     } catch (err: any) {
       const msg = err?.message || '';
+      if (isNetworkUnavailableError(msg, err?.code)) {
+        supabaseUnreachableUntil = Date.now() + 60000;
+        return { success: true, localOnly: true };
+      }
       if (msg.includes('exceed_egress_quota') || msg.includes('402')) {
         isSupabaseQuotaExceeded = true;
         lastSupabaseErrorMsg = msg;
@@ -488,6 +543,9 @@ async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ succe
  * Resilient Supabase Update that automatically handles column mismatches
  */
 async function safeSupabaseUpdate(tableName: string, updates: any, idCol: string, idVal: any): Promise<{ success: boolean; error?: string; quotaExceeded?: boolean; localOnly?: boolean }> {
+  if (Date.now() < supabaseUnreachableUntil) {
+    return { success: true, localOnly: true };
+  }
   // Pass allowDefaults = false so partial updates (like bank card linking) never reset user balance or earnings!
   let payload = prepareDbPayload(tableName, updates, false);
 
@@ -499,19 +557,27 @@ async function safeSupabaseUpdate(tableName: string, updates: any, idCol: string
 
       if (!error) {
         isSupabaseQuotaExceeded = false;
+        supabaseUnreachableUntil = 0;
         lastSupabaseSuccessTimestamp = Date.now();
         return { success: true };
       }
 
       const errMsg = error.message || '';
-      console.warn(`[Safe Update] '${tableName}' attempt ${attempt + 1} notice:`, errMsg);
+      const errCode = (error as any).code || '';
+
+      if (isNetworkUnavailableError(errMsg, errCode)) {
+        supabaseUnreachableUntil = Date.now() + 60000;
+        return { success: true, localOnly: true };
+      }
 
       // Handle Supabase Egress Quota restriction
-      if (errMsg.includes('exceed_egress_quota') || errMsg.includes('restricted') || errMsg.includes('402') || (error as any).code === '402') {
+      if (errMsg.includes('exceed_egress_quota') || errMsg.includes('restricted') || errMsg.includes('402') || errCode === '402') {
         isSupabaseQuotaExceeded = true;
         lastSupabaseErrorMsg = errMsg;
         return { success: true, localOnly: true, quotaExceeded: true };
       }
+
+      console.warn(`[Safe Update] '${tableName}' attempt ${attempt + 1} notice:`, errMsg);
 
       // Check unique constraint on phone
       if (errMsg.includes('users_phone_key') || errMsg.includes('unique constraint') || errMsg.includes('23505') || errMsg.includes('already exists')) {
@@ -534,6 +600,10 @@ async function safeSupabaseUpdate(tableName: string, updates: any, idCol: string
       }
     } catch (err: any) {
       const msg = err?.message || '';
+      if (isNetworkUnavailableError(msg, err?.code)) {
+        supabaseUnreachableUntil = Date.now() + 60000;
+        return { success: true, localOnly: true };
+      }
       if (msg.includes('exceed_egress_quota') || msg.includes('402')) {
         isSupabaseQuotaExceeded = true;
         lastSupabaseErrorMsg = msg;
@@ -566,10 +636,6 @@ const serverUserTaskClaimsStore = new Map<string, any>();
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'platform_store.json');
 
-// SECURE PAYMENT GATEWAY CONFIGURATION (SERVER-SIDE ONLY)
-const DEFAULT_PAYMENT_GATEWAY_URL = 'https://tchin.tech/pay/6wy9goqpge';
-let activePaymentGatewayUrl = process.env.PAYMENT_GATEWAY_URL || DEFAULT_PAYMENT_GATEWAY_URL;
-
 try {
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -596,7 +662,6 @@ function savePlatformDataToDisk(force: boolean = false): void {
         announcements: Array.from(serverAnnouncementsStore.values()),
         tasks: Array.from(serverTasksStore.values()),
         task_claims: Array.from(serverUserTaskClaimsStore.values()),
-        paymentGatewayUrl: activePaymentGatewayUrl,
         lastSaved: new Date().toISOString()
       };
       const tmpFile = DATA_FILE + '.tmp';
@@ -664,15 +729,15 @@ function loadPlatformDataFromDisk(): void {
           }
         }
         if (serverAnnouncementsStore.size === 0) {
-          const initialAirpodsAnn = {
-            id: 'ann-official-airpods-launch',
-            title: 'Lancement Officiel de la Gamme AirPods',
-            content: 'Bienvenue sur la plateforme officielle de commande et de rentabilité technologique AirPods. Tous les rendements quotidiens sont synchronisés et payés automatiquement 7j/7.',
-            imageUrl: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop&q=80',
+          const initialGoldSpeedAnn = {
+            id: 'ann-official-goldspeed-launch',
+            title: 'Lancement Officiel de la Gamme Gold Speed',
+            content: 'Bienvenue sur la plateforme officielle de commande et de rentabilité technologique Gold Speed. Tous les rendements quotidiens sont synchronisés et payés automatiquement 7j/7.',
+            imageUrl: 'https://images.unsplash.com/photo-1678685888221-cda773a3dcdb?w=800&auto=format&fit=crop&q=80',
             createdAt: '14 septembre 2026',
             isNew: false
           };
-          serverAnnouncementsStore.set(initialAirpodsAnn.id, initialAirpodsAnn);
+          serverAnnouncementsStore.set(initialGoldSpeedAnn.id, initialGoldSpeedAnn);
         }
         if (Array.isArray(parsed.tasks)) {
           parsed.tasks.forEach((tk: any) => { if (tk && tk.id) serverTasksStore.set(tk.id, tk); });
@@ -680,9 +745,122 @@ function loadPlatformDataFromDisk(): void {
         if (Array.isArray(parsed.task_claims)) {
           parsed.task_claims.forEach((cl: any) => { if (cl && cl.id) serverUserTaskClaimsStore.set(cl.id, cl); });
         }
-        if (parsed.paymentGatewayUrl && typeof parsed.paymentGatewayUrl === 'string' && parsed.paymentGatewayUrl.startsWith('http')) {
-          activePaymentGatewayUrl = parsed.paymentGatewayUrl;
-        }
+
+        const sanitizeBrand = (val: any) =>
+          typeof val === 'string' ? val.replace(/airprods|airpods/gi, 'Gold Speed') : val;
+        let migratedLegacyBrand = false;
+
+        // Migrate loaded deposits/proofs userName from Membre AirPods -> Membre Gold Speed
+        serverDepositsStore.forEach((d: any, key: string) => {
+          if (typeof d?.userName === 'string' && /airprod|airpod/i.test(d.userName)) {
+            serverDepositsStore.set(key, { ...d, userName: sanitizeBrand(d.userName) });
+            migratedLegacyBrand = true;
+          }
+        });
+        serverProofsStore.forEach((pr: any, key: string) => {
+          if (typeof pr?.message === 'string' && /airprod|airpod/i.test(pr.message)) {
+            serverProofsStore.set(key, { ...pr, message: sanitizeBrand(pr.message) });
+            migratedLegacyBrand = true;
+          }
+        });
+        // Migrate loaded announcements
+        const annKeysToMigrate = Array.from(serverAnnouncementsStore.entries());
+        annKeysToMigrate.forEach(([key, ann]: [string, any]) => {
+          const newId = key === 'ann-official-airpods-launch' ? 'ann-official-goldspeed-launch' : key;
+          const nextTitle = sanitizeBrand(ann?.title);
+          const nextContent = sanitizeBrand(ann?.content);
+          if (newId !== key || nextTitle !== ann?.title || nextContent !== ann?.content) {
+            if (newId !== key) serverAnnouncementsStore.delete(key);
+            serverAnnouncementsStore.set(newId, { ...ann, id: newId, title: nextTitle, content: nextContent });
+            migratedLegacyBrand = true;
+          }
+        });
+        // Migrate loaded tasks
+        serverTasksStore.forEach((tk: any, key: string) => {
+          const nextTitle = sanitizeBrand(tk?.title);
+          const nextDesc = sanitizeBrand(tk?.description);
+          if (nextTitle !== tk?.title || nextDesc !== tk?.description) {
+            serverTasksStore.set(key, { ...tk, title: nextTitle, description: nextDesc });
+            migratedLegacyBrand = true;
+          }
+        });
+        // Migrate __SYS_ANNOUNCEMENTS__ & __SYS_RECHARGE_CHANNELS__ in bonus_codes
+        serverBonusCodesStore.forEach((row: any, key: string) => {
+          if (row?.code === '__SYS_ANNOUNCEMENTS__' && Array.isArray(row.usedBy)) {
+            const nextUsedBy = row.usedBy.map((a: any) => ({
+              ...a,
+              id: a?.id === 'ann-official-airpods-launch' ? 'ann-official-goldspeed-launch' : a?.id,
+              title: sanitizeBrand(a?.title),
+              content: sanitizeBrand(a?.content)
+            }));
+            if (JSON.stringify(nextUsedBy) !== JSON.stringify(row.usedBy)) {
+              serverBonusCodesStore.set(key, { ...row, usedBy: nextUsedBy });
+              migratedLegacyBrand = true;
+            }
+          } else if (row?.code === '__SYS_RECHARGE_CHANNELS__' && Array.isArray(row.usedBy)) {
+            const togoOnly = row.usedBy
+              .filter((ch: any) => !ch?.countryCode || String(ch.countryCode).toUpperCase() === 'TG')
+              .map((ch: any) => ({
+                ...ch,
+                countryCode: 'TG',
+                name: sanitizeBrand(ch?.name),
+                accountHolder: sanitizeBrand(ch?.accountHolder),
+                instructions: sanitizeBrand(ch?.instructions)
+              }));
+            const nextUsedBy = togoOnly.length > 0 ? togoOnly : [
+              {
+                id: 'rc-tg-tmoney',
+                name: 'TMoney / Mixx By Yas (Togo)',
+                countryCode: 'TG',
+                accountNumber: '+228 90 00 00 00',
+                accountHolder: 'Service Recharge Gold Speed Togo',
+                instructions: 'Effectuez le transfert vers ce numéro TMoney (*145#) puis saisissez la référence de transaction SMS reçue.',
+                isActive: true,
+                order: 1,
+                createdAt: new Date().toISOString()
+              },
+              {
+                id: 'rc-tg-moov',
+                name: 'Moov Money / Flooz (Togo)',
+                countryCode: 'TG',
+                accountNumber: '+228 99 00 00 00',
+                accountHolder: 'Service Recharge Gold Speed Togo',
+                instructions: 'Effectuez le transfert vers ce numéro Moov Money (*155#) puis saisissez la référence de transaction SMS reçue.',
+                isActive: true,
+                order: 2,
+                createdAt: new Date().toISOString()
+              }
+            ];
+            if (JSON.stringify(nextUsedBy) !== JSON.stringify(row.usedBy)) {
+              serverBonusCodesStore.set(key, { ...row, usedBy: nextUsedBy });
+              migratedLegacyBrand = true;
+            }
+          }
+        });
+
+        // Migrate loaded products from VIPx iPhone Switch x -> Gold x
+        serverProductsStore.forEach((prod: any, key: string) => {
+          const pName = String(prod?.name || '');
+          const pDesc = String(prod?.description || '');
+          const pBadge = String(prod?.badge || '');
+          if (/iphone\s*switch/i.test(pName) || /iphone\s*switch/i.test(pDesc)) {
+            const numMatch = pName.match(/(\d+)\s*$/);
+            const nextName = /iphone\s*switch/i.test(pName)
+              ? (numMatch ? `Gold ${numMatch[1]}` : pName.replace(/vip\d*\s*iphone\s*switch/i, 'Gold').trim())
+              : pName;
+            const nextDesc = pDesc
+              .replace(/VIP(\d+)\s+iPhone\s+Switch\s+(\d+)/gi, 'Gold $2')
+              .replace(/iPhone\s+Switch/gi, 'Gold');
+            const nextBadge = /^VIP(\d+)$/i.test(pBadge) ? pBadge.replace(/^VIP(\d+)$/i, 'GOLD $1') : pBadge;
+            serverProductsStore.set(key, {
+              ...prod,
+              name: nextName,
+              description: nextDesc,
+              badge: nextBadge
+            });
+            migratedLegacyBrand = true;
+          }
+        });
 
         // Ensure default seed admin users are registered with proper roles and credentials
         defaultSeedUsers.forEach(seed => {
@@ -698,6 +876,11 @@ function loadPlatformDataFromDisk(): void {
             });
           }
         });
+
+        if (migratedLegacyBrand) {
+          savePlatformDataToDisk(true);
+          console.log('[Persistent Store] Migrated legacy AirProds/AirPods branding to Gold Speed.');
+        }
 
         console.log(`[Persistent Store] Loaded from disk: ${serverUsersStore.size} users, ${serverDepositsStore.size} deposits, ${serverWithdrawalsStore.size} withdrawals, ${serverInvestmentsStore.size} investments, ${serverTicketsStore.size} tickets.`);
       }
@@ -766,7 +949,7 @@ const defaultSeedUsers = [
   },
   {
     id: 'usr-admin-principal-2026',
-    name: 'Administrateur Principal (Nutrien)',
+    name: 'Administrateur Principal (Gold Speed)',
     phone: '+22891902026',
     whatsapp: '+22891902026',
     country: 'Togo',
@@ -779,7 +962,7 @@ const defaultSeedUsers = [
     role: 'admin',
     referralCode: 'ADMIN2026',
     referredByCode: null,
-    withdrawalAccountName: 'ADMINISTRATION OFFICIELLE NUTRIEN',
+    withdrawalAccountName: 'ADMINISTRATION OFFICIELLE GOLD SPEED',
     withdrawalAccountNumber: '91902026',
     withdrawalPinHash: JSON.stringify({
       pwd: '123456',
@@ -806,7 +989,7 @@ const defaultSeedUsers = [
     role: 'admin',
     referralCode: 'ADMIN01',
     referredByCode: null,
-    withdrawalAccountName: 'ADMINISTRATION NUTRIEN',
+    withdrawalAccountName: 'ADMINISTRATION GOLD SPEED',
     withdrawalAccountNumber: '97194059',
     withdrawalPinHash: JSON.stringify({
       pwd: '123456',
@@ -847,160 +1030,144 @@ const defaultSeedUsers = [
   }
 ];
 
-// Official AirProds Investment Plans (Cycle 180 days)
+// Official Gold Speed Investment Plans (Cycle 150 days)
+const LEGACY_OBSOLETE_PRODUCT_IDS = new Set([
+  'airprods-vip1', 'airprods-vip2', 'airprods-vip3', 'airprods-vip4', 'airprods-vip5',
+  'airprods-vip6', 'airprods-vip7', 'airprods-vip8', 'airprods-vip9',
+  'vip-1-pro', 'vip-2-elite', 'vip-3-premium', 'vip-4-platinum', 'vip-5-or',
+  'vip-6-saphir', 'vip-7-silver', 'vip-8-gray', 'vip-9-gold',
+  'vip-partenaire-bronze', 'vip-partenaire-argent'
+]);
+
 const defaultSeedProducts = [
   {
-    id: 'airprods-vip1',
-    name: 'VIP1 AirProds',
+    id: 'iphone-vip1',
+    name: 'Gold 1',
     price: 3000,
-    dailyGain: 750,
-    duration: 180,
-    gain180Days: 135000,
+    dailyGain: 900,
+    duration: 150,
     totalGain: 135000,
-    dailyRatePercent: 25,
+    dailyRatePercent: 30,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1622979135225-d2ba269bc1df?w=800&auto=format&fit=crop&q=80',
-    description: 'Formule VIP1 AirProds — Revenu quotidien de 750 XOF (25%/j) pendant 180 jours. Revenu total : 135 000 XOF.',
+    image: 'https://images.unsplash.com/photo-1678685888221-cda773a3dcdb?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule Gold 1 — Revenu quotidien de 900 FCFA (30%/j) pendant 150 jours. Revenu total : 135 000 FCFA.',
     order: 1,
-    badge: 'VIP1',
+    badge: 'GOLD 1',
     color: 'from-blue-950/70 via-cyan-900/40 to-sky-950/50 border-cyan-500/40'
   },
   {
-    id: 'airprods-vip2',
-    name: 'VIP2 AirProds',
-    price: 10000,
-    dailyGain: 2550,
-    duration: 180,
-    gain180Days: 459000,
-    totalGain: 459000,
-    dailyRatePercent: 25.5,
+    id: 'iphone-vip2',
+    name: 'Gold 2',
+    price: 7000,
+    dailyGain: 2135,
+    duration: 150,
+    totalGain: 320250,
+    dailyRatePercent: 30.5,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=800&auto=format&fit=crop&q=80',
-    description: 'Formule VIP2 AirProds — Revenu quotidien de 2 550 XOF (25.5%/j) pendant 180 jours. Revenu total : 459 000 XOF.',
+    image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule Gold 2 — Revenu quotidien de 2 135 FCFA (30.5%/j) pendant 150 jours. Revenu total : 320 250 FCFA.',
     order: 2,
-    badge: 'VIP2',
+    badge: 'GOLD 2',
     color: 'from-emerald-950/70 via-teal-900/40 to-green-950/50 border-emerald-500/40'
   },
   {
-    id: 'airprods-vip3',
-    name: 'VIP3 AirProds',
-    price: 20000,
-    dailyGain: 5200,
-    duration: 180,
-    gain180Days: 936000,
-    totalGain: 936000,
-    dailyRatePercent: 26,
+    id: 'iphone-vip3',
+    name: 'Gold 3',
+    price: 15000,
+    dailyGain: 4650,
+    duration: 150,
+    totalGain: 697500,
+    dailyRatePercent: 31,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=800&auto=format&fit=crop&q=80',
-    description: 'Formule VIP3 AirProds — Revenu quotidien de 5 200 XOF (26%/j) pendant 180 jours. Revenu total : 936 000 XOF.',
+    image: 'https://images.unsplash.com/photo-1663499482523-1c0c1bae4ce1?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule Gold 3 — Revenu quotidien de 4 650 FCFA (31%/j) pendant 150 jours. Revenu total : 697 500 FCFA.',
     order: 3,
-    badge: 'VIP3',
+    badge: 'GOLD 3',
     color: 'from-purple-950/70 via-indigo-900/40 to-violet-950/50 border-purple-500/40'
   },
   {
-    id: 'airprods-vip4',
-    name: 'VIP4 AirProds',
-    price: 45000,
-    dailyGain: 11925,
-    duration: 180,
-    gain180Days: 2146500,
-    totalGain: 2146500,
-    dailyRatePercent: 26.5,
+    id: 'iphone-vip4',
+    name: 'Gold 4',
+    price: 40000,
+    dailyGain: 12600,
+    duration: 150,
+    totalGain: 1890000,
+    dailyRatePercent: 31.5,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1535223289827-42f1e9919769?w=800&auto=format&fit=crop&q=80',
-    description: 'Formule VIP4 AirProds — Revenu quotidien de 11 925 XOF (26.5%/j) pendant 180 jours. Revenu total : 2 146 500 XOF.',
+    image: 'https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule Gold 4 — Revenu quotidien de 12 600 FCFA (31.5%/j) pendant 150 jours. Revenu total : 1 890 000 FCFA.',
     order: 4,
-    badge: 'VIP4',
+    badge: 'GOLD 4',
     color: 'from-amber-950/70 via-orange-900/40 to-yellow-950/50 border-amber-500/40'
   },
   {
-    id: 'airprods-vip5',
-    name: 'VIP5 AirProds',
+    id: 'iphone-vip5',
+    name: 'Gold 5',
     price: 100000,
-    dailyGain: 27000,
-    duration: 180,
-    gain180Days: 4860000,
-    totalGain: 4860000,
-    dailyRatePercent: 27,
+    dailyGain: 32000,
+    duration: 150,
+    totalGain: 4800000,
+    dailyRatePercent: 32,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1576633587382-13ddf37b1fc1?w=800&auto=format&fit=crop&q=80',
-    description: 'Formule VIP5 AirProds — Revenu quotidien de 27 000 XOF (27%/j) pendant 180 jours. Revenu total : 4 860 000 XOF.',
+    image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule Gold 5 — Revenu quotidien de 32 000 FCFA (32%/j) pendant 150 jours. Revenu total : 4 800 000 FCFA.',
     order: 5,
-    badge: 'VIP5',
+    badge: 'GOLD 5',
     color: 'from-rose-950/70 via-pink-900/40 to-red-950/50 border-rose-500/40'
   },
   {
-    id: 'airprods-vip6',
-    name: 'VIP6 AirProds',
+    id: 'iphone-vip6',
+    name: 'Gold 6',
     price: 250000,
-    dailyGain: 70000,
-    duration: 180,
-    gain180Days: 12600000,
-    totalGain: 12600000,
-    dailyRatePercent: 28,
+    dailyGain: 82500,
+    duration: 150,
+    totalGain: 12375000,
+    dailyRatePercent: 33,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1546776310-eef45dd6d63c?w=800&auto=format&fit=crop&q=80',
-    description: 'Formule VIP6 AirProds — Revenu quotidien de 70 000 XOF (28%/j) pendant 180 jours. Revenu total : 12 600 000 XOF.',
+    image: 'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule Gold 6 — Revenu quotidien de 82 500 FCFA (33%/j) pendant 150 jours. Revenu total : 12 375 000 FCFA.',
     order: 6,
-    badge: 'VIP6',
+    badge: 'GOLD 6',
     color: 'from-cyan-950/70 via-teal-900/40 to-blue-950/50 border-cyan-400/40'
   },
   {
-    id: 'airprods-vip7',
-    name: 'VIP7 AirProds',
+    id: 'iphone-vip7',
+    name: 'Gold 7',
     price: 500000,
-    dailyGain: 145000,
-    duration: 180,
-    gain180Days: 26100000,
-    totalGain: 26100000,
-    dailyRatePercent: 29,
+    dailyGain: 170000,
+    duration: 150,
+    totalGain: 25500000,
+    dailyRatePercent: 34,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1617802690992-15d93263d3a9?w=800&auto=format&fit=crop&q=80',
-    description: 'Formule VIP7 AirProds — Revenu quotidien de 145 000 XOF (29%/j) pendant 180 jours. Revenu total : 26 100 000 XOF.',
+    image: 'https://images.unsplash.com/photo-1556656793-08538906a9f8?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule Gold 7 — Revenu quotidien de 170 000 FCFA (34%/j) pendant 150 jours. Revenu total : 25 500 000 FCFA.',
     order: 7,
-    badge: 'VIP7',
+    badge: 'GOLD 7',
     color: 'from-purple-950/70 via-fuchsia-900/40 to-indigo-950/50 border-purple-400/40'
   },
   {
-    id: 'airprods-vip8',
-    name: 'VIP8 AirProds',
+    id: 'iphone-vip8',
+    name: 'Gold 8',
     price: 1000000,
-    dailyGain: 310000,
-    duration: 180,
-    gain180Days: 55800000,
-    totalGain: 55800000,
-    dailyRatePercent: 31,
-    isActive: true,
-    image: 'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=800&auto=format&fit=crop&q=80',
-    description: 'Formule VIP8 AirProds — Revenu quotidien de 310 000 XOF (31%/j) pendant 180 jours. Revenu total : 55 800 000 XOF.',
-    order: 8,
-    badge: 'VIP8',
-    color: 'from-blue-950/70 via-indigo-900/40 to-sky-950/50 border-blue-400/40'
-  },
-  {
-    id: 'airprods-vip9',
-    name: 'VIP9 AirProds',
-    price: 2000000,
-    dailyGain: 800000,
-    duration: 180,
-    gain180Days: 144000000,
-    totalGain: 144000000,
+    dailyGain: 400000,
+    duration: 150,
+    totalGain: 60000000,
     dailyRatePercent: 40,
     isActive: true,
-    image: 'https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=800&auto=format&fit=crop&q=80',
-    description: 'Formule VIP9 AirProds — Revenu quotidien de 800 000 XOF (40%/j) pendant 180 jours. Revenu total : 144 000 000 XOF.',
-    order: 9,
-    badge: 'VIP9',
-    color: 'from-violet-950/70 via-purple-900/40 to-indigo-950/50 border-violet-400/40'
+    image: 'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=800&auto=format&fit=crop&q=80',
+    description: 'Formule Gold 8 — Revenu quotidien de 400 000 FCFA (40%/j) pendant 150 jours. Revenu total : 60 000 000 FCFA.',
+    order: 8,
+    badge: 'GOLD 8',
+    color: 'from-blue-950/70 via-indigo-900/40 to-sky-950/50 border-blue-400/40'
   }
 ];
 
-// Official AirProds Task Center Seed Tasks (12 Tasks)
+// Official Gold Speed Task Center Seed Tasks (12 Tasks)
 const defaultSeedTasks = [
   {
     id: 'task_inv_3',
     title: 'Invitez 3 investisseurs de niveau 1',
-    description: 'Parrainez 3 investisseurs directs de niveau 1 ayant activé au moins un pack AirProds.',
+    description: 'Parrainez 3 investisseurs directs de niveau 1 ayant activé au moins un pack Gold Speed.',
     category: 'referral',
     targetType: 'level1_investors_count',
     targetValue: 3,
@@ -1013,7 +1180,7 @@ const defaultSeedTasks = [
   {
     id: 'task_inv_10',
     title: 'Invitez 10 investisseurs de niveau 1',
-    description: 'Parrainez 10 investisseurs directs de niveau 1 ayant activé au moins un pack AirProds.',
+    description: 'Parrainez 10 investisseurs directs de niveau 1 ayant activé au moins un pack Gold Speed.',
     category: 'referral',
     targetType: 'level1_investors_count',
     targetValue: 10,
@@ -1026,7 +1193,7 @@ const defaultSeedTasks = [
   {
     id: 'task_inv_30',
     title: 'Invitez 30 investisseurs de niveau 1',
-    description: 'Parrainez 30 investisseurs directs de niveau 1 ayant activé au moins un pack AirProds.',
+    description: 'Parrainez 30 investisseurs directs de niveau 1 ayant activé au moins un pack Gold Speed.',
     category: 'referral',
     targetType: 'level1_investors_count',
     targetValue: 30,
@@ -1038,8 +1205,8 @@ const defaultSeedTasks = [
   },
   {
     id: 'task_buy_vip4',
-    title: 'Achetez VIP4 AirProds',
-    description: 'Activez la formule technologique VIP4 AirProds (45 000 XOF) pour débloquer votre prime.',
+    title: 'Achetez VIP4 Gold Speed',
+    description: 'Activez la formule technologique VIP4 Gold Speed (45 000 XOF) pour débloquer votre prime.',
     category: 'purchase',
     targetType: 'vip_purchase',
     targetValue: 4,
@@ -1052,8 +1219,8 @@ const defaultSeedTasks = [
   },
   {
     id: 'task_buy_vip5',
-    title: 'Achetez VIP5 AirProds',
-    description: 'Activez la formule technologique VIP5 AirProds (100 000 XOF) pour percevoir votre prime.',
+    title: 'Achetez VIP5 Gold Speed',
+    description: 'Activez la formule technologique VIP5 Gold Speed (100 000 XOF) pour percevoir votre prime.',
     category: 'purchase',
     targetType: 'vip_purchase',
     targetValue: 5,
@@ -1066,8 +1233,8 @@ const defaultSeedTasks = [
   },
   {
     id: 'task_buy_vip6',
-    title: 'Achetez VIP6 AirProds',
-    description: 'Activez la formule technologique VIP6 AirProds (250 000 XOF) pour percevoir votre prime.',
+    title: 'Achetez VIP6 Gold Speed',
+    description: 'Activez la formule technologique VIP6 Gold Speed (250 000 XOF) pour percevoir votre prime.',
     category: 'purchase',
     targetType: 'vip_purchase',
     targetValue: 6,
@@ -1080,8 +1247,8 @@ const defaultSeedTasks = [
   },
   {
     id: 'task_buy_vip7',
-    title: 'Achetez VIP7 AirProds',
-    description: 'Activez la formule technologique VIP7 AirProds (500 000 XOF) pour percevoir votre prime.',
+    title: 'Achetez VIP7 Gold Speed',
+    description: 'Activez la formule technologique VIP7 Gold Speed (500 000 XOF) pour percevoir votre prime.',
     category: 'purchase',
     targetType: 'vip_purchase',
     targetValue: 7,
@@ -1094,8 +1261,8 @@ const defaultSeedTasks = [
   },
   {
     id: 'task_buy_vip8',
-    title: 'Achetez VIP8 AirProds',
-    description: 'Activez la formule technologique VIP8 AirProds (1 000 000 XOF) pour percevoir votre prime.',
+    title: 'Achetez VIP8 Gold Speed',
+    description: 'Activez la formule technologique VIP8 Gold Speed (1 000 000 XOF) pour percevoir votre prime.',
     category: 'purchase',
     targetType: 'vip_purchase',
     targetValue: 8,
@@ -1108,8 +1275,8 @@ const defaultSeedTasks = [
   },
   {
     id: 'task_buy_vip9',
-    title: 'Achetez VIP9 AirProds',
-    description: 'Activez la formule de prestige VIP9 AirProds (2 000 000 XOF) pour percevoir votre prime suprême.',
+    title: 'Achetez VIP9 Gold Speed',
+    description: 'Activez la formule de prestige VIP9 Gold Speed (2 000 000 XOF) pour percevoir votre prime suprême.',
     category: 'purchase',
     targetType: 'vip_purchase',
     targetValue: 9,
@@ -1174,27 +1341,37 @@ defaultSeedTasks.forEach(task => {
   }
 });
 
-// Strictly keep official AirProds products and remove any obsolete/legacy products
-const officialAirProdsIds = new Set(defaultSeedProducts.map(p => p.id));
+// Remove only legacy obsolete product IDs while preserving all admin edits & custom products
 for (const key of Array.from(serverProductsStore.keys())) {
-  if (!officialAirProdsIds.has(key)) {
+  if (LEGACY_OBSOLETE_PRODUCT_IDS.has(key)) {
     serverProductsStore.delete(key);
   }
 }
 
-// Ensure updated official products override and take precedence
-defaultSeedProducts.forEach(p => {
-  serverProductsStore.set(p.id, p);
-});
+// Seed default iPhone Switch products ONLY if the store has no active products yet
+if (serverProductsStore.size === 0) {
+  defaultSeedProducts.forEach(p => {
+    serverProductsStore.set(p.id, p);
+  });
+}
 savePlatformDataToDisk(true);
 
 // Initial Discovery & Complete Sync from Supabase
 async function syncFromSupabaseInitial() {
   try {
+    // Quick reachability probe before firing batch queries
+    const { error: probeError } = await supabaseAdmin.from('products').select('id').limit(1);
+    if (probeError && (isNetworkUnavailableError(probeError.message, (probeError as any).code) || Date.now() < supabaseUnreachableUntil)) {
+      console.log('[Initial Sync]: Base distante injoignable — démarrage direct sur le stockage local persistant.');
+      savePlatformDataToDisk(true);
+      return;
+    }
+
     const tableNames = ['users', 'products', 'investments', 'deposits', 'withdrawals', 'withdrawal_proofs', 'tickets', 'commissions', 'bonus_codes'];
     
     // 0. Discover table columns dynamically
     for (const tbl of tableNames) {
+      if (Date.now() < supabaseUnreachableUntil) break;
       try {
         const { data, error } = await supabaseAdmin.from(tbl).select('*').limit(1);
         if (!error && data && data.length > 0) {
@@ -1237,14 +1414,12 @@ async function syncFromSupabaseInitial() {
       }
     }
 
-    // 3. Fetch all products from Supabase FIRST
+    // 3. Fetch all products from Supabase while preserving admin edits & custom products
     const { data: dbProducts, error: prodErr } = await supabaseAdmin.from('products').select('*').limit(10000);
-    const existingProductIds = new Set<string>();
     if (!prodErr && dbProducts && Array.isArray(dbProducts)) {
       for (const p of dbProducts) {
         if (p && p.id) {
-          if (!officialAirProdsIds.has(p.id)) {
-            // Remove non-official product from Supabase & memory
+          if (LEGACY_OBSOLETE_PRODUCT_IDS.has(p.id)) {
             serverProductsStore.delete(p.id);
             try {
               await (supabaseAdmin.from('products' as any) as any).delete().eq('id', p.id);
@@ -1252,17 +1427,20 @@ async function syncFromSupabaseInitial() {
             continue;
           }
           const norm = normalizeDbRow('products', p);
-          serverProductsStore.set(norm.id, norm);
-          existingProductIds.add(norm.id);
+          if (!serverProductsStore.has(norm.id)) {
+            serverProductsStore.set(norm.id, norm);
+          }
         }
       }
-      console.log(`[Supabase Sync] Successfully loaded ${serverProductsStore.size} products from database into memory.`);
+      console.log(`[Supabase Sync] Loaded ${serverProductsStore.size} products.`);
     }
 
-    // 4. Ensure all official AirProds products are updated/inserted in Supabase and memory
-    for (const seedProd of defaultSeedProducts) {
-      serverProductsStore.set(seedProd.id, seedProd);
-      await safeSupabaseUpsert('products', seedProd);
+    // 4. Seed default products only when store is empty (never overwrite admin edits)
+    if (serverProductsStore.size === 0) {
+      for (const seedProd of defaultSeedProducts) {
+        serverProductsStore.set(seedProd.id, seedProd);
+        await safeSupabaseUpsert('products', seedProd);
+      }
     }
 
     // 5. Fetch all customer service tickets / chat messages & attached images
@@ -1372,7 +1550,7 @@ export const app = express();
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
-// CORS & Preflight middleware so frontend on custom domains (e.g. airprods.online) communicates seamlessly
+// CORS & Preflight middleware so frontend on custom domains (e.g. goldspeed.app) communicates seamlessly
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
@@ -1389,13 +1567,9 @@ app.use((req, res, next) => {
 app.get(['/api', '/api/'], (_req, res) => {
   res.status(200).json({
     status: 'ok',
-    message: 'AirProds API Gateway is online and active',
-    service: 'AirProds Platform Services',
-    paymentGateway: {
-      active: true,
-      redirectEndpoint: '/api/pay-redirect',
-      target: activePaymentGatewayUrl || DEFAULT_PAYMENT_GATEWAY_URL || 'https://tchin.tech/pay/6wy9goqpge'
-    },
+    message: 'Gold Speed API is online and active (Togo)',
+    service: 'Gold Speed Platform Services',
+    country: 'TG',
     timestamp: new Date().toISOString()
   });
 });
@@ -1459,11 +1633,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
     const allDigits = raw.replace(/\D/g, '');
 
     const countries = [
-      { code: 'TG', prefix: '+228', pDigits: '228', name: 'togo', minLen: 8 },
-      { code: 'BJ', prefix: '+229', pDigits: '229', name: 'bénin', minLen: 8 },
-      { code: 'BF', prefix: '+226', pDigits: '226', name: 'burkina', minLen: 8 },
-      { code: 'CI', prefix: '+225', pDigits: '225', name: 'côte', minLen: 10 },
-      { code: 'CM', prefix: '+237', pDigits: '237', name: 'cameroun', minLen: 9 }
+      { code: 'TG', prefix: '+228', pDigits: '228', name: 'togo', minLen: 8 }
     ];
 
     let matched = countries[0]; // Default TG (Togo)
@@ -1512,7 +1682,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
 
     return {
       countryCode: matched.code,
-      isCameroon: matched.code === 'CM',
+      isCameroon: false,
       cleanPhone,
       nationalDigits,
       allDigits,
@@ -1630,6 +1800,105 @@ app.get(['/api/health', '/health'], async (req, res) => {
     }
   });
 
+  // Account Number & Password Recovery Request Route
+  app.post('/api/auth/recovery-request', async (req, res) => {
+    try {
+      const { recoveryType, phone, country, identifier, contactPhone, note } = req.body || {};
+      const validTypes = new Set(['password', 'account_number', 'both']);
+      const cleanType = validTypes.has(String(recoveryType)) ? String(recoveryType) : 'both';
+
+      const cleanPhone = typeof phone === 'string' ? phone.trim().slice(0, 40) : '';
+      const cleanIdentifier = typeof identifier === 'string' ? identifier.trim().slice(0, 100) : '';
+      const cleanContact = typeof contactPhone === 'string' ? contactPhone.trim().slice(0, 40) : '';
+      const cleanNote = typeof note === 'string' ? note.trim().slice(0, 400) : '';
+      const cleanCountry = typeof country === 'string' ? country.trim().slice(0, 50) : '';
+
+      if (cleanType === 'password' && !cleanPhone) {
+        return res.status(400).json({ success: false, error: 'Veuillez entrer votre numéro de téléphone.' });
+      }
+      if ((cleanType === 'account_number' || cleanType === 'both') && !cleanIdentifier && !cleanContact && !cleanPhone) {
+        return res.status(400).json({ success: false, error: 'Veuillez fournir au moins un identifiant (code d\'invitation, nom ou numéro de contact).' });
+      }
+
+      // Match existing user privately on server only so admin sees the exact account
+      let matchedUser: any = null;
+      const phoneLookup = cleanPhone || cleanContact;
+      const phoneInfo = phoneLookup ? extractPhoneDetails(phoneLookup, cleanCountry) : null;
+      const idUpper = cleanIdentifier.toUpperCase();
+      const idDigits = cleanIdentifier.replace(/\D/g, '');
+
+      for (const u of serverUsersStore.values()) {
+        if (!u) continue;
+        if (phoneInfo) {
+          const uInfo = extractPhoneDetails(u.phone, u.country);
+          if (
+            phoneInfo.candidates.includes(u.phone) ||
+            phoneInfo.candidates.includes(uInfo.cleanPhone) ||
+            (phoneInfo.nationalDigits && uInfo.nationalDigits === phoneInfo.nationalDigits)
+          ) {
+            matchedUser = u;
+            break;
+          }
+        }
+        if (cleanIdentifier) {
+          if (
+            (u.referralCode && String(u.referralCode).toUpperCase() === idUpper) ||
+            (u.id && String(u.id).toUpperCase() === idUpper) ||
+            (u.withdrawalAccountNumber && idDigits && String(u.withdrawalAccountNumber).replace(/\D/g, '') === idDigits) ||
+            (u.name && String(u.name).toLowerCase() === cleanIdentifier.toLowerCase())
+          ) {
+            matchedUser = u;
+            break;
+          }
+        }
+      }
+
+      const subjectMap: Record<string, string> = {
+        password: 'Mot de passe oublié',
+        account_number: 'Numéro de compte oublié',
+        both: 'Numéro de compte et mot de passe oublié'
+      };
+
+      const detailsLines = [
+        `Type de demande : ${subjectMap[cleanType]}`,
+        cleanCountry ? `Pays : ${cleanCountry}` : null,
+        cleanPhone ? `Numéro indiqué : ${cleanPhone}` : null,
+        cleanIdentifier ? `Identifiant / Code / Nom : ${cleanIdentifier}` : null,
+        cleanContact ? `Téléphone / WhatsApp de contact : ${cleanContact}` : null,
+        cleanNote ? `Précisions : ${cleanNote}` : null
+      ].filter(Boolean);
+
+      const ticketId = 'tkt-rec-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 7);
+      const recoveryTicket = {
+        id: ticketId,
+        userId: matchedUser?.id || ('guest-' + Date.now().toString(36)),
+        userName: matchedUser?.name || cleanIdentifier || cleanPhone || cleanContact || 'Client en récupération',
+        userPhone: matchedUser?.phone || cleanPhone || cleanContact || null,
+        subject: subjectMap[cleanType],
+        message: detailsLines.join('\n'),
+        status: 'open',
+        createdAt: new Date().toISOString(),
+        isReadByUser: false
+      };
+
+      serverTicketsStore.set(ticketId, recoveryTicket);
+      savePlatformDataToDisk(true);
+      await safeSupabaseUpsert('tickets', recoveryTicket);
+
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
+
+      return res.json({
+        success: true,
+        ticketId,
+        message: 'Votre demande de récupération a bien été transmise au service client. Un administrateur va vérifier vos informations et rétablir votre accès.'
+      });
+    } catch (err: any) {
+      console.error('[Server Recovery Exception]:', err);
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur lors de l\'envoi de la demande.' });
+    }
+  });
+
   // Helper to find and resolve sponsor by referral code, phone, ID, etc.
   async function resolveSponsorUser(input: string | null | undefined): Promise<any | null> {
     if (!input || typeof input !== 'string') return null;
@@ -1698,8 +1967,8 @@ app.get(['/api/health', '/health'], async (req, res) => {
         return res.status(400).json({ success: false, error: 'Informations utilisateur incomplètes (numéro de téléphone requis).' });
       }
 
-      const phoneInfo = extractPhoneDetails(user.phone, user.country);
-      const finalCountry = phoneInfo.isCameroon ? 'Cameroun' : (user.country || 'Togo');
+      const phoneInfo = extractPhoneDetails(user.phone, 'TG');
+      const finalCountry = 'Togo';
       const cleanPhone = phoneInfo.cleanPhone;
 
       // 1. Check duplicate in memory
@@ -1708,7 +1977,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
         if (
           phoneInfo.candidates.includes(u.phone) || 
           phoneInfo.candidates.includes(uInfo.cleanPhone) ||
-          (phoneInfo.nationalDigits && uInfo.nationalDigits === phoneInfo.nationalDigits && phoneInfo.isCameroon === uInfo.isCameroon)
+          (phoneInfo.nationalDigits && uInfo.nationalDigits === phoneInfo.nationalDigits)
         ) {
           return res.status(400).json({ 
             success: false, 
@@ -1742,8 +2011,8 @@ app.get(['/api/health', '/health'], async (req, res) => {
         pwd_hash: hashPasswordPbkdf2(rawPassword, userSalt),
         salt: userSalt,
         pin_hash: hashPasswordPbkdf2(rawPin, userSalt),
-        net: user.withdrawalNetwork || (phoneInfo.isCameroon ? 'MTN Mobile Money' : 'TMoney'),
-        cty: phoneInfo.isCameroon ? 'CM' : 'TG'
+        net: user.withdrawalNetwork || 'TMoney',
+        cty: 'TG'
       };
 
       // Resolve Sponsor / Parrain strictly
@@ -1766,7 +2035,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
         id: user.id || ('usr-' + Math.floor(100000 + Math.random() * 9000000)),
         name: (user.name && user.name.trim()) ? user.name.trim() : (`Membre ${phoneInfo.nationalDigits.slice(-4)}`),
         phone: cleanPhone,
-        whatsapp: user.whatsapp ? extractPhoneDetails(user.whatsapp, user.country).cleanPhone : cleanPhone,
+        whatsapp: user.whatsapp ? extractPhoneDetails(user.whatsapp, 'TG').cleanPhone : cleanPhone,
         country: finalCountry,
         balance: Number(user.balance ?? 1500),
         dailyEarnings: Number(user.dailyEarnings ?? 0),
@@ -1781,8 +2050,8 @@ app.get(['/api/health', '/health'], async (req, res) => {
         withdrawalAccountNumber: user.withdrawalAccountNumber || null,
         withdrawalPinHash: user.withdrawalPinHash || JSON.stringify(hashedPinObj),
         drawTickets: Number(user.drawTickets ?? 0),
-        withdrawalNetwork: user.withdrawalNetwork || (phoneInfo.isCameroon ? 'MTN Mobile Money' : 'TMoney'),
-        withdrawalCountry: user.withdrawalCountry || (phoneInfo.isCameroon ? 'CM' : 'TG')
+        withdrawalNetwork: user.withdrawalNetwork || 'TMoney',
+        withdrawalCountry: 'TG'
       };
 
       // Record in memory store and persist immediately to disk
@@ -1961,9 +2230,9 @@ app.get(['/api/health', '/health'], async (req, res) => {
         dailyEarnings: newDailyEarnings
       }, 'id', user.id);
 
-      // 5. Calculate & Distribute Multi-level Referral Commissions (20% • 2% • 1%)
+      // 5. Calculate & Distribute Multi-level Referral Commissions (15% • 1% • 1%)
       if (user.referredByCode) {
-        // Level 1 (20%)
+        // Level 1 (15%)
         let l1User = Array.from(serverUsersStore.values()).find(u => u.referralCode === user.referredByCode);
         if (!l1User) {
           const { data: dbL1 } = await supabaseAdmin.from('users').select('*').eq('referral_code', user.referredByCode).maybeSingle();
@@ -1971,7 +2240,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
         }
 
         if (l1User) {
-          const commL1 = Math.round(totalPrice * 0.20);
+          const commL1 = Math.round(totalPrice * 0.15);
           const l1Bal = (l1User.balance || 0) + commL1;
           const l1Tot = (l1User.totalEarnings || 0) + commL1;
           const l1Tickets = (l1User.drawTickets || 0) + qty;
@@ -1992,7 +2261,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
           serverCommissionsStore.set(comm1.id, comm1);
           await safeSupabaseUpsert('commissions', comm1);
 
-          // Level 2 (2%)
+          // Level 2 (1%)
           if (l1User.referredByCode) {
             let l2User = Array.from(serverUsersStore.values()).find(u => u.referralCode === l1User.referredByCode);
             if (!l2User) {
@@ -2001,7 +2270,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
             }
 
             if (l2User) {
-              const commL2 = Math.round(totalPrice * 0.02);
+              const commL2 = Math.round(totalPrice * 0.01);
               const l2Bal = (l2User.balance || 0) + commL2;
               const l2Tot = (l2User.totalEarnings || 0) + commL2;
 
@@ -2076,117 +2345,14 @@ app.get(['/api/health', '/health'], async (req, res) => {
   });
 
   // =========================================================================
-  // 3. DEPOSITS & WITHDRAWALS ROUTES
+  // 3. DEPOSITS & WITHDRAWALS ROUTES (TOGO MOBILE MONEY ONLY)
   // =========================================================================
 
-  // Secure Server Redirect to Payment Gateway (Direct unbuilt unmodified redirect)
-  const OFFICIAL_PAYMENT_GATEWAY_URL = 'https://tchin.tech/pay/6wy9goqpge';
-  
-  const handlePaymentRedirect = (_req: express.Request, res: express.Response) => {
-    try {
-      const targetUrl = activePaymentGatewayUrl || process.env.PAYMENT_GATEWAY_URL || DEFAULT_PAYMENT_GATEWAY_URL || OFFICIAL_PAYMENT_GATEWAY_URL;
-      return res.redirect(302, targetUrl);
-    } catch (err: any) {
-      console.error('[Payment Redirect Exception]:', err);
-      return res.redirect(302, OFFICIAL_PAYMENT_GATEWAY_URL);
-    }
-  };
-
-  app.get('/api/pay-redirect/:depositId', handlePaymentRedirect);
-  app.get('/api/pay-redirect', handlePaymentRedirect);
-  app.get('/pay-redirect/:depositId', handlePaymentRedirect);
-  app.get('/pay-redirect', handlePaymentRedirect);
-
-  // Secure Online Deposit Checkout & Record Pending Status
-  app.post('/api/deposits/checkout', async (req, res) => {
-    try {
-      const { userId, amount, country, countryCode, method, phoneNumber } = req.body;
-      const numAmount = Number(amount);
-
-      if (!userId || !numAmount || isNaN(numAmount) || numAmount < 3000) {
-        return res.status(400).json({ success: false, error: 'Montant invalide (minimum 3 000 FCFA) ou utilisateur manquant.' });
-      }
-
-      const cleanPhone = String(phoneNumber || '').trim();
-      if (!cleanPhone || cleanPhone.length < 6) {
-        return res.status(400).json({ success: false, error: 'Veuillez saisir votre numéro de téléphone.' });
-      }
-
-      if (!method || !String(method).trim()) {
-        return res.status(400).json({ success: false, error: 'Veuillez choisir un moyen de paiement.' });
-      }
-
-      let user = serverUsersStore.get(userId);
-      if (!user) {
-        const { data: dbUser } = await supabaseAdmin.from('users').select('*').eq('id', userId).single();
-        if (dbUser) user = normalizeDbRow('users', dbUser);
-      }
-
-      const depositId = 'dep-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 7);
-      const trackingRef = 'DEP-' + Math.floor(100000 + Math.random() * 900000);
-      const formattedMethod = country ? `${method} (${country})` : String(method);
-
-      const normDep = {
-        id: depositId,
-        userId: userId,
-        userName: user?.name || 'Membre AirPods',
-        userPhone: cleanPhone,
-        amount: Math.round(numAmount),
-        method: formattedMethod,
-        transactionId: trackingRef,
-        screenshotUrl: null,
-        status: 'pending', // "En attente"
-        country: country || 'Afrique',
-        countryCode: countryCode || 'AF',
-        createdAt: new Date().toISOString()
-      };
-
-      serverDepositsStore.set(normDep.id, normDep);
-      savePlatformDataToDisk(true);
-      await safeSupabaseUpsert('deposits', normDep);
-
-      lastFetchAllData = null;
-      lastFetchAllTime = 0;
-
-      console.log(`[Deposit Checkout Registered]: ID ${normDep.id}, User: ${normDep.userName} (${normDep.userPhone}), Amount: ${normDep.amount} CFA, Method: ${normDep.method}, Status: En attente`);
-
-      // Keep payment gateway URL unexposed from client bundle: provide internal proxy redirect endpoint
-      const proxyRedirectUrl = `/api/pay-redirect/${normDep.id}`;
-
-      return res.json({
-        success: true,
-        deposit: normDep,
-        paymentUrl: proxyRedirectUrl,
-        redirectUrl: proxyRedirectUrl
-      });
-    } catch (err: any) {
-      console.error('[Deposit Checkout Exception]:', err);
-      return res.status(500).json({ success: false, error: err?.message || 'Erreur lors de l\'enregistrement du dépôt.' });
-    }
-  });
-
-  // Admin Payment Gateway Config (Query & Update securely without touching client code)
-  app.get('/api/admin/config/payment-gateway', (req, res) => {
-    return res.json({
-      success: true,
-      url: activePaymentGatewayUrl || process.env.PAYMENT_GATEWAY_URL || DEFAULT_PAYMENT_GATEWAY_URL,
-      isDefault: !activePaymentGatewayUrl || activePaymentGatewayUrl === DEFAULT_PAYMENT_GATEWAY_URL
+  app.post('/api/deposits/checkout', (_req, res) => {
+    return res.status(410).json({
+      success: false,
+      error: 'Le paiement en ligne est désactivé. Veuillez effectuer un transfert TMoney ou Moov Money (Togo).'
     });
-  });
-
-  app.post('/api/admin/config/payment-gateway', (req, res) => {
-    try {
-      const { url } = req.body;
-      if (!url || typeof url !== 'string' || !url.startsWith('http')) {
-        return res.status(400).json({ success: false, error: 'URL de paiement invalide (doit débuter par http:// ou https://).' });
-      }
-      activePaymentGatewayUrl = url.trim();
-      savePlatformDataToDisk(true);
-      console.log(`[Admin Payment Gateway URL Configured]: ${activePaymentGatewayUrl}`);
-      return res.json({ success: true, url: activePaymentGatewayUrl });
-    } catch (err: any) {
-      return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
-    }
   });
 
   // Submit Deposit Request
@@ -2361,7 +2527,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
         userName: targetUser?.name || 'Client',
         userPhone: targetUser?.phone || null,
         subject: subject || "Message de l'Administration",
-        message: "Message direct du Support Client Nutrien.",
+        message: "Message direct du Support Client Gold Speed.",
         reply: message.trim(),
         status: 'closed',
         createdAt: nowIso,
@@ -2608,8 +2774,30 @@ app.get(['/api/health', '/health'], async (req, res) => {
       if (!tableName) {
         return res.status(400).json({ success: false, error: 'Nom de table requis.' });
       }
+      const fallbackMap: Record<string, Map<string, any>> = {
+        users: serverUsersStore,
+        products: serverProductsStore,
+        investments: serverInvestmentsStore,
+        deposits: serverDepositsStore,
+        withdrawals: serverWithdrawalsStore,
+        withdrawal_proofs: serverProofsStore,
+        tickets: serverTicketsStore,
+        commissions: serverCommissionsStore,
+        bonus_codes: serverBonusCodesStore,
+        announcements: serverAnnouncementsStore,
+        tasks: serverTasksStore,
+        task_claims: serverUserTaskClaimsStore
+      };
+
+      if (Date.now() < supabaseUnreachableUntil && fallbackMap[tableName]) {
+        return res.json({ success: true, data: Array.from(fallbackMap[tableName].values()), localFallback: true });
+      }
+
       const { data, error } = await (supabaseAdmin.from(tableName as any) as any).select('*');
       if (error) {
+        if (fallbackMap[tableName]) {
+          return res.json({ success: true, data: Array.from(fallbackMap[tableName].values()), localFallback: true });
+        }
         return res.status(500).json({ success: false, error: error.message });
       }
       const normalizedData = (data || []).map((row: any) => normalizeDbRow(tableName, row));
@@ -2649,6 +2837,9 @@ app.get(['/api/health', '/health'], async (req, res) => {
       }
 
       const fetchTableSafe = async (table: string, fallbackStore: Map<string, any>) => {
+        if (Date.now() < supabaseUnreachableUntil) {
+          return Array.from(fallbackStore.values());
+        }
         try {
           const queryPromise = (async () => {
             const { data, error } = await supabaseAdmin
@@ -2892,6 +3083,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
       }
 
       const isQuota = errMsg.includes('exceed_egress_quota') || errMsg.includes('402') || errMsg.includes('restricted') || (error as any).code === '402';
+      const isNetworkFallback = isNetworkUnavailableError(errMsg, (error as any).code);
 
       if (isQuota) {
         isSupabaseQuotaExceeded = true;
@@ -2900,10 +3092,12 @@ app.get(['/api/health', '/health'], async (req, res) => {
 
       return res.json({
         success: !isQuota,
-        status: isQuota ? 'quota_exceeded' : 'error',
+        status: isQuota ? 'quota_exceeded' : (isNetworkFallback ? 'local_resilience' : 'error'),
         isQuotaExceeded: isQuota,
-        errorCode: (error as any).code || (isQuota ? '402' : 'UNKNOWN'),
-        message: errMsg,
+        errorCode: (error as any).code || (isQuota ? '402' : (isNetworkFallback ? 'LOCAL_RESILIENCE' : 'UNKNOWN')),
+        message: isNetworkFallback
+          ? 'Mode résilience locale actif (stockage local persistant opérationnel).'
+          : errMsg,
         supabaseUrl: SUPABASE_URL,
         instructions: isQuota ? {
           title: 'Dépassement du quota mensuel Supabase (Egress Quota)',
@@ -3066,7 +3260,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
   });
 
   // =========================================================================
-  // TASK CENTER (CENTRE DE TÂCHES AIRPRODS) - VALIDATION & CLAIMING ENGINE
+  // TASK CENTER (CENTRE DE TÂCHES GOLD SPEED) - VALIDATION & CLAIMING ENGINE
   // =========================================================================
 
   function isDirectRefereeServer(child: any, parent: any): boolean {
@@ -3310,7 +3504,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
     }
   });
 
-  // POST /api/admin/tasks/reset - Admin resets tasks to official AirProds 12 tasks
+  // POST /api/admin/tasks/reset - Admin resets tasks to official Gold Speed 12 tasks
   app.post('/api/admin/tasks/reset', async (req, res) => {
     try {
       serverTasksStore.clear();
@@ -3412,12 +3606,19 @@ app.get(['/api/health', '/health'], async (req, res) => {
         return res.status(400).json({ success: false, error: 'Données du produit invalides.' });
       }
 
+      const priceNum = Number(prodData.price) || 0;
+      const dailyNum = Number(prodData.dailyGain) || 0;
+      const durNum = Number(prodData.duration) || 0;
+      const totalNum = Number(prodData.totalGain) || (dailyNum * durNum);
+      const calcRate = priceNum > 0 ? Math.round((dailyNum / priceNum) * 1000) / 10 : 0;
+
       const normalized = normalizeDbRow('products', {
         ...prodData,
-        price: Number(prodData.price) || 0,
-        dailyGain: Number(prodData.dailyGain) || 0,
-        duration: Number(prodData.duration) || 0,
-        totalGain: Number(prodData.totalGain) || (Number(prodData.dailyGain || 0) * Number(prodData.duration || 0)),
+        price: priceNum,
+        dailyGain: dailyNum,
+        duration: durNum,
+        totalGain: totalNum,
+        dailyRatePercent: prodData.dailyRatePercent !== undefined ? Number(prodData.dailyRatePercent) : calcRate,
         order: Number(prodData.order) || 99,
         isActive: prodData.isActive !== false
       });
@@ -3444,6 +3645,27 @@ app.get(['/api/health', '/health'], async (req, res) => {
   app.post('/api/products', handleSaveProductRoute);
   app.put('/api/products/:id', handleSaveProductRoute);
 
+  app.delete('/api/products/:id', async (req, res) => {
+    try {
+      const productId = req.params.id;
+      if (!productId) {
+        return res.status(400).json({ success: false, error: 'ID produit requis.' });
+      }
+      serverProductsStore.delete(productId);
+      savePlatformDataToDisk(true);
+      try {
+        if (Date.now() >= supabaseUnreachableUntil) {
+          await (supabaseAdmin.from('products' as any) as any).delete().eq('id', productId);
+        }
+      } catch (_) {}
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
+      return res.json({ success: true });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err?.message || 'Erreur lors de la suppression du produit.' });
+    }
+  });
+
   app.post('/api/products/reset', async (_req, res) => {
     try {
       const allowedIds = new Set(defaultSeedProducts.map(p => p.id));
@@ -3451,7 +3673,9 @@ app.get(['/api/health', '/health'], async (req, res) => {
         if (!allowedIds.has(currentId)) {
           serverProductsStore.delete(currentId);
           try {
-            await (supabaseAdmin.from('products' as any) as any).delete().eq('id', currentId);
+            if (Date.now() >= supabaseUnreachableUntil) {
+              await (supabaseAdmin.from('products' as any) as any).delete().eq('id', currentId);
+            }
           } catch (_) {}
         }
       }
@@ -3558,13 +3782,21 @@ app.get(['/api/health', '/health'], async (req, res) => {
   // =========================================================================
   async function runServerSideDailyRevenueDistribution() {
     try {
-      const { data: activeInvestments, error } = await supabaseAdmin
-        .from('investments')
-        .select('*');
+      let sourceInvestments: any[] = [];
+      if (Date.now() >= supabaseUnreachableUntil) {
+        const { data: activeInvestments, error } = await supabaseAdmin
+          .from('investments')
+          .select('*');
+        if (!error && Array.isArray(activeInvestments) && activeInvestments.length > 0) {
+          sourceInvestments = activeInvestments.map(i => normalizeDbRow('investments', i));
+        }
+      }
 
-      if (error || !activeInvestments || activeInvestments.length === 0) return;
+      if (sourceInvestments.length === 0) {
+        sourceInvestments = Array.from(serverInvestmentsStore.values());
+      }
 
-      const normInvestments = activeInvestments.map(i => normalizeDbRow('investments', i)).filter(i => (i.daysRemaining || 0) > 0);
+      const normInvestments = sourceInvestments.filter(i => (i.daysRemaining || 0) > 0);
       if (normInvestments.length === 0) return;
 
       const now = Date.now();
@@ -3593,6 +3825,14 @@ app.get(['/api/health', '/health'], async (req, res) => {
 
       if (investmentsToUpdate.length > 0) {
         for (const item of investmentsToUpdate) {
+          if (serverInvestmentsStore.has(item.id)) {
+            const existingInv = serverInvestmentsStore.get(item.id);
+            serverInvestmentsStore.set(item.id, {
+              ...existingInv,
+              daysRemaining: item.daysRemaining,
+              lastClaimDate: item.lastClaimDate
+            });
+          }
           await safeSupabaseUpdate('investments', {
             daysRemaining: item.daysRemaining,
             lastClaimDate: item.lastClaimDate
@@ -3600,25 +3840,27 @@ app.get(['/api/health', '/health'], async (req, res) => {
         }
 
         for (const [userId, totalGain] of userGainMap.entries()) {
-          const { data: userRec } = await supabaseAdmin.from('users').select('*').eq('id', userId).maybeSingle();
-          if (userRec) {
-            const normUser = normalizeDbRow('users', userRec);
-            const newBal = (Number(normUser.balance) || 0) + totalGain;
-            const newTot = (Number(normUser.totalEarnings) || 0) + totalGain;
+          let targetUser = serverUsersStore.get(userId);
+          if (!targetUser && Date.now() >= supabaseUnreachableUntil) {
+            const { data: userRec } = await supabaseAdmin.from('users').select('*').eq('id', userId).maybeSingle();
+            if (userRec) targetUser = normalizeDbRow('users', userRec);
+          }
+
+          if (targetUser) {
+            const newBal = (Number(targetUser.balance) || 0) + totalGain;
+            const newTot = (Number(targetUser.totalEarnings) || 0) + totalGain;
+
+            serverUsersStore.set(userId, { ...targetUser, balance: newBal, dailyEarnings: totalGain, totalEarnings: newTot });
 
             await safeSupabaseUpdate('users', {
               balance: newBal,
               dailyEarnings: totalGain,
               totalEarnings: newTot
             }, 'id', userId);
-
-            if (serverUsersStore.has(userId)) {
-              const u = serverUsersStore.get(userId);
-              serverUsersStore.set(userId, { ...u, balance: newBal, dailyEarnings: totalGain, totalEarnings: newTot });
-            }
           }
         }
 
+        savePlatformDataToDisk(true);
         lastFetchAllData = null;
         lastFetchAllTime = 0;
         console.log(`[Daily Revenue Worker] Distributed earnings for ${investmentsToUpdate.length} investments.`);

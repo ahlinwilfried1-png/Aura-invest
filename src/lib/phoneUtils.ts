@@ -1,6 +1,6 @@
 /**
  * Phone Number Normalization & Country Utilities
- * Site exclusive to Cameroun (+237)
+ * Site exclusive to Togo (+228)
  */
 import { ALLOWED_COUNTRIES, DEFAULT_COUNTRY, AllowedCountry, getCountryByCode, getCountryByNameOrCode } from '../constants/countries';
 
@@ -30,7 +30,7 @@ export function normalizePhoneNumber(input: string | undefined | null, defaultPr
     }
   }
   
-  // If starts with leading 0 (local mobile prefix e.g. 06..., 09...)
+  // If starts with leading 0 (local mobile prefix e.g. 09...)
   if (cleaned.startsWith('0')) {
     cleaned = cleaned.substring(1);
   }
@@ -118,7 +118,7 @@ export function extractPhoneDetails(input: string | undefined | null, countryHin
 
   return {
     countryCode: detectedCountry.code,
-    isCameroon: detectedCountry.code === 'CM',
+    isCameroon: false,
     cleanPhone,
     nationalDigits,
     allDigits,
@@ -139,9 +139,10 @@ export function detectCountryFromPhone(phone: string | undefined | null): string
 }
 
 export function getCountryCode(countryNameOrCode: string | undefined | null): string {
-  if (!countryNameOrCode) return 'CM';
+  if (!countryNameOrCode) return 'TG';
   const found = getCountryByNameOrCode(countryNameOrCode);
   return found.code;
 }
+
 
 

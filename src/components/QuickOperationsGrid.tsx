@@ -66,7 +66,7 @@ export const QuickOperationsGrid: React.FC<QuickOperationsGridProps> = ({
           OPÉRATIONS RAPIDES
         </h3>
         <span className="text-[10px] font-bold uppercase font-mono px-2.5 py-0.5 rounded-full text-pink-300 bg-pink-500/20 border border-pink-500/30">
-          AIRPODS
+          GOLD SPEED
         </span>
       </div>
 

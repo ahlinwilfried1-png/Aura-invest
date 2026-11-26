@@ -1,13 +1,13 @@
 import { TaskItem } from '../types';
 
 /**
- * Tâches officielles et primes d'activité AirProds (12 tâches officielles)
+ * Tâches officielles et primes d'activité Gold Speed (12 tâches officielles)
  */
 export const OFFICIAL_TASKS: TaskItem[] = [
   {
     id: 'task_inv_3',
     title: 'Invitez 3 investisseurs de niveau 1',
-    description: 'Parrainez 3 investisseurs directs de niveau 1 ayant activé au moins un pack AirProds.',
+    description: 'Parrainez 3 investisseurs directs de niveau 1 ayant activé au moins un pack Gold Speed.',
     category: 'referral',
     targetType: 'level1_investors_count',
     targetValue: 3,
@@ -20,7 +20,7 @@ export const OFFICIAL_TASKS: TaskItem[] = [
   {
     id: 'task_inv_10',
     title: 'Invitez 10 investisseurs de niveau 1',
-    description: 'Parrainez 10 investisseurs directs de niveau 1 ayant activé au moins un pack AirProds.',
+    description: 'Parrainez 10 investisseurs directs de niveau 1 ayant activé au moins un pack Gold Speed.',
     category: 'referral',
     targetType: 'level1_investors_count',
     targetValue: 10,
@@ -33,7 +33,7 @@ export const OFFICIAL_TASKS: TaskItem[] = [
   {
     id: 'task_inv_30',
     title: 'Invitez 30 investisseurs de niveau 1',
-    description: 'Parrainez 30 investisseurs directs de niveau 1 ayant activé au moins un pack AirProds.',
+    description: 'Parrainez 30 investisseurs directs de niveau 1 ayant activé au moins un pack Gold Speed.',
     category: 'referral',
     targetType: 'level1_investors_count',
     targetValue: 30,
@@ -45,8 +45,8 @@ export const OFFICIAL_TASKS: TaskItem[] = [
   },
   {
     id: 'task_buy_vip4',
-    title: 'Achetez VIP4 AirProds',
-    description: 'Activez la formule technologique VIP4 AirProds (45 000 XOF) pour débloquer votre prime.',
+    title: 'Achetez VIP4 Gold Speed',
+    description: 'Activez la formule technologique VIP4 Gold Speed (45 000 XOF) pour débloquer votre prime.',
     category: 'purchase',
     targetType: 'vip_purchase',
     targetValue: 4,
@@ -59,8 +59,8 @@ export const OFFICIAL_TASKS: TaskItem[] = [
   },
   {
     id: 'task_buy_vip5',
-    title: 'Achetez VIP5 AirProds',
-    description: 'Activez la formule technologique VIP5 AirProds (100 000 XOF) pour percevoir votre prime.',
+    title: 'Achetez VIP5 Gold Speed',
+    description: 'Activez la formule technologique VIP5 Gold Speed (100 000 XOF) pour percevoir votre prime.',
     category: 'purchase',
     targetType: 'vip_purchase',
     targetValue: 5,
@@ -73,8 +73,8 @@ export const OFFICIAL_TASKS: TaskItem[] = [
   },
   {
     id: 'task_buy_vip6',
-    title: 'Achetez VIP6 AirProds',
-    description: 'Activez la formule technologique VIP6 AirProds (250 000 XOF) pour percevoir votre prime.',
+    title: 'Achetez VIP6 Gold Speed',
+    description: 'Activez la formule technologique VIP6 Gold Speed (250 000 XOF) pour percevoir votre prime.',
     category: 'purchase',
     targetType: 'vip_purchase',
     targetValue: 6,
@@ -87,8 +87,8 @@ export const OFFICIAL_TASKS: TaskItem[] = [
   },
   {
     id: 'task_buy_vip7',
-    title: 'Achetez VIP7 AirProds',
-    description: 'Activez la formule technologique VIP7 AirProds (500 000 XOF) pour percevoir votre prime.',
+    title: 'Achetez VIP7 Gold Speed',
+    description: 'Activez la formule technologique VIP7 Gold Speed (500 000 XOF) pour percevoir votre prime.',
     category: 'purchase',
     targetType: 'vip_purchase',
     targetValue: 7,
@@ -101,8 +101,8 @@ export const OFFICIAL_TASKS: TaskItem[] = [
   },
   {
     id: 'task_buy_vip8',
-    title: 'Achetez VIP8 AirProds',
-    description: 'Activez la formule technologique VIP8 AirProds (1 000 000 XOF) pour percevoir votre prime.',
+    title: 'Achetez VIP8 Gold Speed',
+    description: 'Activez la formule technologique VIP8 Gold Speed (1 000 000 XOF) pour percevoir votre prime.',
     category: 'purchase',
     targetType: 'vip_purchase',
     targetValue: 8,
@@ -115,8 +115,8 @@ export const OFFICIAL_TASKS: TaskItem[] = [
   },
   {
     id: 'task_buy_vip9',
-    title: 'Achetez VIP9 AirProds',
-    description: 'Activez la formule de prestige VIP9 AirProds (2 000 000 XOF) pour percevoir votre prime suprême.',
+    title: 'Achetez VIP9 Gold Speed',
+    description: 'Activez la formule de prestige VIP9 Gold Speed (2 000 000 XOF) pour percevoir votre prime suprême.',
     category: 'purchase',
     targetType: 'vip_purchase',
     targetValue: 9,

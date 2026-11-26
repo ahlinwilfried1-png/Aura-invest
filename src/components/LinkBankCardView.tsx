@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, CreditCard, ShieldCheck, CheckCircle2, LockKeyhole, Building, Globe, UserCheck, Lock, AlertTriangle, KeyRound } from 'lucide-react';
 import { User } from '../types';
 import { useApp } from '../context/AppContext';
-import { ALLOWED_COUNTRIES, getCountryByCode, getCountryByPhone } from '../constants/countries';
+import { DEFAULT_COUNTRY } from '../constants/countries';
 
 interface LinkBankCardViewProps {
   currentUser: User;
@@ -19,25 +19,18 @@ export const LinkBankCardView: React.FC<LinkBankCardViewProps> = ({
 
   const isAlreadyBound = Boolean(currentUser.withdrawalAccountName && currentUser.withdrawalAccountNumber);
 
-  const userCountry = currentUser.withdrawalCountry 
-    ? getCountryByCode(currentUser.withdrawalCountry)
-    : getCountryByPhone(currentUser.phone);
+  const currentCountry = DEFAULT_COUNTRY;
+  const countryCode = currentCountry.code;
 
-  const [countryCode, setCountryCode] = useState<string>(userCountry.code);
-  
-  const currentCountry = ALLOWED_COUNTRIES.find(c => c.code === countryCode) || userCountry;
-  
-  // Networks & Card options
-  const PAYMENT_NETWORKS = [
-    ...currentCountry.networks,
-    'Carte Visa / Mastercard',
-    'Virement Bancaire (RIB)'
-  ];
+  // Réseaux Togo uniquement
+  const PAYMENT_NETWORKS = currentCountry.networks;
 
   const [network, setNetwork] = useState<string>(
-    currentUser.withdrawalNetwork || currentCountry.networks[0] || PAYMENT_NETWORKS[0]
+    PAYMENT_NETWORKS.includes(currentUser.withdrawalNetwork || '')
+      ? (currentUser.withdrawalNetwork as string)
+      : PAYMENT_NETWORKS[0]
   );
-  
+
   const [accountName, setAccountName] = useState<string>(
     currentUser.withdrawalAccountName || currentUser.name || ''
   );
@@ -48,15 +41,6 @@ export const LinkBankCardView: React.FC<LinkBankCardViewProps> = ({
 
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-
-  const handleCountryChange = (code: string) => {
-    if (isAlreadyBound) return;
-    setCountryCode(code);
-    const selectedC = ALLOWED_COUNTRIES.find(c => c.code === code);
-    if (selectedC && selectedC.networks.length > 0) {
-      setNetwork(selectedC.networks[0]);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,8 +179,7 @@ export const LinkBankCardView: React.FC<LinkBankCardViewProps> = ({
                   Pays
                 </span>
                 <span className="text-sm font-bold text-white block">
-                  {ALLOWED_COUNTRIES.find(c => c.code === currentUser.withdrawalCountry)?.flag || '🇹🇬'}{' '}
-                  {ALLOWED_COUNTRIES.find(c => c.code === currentUser.withdrawalCountry)?.name || currentUser.withdrawalCountry || "Togo"}
+                  {DEFAULT_COUNTRY.flag} {DEFAULT_COUNTRY.name}
                 </span>
               </div>
 
@@ -259,42 +242,24 @@ export const LinkBankCardView: React.FC<LinkBankCardViewProps> = ({
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4 pt-1">
             <div className="bg-[#1a082b] rounded-2xl p-4 sm:p-5 border border-pink-500/25 shadow-md space-y-4">
-              {/* Selection du Pays */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-pink-200 flex items-center space-x-1.5">
+              {/* Pays fixe Togo */}
+              <div className="flex items-center justify-between bg-[#120422] border border-pink-500/25 rounded-xl px-3.5 py-2.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-pink-200 flex items-center space-x-1.5">
                   <Globe className="w-4 h-4 text-pink-400" />
-                  <span>Pays de la Banque / Compte</span>
+                  <span>Pays</span>
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                  {ALLOWED_COUNTRIES.map((c) => {
-                    const isSel = countryCode === c.code;
-                    return (
-                      <button
-                        key={c.code}
-                        type="button"
-                        onClick={() => handleCountryChange(c.code)}
-                        className={`flex items-center space-x-1.5 px-2.5 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                          isSel
-                            ? 'bg-pink-500/30 border-pink-400 text-white shadow-md ring-1 ring-pink-400/50'
-                            : 'bg-[#120422] border-pink-500/20 text-pink-200/80 hover:bg-[#1f0933]'
-                        }`}
-                      >
-                        <span className="text-base">{c.flag}</span>
-                        <span className="truncate">{c.name}</span>
-                        <span className="text-[10px] font-mono text-pink-300 ml-auto">{c.prefix}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <span className="text-xs font-black text-white">
+                  {currentCountry.flag} {currentCountry.name} ({currentCountry.prefix})
+                </span>
               </div>
 
-              {/* Moyen de Paiement / Type de Carte */}
+              {/* Moyen de Paiement Mobile Money Togo */}
               <div className="space-y-2">
                 <label className="block text-xs font-bold uppercase tracking-wider text-pink-200 flex items-center space-x-1.5">
                   <CreditCard className="w-4 h-4 text-pink-400" />
-                  <span>Moyen de paiement / Type de compte</span>
+                  <span>Réseau Mobile Money (Togo)</span>
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {PAYMENT_NETWORKS.map((net) => {
                     const isSel = network === net;
                     return (
@@ -302,13 +267,13 @@ export const LinkBankCardView: React.FC<LinkBankCardViewProps> = ({
                         key={net}
                         type="button"
                         onClick={() => setNetwork(net)}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer border ${
+                        className={`px-3.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer border ${
                           isSel
                             ? 'bg-gradient-to-r from-pink-500 to-purple-600 border-pink-400 text-white font-extrabold shadow-md'
                             : 'bg-[#120422] border-pink-500/20 text-pink-200 hover:bg-[#1f0933]'
                         }`}
                       >
-                        {net}
+                        {net === 'TMoney' ? 'TMoney (Mixx By Yas)' : 'Moov Money (Flooz)'}
                       </button>
                     );
                   })}
@@ -319,23 +284,23 @@ export const LinkBankCardView: React.FC<LinkBankCardViewProps> = ({
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-pink-200 flex items-center space-x-1.5">
                   <UserCheck className="w-4 h-4 text-pink-400" />
-                  <span>Nom complet sur la carte / compte bancaire</span>
+                  <span>Nom complet du titulaire du compte</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
-                  placeholder="Ex: Kouassi Armand Desiré"
+                  placeholder="Ex: Kofi Mensah"
                   className="w-full bg-[#120422] focus:bg-[#1a082b] border border-pink-500/30 focus:border-pink-400 rounded-xl px-3.5 py-3 text-sm font-bold text-white outline-none transition-all placeholder:text-pink-300/40 placeholder:font-normal"
                 />
               </div>
 
-              {/* Numéro de compte / carte */}
+              {/* Numéro Mobile Money Togo */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-pink-200 flex items-center space-x-1.5">
                   <Building className="w-4 h-4 text-pink-400" />
-                  <span>Numéro de carte / Compte bancaire ou Mobile</span>
+                  <span>Numéro Mobile Money Togo</span>
                 </label>
                 <div className="flex items-center bg-[#120422] border border-pink-500/30 focus-within:bg-[#1a082b] focus-within:border-pink-400 rounded-xl px-3.5 py-3 transition-all">
                   <span className="text-xs font-black font-mono text-pink-400 mr-2 shrink-0">{currentCountry.prefix}</span>
@@ -344,7 +309,7 @@ export const LinkBankCardView: React.FC<LinkBankCardViewProps> = ({
                     required
                     value={accountNumber}
                     onChange={(e) => setAccountNumber(e.target.value)}
-                    placeholder="Ex: 0708091011 ou 4111 2222 3333 4444"
+                    placeholder="Ex: 90 12 34 56"
                     className="w-full bg-transparent text-sm font-mono font-bold text-white outline-none placeholder:text-pink-300/40 placeholder:font-sans placeholder:font-normal"
                   />
                 </div>

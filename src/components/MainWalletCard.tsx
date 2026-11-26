@@ -2,18 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { CreditCard, ShieldCheck, History, Eye, EyeOff, Headphones, Sparkles } from 'lucide-react';
 import { User } from '../types';
 
-const AIRPODS_BG_IMAGES = [
+const GOLD_SPEED_BG_IMAGES = [
   {
-    url: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=1200&auto=format&fit=crop&q=80',
-    title: 'AirPods Pro — Audio Spatial & Réduction Active du Bruit'
+    url: 'https://images.unsplash.com/photo-1678685888221-cda773a3dcdb?w=1200&auto=format&fit=crop&q=80',
+    title: 'Gold Speed VIP — Technologie & Rendement Quotidien'
   },
   {
-    url: 'https://images.unsplash.com/photo-1572536147248-ac59a8abfa4b?w=1200&auto=format&fit=crop&q=80',
-    title: 'AirPods Max — Qualité Acoustique Studio'
+    url: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=1200&auto=format&fit=crop&q=80',
+    title: 'Gold Speed Switch — Performance & Croissance'
   },
   {
-    url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1200&auto=format&fit=crop&q=80',
-    title: 'AirPods 4 — Performance Haute Définition'
+    url: 'https://images.unsplash.com/photo-1663499482523-1c0c1bae4ce1?w=1200&auto=format&fit=crop&q=80',
+    title: 'Gold Speed Pro — Revenus Garantis 24h/24'
   }
 ];
 
@@ -35,10 +35,10 @@ export const MainWalletCard: React.FC<MainWalletCardProps> = ({
   const [hideBalance, setHideBalance] = useState(false);
   const [bgIndex, setBgIndex] = useState(0);
 
-  // Auto-rotate 3 AirPods images every 4 seconds
+  // Auto-rotate 3 Gold Speed images every 4 seconds
   useEffect(() => {
     const timer = setInterval(() => {
-      setBgIndex((prev) => (prev + 1) % AIRPODS_BG_IMAGES.length);
+      setBgIndex((prev) => (prev + 1) % GOLD_SPEED_BG_IMAGES.length);
     }, 4000);
     return () => clearInterval(timer);
   }, []);
@@ -48,9 +48,9 @@ export const MainWalletCard: React.FC<MainWalletCardProps> = ({
   return (
     <div className="w-full bg-gradient-to-br from-[#270b42] via-[#1a072d] to-[#10031d] text-white rounded-3xl p-5 sm:p-6 relative overflow-hidden space-y-4 border-2 border-pink-500/30 shadow-2xl shadow-purple-950/50">
       
-      {/* 3 Rotating AirPods Background Images Layer - High Visibility */}
+      {/* 3 Rotating Gold Speed Background Images Layer - High Visibility */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {AIRPODS_BG_IMAGES.map((img, idx) => (
+        {GOLD_SPEED_BG_IMAGES.map((img, idx) => (
           <div
             key={img.url}
             className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 transform scale-105 ${
@@ -122,7 +122,7 @@ export const MainWalletCard: React.FC<MainWalletCardProps> = ({
       <div className="relative z-10 pt-1">
         <span className="inline-flex items-center space-x-1.5 bg-[#170526]/80 border border-pink-500/30 text-pink-200 text-[10px] font-bold px-2.5 py-0.5 rounded-full backdrop-blur-md">
           <Sparkles className="w-3 h-3 text-pink-400" />
-          <span>{AIRPODS_BG_IMAGES[bgIndex].title}</span>
+          <span>{GOLD_SPEED_BG_IMAGES[bgIndex].title}</span>
         </span>
       </div>
 
@@ -144,14 +144,14 @@ export const MainWalletCard: React.FC<MainWalletCardProps> = ({
 
         {/* 3 Dots Image Switcher Indicator */}
         <div className="flex items-center space-x-1.5 pb-1 bg-[#170526]/80 px-2.5 py-1 rounded-full border border-pink-500/30 backdrop-blur-md">
-          {AIRPODS_BG_IMAGES.map((_, idx) => (
+          {GOLD_SPEED_BG_IMAGES.map((_, idx) => (
             <button
               key={idx}
               onClick={() => setBgIndex(idx)}
               className={`h-2 rounded-full transition-all cursor-pointer ${
                 idx === bgIndex ? 'w-5 bg-gradient-to-r from-pink-400 to-purple-400' : 'w-2 bg-pink-300/30 hover:bg-pink-300/60'
               }`}
-              title={`Vue AirPods ${idx + 1}`}
+              title={`Vue Gold Speed ${idx + 1}`}
             />
           ))}
         </div>
