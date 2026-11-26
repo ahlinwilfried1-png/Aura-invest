@@ -2,24 +2,16 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/api/pay-redirect/:depositId*",
-      "destination": "/api/pay-redirect?depositId=:depositId"
-    },
-    {
-      "source": "/api/pay-redirect",
-      "destination": "/api/pay-redirect"
-    },
-    {
       "source": "/api/health",
       "destination": "/api/health"
     },
     {
       "source": "/api/(.*)",
-      "destination": "/api"
+      "destination": "/api/index?__path=/api/$1"
     },
     {
       "source": "/api",
-      "destination": "/api"
+      "destination": "/api/index"
     },
     {
       "source": "/((?!api/).*)",

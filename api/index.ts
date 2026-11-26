@@ -11,6 +11,18 @@ export default function handler(req: any, res: any) {
     return;
   }
 
+  // Restore original /api/... path when routed via Vercel rewrite (?__path=/api/...)
+  try {
+    const parsedUrl = new URL(req.url || '/', 'http://localhost');
+    const pathParam = parsedUrl.searchParams.get('__path') || (req.query?.__path as string | undefined);
+    if (pathParam && typeof pathParam === 'string') {
+      parsedUrl.searchParams.delete('__path');
+      const normalizedPath = pathParam.startsWith('/') ? pathParam : `/${pathParam}`;
+      const qs = parsedUrl.searchParams.toString();
+      req.url = qs ? `${normalizedPath}?${qs}` : normalizedPath;
+    }
+  } catch (_) {}
+
   const urlPath = (req.url || '').split('?')[0];
 
   if (urlPath === '' || urlPath === '/' || urlPath === '/api' || urlPath === '/api/') {
@@ -23,6 +35,8 @@ export default function handler(req: any, res: any) {
       country: 'TG',
       endpoints: {
         health: '/api/health',
+        login: '/api/auth/login',
+        register: '/api/auth/register',
         submitDeposit: '/api/deposits/submit',
         submitWithdrawal: '/api/withdrawals/submit'
       },

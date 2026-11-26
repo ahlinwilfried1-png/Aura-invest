@@ -66,7 +66,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
   const [loginPhone, setLoginPhone] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  // Register Form State (Clean White UI matching Dell design system)
+  // Register Form State (Clean White UI matching Gold Speed design system)
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
@@ -279,7 +279,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
   return (
     <div className="min-h-screen bg-[#F4F6F9] flex flex-col font-sans select-none antialiased relative text-gray-800">
       
-      {/* TOP HEADER: White background, Top Bar with Dell Technologies Logo & Language / Help */}
+      {/* TOP HEADER: White background, Top Bar with Gold Speed Logo & Language / Help */}
       <header className="bg-white border-b border-gray-200/80 sticky top-0 z-30 shadow-xs">
         <div className="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
           
@@ -306,13 +306,13 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
             )}
           </div>
 
-          {/* Centered Brand: DELL Technologies */}
+          {/* Centered Brand: Gold Speed */}
           <div className="flex items-center justify-center space-x-1.5">
-            <span className="text-xl sm:text-2xl font-black tracking-tight text-[#0076CE] font-sans">
-              DELL
+            <span className="text-xl sm:text-2xl font-black tracking-tight text-amber-500 font-sans">
+              GOLD
             </span>
-            <span className="text-xs sm:text-sm font-semibold tracking-wide text-gray-700 uppercase">
-              Technologies
+            <span className="text-sm sm:text-base font-extrabold tracking-wide text-[#0076CE] uppercase">
+              SPEED
             </span>
           </div>
 
@@ -358,7 +358,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
           <AnimatePresence mode="wait">
             
             {/* ========================================================= */}
-            {/* 1. PAGE D'INSCRIPTION EXACTEMENT SELON LA MAQUETTE DELL   */}
+            {/* 1. PAGE D'INSCRIPTION GOLD SPEED                          */}
             {/* ========================================================= */}
             {mode === 'register' && (
               <motion.div
@@ -375,7 +375,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                     Enregistrer un compte
                   </h1>
                   <p className="text-xs text-gray-500 mt-1 font-medium">
-                    Rejoignez la plateforme officielle Dell Technologies
+                    Rejoignez la plateforme officielle Gold Speed
                   </p>
                 </div>
 
@@ -544,7 +544,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                     </p>
                   </div>
 
-                  {/* Bouton d'action principal Bleu Dell: Enregistrer */}
+                  {/* Bouton d'action principal Bleu Gold Speed: Enregistrer */}
                   <button
                     type="submit"
                     disabled={loading}
@@ -596,7 +596,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                     Connexion
                   </h1>
                   <p className="text-xs text-gray-500 mt-1 font-medium">
-                    Accédez à votre compte officiel Dell Technologies
+                    Accédez à votre compte officiel Gold Speed
                   </p>
                 </div>
 
@@ -672,7 +672,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
                     </div>
                   </div>
 
-                  {/* Bouton SE CONNECTER Bleu Dell */}
+                  {/* Bouton SE CONNECTER Gold Speed */}
                   <button
                     type="submit"
                     disabled={loading}
@@ -922,7 +922,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({
             <span className="font-semibold text-gray-600">Connexion chiffrée SSL 256-bit</span>
           </div>
           <p className="text-[11px] text-gray-400">
-            © Dell Technologies Inc. Tous droits réservés.
+            © Gold Speed. Tous droits réservés.
           </p>
         </div>
 

@@ -52,6 +52,8 @@ const safeFetch: typeof fetch = async (input: RequestInfo | URL, init?: RequestI
   }
 };
 
+export const hasSupabaseAnonKey = Boolean(SUPABASE_ANON_KEY);
+
 // Public Supabase client (only active when an anon key is provided; server API routes handle PostgreSQL directly)
 export const supabase = SUPABASE_ANON_KEY
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -68,7 +70,7 @@ export const supabase = SUPABASE_ANON_KEY
     })
   : ({
       from: () => {
-        const emptyResult = Promise.resolve({ data: null, error: { message: 'Server API mode active' } });
+        const emptyResult = Promise.resolve({ data: null, error: { message: 'Impossible de joindre la base de données. Veuillez réessayer.' } });
         const builder: any = {
           select: () => builder,
           insert: () => emptyResult,

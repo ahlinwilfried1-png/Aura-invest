@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, hasSupabaseAnonKey } from './supabase';
 import { normalizeFromDbRow, prepareForDbPayload } from './dbMapper';
 
 // Resilient fetch helper with timeout and content-type verification
@@ -65,61 +65,75 @@ export async function checkSupabaseStatus(): Promise<any> {
 }
 
 export async function loginUserInDatabase(phone: string, password: string, country?: string): Promise<{ success: boolean; error?: string; user?: any }> {
-  try {
-    const res = await resilientFetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, password, country })
-    }, 8000);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await resilientFetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password, country })
+      }, 15000);
 
-    if (res.isJson && res.data) {
-      if (res.data.success && res.data.user) {
-        return { success: true, user: normalizeFromDbRow('users', res.data.user) };
+      if (res.isJson && res.data) {
+        if (res.data.success && res.data.user) {
+          return { success: true, user: normalizeFromDbRow('users', res.data.user) };
+        }
+        if (res.data.error) {
+          return { success: false, error: res.data.error };
+        }
       }
-      if (res.data.error) {
-        return { success: false, error: res.data.error };
-      }
+    } catch (err: any) {
+      console.warn('[Login Endpoint Error]:', err);
     }
-  } catch (err: any) {
-    console.warn('[Login Endpoint Error]:', err);
+    if (attempt === 0) {
+      await new Promise(r => setTimeout(r, 350));
+    }
   }
   return { success: false, error: "Impossible de joindre le serveur d'authentification pour le moment." };
 }
 
 export async function registerUserInDatabase(user: any): Promise<{ success: boolean; error?: string; user?: any }> {
-  try {
-    const res = await resilientFetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(user)
-    }, 8000);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await resilientFetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(user)
+      }, 15000);
 
-    if (res.isJson && res.data) {
-      if (res.data.success && res.data.user) {
-        return { success: true, user: normalizeFromDbRow('users', res.data.user) };
-      }
-      if (res.data.error) {
-        let msg = res.data.error;
-        if (msg.includes('users_phone_key') || msg.includes('unique constraint') || msg.includes('23505') || msg.includes('already exists')) {
-          msg = 'Ce numéro possède déjà un compte, veuillez vous connecter.';
+      if (res.isJson && res.data) {
+        if (res.data.success && res.data.user) {
+          return { success: true, user: normalizeFromDbRow('users', res.data.user) };
         }
-        return { success: false, error: msg };
+        if (res.data.error) {
+          let msg = res.data.error;
+          if (msg.includes('users_phone_key') || msg.includes('unique constraint') || msg.includes('23505') || msg.includes('already exists')) {
+            msg = 'Ce numéro possède déjà un compte, veuillez vous connecter.';
+          }
+          return { success: false, error: msg };
+        }
       }
+    } catch (err: any) {
+      console.warn('[Register Endpoint Error]:', err);
     }
-  } catch (err: any) {
-    console.warn('[Register Endpoint Error]:', err);
+    if (attempt === 0) {
+      await new Promise(r => setTimeout(r, 350));
+    }
   }
 
-  // Fallback: Direct upsert via Supabase client
-  const fallbackRes = await upsertItem('users', user);
-  if (!fallbackRes.success && fallbackRes.error) {
-    let msg = fallbackRes.error;
-    if (msg.includes('users_phone_key') || msg.includes('unique constraint') || msg.includes('23505') || msg.includes('already exists')) {
-      msg = 'Ce numéro possède déjà un compte, veuillez vous connecter.';
+  // Only attempt direct client Supabase upsert if a real anon key is configured
+  if (hasSupabaseAnonKey) {
+    const fallbackRes = await upsertItem('users', user);
+    if (!fallbackRes.success && fallbackRes.error) {
+      let msg = fallbackRes.error;
+      if (msg.includes('users_phone_key') || msg.includes('unique constraint') || msg.includes('23505') || msg.includes('already exists')) {
+        msg = 'Ce numéro possède déjà un compte, veuillez vous connecter.';
+      }
+      return { success: false, error: msg };
     }
-    return { success: false, error: msg };
+    if (fallbackRes.success) return fallbackRes;
   }
-  return fallbackRes;
+
+  return { success: false, error: "Impossible de joindre le serveur d'inscription pour le moment. Veuillez réessayer." };
 }
 
 export async function fetchTableData<T>(tableName: string): Promise<T[] | null> {

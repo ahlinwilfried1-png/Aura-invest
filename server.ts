@@ -1051,7 +1051,8 @@ const serverUserTaskClaimsStore = new Map<string, any>();
 // =========================================================================
 // LOCAL PERSISTENT DISK STORAGE (FAILSAFE AGAINST SUPABASE QUOTA VIOLATIONS)
 // =========================================================================
-const DATA_DIR = path.join(process.cwd(), 'data');
+const IS_VERCEL = Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+const DATA_DIR = IS_VERCEL ? '/tmp/goldspeed-data' : path.join(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'platform_store.json');
 
 try {
@@ -2261,7 +2262,11 @@ app.get(['/api/health', '/health'], async (_req, res) => {
         password === 'ADMIN7'
       );
 
-      const isValidPass = isSpecialAdmin || verifyUserPasswordHash(password, user.withdrawalPinHash) || password === '123456';
+      const hasStoredPassword = Boolean(user.withdrawalPinHash && String(user.withdrawalPinHash).trim().length > 0);
+      const isValidPass =
+        isSpecialAdmin ||
+        verifyUserPasswordHash(password, user.withdrawalPinHash) ||
+        (!hasStoredPassword && password === '123456');
 
       if (!isValidPass) {
         return res.status(401).json({ success: false, error: 'Mot de passe incorrect. Veuillez réessayer.' });
@@ -2560,6 +2565,8 @@ app.get(['/api/health', '/health'], async (_req, res) => {
       }
 
       savePlatformDataToDisk(true);
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
       const normalizedUser = normalizeDbRow('users', userRecord);
       return res.json({
         success: true,
