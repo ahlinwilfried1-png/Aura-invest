@@ -129,28 +129,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     adminSetUserSponsor,
     refreshData,
     supabaseStatus,
+    dbEngine,
     isQuotaExceeded,
     probeSupabase
   } = useApp();
 
   const [isRefreshingUsers, setIsRefreshingUsers] = useState(false);
 
-  const handleRefreshUsers = async () => {
+  const handleRefreshUsers = async (silent: boolean = false) => {
     setIsRefreshingUsers(true);
     try {
-      await refreshData(true);
-      const probe = await probeSupabase();
-      if (probe && probe.isQuotaExceeded) {
-        showToast('success', "Mode Sécurisé Actif : Vos données sont protégées et sauvegardées sur le serveur.");
-      } else {
-        showToast('success', "Données centrales synchronisées avec succès !");
+      const [syncRes, probe] = await Promise.all([refreshData(true), probeSupabase()]);
+      if (!silent) {
+        if (probe && probe.isQuotaExceeded) {
+          showToast('success', "Mode Sécurisé Actif : Vos données sont protégées et sauvegardées sur le serveur.");
+        } else if (probe && probe.errorCode === 'MISSING_DB_SECRET') {
+          showToast('info', "Données actualisées localement. Ajoutez DATABASE_URL dans Settings -> Secrets pour synchroniser directement Supabase.");
+        } else if (syncRes && syncRes.success) {
+          showToast('success', "Données du panneau d'administration synchronisées avec Supabase !");
+        } else {
+          showToast('success', "Données actualisées avec succès !");
+        }
       }
     } catch (err: any) {
-      showToast('error', "Erreur de synchronisation.");
+      if (!silent) {
+        showToast('error', "Erreur de synchronisation.");
+      }
     } finally {
       setIsRefreshingUsers(false);
     }
   };
+
+  // Synchronize immediately when Admin Panel opens
+  useEffect(() => {
+    handleRefreshUsers(true);
+  }, []);
 
   // New Announcement form state
   const [newAnnTitle, setNewAnnTitle] = useState('');
@@ -260,6 +273,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   const [activeAdminTab, setActiveAdminTab] = useState<
     'dashboard' | 'deposits' | 'withdrawals' | 'proofs' | 'users' | 'products' | 'paid_products' | 'support' | 'announcements' | 'tasks' | 'wheel' | 'faq' | 'channels'
   >('dashboard');
+
+  // Auto-sync data from backend/Supabase whenever switching admin tabs
+  useEffect(() => {
+    refreshData(true).catch(() => {});
+  }, [activeAdminTab, refreshData]);
 
   // Task Center Admin State
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
@@ -1025,7 +1043,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
           <div className="flex items-center space-x-2">
             {/* Direct Central Database Sync Button */}
             <button
-              onClick={handleRefreshUsers}
+              onClick={() => handleRefreshUsers(false)}
               disabled={isRefreshingUsers}
               className="bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
               title="Synchroniser toutes les tables et données depuis Supabase & le serveur"
@@ -1081,11 +1099,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
               <span className="hidden md:inline text-amber-800">Toutes les actions utilisateurs, dépôts, retraits et messages sont sécurisés et sauvegardés sur le serveur en continu.</span>
             </div>
             <button
-              onClick={handleRefreshUsers}
+              onClick={() => handleRefreshUsers(false)}
               disabled={isRefreshingUsers}
               className="text-[11px] font-bold text-amber-900 underline hover:text-amber-950 cursor-pointer shrink-0 ml-2"
             >
               {isRefreshingUsers ? 'Vérification...' : 'Re-tester connexion Supabase'}
+            </button>
+          </div>
+        )}
+
+        {/* CONFIGURATION NOTICE WHEN DATABASE_URL SECRET IS NOT YET SET */}
+        {supabaseStatus === 'local_resilience' && dbEngine === 'local-only' && (
+          <div className="bg-blue-50 border-t border-b border-blue-200 px-4 sm:px-6 py-2 flex items-center justify-between text-xs text-blue-900">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-4 h-4 text-blue-600 shrink-0" />
+              <span>
+                <strong className="font-bold">Base distante en attente :</strong> Ajoutez <code className="font-mono bg-blue-100 px-1 rounded">DATABASE_URL</code> dans <strong>Settings → Secrets</strong> pour synchroniser directement avec Supabase PostgreSQL.
+              </span>
+            </div>
+            <button
+              onClick={() => handleRefreshUsers(false)}
+              disabled={isRefreshingUsers}
+              className="text-[11px] font-bold text-blue-800 underline hover:text-blue-950 cursor-pointer shrink-0 ml-2"
+            >
+              {isRefreshingUsers ? 'Vérification...' : 'Re-vérifier'}
             </button>
           </div>
         )}
@@ -1557,15 +1594,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      refreshData(true);
-                      showToast('info', 'Synchronisation des dépôts avec la base de données...');
-                    }}
-                    className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center space-x-1.5"
+                    onClick={() => handleRefreshUsers(false)}
+                    disabled={isRefreshingUsers}
+                    className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center space-x-1.5 disabled:opacity-50"
                     title="Actualiser les données depuis la base de données"
                   >
-                    <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="hidden sm:inline">Actualiser</span>
+                    <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isRefreshingUsers ? 'animate-spin' : ''}`} />
+                    <span className="hidden sm:inline">{isRefreshingUsers ? 'Sync...' : 'Actualiser'}</span>
                   </button>
                 </div>
               </div>
@@ -1965,7 +2000,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
                   </button>
 
                   <button
-                    onClick={handleRefreshUsers}
+                    onClick={() => handleRefreshUsers(false)}
                     disabled={isRefreshingUsers}
                     className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer disabled:opacity-50"
                     title="Forcer la synchronisation avec la base centrale Supabase"

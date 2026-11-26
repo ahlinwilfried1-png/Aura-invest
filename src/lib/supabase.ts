@@ -1,31 +1,26 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Central Authoritative Supabase Database Configuration
-const TARGET_PROJECT_REF = 'ykoqcaggjfhpnysvumuu';
-const CENTRAL_SUPABASE_URL = 'https://ykoqcaggjfhpnysvumuu.supabase.co';
-const CENTRAL_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlrb3FjYWdnamZocG55c3Z1bXV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MjM4OTksImV4cCI6MjEwMzk5OTg5OX0.bw2WBm3lLCE6fbYq5usyqooU5p7Mk-Vfv0iLi-7Jr0U';
+// Authoritative Supabase Project URL
+const TARGET_PROJECT_REF = 'szekyfonyjycwkpxzmub';
+const DEFAULT_SUPABASE_URL = 'https://szekyfonyjycwkpxzmub.supabase.co';
 
 const env = (import.meta as any).env || {};
 
-function resolveClientUrl(): string {
-  const url = env.NEXT_PUBLIC_SUPABASE_URL || env.VITE_SUPABASE_URL;
-  if (url && url.includes(TARGET_PROJECT_REF)) return url;
-  return CENTRAL_SUPABASE_URL;
-}
+const rawEnvUrl: string = env.VITE_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_URL: string = rawEnvUrl.includes(TARGET_PROJECT_REF)
+  ? rawEnvUrl
+  : DEFAULT_SUPABASE_URL;
 
-function resolveClientAnonKey(): string {
-  const key = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY;
-  if (key && !key.includes('ozvqpwsdxkmimzfjmoud') && !key.includes('idnpfqfxvzskivpdkbdc')) return key;
-  return CENTRAL_SUPABASE_ANON_KEY;
-}
+const rawAnonKey: string = env.VITE_SUPABASE_ANON_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const SUPABASE_ANON_KEY: string =
+  rawAnonKey && !rawAnonKey.includes('ozvqpwsdxkmimzfjmoud') && !rawAnonKey.includes('ykoqcaggjfhpnysvumuu')
+    ? rawAnonKey
+    : '';
 
-const SUPABASE_URL = resolveClientUrl();
-const SUPABASE_ANON_KEY = resolveClientAnonKey();
-
-// Resilient fetch wrapper that catches Cloudflare 522/5xx HTML and timeout errors
+// Resilient fetch wrapper that catches gateway/timeout errors gracefully
 const safeFetch: typeof fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 2500);
+  const timeoutId = setTimeout(() => controller.abort(), 3000);
 
   try {
     const res = await fetch(input, {
@@ -35,7 +30,6 @@ const safeFetch: typeof fetch = async (input: RequestInfo | URL, init?: RequestI
     clearTimeout(timeoutId);
 
     const contentType = res.headers.get('content-type') || '';
-    // If response is HTML (e.g. Cloudflare 522 error landing page), return a valid JSON response instead of crashing
     if (!res.ok && !contentType.includes('application/json')) {
       return new Response(
         JSON.stringify({ error: { message: `Gateway status ${res.status}: Temporary connection timeout` }, data: [] }),
@@ -46,7 +40,7 @@ const safeFetch: typeof fetch = async (input: RequestInfo | URL, init?: RequestI
       );
     }
     return res;
-  } catch (err: any) {
+  } catch {
     clearTimeout(timeoutId);
     return new Response(
       JSON.stringify({ error: null, data: [] }),
@@ -58,18 +52,40 @@ const safeFetch: typeof fetch = async (input: RequestInfo | URL, init?: RequestI
   }
 };
 
-// Public Supabase client for client-side user operations with safe fetch and controlled realtime
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-  global: {
-    fetch: safeFetch,
-  },
-  realtime: {
-    timeout: 8000,
-  }
-});
-
-
+// Public Supabase client (only active when an anon key is provided; server API routes handle PostgreSQL directly)
+export const supabase = SUPABASE_ANON_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+      global: {
+        fetch: safeFetch,
+      },
+      realtime: {
+        timeout: 8000,
+      },
+    })
+  : ({
+      from: () => {
+        const emptyResult = Promise.resolve({ data: null, error: { message: 'Server API mode active' } });
+        const builder: any = {
+          select: () => builder,
+          insert: () => emptyResult,
+          upsert: () => emptyResult,
+          update: () => builder,
+          delete: () => builder,
+          eq: () => builder,
+          neq: () => builder,
+          in: () => builder,
+          limit: () => emptyResult,
+          then: (resolve: any, reject: any) => emptyResult.then(resolve, reject),
+        };
+        return builder;
+      },
+      channel: () => ({
+        on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
+        subscribe: () => ({ unsubscribe: () => {} }),
+      }),
+      removeChannel: () => {},
+    } as any);

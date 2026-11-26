@@ -8,6 +8,7 @@ async function resilientFetch(url: string, options: RequestInit = {}, timeoutMs:
 
   try {
     const res = await fetch(url, {
+      cache: 'no-store',
       ...options,
       signal: controller.signal
     });
@@ -35,14 +36,18 @@ async function resilientFetch(url: string, options: RequestInit = {}, timeoutMs:
 
 export async function fetchAllTablesMaster(force: boolean = false): Promise<any | null> {
   try {
-    const url = force ? '/api/admin/fetch-all?force=true' : '/api/admin/fetch-all';
-    const res = await resilientFetch(url, {}, 8000);
+    const url = force ? `/api/admin/fetch-all?force=true&_t=${Date.now()}` : '/api/admin/fetch-all';
+    const res = await resilientFetch(url, {}, 10000);
     if (res.ok && res.isJson && res.data && res.data.success && res.data.data) {
       return {
         ...res.data.data,
         _supabaseStatus: res.data.supabaseStatus,
         _isQuotaExceeded: res.data.isQuotaExceeded,
-        _supabaseMessage: res.data.supabaseMessage
+        _supabaseMessage: res.data.supabaseMessage,
+        _engine: res.data.engine,
+        _hasDatabaseUrl: res.data.hasDatabaseUrl,
+        _lastSyncAt: res.data.lastSyncAt,
+        _counts: res.data.counts
       };
     }
   } catch (_) {}
@@ -51,7 +56,7 @@ export async function fetchAllTablesMaster(force: boolean = false): Promise<any 
 
 export async function checkSupabaseStatus(): Promise<any> {
   try {
-    const res = await resilientFetch('/api/admin/check-supabase', {}, 6000);
+    const res = await resilientFetch(`/api/admin/check-supabase?_t=${Date.now()}`, {}, 6000);
     if (res.isJson && res.data) {
       return res.data;
     }

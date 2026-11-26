@@ -1,7 +1,8 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
-import { createClient } from '@supabase/supabase-js';
+import { Pool } from 'pg';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 
@@ -9,12 +10,9 @@ dotenv.config({ override: true });
 
 // Configuration
 const PORT = 3000;
-// Central Supabase Credentials for project 'ykoqcaggjfhpnysvumuu'
-const TARGET_PROJECT_REF = 'ykoqcaggjfhpnysvumuu';
-const CENTRAL_SUPABASE_URL = 'https://ykoqcaggjfhpnysvumuu.supabase.co';
-const CENTRAL_SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlrb3FjYWdnamZocG55c3Z1bXV1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4ODQyMzg5OSwiZXhwIjoyMTAzOTk5ODk5fQ.7HSpfFhr9f9ET9XytoQoz1Qe5l64ID_VcTD3HpFSItU';
+const TARGET_PROJECT_REF = 'szekyfonyjycwkpxzmub';
+const DEFAULT_SUPABASE_URL = 'https://szekyfonyjycwkpxzmub.supabase.co';
 
-// Helper to extract JWT project ref safely
 function getJwtProjectRef(token: string | undefined): string | null {
   if (!token) return null;
   try {
@@ -23,7 +21,7 @@ function getJwtProjectRef(token: string | undefined): string | null {
     const decoded = Buffer.from(parts[1], 'base64').toString('utf-8');
     const json = JSON.parse(decoded);
     return json.ref || null;
-  } catch (_) {
+  } catch {
     return null;
   }
 }
@@ -35,23 +33,41 @@ function resolveServerSupabaseUrl(): string {
     process.env.VITE_SUPABASE_URL
   ];
   for (const c of candidates) {
-    if (c && c.includes(TARGET_PROJECT_REF)) return c;
+    if (c && c.includes(TARGET_PROJECT_REF)) return c.trim();
   }
-  return CENTRAL_SUPABASE_URL;
+  return DEFAULT_SUPABASE_URL;
 }
 
 function resolveServerServiceRoleKey(): string {
-  const envKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const envKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
   if (envKey && getJwtProjectRef(envKey) === TARGET_PROJECT_REF) {
     return envKey;
   }
-  return CENTRAL_SUPABASE_SERVICE_ROLE_KEY;
+  return '';
 }
 
 const SUPABASE_URL = resolveServerSupabaseUrl();
 const SUPABASE_SERVICE_ROLE_KEY = resolveServerServiceRoleKey();
+const DATABASE_URL = (process.env.DATABASE_URL || '').trim();
 
-// Global Supabase connection & quota monitoring state
+// Direct PostgreSQL Pool for Supabase (Primary Database Engine when DATABASE_URL is configured)
+const pgPool: Pool | null = DATABASE_URL
+  ? new Pool({
+      connectionString: DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 6000,
+    })
+  : null;
+
+if (pgPool) {
+  pgPool.on('error', (err) => {
+    console.warn('[PostgreSQL Pool Notice]:', err?.message);
+  });
+}
+
+// Global DB connection & quota monitoring state
 let isSupabaseQuotaExceeded = false;
 let lastSupabaseErrorMsg: string | null = null;
 let lastSupabaseSuccessTimestamp = 0;
@@ -78,15 +94,12 @@ function isNetworkUnavailableError(msg: string = '', code: string = ''): boolean
   );
 }
 
-// Safe Node.js fetch for Supabase Admin with 5000ms timeout and circuit breaker
+// Safe Node.js fetch for optional Supabase REST Admin
 const safeServerFetch: typeof fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   if (Date.now() < supabaseUnreachableUntil) {
     return new Response(
       JSON.stringify({ message: 'Local resilience mode active (remote DB unreachable)', code: 'NETWORK_ERROR' }),
-      {
-        status: 504,
-        headers: { 'Content-Type': 'application/json' },
-      }
+      { status: 504, headers: { 'Content-Type': 'application/json' } }
     );
   }
 
@@ -99,17 +112,14 @@ const safeServerFetch: typeof fetch = async (input: RequestInfo | URL, init?: Re
     });
     clearTimeout(timeoutId);
 
-    // If Supabase returns 402 Payment Required (exceed_egress_quota)
     if (res.status === 402) {
       isSupabaseQuotaExceeded = true;
       lastSupabaseErrorMsg = 'exceed_egress_quota (402): Quota de bande passante mensuelle Supabase atteint. Mode résilience locale actif.';
-      console.warn('[Supabase Egress Quota Exceeded]: Supabase returned HTTP 402. Switched to high-availability local storage.');
     } else if (res.ok) {
       isSupabaseQuotaExceeded = false;
       supabaseUnreachableUntil = 0;
       lastSupabaseSuccessTimestamp = Date.now();
     }
-
     return res;
   } catch (err: any) {
     clearTimeout(timeoutId);
@@ -122,24 +132,19 @@ const safeServerFetch: typeof fetch = async (input: RequestInfo | URL, init?: Re
     }
     return new Response(
       JSON.stringify({ message: err?.message || 'Database connection timeout', code: 'NETWORK_ERROR' }),
-      {
-        status: 504,
-        headers: { 'Content-Type': 'application/json' },
-      }
+      { status: 504, headers: { 'Content-Type': 'application/json' } }
     );
   }
 };
 
-// Initialize Supabase Admin with Service Role Key (SERVER-SIDE ONLY - NEVER SENT TO CLIENT)
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  },
-  global: {
-    fetch: safeServerFetch
-  }
-});
+// Optional Supabase Admin REST client (active only when SUPABASE_SERVICE_ROLE_KEY is set)
+const supabaseAdmin: SupabaseClient | null =
+  SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
+    ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false },
+        global: { fetch: safeServerFetch },
+      })
+    : null;
 
 // =========================================================================
 // SCHEMA DEFINITIONS & BI-DIRECTIONAL COLUMN NORMALIZER
@@ -181,6 +186,7 @@ const SCHEMA_DEFINITIONS: Record<string, FieldMapping[]> = {
     { jsKey: 'dailyGain', dbKeys: ['daily_gain', 'dailyGain'] },
     { jsKey: 'duration', dbKeys: ['duration'] },
     { jsKey: 'totalGain', dbKeys: ['total_gain', 'totalGain'] },
+    { jsKey: 'dailyRatePercent', dbKeys: ['daily_rate_percent', 'dailyRatePercent'] },
     { jsKey: 'isActive', dbKeys: ['is_active', 'isActive'], defaultValue: true },
     { jsKey: 'image', dbKeys: ['image'] },
     { jsKey: 'description', dbKeys: ['description'] },
@@ -266,6 +272,17 @@ const SCHEMA_DEFINITIONS: Record<string, FieldMapping[]> = {
     { jsKey: 'maxUses', dbKeys: ['max_uses', 'maxUses'] },
     { jsKey: 'usedBy', dbKeys: ['used_by', 'usedBy'], defaultValue: [] },
     { jsKey: 'createdAt', dbKeys: ['created_at', 'createdAt'] }
+  ],
+  recharge_channels: [
+    { jsKey: 'id', dbKeys: ['id'] },
+    { jsKey: 'name', dbKeys: ['name'] },
+    { jsKey: 'countryCode', dbKeys: ['country_code', 'countryCode'], defaultValue: 'TG' },
+    { jsKey: 'accountNumber', dbKeys: ['account_number', 'accountNumber'] },
+    { jsKey: 'accountHolder', dbKeys: ['account_holder', 'accountHolder'], defaultValue: '' },
+    { jsKey: 'instructions', dbKeys: ['instructions'], defaultValue: '' },
+    { jsKey: 'isActive', dbKeys: ['is_active', 'isActive'], defaultValue: true },
+    { jsKey: 'order', dbKeys: ['order'], defaultValue: 0 },
+    { jsKey: 'createdAt', dbKeys: ['created_at', 'createdAt'] }
   ]
 };
 
@@ -292,7 +309,7 @@ knownTableColumns.set('withdrawals', new Set([
 ]));
 knownTableColumns.set('products', new Set([
   'id', 'name', 'price', 'daily_gain', 'duration', 'total_gain',
-  'is_active', 'image', 'description', 'order', 'badge', 'color'
+  'daily_rate_percent', 'is_active', 'image', 'description', 'order', 'badge', 'color'
 ]));
 
 /**
@@ -344,7 +361,7 @@ function normalizeDbRow<T = any>(tableName: string, dbRow: any): T {
   // Enforce numbers for numeric fields to prevent string concatenation bugs
   const numericKeys = new Set([
     'balance', 'dailyEarnings', 'totalEarnings', 'vipLevel', 'drawTickets',
-    'price', 'dailyGain', 'duration', 'totalGain', 'daysRemaining',
+    'price', 'dailyGain', 'duration', 'totalGain', 'dailyRatePercent', 'daysRemaining',
     'amount', 'receivedAmount', 'order', 'level', 'maxUses'
   ]);
   for (const k of Object.keys(jsObject)) {
@@ -421,22 +438,425 @@ function prepareDbPayload(tableName: string, jsObject: any, allowDefaults: boole
   return payload;
 }
 
+// =========================================================================
+// POSTGRESQL (SUPABASE) DIRECT ADAPTER + SUPABASE REST FALLBACK
+// =========================================================================
+
+const ALLOWED_DB_TABLES = new Set([
+  'users', 'products', 'investments', 'deposits', 'withdrawals',
+  'withdrawal_proofs', 'tickets', 'commissions', 'bonus_codes', 'recharge_channels'
+]);
+const JSONB_DB_COLS = new Set(['claims_history', 'used_by', 'claimsHistory', 'usedBy']);
+
+function assertSafeIdentifier(name: string, validSet?: Set<string>): string {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+    throw new Error(`Invalid SQL identifier: ${name}`);
+  }
+  if (validSet && !validSet.has(name)) {
+    throw new Error(`Identifier not in allowlist: ${name}`);
+  }
+  return `"${name}"`;
+}
+
+function serializePgVal(col: string, val: any): any {
+  if (val === undefined) return null;
+  if (JSONB_DB_COLS.has(col) && val !== null && typeof val === 'object') {
+    return JSON.stringify(val);
+  }
+  return val;
+}
+
+const PG_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS public.users (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  phone TEXT NOT NULL UNIQUE,
+  whatsapp TEXT,
+  country TEXT DEFAULT 'Togo',
+  balance NUMERIC DEFAULT 0,
+  daily_earnings NUMERIC DEFAULT 0,
+  total_earnings NUMERIC DEFAULT 0,
+  vip_level INTEGER DEFAULT 0,
+  is_blocked BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  role TEXT DEFAULT 'user',
+  referral_code TEXT,
+  referred_by_code TEXT,
+  withdrawal_account_name TEXT,
+  withdrawal_account_number TEXT,
+  withdrawal_network TEXT DEFAULT 'TMoney',
+  withdrawal_country TEXT DEFAULT 'TG',
+  withdrawal_pin_hash TEXT,
+  draw_tickets INTEGER DEFAULT 0,
+  referrals_count INTEGER DEFAULT 0,
+  team_benefits NUMERIC DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_users_phone ON public.users(phone);
+CREATE INDEX IF NOT EXISTS idx_users_referral_code ON public.users(referral_code);
+
+CREATE TABLE IF NOT EXISTS public.products (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  price NUMERIC NOT NULL,
+  daily_gain NUMERIC NOT NULL,
+  duration INTEGER NOT NULL,
+  total_gain NUMERIC NOT NULL,
+  daily_rate_percent NUMERIC DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  image TEXT,
+  description TEXT,
+  "order" INTEGER DEFAULT 0,
+  badge TEXT,
+  color TEXT
+);
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS daily_rate_percent NUMERIC DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS public.investments (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  product_id TEXT NOT NULL,
+  product_name TEXT NOT NULL,
+  price NUMERIC NOT NULL,
+  daily_gain NUMERIC NOT NULL,
+  duration INTEGER NOT NULL,
+  days_remaining INTEGER NOT NULL,
+  purchase_date TIMESTAMPTZ DEFAULT NOW(),
+  last_claim_date TIMESTAMPTZ DEFAULT NOW(),
+  claims_history JSONB DEFAULT '[]'::jsonb,
+  total_gain NUMERIC DEFAULT 0,
+  quantity INTEGER DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS idx_investments_user_id ON public.investments(user_id);
+
+CREATE TABLE IF NOT EXISTS public.deposits (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  user_name TEXT NOT NULL,
+  user_phone TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  method TEXT NOT NULL,
+  transaction_id TEXT NOT NULL,
+  screenshot_url TEXT,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_deposits_user_id ON public.deposits(user_id);
+CREATE INDEX IF NOT EXISTS idx_deposits_status ON public.deposits(status);
+
+CREATE TABLE IF NOT EXISTS public.withdrawals (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  user_name TEXT NOT NULL,
+  user_phone TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  received_amount NUMERIC,
+  network TEXT NOT NULL,
+  account_number TEXT NOT NULL,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_withdrawals_user_id ON public.withdrawals(user_id);
+CREATE INDEX IF NOT EXISTS idx_withdrawals_status ON public.withdrawals(status);
+
+CREATE TABLE IF NOT EXISTS public.withdrawal_proofs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  user_name TEXT NOT NULL,
+  user_phone TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  network TEXT NOT NULL,
+  message TEXT,
+  image_url TEXT,
+  is_verified BOOLEAN DEFAULT true,
+  status TEXT DEFAULT 'approved',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.tickets (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  user_name TEXT NOT NULL,
+  user_phone TEXT,
+  subject TEXT NOT NULL,
+  message TEXT NOT NULL,
+  image_url TEXT,
+  status TEXT DEFAULT 'open',
+  reply TEXT,
+  reply_created_at TIMESTAMPTZ,
+  is_read_by_user BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_tickets_user_id ON public.tickets(user_id);
+
+CREATE TABLE IF NOT EXISTS public.commissions (
+  id TEXT PRIMARY KEY,
+  referrer_id TEXT NOT NULL,
+  referee_id TEXT NOT NULL,
+  referee_name TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  level INTEGER NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_commissions_referrer_id ON public.commissions(referrer_id);
+
+CREATE TABLE IF NOT EXISTS public.bonus_codes (
+  code TEXT PRIMARY KEY,
+  amount NUMERIC NOT NULL,
+  max_uses INTEGER DEFAULT 100,
+  used_by JSONB DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.recharge_channels (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  country_code TEXT DEFAULT 'TG',
+  account_number TEXT NOT NULL,
+  account_holder TEXT,
+  instructions TEXT,
+  is_active BOOLEAN DEFAULT true,
+  "order" INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+`;
+
+let pgSchemaReadyPromise: Promise<boolean> | null = null;
+async function ensurePostgresSchema(): Promise<boolean> {
+  if (!pgPool) return false;
+  if (!pgSchemaReadyPromise) {
+    pgSchemaReadyPromise = (async () => {
+      try {
+        await pgPool.query(PG_SCHEMA_SQL);
+        lastSupabaseSuccessTimestamp = Date.now();
+        supabaseUnreachableUntil = 0;
+        isSupabaseQuotaExceeded = false;
+        console.log('[Supabase PostgreSQL] Schema verified and ready.');
+        return true;
+      } catch (err: any) {
+        console.warn('[Supabase PostgreSQL Schema Warning]:', err?.message);
+        pgSchemaReadyPromise = null;
+        return false;
+      }
+    })();
+  }
+  return pgSchemaReadyPromise;
+}
+
+async function dbSelectAll(tableName: string, limit: number = 10000): Promise<{ data: any[] | null; error?: any }> {
+  if (!ALLOWED_DB_TABLES.has(tableName)) {
+    return { data: null, error: { message: `Table '${tableName}' not allowed` } };
+  }
+  if (pgPool && Date.now() >= supabaseUnreachableUntil) {
+    try {
+      await ensurePostgresSchema();
+      const tblIdent = assertSafeIdentifier(tableName, ALLOWED_DB_TABLES);
+      const result = await pgPool.query(`SELECT * FROM public.${tblIdent} LIMIT $1`, [limit]);
+      lastSupabaseSuccessTimestamp = Date.now();
+      return { data: result.rows };
+    } catch (err: any) {
+      if (isNetworkUnavailableError(err?.message, err?.code)) {
+        supabaseUnreachableUntil = Date.now() + 60000;
+      }
+      return { data: null, error: err };
+    }
+  }
+  if (supabaseAdmin && Date.now() >= supabaseUnreachableUntil) {
+    const { data, error } = await (supabaseAdmin.from(tableName as any) as any).select('*').limit(limit);
+    return { data, error };
+  }
+  return { data: null, error: { message: 'No remote DB configured', code: 'NETWORK_ERROR' } };
+}
+
+async function dbFindOne(tableName: string, col: string, val: any): Promise<any | null> {
+  if (!ALLOWED_DB_TABLES.has(tableName) || val === undefined || val === null) return null;
+  const knownCols = knownTableColumns.get(tableName);
+  if (pgPool && Date.now() >= supabaseUnreachableUntil && knownCols?.has(col)) {
+    try {
+      await ensurePostgresSchema();
+      const tblIdent = assertSafeIdentifier(tableName, ALLOWED_DB_TABLES);
+      const colIdent = assertSafeIdentifier(col, knownCols);
+      const result = await pgPool.query(`SELECT * FROM public.${tblIdent} WHERE ${colIdent} = $1 LIMIT 1`, [val]);
+      lastSupabaseSuccessTimestamp = Date.now();
+      return result.rows[0] ? normalizeDbRow(tableName, result.rows[0]) : null;
+    } catch {
+      return null;
+    }
+  }
+  if (supabaseAdmin && Date.now() >= supabaseUnreachableUntil) {
+    try {
+      const { data } = await (supabaseAdmin.from(tableName as any) as any).select('*').eq(col, val).maybeSingle();
+      return data ? normalizeDbRow(tableName, data) : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+async function dbFindIn(tableName: string, col: string, values: string[]): Promise<any[]> {
+  if (!ALLOWED_DB_TABLES.has(tableName) || !Array.isArray(values) || values.length === 0) return [];
+  const knownCols = knownTableColumns.get(tableName);
+  if (pgPool && Date.now() >= supabaseUnreachableUntil && knownCols?.has(col)) {
+    try {
+      await ensurePostgresSchema();
+      const tblIdent = assertSafeIdentifier(tableName, ALLOWED_DB_TABLES);
+      const colIdent = assertSafeIdentifier(col, knownCols);
+      const result = await pgPool.query(
+        `SELECT * FROM public.${tblIdent} WHERE ${colIdent} = ANY($1::text[])`,
+        [values.map(String)]
+      );
+      lastSupabaseSuccessTimestamp = Date.now();
+      return result.rows.map(r => normalizeDbRow(tableName, r));
+    } catch {
+      return [];
+    }
+  }
+  if (supabaseAdmin && Date.now() >= supabaseUnreachableUntil) {
+    try {
+      const { data } = await (supabaseAdmin.from(tableName as any) as any).select('*').in(col, values);
+      return Array.isArray(data) ? data.map((r: any) => normalizeDbRow(tableName, r)) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+async function dbFindIlike(tableName: string, col: string, pattern: string, limit: number = 20): Promise<any[]> {
+  if (!ALLOWED_DB_TABLES.has(tableName) || !pattern) return [];
+  const knownCols = knownTableColumns.get(tableName);
+  if (pgPool && Date.now() >= supabaseUnreachableUntil && knownCols?.has(col)) {
+    try {
+      await ensurePostgresSchema();
+      const tblIdent = assertSafeIdentifier(tableName, ALLOWED_DB_TABLES);
+      const colIdent = assertSafeIdentifier(col, knownCols);
+      const result = await pgPool.query(
+        `SELECT * FROM public.${tblIdent} WHERE ${colIdent} ILIKE $1 LIMIT $2`,
+        [pattern, limit]
+      );
+      lastSupabaseSuccessTimestamp = Date.now();
+      return result.rows.map(r => normalizeDbRow(tableName, r));
+    } catch {
+      return [];
+    }
+  }
+  if (supabaseAdmin && Date.now() >= supabaseUnreachableUntil) {
+    try {
+      const { data } = await (supabaseAdmin.from(tableName as any) as any).select('*').ilike(col, pattern).limit(limit);
+      return Array.isArray(data) ? data.map((r: any) => normalizeDbRow(tableName, r)) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+async function dbDeleteEq(tableName: string, col: string, val: any): Promise<void> {
+  if (!ALLOWED_DB_TABLES.has(tableName) || val === undefined || val === null) return;
+  const knownCols = knownTableColumns.get(tableName);
+  if (pgPool && Date.now() >= supabaseUnreachableUntil && knownCols?.has(col)) {
+    try {
+      await ensurePostgresSchema();
+      const tblIdent = assertSafeIdentifier(tableName, ALLOWED_DB_TABLES);
+      const colIdent = assertSafeIdentifier(col, knownCols);
+      await pgPool.query(`DELETE FROM public.${tblIdent} WHERE ${colIdent} = $1`, [val]);
+      lastSupabaseSuccessTimestamp = Date.now();
+      return;
+    } catch {}
+  }
+  if (supabaseAdmin && Date.now() >= supabaseUnreachableUntil) {
+    try {
+      await (supabaseAdmin.from(tableName as any) as any).delete().eq(col, val);
+    } catch {}
+  }
+}
+
+async function dbDeleteNeq(tableName: string, col: string, val: any): Promise<void> {
+  if (!ALLOWED_DB_TABLES.has(tableName)) return;
+  const knownCols = knownTableColumns.get(tableName);
+  if (pgPool && Date.now() >= supabaseUnreachableUntil && knownCols?.has(col)) {
+    try {
+      await ensurePostgresSchema();
+      const tblIdent = assertSafeIdentifier(tableName, ALLOWED_DB_TABLES);
+      const colIdent = assertSafeIdentifier(col, knownCols);
+      await pgPool.query(`DELETE FROM public.${tblIdent} WHERE COALESCE(${colIdent}, '') <> $1`, [String(val)]);
+      lastSupabaseSuccessTimestamp = Date.now();
+      return;
+    } catch {}
+  }
+  if (supabaseAdmin && Date.now() >= supabaseUnreachableUntil) {
+    try {
+      await (supabaseAdmin.from(tableName as any) as any).delete().neq(col, val);
+    } catch {}
+  }
+}
+
 /**
- * Resilient Supabase Upsert that automatically handles column mismatches and retries
+ * Resilient Database Upsert (PostgreSQL primary, optional Supabase REST fallback)
  */
 async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ success: boolean; error?: string; data?: any; quotaExceeded?: boolean; localOnly?: boolean }> {
   if (!item) return { success: false, error: 'Empty payload' };
+  if (!ALLOWED_DB_TABLES.has(tableName)) return { success: false, error: `Invalid table: ${tableName}` };
   if (Date.now() < supabaseUnreachableUntil) {
     return { success: true, localOnly: true };
   }
 
-  // If upserting an existing user, merge with existing state to avoid overwriting existing balance or stats with default values
   let payload: Record<string, any>;
   if (tableName === 'users' && item.id && serverUsersStore.has(item.id)) {
     const existing = serverUsersStore.get(item.id);
     payload = prepareDbPayload(tableName, { ...existing, ...item }, false);
   } else {
     payload = prepareDbPayload(tableName, item, true);
+  }
+
+  // 1. Primary PostgreSQL Upsert
+  if (pgPool) {
+    try {
+      await ensurePostgresSchema();
+      const knownCols = knownTableColumns.get(tableName) || new Set<string>();
+      const validCols = Object.keys(payload).filter(c => knownCols.has(c) && payload[c] !== undefined);
+      if (validCols.length === 0) {
+        return { success: false, error: 'No valid columns to upsert' };
+      }
+
+      const conflictCol = payload.id ? 'id' : (payload.code ? 'code' : validCols[0]);
+      const tblIdent = assertSafeIdentifier(tableName, ALLOWED_DB_TABLES);
+      const colIdents = validCols.map(c => assertSafeIdentifier(c, knownCols));
+      const placeholders = validCols.map((_, idx) => `$${idx + 1}`);
+      const values = validCols.map(c => serializePgVal(c, payload[c]));
+
+      const updateCols = validCols.filter(c => c !== conflictCol);
+      const conflictIdent = assertSafeIdentifier(conflictCol, knownCols);
+      const updateClause = updateCols.length > 0
+        ? updateCols.map(c => `${assertSafeIdentifier(c, knownCols)} = EXCLUDED.${assertSafeIdentifier(c, knownCols)}`).join(', ')
+        : `${conflictIdent} = EXCLUDED.${conflictIdent}`;
+
+      const sql = `INSERT INTO public.${tblIdent} (${colIdents.join(', ')}) VALUES (${placeholders.join(', ')}) ON CONFLICT (${conflictIdent}) DO UPDATE SET ${updateClause} RETURNING *`;
+      const result = await pgPool.query(sql, values);
+      isSupabaseQuotaExceeded = false;
+      supabaseUnreachableUntil = 0;
+      lastSupabaseSuccessTimestamp = Date.now();
+      return { success: true, data: result.rows };
+    } catch (err: any) {
+      const msg = err?.message || '';
+      const code = err?.code || '';
+      if (isNetworkUnavailableError(msg, code)) {
+        supabaseUnreachableUntil = Date.now() + 60000;
+        return { success: true, localOnly: true };
+      }
+      if (code === '23505' || msg.includes('users_phone_key') || msg.includes('unique constraint')) {
+        if (tableName === 'users') {
+          return { success: false, error: 'Ce numéro possède déjà un compte, veuillez vous connecter.' };
+        }
+      }
+      console.warn(`[PG Upsert] '${tableName}' notice:`, msg);
+      return { success: false, error: msg || 'Database upsert error' };
+    }
+  }
+
+  // 2. Fallback: Optional Supabase REST Admin
+  if (!supabaseAdmin) {
+    return { success: true, localOnly: true };
   }
 
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -456,56 +876,30 @@ async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ succe
       const errMsg = error.message || '';
       const errCode = (error as any).code || '';
 
-      // Handle unreachable/network fallback cleanly without noisy warnings
       if (isNetworkUnavailableError(errMsg, errCode)) {
         supabaseUnreachableUntil = Date.now() + 60000;
         return { success: true, localOnly: true };
       }
-
-      // Handle Supabase Egress Quota restriction (HTTP 402 / exceed_egress_quota)
       if (errMsg.includes('exceed_egress_quota') || errMsg.includes('restricted') || errMsg.includes('402') || errCode === '402') {
         isSupabaseQuotaExceeded = true;
         lastSupabaseErrorMsg = errMsg;
-        console.warn(`[Supabase Quota Alert]: Project restricted by Supabase quota. Record saved safely in local persistent store.`);
         return { success: true, localOnly: true, quotaExceeded: true };
       }
-
-      console.warn(`[Safe Upsert] '${tableName}' attempt ${attempt + 1} notice:`, errMsg);
-
-      // Check unique constraint on phone
       if (errMsg.includes('users_phone_key') || errMsg.includes('unique constraint') || errMsg.includes('23505') || errMsg.includes('already exists')) {
         if (tableName === 'users') {
           return { success: false, error: 'Ce numéro possède déjà un compte, veuillez vous connecter.' };
         }
       }
 
-      // Handle "Could not find the 'xyz' column of 'table' in the schema cache"
       const missingColMatch = errMsg.match(/Could not find the '([^']+)' column/i) || errMsg.match(/column "([^"]+)" of relation/i);
       if (missingColMatch && missingColMatch[1]) {
         const badCol = missingColMatch[1];
         delete payload[badCol];
-
-        // Track and remove from knownTableColumns
         const tableCols = knownTableColumns.get(tableName);
-        if (tableCols) {
-          tableCols.delete(badCol);
-        }
-
-        // If it was snake_case, try camelCase, or vice versa, but ONLY if different and present
-        const altCol = badCol.includes('_') 
-          ? badCol.replace(/_([a-z])/g, (_, l) => l.toUpperCase())
-          : badCol.replace(/([A-Z])/g, '_$1').toLowerCase();
-
-        if (altCol !== badCol && tableCols && tableCols.has(altCol)) {
-          const val = item[badCol] ?? item[altCol];
-          if (val !== undefined) {
-            payload[altCol] = val;
-          }
-        }
+        if (tableCols) tableCols.delete(badCol);
         continue;
       }
 
-      // If attempt fails, strip payload down to only explicitly known columns
       if (attempt === 1) {
         const cleanPayload: Record<string, any> = {};
         const mappings = SCHEMA_DEFINITIONS[tableName] || [];
@@ -527,11 +921,6 @@ async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ succe
         supabaseUnreachableUntil = Date.now() + 60000;
         return { success: true, localOnly: true };
       }
-      if (msg.includes('exceed_egress_quota') || msg.includes('402')) {
-        isSupabaseQuotaExceeded = true;
-        lastSupabaseErrorMsg = msg;
-        return { success: true, localOnly: true, quotaExceeded: true };
-      }
       return { success: false, error: msg || 'Database error' };
     }
   }
@@ -540,14 +929,55 @@ async function safeSupabaseUpsert(tableName: string, item: any): Promise<{ succe
 }
 
 /**
- * Resilient Supabase Update that automatically handles column mismatches
+ * Resilient Database Update (PostgreSQL primary, optional Supabase REST fallback)
  */
 async function safeSupabaseUpdate(tableName: string, updates: any, idCol: string, idVal: any): Promise<{ success: boolean; error?: string; quotaExceeded?: boolean; localOnly?: boolean }> {
+  if (!ALLOWED_DB_TABLES.has(tableName)) return { success: false, error: `Invalid table: ${tableName}` };
   if (Date.now() < supabaseUnreachableUntil) {
     return { success: true, localOnly: true };
   }
-  // Pass allowDefaults = false so partial updates (like bank card linking) never reset user balance or earnings!
+
   let payload = prepareDbPayload(tableName, updates, false);
+
+  // 1. Primary PostgreSQL Update
+  if (pgPool) {
+    try {
+      await ensurePostgresSchema();
+      const knownCols = knownTableColumns.get(tableName) || new Set<string>();
+      const validCols = Object.keys(payload).filter(c => knownCols.has(c) && c !== idCol && payload[c] !== undefined);
+      if (validCols.length === 0) return { success: true };
+
+      const tblIdent = assertSafeIdentifier(tableName, ALLOWED_DB_TABLES);
+      const idColIdent = assertSafeIdentifier(idCol, knownCols);
+      const setClause = validCols.map((c, idx) => `${assertSafeIdentifier(c, knownCols)} = $${idx + 1}`).join(', ');
+      const values = [...validCols.map(c => serializePgVal(c, payload[c])), idVal];
+
+      await pgPool.query(`UPDATE public.${tblIdent} SET ${setClause} WHERE ${idColIdent} = $${validCols.length + 1}`, values);
+      isSupabaseQuotaExceeded = false;
+      supabaseUnreachableUntil = 0;
+      lastSupabaseSuccessTimestamp = Date.now();
+      return { success: true };
+    } catch (err: any) {
+      const msg = err?.message || '';
+      const code = err?.code || '';
+      if (isNetworkUnavailableError(msg, code)) {
+        supabaseUnreachableUntil = Date.now() + 60000;
+        return { success: true, localOnly: true };
+      }
+      if (code === '23505' || msg.includes('users_phone_key') || msg.includes('unique constraint')) {
+        if (tableName === 'users') {
+          return { success: false, error: 'Ce numéro possède déjà un compte, veuillez vous connecter.' };
+        }
+      }
+      console.warn(`[PG Update] '${tableName}' notice:`, msg);
+      return { success: false, error: msg || 'Database update error' };
+    }
+  }
+
+  // 2. Fallback: Optional Supabase REST Admin
+  if (!supabaseAdmin) {
+    return { success: true, localOnly: true };
+  }
 
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -569,17 +999,11 @@ async function safeSupabaseUpdate(tableName: string, updates: any, idCol: string
         supabaseUnreachableUntil = Date.now() + 60000;
         return { success: true, localOnly: true };
       }
-
-      // Handle Supabase Egress Quota restriction
       if (errMsg.includes('exceed_egress_quota') || errMsg.includes('restricted') || errMsg.includes('402') || errCode === '402') {
         isSupabaseQuotaExceeded = true;
         lastSupabaseErrorMsg = errMsg;
         return { success: true, localOnly: true, quotaExceeded: true };
       }
-
-      console.warn(`[Safe Update] '${tableName}' attempt ${attempt + 1} notice:`, errMsg);
-
-      // Check unique constraint on phone
       if (errMsg.includes('users_phone_key') || errMsg.includes('unique constraint') || errMsg.includes('23505') || errMsg.includes('already exists')) {
         if (tableName === 'users') {
           return { success: false, error: 'Ce numéro possède déjà un compte, veuillez vous connecter.' };
@@ -588,8 +1012,7 @@ async function safeSupabaseUpdate(tableName: string, updates: any, idCol: string
 
       const missingColMatch = errMsg.match(/Could not find the '([^']+)' column/i) || errMsg.match(/column "([^"]+)" of relation/i);
       if (missingColMatch && missingColMatch[1]) {
-        const badCol = missingColMatch[1];
-        delete payload[badCol];
+        delete payload[missingColMatch[1]];
         continue;
       }
 
@@ -603,11 +1026,6 @@ async function safeSupabaseUpdate(tableName: string, updates: any, idCol: string
       if (isNetworkUnavailableError(msg, err?.code)) {
         supabaseUnreachableUntil = Date.now() + 60000;
         return { success: true, localOnly: true };
-      }
-      if (msg.includes('exceed_egress_quota') || msg.includes('402')) {
-        isSupabaseQuotaExceeded = true;
-        lastSupabaseErrorMsg = msg;
-        return { success: true, localOnly: true, quotaExceeded: true };
       }
       return { success: false, error: msg || 'Database error' };
     }
@@ -1356,107 +1774,115 @@ if (serverProductsStore.size === 0) {
 }
 savePlatformDataToDisk(true);
 
-// Initial Discovery & Complete Sync from Supabase
-async function syncFromSupabaseInitial() {
+// Initial Discovery & Complete Sync from Supabase (PostgreSQL primary, REST fallback)
+export async function syncFromSupabaseInitial() {
   try {
-    // Quick reachability probe before firing batch queries
-    const { error: probeError } = await supabaseAdmin.from('products').select('id').limit(1);
-    if (probeError && (isNetworkUnavailableError(probeError.message, (probeError as any).code) || Date.now() < supabaseUnreachableUntil)) {
-      console.log('[Initial Sync]: Base distante injoignable — démarrage direct sur le stockage local persistant.');
+    if (!pgPool && !supabaseAdmin) {
+      console.log('[Initial Sync]: Aucun DATABASE_URL / SUPABASE_SERVICE_ROLE_KEY configuré — mode stockage local actif.');
       savePlatformDataToDisk(true);
       return;
     }
 
-    const tableNames = ['users', 'products', 'investments', 'deposits', 'withdrawals', 'withdrawal_proofs', 'tickets', 'commissions', 'bonus_codes'];
-    
-    // 0. Discover table columns dynamically
-    for (const tbl of tableNames) {
-      if (Date.now() < supabaseUnreachableUntil) break;
-      try {
-        const { data, error } = await supabaseAdmin.from(tbl).select('*').limit(1);
-        if (!error && data && data.length > 0) {
-          const cols = new Set(Object.keys(data[0]));
-          // Merge with pre-initialized known columns
-          const existing = knownTableColumns.get(tbl) || new Set();
-          cols.forEach(c => existing.add(c));
-          knownTableColumns.set(tbl, existing);
-          console.log(`[Schema Discovery] Table '${tbl}' has columns:`, Array.from(existing).join(', '));
-        }
-      } catch (_) {}
+    if (pgPool) {
+      const ready = await ensurePostgresSchema();
+      if (!ready) {
+        savePlatformDataToDisk(true);
+        return;
+      }
+    } else {
+      const { error: probeError } = await dbSelectAll('products', 1);
+      if (probeError && (isNetworkUnavailableError(probeError.message, probeError.code) || Date.now() < supabaseUnreachableUntil)) {
+        console.log('[Initial Sync]: Base distante injoignable — démarrage direct sur le stockage local persistant.');
+        savePlatformDataToDisk(true);
+        return;
+      }
     }
 
-    // 1. Fetch all existing users from Supabase FIRST to preserve all registered accounts
-    const { data: dbUsers, error: userErr } = await supabaseAdmin.from('users').select('*').limit(10000);
-    const existingUserIds = new Set<string>();
-    const existingUserPhones = new Set<string>();
+    // 1. Fetch all existing users from database FIRST
+    const { data: dbUsers, error: userErr } = await dbSelectAll('users');
+    const dbUserIds = new Set<string>();
     if (!userErr && dbUsers && Array.isArray(dbUsers)) {
       dbUsers.forEach(u => {
         if (u && (u.id || u.phone)) {
           const norm = normalizeDbRow('users', u);
           serverUsersStore.set(norm.id, norm);
-          if (norm.id) existingUserIds.add(norm.id);
-          if (norm.phone) existingUserPhones.add(norm.phone);
+          if (norm.id) dbUserIds.add(norm.id);
         }
       });
       console.log(`[Supabase Sync] Successfully loaded ${dbUsers.length} existing users from database into memory.`);
     }
 
-    // 2. Insert or update default seed admin accounts to ensure role is always 'admin' and Togo credentials work
+    // 2. Ensure default seed admin accounts + any local users not yet in DB are synced
     for (const seedAdmin of defaultSeedUsers) {
       const existing = serverUsersStore.get(seedAdmin.id);
-      if (!existing) {
-        serverUsersStore.set(seedAdmin.id, seedAdmin);
-        await safeSupabaseUpsert('users', seedAdmin);
-      } else {
-        const merged = { ...existing, role: 'admin', country: seedAdmin.country, withdrawalPinHash: seedAdmin.withdrawalPinHash };
-        serverUsersStore.set(seedAdmin.id, merged);
+      const merged = existing
+        ? { ...existing, role: 'admin', country: seedAdmin.country, withdrawalPinHash: seedAdmin.withdrawalPinHash }
+        : seedAdmin;
+      serverUsersStore.set(seedAdmin.id, merged);
+      if (!userErr && !dbUserIds.has(seedAdmin.id)) {
+        await safeSupabaseUpsert('users', merged);
+        dbUserIds.add(seedAdmin.id);
+      } else if (!userErr) {
         await safeSupabaseUpdate('users', { role: 'admin', country: seedAdmin.country, withdrawal_pin_hash: seedAdmin.withdrawalPinHash }, 'id', seedAdmin.id);
       }
     }
+    if (!userErr) {
+      for (const [uid, u] of serverUsersStore.entries()) {
+        if (!dbUserIds.has(uid)) {
+          await safeSupabaseUpsert('users', u);
+          dbUserIds.add(uid);
+        }
+      }
+    }
 
-    // 3. Fetch all products from Supabase while preserving admin edits & custom products
-    const { data: dbProducts, error: prodErr } = await supabaseAdmin.from('products').select('*').limit(10000);
+    // 3. Fetch all products from database
+    const { data: dbProducts, error: prodErr } = await dbSelectAll('products');
     if (!prodErr && dbProducts && Array.isArray(dbProducts)) {
       for (const p of dbProducts) {
         if (p && p.id) {
           if (LEGACY_OBSOLETE_PRODUCT_IDS.has(p.id)) {
             serverProductsStore.delete(p.id);
-            try {
-              await (supabaseAdmin.from('products' as any) as any).delete().eq('id', p.id);
-            } catch (_) {}
+            await dbDeleteEq('products', 'id', p.id);
             continue;
           }
           const norm = normalizeDbRow('products', p);
-          if (!serverProductsStore.has(norm.id)) {
-            serverProductsStore.set(norm.id, norm);
-          }
+          serverProductsStore.set(norm.id, norm);
         }
       }
       console.log(`[Supabase Sync] Loaded ${serverProductsStore.size} products.`);
     }
 
-    // 4. Seed default products only when store is empty (never overwrite admin edits)
-    if (serverProductsStore.size === 0) {
-      for (const seedProd of defaultSeedProducts) {
+    // 4. Sync products to database if DB products table was empty
+    if (!prodErr && (!dbProducts || dbProducts.length === 0)) {
+      const productsToSeed = serverProductsStore.size > 0
+        ? Array.from(serverProductsStore.values())
+        : defaultSeedProducts;
+      for (const seedProd of productsToSeed) {
         serverProductsStore.set(seedProd.id, seedProd);
         await safeSupabaseUpsert('products', seedProd);
       }
     }
 
-    // 5. Fetch all customer service tickets / chat messages & attached images
-    const { data: dbTickets, error: tktErr } = await supabaseAdmin.from('tickets').select('*').limit(10000);
+    // 5. Tickets
+    const { data: dbTickets, error: tktErr } = await dbSelectAll('tickets');
+    const dbTicketIds = new Set<string>();
     if (!tktErr && dbTickets && Array.isArray(dbTickets)) {
       dbTickets.forEach(t => {
         if (t && t.id) {
           const norm = normalizeDbRow('tickets', t);
           serverTicketsStore.set(norm.id, norm);
+          dbTicketIds.add(norm.id);
         }
       });
-      console.log(`[Supabase Sync] Successfully loaded ${dbTickets.length} tickets/chat messages from database into memory.`);
+    }
+    if (!tktErr) {
+      for (const [tid, t] of serverTicketsStore.entries()) {
+        if (!dbTicketIds.has(tid)) await safeSupabaseUpsert('tickets', t);
+      }
     }
 
-    // 6. Fetch all deposits (pending, validated, rejected)
-    const { data: dbDeposits, error: depErr } = await supabaseAdmin.from('deposits').select('*').limit(10000);
+    // 6. Deposits
+    const { data: dbDeposits, error: depErr } = await dbSelectAll('deposits');
     const dbDepositIds = new Set<string>();
     if (!depErr && dbDeposits && Array.isArray(dbDeposits)) {
       dbDeposits.forEach(d => {
@@ -1466,83 +1892,148 @@ async function syncFromSupabaseInitial() {
           dbDepositIds.add(norm.id);
         }
       });
-      console.log(`[Supabase Sync] Successfully loaded ${dbDeposits.length} deposits from database into memory.`);
     }
-
-    // Push any real deposits present on disk into database if not yet registered in Supabase
-    for (const [depId, dep] of serverDepositsStore.entries()) {
-      if (!dbDepositIds.has(depId)) {
-        await safeSupabaseUpsert('deposits', dep);
+    if (!depErr) {
+      for (const [depId, dep] of serverDepositsStore.entries()) {
+        if (!dbDepositIds.has(depId)) await safeSupabaseUpsert('deposits', dep);
       }
     }
 
-    // 7. Fetch all withdrawals (pending, approved, rejected)
-    const { data: dbWithdrawals, error: wthErr } = await supabaseAdmin.from('withdrawals').select('*').limit(10000);
+    // 7. Withdrawals
+    const { data: dbWithdrawals, error: wthErr } = await dbSelectAll('withdrawals');
+    const dbWthIds = new Set<string>();
     if (!wthErr && dbWithdrawals && Array.isArray(dbWithdrawals)) {
       dbWithdrawals.forEach(w => {
         if (w && w.id) {
           const norm = normalizeDbRow('withdrawals', w);
           serverWithdrawalsStore.set(norm.id, norm);
+          dbWthIds.add(norm.id);
         }
       });
-      console.log(`[Supabase Sync] Successfully loaded ${dbWithdrawals.length} withdrawals from database into memory.`);
+    }
+    if (!wthErr) {
+      for (const [wid, w] of serverWithdrawalsStore.entries()) {
+        if (!dbWthIds.has(wid)) await safeSupabaseUpsert('withdrawals', w);
+      }
     }
 
-    // 8. Fetch all investments (purchased products, earnings, progression)
-    const { data: dbInvestments, error: invErr } = await supabaseAdmin.from('investments').select('*').limit(10000);
+    // 8. Investments
+    const { data: dbInvestments, error: invErr } = await dbSelectAll('investments');
+    const dbInvIds = new Set<string>();
     if (!invErr && dbInvestments && Array.isArray(dbInvestments)) {
       dbInvestments.forEach(i => {
         if (i && i.id) {
           const norm = normalizeDbRow('investments', i);
           serverInvestmentsStore.set(norm.id, norm);
+          dbInvIds.add(norm.id);
         }
       });
-      console.log(`[Supabase Sync] Successfully loaded ${dbInvestments.length} active investments from database into memory.`);
+    }
+    if (!invErr) {
+      for (const [iid, inv] of serverInvestmentsStore.entries()) {
+        if (!dbInvIds.has(iid)) await safeSupabaseUpsert('investments', inv);
+      }
     }
 
-    // 9. Fetch all forum publications and screenshot proofs
-    const { data: dbProofs, error: proofErr } = await supabaseAdmin.from('withdrawal_proofs').select('*').limit(10000);
+    // 9. Withdrawal proofs
+    const { data: dbProofs, error: proofErr } = await dbSelectAll('withdrawal_proofs');
+    const dbProofIds = new Set<string>();
     if (!proofErr && dbProofs && Array.isArray(dbProofs)) {
       dbProofs.forEach(pr => {
         if (pr && pr.id) {
           const norm = normalizeDbRow('withdrawal_proofs', pr);
           serverProofsStore.set(norm.id, norm);
+          dbProofIds.add(norm.id);
         }
       });
-      console.log(`[Supabase Sync] Successfully loaded ${dbProofs.length} forum publications/proofs from database into memory.`);
+    }
+    if (!proofErr) {
+      for (const [pid, pr] of serverProofsStore.entries()) {
+        if (!dbProofIds.has(pid)) await safeSupabaseUpsert('withdrawal_proofs', pr);
+      }
     }
 
-    // 10. Fetch all referral commissions
-    const { data: dbComms, error: commErr } = await supabaseAdmin.from('commissions').select('*').limit(10000);
+    // 10. Commissions
+    const { data: dbComms, error: commErr } = await dbSelectAll('commissions');
+    const dbCommIds = new Set<string>();
     if (!commErr && dbComms && Array.isArray(dbComms)) {
       dbComms.forEach(c => {
         if (c && c.id) {
           const norm = normalizeDbRow('commissions', c);
           serverCommissionsStore.set(norm.id, norm);
+          dbCommIds.add(norm.id);
         }
       });
-      console.log(`[Supabase Sync] Successfully loaded ${dbComms.length} commissions from database into memory.`);
+    }
+    if (!commErr) {
+      for (const [cid, c] of serverCommissionsStore.entries()) {
+        if (!dbCommIds.has(cid)) await safeSupabaseUpsert('commissions', c);
+      }
     }
 
-    // 11. Fetch all bonus codes
-    const { data: dbBonus, error: bonusErr } = await supabaseAdmin.from('bonus_codes').select('*').limit(10000);
+    // 11. Bonus codes & system records (announcements / Togo channels)
+    const { data: dbBonus, error: bonusErr } = await dbSelectAll('bonus_codes');
+    const dbBonusCodes = new Set<string>();
     if (!bonusErr && dbBonus && Array.isArray(dbBonus)) {
       dbBonus.forEach(b => {
         if (b && (b.id || b.code)) {
           const norm = normalizeDbRow('bonus_codes', b);
-          serverBonusCodesStore.set(norm.code || norm.id, norm);
+          const key = norm.code || norm.id;
+          serverBonusCodesStore.set(key, norm);
+          if (key) dbBonusCodes.add(key);
         }
       });
-      console.log(`[Supabase Sync] Successfully loaded ${dbBonus.length} bonus codes from database into memory.`);
+    }
+    if (!serverBonusCodesStore.has('__SYS_RECHARGE_CHANNELS__')) {
+      const defaultTogoChannels = [
+        {
+          id: 'rc-tg-tmoney',
+          name: 'TMoney / Mixx By Yas (Togo)',
+          countryCode: 'TG',
+          accountNumber: '+228 90 00 00 00',
+          accountHolder: 'Service Recharge Gold Speed Togo',
+          instructions: 'Effectuez le transfert vers ce numéro TMoney (*145#) puis saisissez la référence de transaction SMS reçue.',
+          isActive: true,
+          order: 1,
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 'rc-tg-moov',
+          name: 'Moov Money / Flooz (Togo)',
+          countryCode: 'TG',
+          accountNumber: '+228 99 00 00 00',
+          accountHolder: 'Service Recharge Gold Speed Togo',
+          instructions: 'Effectuez le transfert vers ce numéro Moov Money (*155#) puis saisissez la référence de transaction SMS reçue.',
+          isActive: true,
+          order: 2,
+          createdAt: new Date().toISOString()
+        }
+      ];
+      const sysCh = {
+        code: '__SYS_RECHARGE_CHANNELS__',
+        amount: 0,
+        maxUses: 0,
+        usedBy: defaultTogoChannels,
+        createdAt: new Date().toISOString()
+      };
+      serverBonusCodesStore.set('__SYS_RECHARGE_CHANNELS__', sysCh);
+    }
+    if (!bonusErr) {
+      for (const [bCode, bRow] of serverBonusCodesStore.entries()) {
+        if (!dbBonusCodes.has(bCode)) {
+          await safeSupabaseUpsert('bonus_codes', { ...bRow, code: bRow.code || bCode });
+        }
+      }
     }
 
-    // Persist all gathered real database data to disk cache
     savePlatformDataToDisk(true);
   } catch (err: any) {
     console.warn('[Initial Sync Notice]:', err?.message);
   }
 }
-setTimeout(syncFromSupabaseInitial, 500);
+if (process.env.SKIP_LISTEN !== '1') {
+  setTimeout(syncFromSupabaseInitial, 500);
+}
 
 // Global Express Application instance exported for local server, Cloud Run, and Vercel Serverless
 export const app = express();
@@ -1574,14 +2065,16 @@ app.get(['/api', '/api/'], (_req, res) => {
   });
 });
 
-app.get(['/api/health', '/health'], async (req, res) => {
+app.get(['/api/health', '/health'], async (_req, res) => {
     try {
-      const { data, error } = await supabaseAdmin.from('products').select('id').limit(1);
+      const { error } = await dbSelectAll('products', 1);
       res.json({
         status: 'ok',
         database: error ? 'resilient_fallback' : 'connected',
+        engine: pgPool ? 'supabase-postgresql' : (supabaseAdmin ? 'supabase-rest' : 'local-only'),
         dbError: error ? error.message : null,
         supabaseUrl: SUPABASE_URL,
+        hasPostgresPool: Boolean(pgPool),
         hasServiceRole: Boolean(SUPABASE_SERVICE_ROLE_KEY),
         timestamp: new Date().toISOString()
       });
@@ -1722,16 +2215,12 @@ app.get(['/api/health', '/health'], async (req, res) => {
         }
       }
 
-      // 2. Direct lookup in Supabase
+      // 2. Direct lookup in Supabase PostgreSQL / REST
       if (!user && phoneInfo.candidates.length > 0) {
         try {
-          const { data: candidatesMatch, error: candErr } = await supabaseAdmin
-            .from('users')
-            .select('*')
-            .in('phone', phoneInfo.candidates);
-
-          if (!candErr && candidatesMatch && candidatesMatch.length > 0) {
-            user = normalizeDbRow('users', candidatesMatch[0]);
+          const candidatesMatch = await dbFindIn('users', 'phone', phoneInfo.candidates);
+          if (candidatesMatch.length > 0) {
+            user = candidatesMatch[0];
             serverUsersStore.set(user.id, user);
           }
         } catch (_) {}
@@ -1740,12 +2229,8 @@ app.get(['/api/health', '/health'], async (req, res) => {
       // 3. Fallback search
       if (!user && phoneInfo.nationalDigits) {
         try {
-          const { data: likeMatches } = await supabaseAdmin
-            .from('users')
-            .select('*')
-            .ilike('phone', `%${phoneInfo.nationalDigits}%`);
-
-          if (likeMatches && likeMatches.length > 0) {
+          const likeMatches = await dbFindIlike('users', 'phone', `%${phoneInfo.nationalDigits}%`);
+          if (likeMatches.length > 0) {
             const matchedRow = likeMatches.find(u => {
               const uInfo = extractPhoneDetails(u.phone, u.country);
               if (phoneInfo.candidates.includes(u.phone) || phoneInfo.candidates.includes(uInfo.cleanPhone)) return true;
@@ -1753,7 +2238,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
               return uInfo.cleanPhone === phoneInfo.cleanPhone || u.phone === phoneInfo.cleanPhone;
             });
             if (matchedRow) {
-              user = normalizeDbRow('users', matchedRow);
+              user = matchedRow;
               serverUsersStore.set(user.id, user);
             }
           }
@@ -1931,21 +2416,17 @@ app.get(['/api/health', '/health'], async (req, res) => {
 
     // 2. Query Supabase database
     try {
-      // Query by referral_code
-      const { data: byCode } = await supabaseAdmin.from('users').select('*').ilike('referral_code', clean).limit(1);
-      if (byCode && byCode.length > 0) {
-        const norm = normalizeDbRow('users', byCode[0]);
-        serverUsersStore.set(norm.id, norm);
-        return norm;
+      const byCode = await dbFindIlike('users', 'referral_code', clean, 1);
+      if (byCode.length > 0) {
+        serverUsersStore.set(byCode[0].id, byCode[0]);
+        return byCode[0];
       }
 
-      // Query by phone
       if (clean) {
-        const { data: byPhone } = await supabaseAdmin.from('users').select('*').or(`phone.eq.${clean},phone.eq.+${digitsOnly},phone.eq.${digitsOnly}`).limit(1);
-        if (byPhone && byPhone.length > 0) {
-          const norm = normalizeDbRow('users', byPhone[0]);
-          serverUsersStore.set(norm.id, norm);
-          return norm;
+        const byPhone = await dbFindIn('users', 'phone', [clean, `+${digitsOnly}`, digitsOnly].filter(Boolean));
+        if (byPhone.length > 0) {
+          serverUsersStore.set(byPhone[0].id, byPhone[0]);
+          return byPhone[0];
         }
       }
     } catch (_) {}
@@ -1989,12 +2470,8 @@ app.get(['/api/health', '/health'], async (req, res) => {
       // 2. Check duplicate in Supabase
       try {
         if (phoneInfo.candidates.length > 0) {
-          const { data: existingCandidates } = await supabaseAdmin
-            .from('users')
-            .select('id, phone, name')
-            .in('phone', phoneInfo.candidates);
-
-          if (existingCandidates && existingCandidates.length > 0) {
+          const existingCandidates = await dbFindIn('users', 'phone', phoneInfo.candidates);
+          if (existingCandidates.length > 0) {
             return res.status(400).json({ 
               success: false, 
               error: 'Un compte existe déjà avec ce numéro de téléphone. Veuillez vous connecter.' 
@@ -2123,8 +2600,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
 
       let user = serverUsersStore.get(userId);
       if (!user) {
-        const { data: dbUser } = await supabaseAdmin.from('users').select('*').eq('id', userId).single();
-        if (dbUser) user = normalizeDbRow('users', dbUser);
+        user = await dbFindOne('users', 'id', userId);
       }
 
       if (!user) {
@@ -2176,8 +2652,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
       // 2. Fetch User
       let user = serverUsersStore.get(userId);
       if (!user) {
-        const { data: dbUser } = await supabaseAdmin.from('users').select('*').eq('id', userId).single();
-        if (dbUser) user = normalizeDbRow('users', dbUser);
+        user = await dbFindOne('users', 'id', userId);
       }
 
       if (!user) {
@@ -2235,8 +2710,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
         // Level 1 (15%)
         let l1User = Array.from(serverUsersStore.values()).find(u => u.referralCode === user.referredByCode);
         if (!l1User) {
-          const { data: dbL1 } = await supabaseAdmin.from('users').select('*').eq('referral_code', user.referredByCode).maybeSingle();
-          if (dbL1) l1User = normalizeDbRow('users', dbL1);
+          l1User = await dbFindOne('users', 'referral_code', user.referredByCode);
         }
 
         if (l1User) {
@@ -2265,8 +2739,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
           if (l1User.referredByCode) {
             let l2User = Array.from(serverUsersStore.values()).find(u => u.referralCode === l1User.referredByCode);
             if (!l2User) {
-              const { data: dbL2 } = await supabaseAdmin.from('users').select('*').eq('referral_code', l1User.referredByCode).maybeSingle();
-              if (dbL2) l2User = normalizeDbRow('users', dbL2);
+              l2User = await dbFindOne('users', 'referral_code', l1User.referredByCode);
             }
 
             if (l2User) {
@@ -2294,8 +2767,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
               if (l2User.referredByCode) {
                 let l3User = Array.from(serverUsersStore.values()).find(u => u.referralCode === l2User.referredByCode);
                 if (!l3User) {
-                  const { data: dbL3 } = await supabaseAdmin.from('users').select('*').eq('referral_code', l2User.referredByCode).maybeSingle();
-                  if (dbL3) l3User = normalizeDbRow('users', dbL3);
+                  l3User = await dbFindOne('users', 'referral_code', l2User.referredByCode);
                 }
 
                 if (l3User) {
@@ -2472,10 +2944,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
       let existingTicket = serverTicketsStore.get(ticketId);
 
       if (!existingTicket) {
-        const { data: dbTkt } = await supabaseAdmin.from('tickets').select('*').eq('id', ticketId).maybeSingle();
-        if (dbTkt) {
-          existingTicket = normalizeDbRow('tickets', dbTkt);
-        }
+        existingTicket = await dbFindOne('tickets', 'id', ticketId);
       }
 
       const updates = {
@@ -2516,8 +2985,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
       // Look up target user info
       let targetUser = serverUsersStore.get(userId);
       if (!targetUser) {
-        const { data: dbU } = await supabaseAdmin.from('users').select('*').eq('id', userId).maybeSingle();
-        if (dbU) targetUser = normalizeDbRow('users', dbU);
+        targetUser = await dbFindOne('users', 'id', userId);
       }
 
       const nowIso = new Date().toISOString();
@@ -2565,8 +3033,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
 
       let dep = serverDepositsStore.get(depositId);
       if (!dep) {
-        const { data: dbDep } = await supabaseAdmin.from('deposits').select('*').eq('id', depositId).single();
-        if (dbDep) dep = normalizeDbRow('deposits', dbDep);
+        dep = await dbFindOne('deposits', 'id', depositId);
       }
 
       if (!dep && fallbackDepositData) {
@@ -2605,13 +3072,11 @@ app.get(['/api/health', '/health'], async (req, res) => {
         let targetUser: any = serverUsersStore.get(dep.userId);
 
         if (!targetUser) {
-          const { data: userById } = await supabaseAdmin.from('users').select('*').eq('id', dep.userId).maybeSingle();
-          if (userById) targetUser = normalizeDbRow('users', userById);
+          targetUser = await dbFindOne('users', 'id', dep.userId);
         }
 
         if (!targetUser && dep.userPhone) {
-          const { data: userByPhone } = await supabaseAdmin.from('users').select('*').eq('phone', dep.userPhone).maybeSingle();
-          if (userByPhone) targetUser = normalizeDbRow('users', userByPhone);
+          targetUser = await dbFindOne('users', 'phone', dep.userPhone);
         }
 
         if (targetUser) {
@@ -2656,8 +3121,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
 
       let wth = serverWithdrawalsStore.get(withdrawalId);
       if (!wth) {
-        const { data: dbWth } = await supabaseAdmin.from('withdrawals').select('*').eq('id', withdrawalId).single();
-        if (dbWth) wth = normalizeDbRow('withdrawals', dbWth);
+        wth = await dbFindOne('withdrawals', 'id', withdrawalId);
       }
 
       if (!wth) {
@@ -2700,8 +3164,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
 
       let user = serverUsersStore.get(userId);
       if (!user) {
-        const { data: dbUser } = await supabaseAdmin.from('users').select('*').eq('id', userId).maybeSingle();
-        if (dbUser) user = normalizeDbRow('users', dbUser);
+        user = await dbFindOne('users', 'id', userId);
       }
 
       if (!user) {
@@ -2789,18 +3252,34 @@ app.get(['/api/health', '/health'], async (req, res) => {
         task_claims: serverUserTaskClaimsStore
       };
 
-      if (Date.now() < supabaseUnreachableUntil && fallbackMap[tableName]) {
-        return res.json({ success: true, data: Array.from(fallbackMap[tableName].values()), localFallback: true });
+      const isForce = req.query.force === 'true' || req.query.refresh === '1';
+      if (isForce) {
+        supabaseUnreachableUntil = 0;
+        lastFetchAllData = null;
+        lastFetchAllTime = 0;
       }
 
-      const { data, error } = await (supabaseAdmin.from(tableName as any) as any).select('*');
-      if (error) {
+      if ((!pgPool && !supabaseAdmin) || Date.now() < supabaseUnreachableUntil) {
         if (fallbackMap[tableName]) {
           return res.json({ success: true, data: Array.from(fallbackMap[tableName].values()), localFallback: true });
         }
-        return res.status(500).json({ success: false, error: error.message });
       }
-      const normalizedData = (data || []).map((row: any) => normalizeDbRow(tableName, row));
+
+      const { data, error } = await dbSelectAll(tableName);
+      if (error || !data) {
+        if (fallbackMap[tableName]) {
+          return res.json({ success: true, data: Array.from(fallbackMap[tableName].values()), localFallback: true });
+        }
+        return res.status(500).json({ success: false, error: error?.message || 'Erreur DB' });
+      }
+      const normalizedData = data.map((row: any) => normalizeDbRow(tableName, row));
+      if (fallbackMap[tableName]) {
+        fallbackMap[tableName].clear();
+        normalizedData.forEach((item: any) => {
+          const key = item.id || item.code;
+          if (key) fallbackMap[tableName].set(key, item);
+        });
+      }
       return res.json({ success: true, data: normalizedData });
     } catch (err: any) {
       return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
@@ -2825,27 +3304,35 @@ app.get(['/api/health', '/health'], async (req, res) => {
   app.get('/api/admin/fetch-all', async (req, res) => {
     try {
       const isForce = req.query.force === 'true' || req.query.refresh === '1';
+      if (isForce) {
+        supabaseUnreachableUntil = 0;
+        lastFetchAllData = null;
+        lastFetchAllTime = 0;
+      }
       const now = Date.now();
       if (!isForce && lastFetchAllData && (now - lastFetchAllTime < CACHE_TTL_MS)) {
         return res.json({
           success: true,
           data: lastFetchAllData,
           cached: true,
-          supabaseStatus: isSupabaseQuotaExceeded ? 'quota_exceeded' : 'connected',
-          isQuotaExceeded: isSupabaseQuotaExceeded
+          engine: pgPool ? 'supabase-postgresql' : (supabaseAdmin ? 'supabase-rest' : 'local-only'),
+          hasDatabaseUrl: Boolean(pgPool),
+          supabaseStatus: isSupabaseQuotaExceeded ? 'quota_exceeded' : ((pgPool || supabaseAdmin) ? 'connected' : 'local_resilience'),
+          isQuotaExceeded: isSupabaseQuotaExceeded,
+          lastSyncAt: new Date(lastFetchAllTime || now).toISOString()
         });
       }
 
-      const fetchTableSafe = async (table: string, fallbackStore: Map<string, any>) => {
-        if (Date.now() < supabaseUnreachableUntil) {
-          return Array.from(fallbackStore.values());
+      let dbReachableSuccess = false;
+
+      const fetchTableSafe = async (table: string, fallbackStore?: Map<string, any>) => {
+        const getFallback = () => (fallbackStore ? Array.from(fallbackStore.values()) : []);
+        if ((!pgPool && !supabaseAdmin) || Date.now() < supabaseUnreachableUntil) {
+          return getFallback();
         }
         try {
           const queryPromise = (async () => {
-            const { data, error } = await supabaseAdmin
-              .from(table)
-              .select('*')
-              .limit(10000);
+            const { data, error } = await dbSelectAll(table, 10000);
 
             if (error) {
               const errMsg = error.message || '';
@@ -2853,32 +3340,37 @@ app.get(['/api/health', '/health'], async (req, res) => {
                 isSupabaseQuotaExceeded = true;
                 lastSupabaseErrorMsg = errMsg;
               }
-              return Array.from(fallbackStore.values());
+              return getFallback();
             }
 
             if (data && Array.isArray(data)) {
+              dbReachableSuccess = true;
               isSupabaseQuotaExceeded = false;
               const normalized = data.map(item => normalizeDbRow(table, item));
-              
-              // Merge fallbackStore with Supabase authoritative data by ID
-              const mergedMap = new Map<string, any>();
-              fallbackStore.forEach((v, k) => mergedMap.set(k, v));
-              normalized.forEach(item => {
-                const key = item.id || item.code;
-                if (key) {
-                  mergedMap.set(key, item);
-                  fallbackStore.set(key, item);
-                }
-              });
 
-              return Array.from(mergedMap.values());
+              if (fallbackStore) {
+                // When remote DB succeeds cleanly, treat DB as authoritative (unless products table is empty and seed exists)
+                if (!(table === 'products' && normalized.length === 0 && fallbackStore.size > 0)) {
+                  fallbackStore.clear();
+                }
+                normalized.forEach(item => {
+                  const key = item.id || item.code;
+                  if (key) {
+                    if (table === 'products' && LEGACY_OBSOLETE_PRODUCT_IDS.has(key)) return;
+                    fallbackStore.set(key, item);
+                  }
+                });
+                return Array.from(fallbackStore.values());
+              }
+
+              return normalized;
             }
-            return Array.from(fallbackStore.values());
+            return getFallback();
           })();
 
-          return await withDbTimeout(queryPromise, 6000, Array.from(fallbackStore.values()));
+          return await withDbTimeout(queryPromise, 6000, getFallback());
         } catch (_) {
-          return Array.from(fallbackStore.values());
+          return getFallback();
         }
       };
 
@@ -2891,7 +3383,8 @@ app.get(['/api/health', '/health'], async (req, res) => {
         proofs,
         tickets,
         commissions,
-        bonusCodes
+        bonusCodes,
+        rechargeChannelsRows
       ] = await Promise.all([
         fetchTableSafe('users', serverUsersStore),
         fetchTableSafe('products', serverProductsStore),
@@ -2901,8 +3394,19 @@ app.get(['/api/health', '/health'], async (req, res) => {
         fetchTableSafe('withdrawal_proofs', serverProofsStore),
         fetchTableSafe('tickets', serverTicketsStore),
         fetchTableSafe('commissions', serverCommissionsStore),
-        fetchTableSafe('bonus_codes', serverBonusCodesStore)
+        fetchTableSafe('bonus_codes', serverBonusCodesStore),
+        fetchTableSafe('recharge_channels')
       ]);
+
+      // Extract & hydrate system configs stored in bonus_codes if present in DB
+      const bonusArr = Array.isArray(bonusCodes) ? bonusCodes : Array.from(serverBonusCodesStore.values());
+      const sysAnnRow = bonusArr.find((b: any) => b.code === '__SYS_ANNOUNCEMENTS__');
+      if (sysAnnRow && Array.isArray(sysAnnRow.usedBy) && sysAnnRow.usedBy.length > 0) {
+        serverAnnouncementsStore.clear();
+        sysAnnRow.usedBy.forEach((a: any) => {
+          if (a?.id) serverAnnouncementsStore.set(a.id, a);
+        });
+      }
 
       const resultData = {
         users: Array.isArray(users) ? users : Array.from(serverUsersStore.values()),
@@ -2913,7 +3417,8 @@ app.get(['/api/health', '/health'], async (req, res) => {
         withdrawal_proofs: Array.isArray(proofs) ? proofs : Array.from(serverProofsStore.values()),
         tickets: Array.isArray(tickets) ? tickets : Array.from(serverTicketsStore.values()),
         commissions: Array.isArray(commissions) ? commissions : Array.from(serverCommissionsStore.values()),
-        bonus_codes: Array.isArray(bonusCodes) ? bonusCodes : Array.from(serverBonusCodesStore.values()),
+        bonus_codes: bonusArr,
+        recharge_channels: Array.isArray(rechargeChannelsRows) ? rechargeChannelsRows : [],
         announcements: Array.from(serverAnnouncementsStore.values()),
         tasks: Array.from(serverTasksStore.values()),
         task_claims: Array.from(serverUserTaskClaimsStore.values())
@@ -2925,12 +3430,31 @@ app.get(['/api/health', '/health'], async (req, res) => {
       lastFetchAllData = resultData;
       lastFetchAllTime = Date.now();
 
+      const resolvedStatus = isSupabaseQuotaExceeded
+        ? 'quota_exceeded'
+        : ((pgPool || supabaseAdmin) && (dbReachableSuccess || Date.now() >= supabaseUnreachableUntil) ? 'connected' : 'local_resilience');
+
       return res.json({
         success: true,
         data: resultData,
-        supabaseStatus: isSupabaseQuotaExceeded ? 'quota_exceeded' : 'connected',
+        engine: pgPool ? 'supabase-postgresql' : (supabaseAdmin ? 'supabase-rest' : 'local-only'),
+        hasDatabaseUrl: Boolean(pgPool),
+        supabaseStatus: resolvedStatus,
         isQuotaExceeded: isSupabaseQuotaExceeded,
-        supabaseMessage: lastSupabaseErrorMsg
+        supabaseMessage: lastSupabaseErrorMsg,
+        lastSyncAt: new Date(lastFetchAllTime).toISOString(),
+        counts: {
+          users: resultData.users.length,
+          products: resultData.products.length,
+          investments: resultData.investments.length,
+          deposits: resultData.deposits.length,
+          withdrawals: resultData.withdrawals.length,
+          withdrawal_proofs: resultData.withdrawal_proofs.length,
+          tickets: resultData.tickets.length,
+          commissions: resultData.commissions.length,
+          bonus_codes: resultData.bonus_codes.length,
+          recharge_channels: resultData.recharge_channels.length
+        }
       });
     } catch (err: any) {
       console.error('[Server Admin Fetch All Error]:', err);
@@ -2939,8 +3463,11 @@ app.get(['/api/health', '/health'], async (req, res) => {
           success: true,
           data: lastFetchAllData,
           fallback: true,
-          supabaseStatus: isSupabaseQuotaExceeded ? 'quota_exceeded' : 'connected',
-          isQuotaExceeded: isSupabaseQuotaExceeded
+          engine: pgPool ? 'supabase-postgresql' : (supabaseAdmin ? 'supabase-rest' : 'local-only'),
+          hasDatabaseUrl: Boolean(pgPool),
+          supabaseStatus: isSupabaseQuotaExceeded ? 'quota_exceeded' : ((pgPool || supabaseAdmin) ? 'connected' : 'local_resilience'),
+          isQuotaExceeded: isSupabaseQuotaExceeded,
+          lastSyncAt: new Date(lastFetchAllTime || Date.now()).toISOString()
         });
       }
       return res.json({
@@ -2955,12 +3482,16 @@ app.get(['/api/health', '/health'], async (req, res) => {
           tickets: Array.from(serverTicketsStore.values()),
           commissions: Array.from(serverCommissionsStore.values()),
           bonus_codes: Array.from(serverBonusCodesStore.values()),
+          recharge_channels: [],
           announcements: Array.from(serverAnnouncementsStore.values()),
           tasks: serverTasksStore.size > 0 ? Array.from(serverTasksStore.values()) : defaultSeedTasks,
           task_claims: Array.from(serverUserTaskClaimsStore.values())
         },
-        supabaseStatus: isSupabaseQuotaExceeded ? 'quota_exceeded' : 'connected',
-        isQuotaExceeded: isSupabaseQuotaExceeded
+        engine: pgPool ? 'supabase-postgresql' : (supabaseAdmin ? 'supabase-rest' : 'local-only'),
+        hasDatabaseUrl: Boolean(pgPool),
+        supabaseStatus: isSupabaseQuotaExceeded ? 'quota_exceeded' : ((pgPool || supabaseAdmin) ? 'connected' : 'local_resilience'),
+        isQuotaExceeded: isSupabaseQuotaExceeded,
+        lastSyncAt: new Date().toISOString()
       });
     }
   });
@@ -3049,13 +3580,55 @@ app.get(['/api/health', '/health'], async (req, res) => {
     }
   });
 
-  // Check Supabase Live Connection & Quota Diagnostic Probe
-  app.get('/api/admin/check-supabase', async (req, res) => {
+  // Check Supabase Live Connection & Diagnostic Probe
+  app.get('/api/admin/check-supabase', async (_req, res) => {
     try {
       const probeStart = Date.now();
-      const { data, error } = await supabaseAdmin.from('users').select('id').limit(1);
-      const probeLatency = Date.now() - probeStart;
+      if (!pgPool && !supabaseAdmin) {
+        return res.json({
+          success: false,
+          status: 'local_resilience',
+          isQuotaExceeded: false,
+          errorCode: 'MISSING_DB_SECRET',
+          message: 'Configurez DATABASE_URL dans Settings -> Secrets pour connecter directement Supabase PostgreSQL.',
+          supabaseUrl: SUPABASE_URL,
+          serverStoreCounts: {
+            users: serverUsersStore.size,
+            deposits: serverDepositsStore.size,
+            withdrawals: serverWithdrawalsStore.size,
+            investments: serverInvestmentsStore.size,
+            tickets: serverTicketsStore.size
+          }
+        });
+      }
 
+      if (pgPool) {
+        await ensurePostgresSchema();
+        await pgPool.query('SELECT 1');
+        const probeLatency = Date.now() - probeStart;
+        isSupabaseQuotaExceeded = false;
+        lastSupabaseErrorMsg = null;
+        lastSupabaseSuccessTimestamp = Date.now();
+        return res.json({
+          success: true,
+          status: 'connected',
+          engine: 'supabase-postgresql',
+          latencyMs: probeLatency,
+          message: 'Connexion Supabase PostgreSQL active et tables synchronisées.',
+          isQuotaExceeded: false,
+          supabaseUrl: SUPABASE_URL,
+          serverStoreCounts: {
+            users: serverUsersStore.size,
+            deposits: serverDepositsStore.size,
+            withdrawals: serverWithdrawalsStore.size,
+            investments: serverInvestmentsStore.size,
+            tickets: serverTicketsStore.size
+          }
+        });
+      }
+
+      const { error } = await (supabaseAdmin as any).from('users').select('id').limit(1);
+      const probeLatency = Date.now() - probeStart;
       const errMsg = error ? (error.message || '') : '';
       const isMissingTable = (error as any)?.code === 'PGRST205' || errMsg.includes('Could not find the table') || errMsg.includes('schema cache');
 
@@ -3066,10 +3639,11 @@ app.get(['/api/health', '/health'], async (req, res) => {
         return res.json({
           success: true,
           status: 'connected',
+          engine: 'supabase-rest',
           latencyMs: probeLatency,
-          message: !error 
-            ? 'Connexion Supabase active et tables distantes synchronisées.' 
-            : 'Connexion Supabase réussie avec la clé Service Role. Les tables distantes peuvent être initialisées avec supabase_schema.sql si besoin.',
+          message: !error
+            ? 'Connexion Supabase active et tables distantes synchronisées.'
+            : 'Connexion Supabase réussie. Les tables distantes peuvent être initialisées avec supabase_schema.sql si besoin.',
           isQuotaExceeded: false,
           supabaseUrl: SUPABASE_URL,
           serverStoreCounts: {
@@ -3084,7 +3658,6 @@ app.get(['/api/health', '/health'], async (req, res) => {
 
       const isQuota = errMsg.includes('exceed_egress_quota') || errMsg.includes('402') || errMsg.includes('restricted') || (error as any).code === '402';
       const isNetworkFallback = isNetworkUnavailableError(errMsg, (error as any).code);
-
       if (isQuota) {
         isSupabaseQuotaExceeded = true;
         lastSupabaseErrorMsg = errMsg;
@@ -3099,15 +3672,6 @@ app.get(['/api/health', '/health'], async (req, res) => {
           ? 'Mode résilience locale actif (stockage local persistant opérationnel).'
           : errMsg,
         supabaseUrl: SUPABASE_URL,
-        instructions: isQuota ? {
-          title: 'Dépassement du quota mensuel Supabase (Egress Quota)',
-          resolutionUrl: `https://supabase.com/dashboard/project/${getJwtProjectRef(SUPABASE_SERVICE_ROLE_KEY) || 'ykoqcaggjfhpnysvumuu'}/settings/billing`,
-          steps: [
-            `1. Connectez-vous sur votre tableau de bord Supabase : https://supabase.com/dashboard/project/${getJwtProjectRef(SUPABASE_SERVICE_ROLE_KEY) || 'ykoqcaggjfhpnysvumuu'}/settings/billing`,
-            '2. Désactivez le "Spend Cap" ou mettez à niveau vers le forfait Pro ($25/mois).',
-            '3. Dès la validation, la restriction est immédiatement levée et la synchronisation reprendra sans aucune perte de données.'
-          ]
-        } : null,
         serverStoreCounts: {
           users: serverUsersStore.size,
           deposits: serverDepositsStore.size,
@@ -3561,11 +4125,11 @@ app.get(['/api/health', '/health'], async (req, res) => {
 
       // 4. Wipe from Supabase
       try {
-        await supabaseAdmin.from('deposits').delete().neq('id', '__keep_none__');
-        await supabaseAdmin.from('withdrawals').delete().neq('id', '__keep_none__');
-        await supabaseAdmin.from('investments').delete().neq('id', '__keep_none__');
-        await supabaseAdmin.from('commissions').delete().neq('id', '__keep_none__');
-        await supabaseAdmin.from('users').delete().neq('role', 'admin');
+        await dbDeleteNeq('deposits', 'id', '__keep_none__');
+        await dbDeleteNeq('withdrawals', 'id', '__keep_none__');
+        await dbDeleteNeq('investments', 'id', '__keep_none__');
+        await dbDeleteNeq('commissions', 'id', '__keep_none__');
+        await dbDeleteNeq('users', 'role', 'admin');
       } catch (dbErr: any) {
         console.warn('[Supabase Purge Warning]:', dbErr?.message);
       }
@@ -3655,7 +4219,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
       savePlatformDataToDisk(true);
       try {
         if (Date.now() >= supabaseUnreachableUntil) {
-          await (supabaseAdmin.from('products' as any) as any).delete().eq('id', productId);
+          await dbDeleteEq('products', 'id', productId);
         }
       } catch (_) {}
       lastFetchAllData = null;
@@ -3674,7 +4238,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
           serverProductsStore.delete(currentId);
           try {
             if (Date.now() >= supabaseUnreachableUntil) {
-              await (supabaseAdmin.from('products' as any) as any).delete().eq('id', currentId);
+              await dbDeleteEq('products', 'id', currentId);
             }
           } catch (_) {}
         }
@@ -3716,6 +4280,26 @@ app.get(['/api/health', '/health'], async (req, res) => {
         savePlatformDataToDisk(true);
         const upRes = await safeSupabaseUpsert(tableName, item);
 
+        // Keep public.recharge_channels table synchronized when __SYS_RECHARGE_CHANNELS__ is saved
+        if (tableName === 'bonus_codes' && (item.code === '__SYS_RECHARGE_CHANNELS__') && Array.isArray(item.usedBy)) {
+          try {
+            const { data: existingCh } = await dbSelectAll('recharge_channels');
+            const incomingIds = new Set(item.usedBy.map((c: any) => c?.id).filter(Boolean));
+            if (Array.isArray(existingCh)) {
+              for (const row of existingCh) {
+                if (row?.id && !incomingIds.has(row.id)) {
+                  await dbDeleteEq('recharge_channels', 'id', row.id);
+                }
+              }
+            }
+            for (const ch of item.usedBy) {
+              if (ch?.id) {
+                await safeSupabaseUpsert('recharge_channels', ch);
+              }
+            }
+          } catch (_) {}
+        }
+
         // Invalidate master cache immediately
         lastFetchAllData = null;
         lastFetchAllTime = 0;
@@ -3750,7 +4334,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
         if (tableName === 'bonus_codes') serverBonusCodesStore.delete(idValue);
 
         savePlatformDataToDisk(true);
-        await (supabaseAdmin.from(tableName as any) as any).delete().eq(idCol, idValue);
+        await dbDeleteEq(tableName, idCol, idValue);
 
         // Invalidate master cache immediately
         lastFetchAllData = null;
@@ -3783,10 +4367,8 @@ app.get(['/api/health', '/health'], async (req, res) => {
   async function runServerSideDailyRevenueDistribution() {
     try {
       let sourceInvestments: any[] = [];
-      if (Date.now() >= supabaseUnreachableUntil) {
-        const { data: activeInvestments, error } = await supabaseAdmin
-          .from('investments')
-          .select('*');
+      if ((pgPool || supabaseAdmin) && Date.now() >= supabaseUnreachableUntil) {
+        const { data: activeInvestments, error } = await dbSelectAll('investments');
         if (!error && Array.isArray(activeInvestments) && activeInvestments.length > 0) {
           sourceInvestments = activeInvestments.map(i => normalizeDbRow('investments', i));
         }
@@ -3842,8 +4424,7 @@ app.get(['/api/health', '/health'], async (req, res) => {
         for (const [userId, totalGain] of userGainMap.entries()) {
           let targetUser = serverUsersStore.get(userId);
           if (!targetUser && Date.now() >= supabaseUnreachableUntil) {
-            const { data: userRec } = await supabaseAdmin.from('users').select('*').eq('id', userId).maybeSingle();
-            if (userRec) targetUser = normalizeDbRow('users', userRec);
+            targetUser = await dbFindOne('users', 'id', userId);
           }
 
           if (targetUser) {
@@ -3901,11 +4482,11 @@ export async function startServer() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[Full-Stack Server] Running on http://0.0.0.0:${PORT}`);
-    console.log(`[Supabase Admin] Initialized with Service Role Key for URL: ${SUPABASE_URL}`);
+    console.log(`[Database Engine] ${pgPool ? 'Supabase PostgreSQL Direct' : (supabaseAdmin ? 'Supabase REST' : 'Local Persistent Store')} | URL: ${SUPABASE_URL}`);
   });
 }
 
-if (!process.env.VERCEL && !process.env.VERCEL_ENV) {
+if (!process.env.VERCEL && !process.env.VERCEL_ENV && process.env.SKIP_LISTEN !== '1') {
   startServer();
 }
 

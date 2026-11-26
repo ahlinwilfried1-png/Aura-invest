@@ -152,8 +152,10 @@ interface AppContextType {
   deleteFaq: (id: string) => void;
   
   // Refresh / Sync
-  refreshData: (force?: boolean) => Promise<void>;
-  supabaseStatus: 'connected' | 'quota_exceeded' | 'checking' | 'error';
+  refreshData: (force?: boolean) => Promise<any>;
+  supabaseStatus: 'connected' | 'quota_exceeded' | 'local_resilience' | 'checking' | 'error';
+  dbEngine: string;
+  lastSyncAt: string | null;
   isQuotaExceeded: boolean;
   probeSupabase: () => Promise<any>;
 
@@ -679,19 +681,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return safeGetLocalStorage('fintech_global_notification');
   });
 
-  const [supabaseStatus, setSupabaseStatus] = useState<'connected' | 'quota_exceeded' | 'checking' | 'error'>('checking');
+  const [supabaseStatus, setSupabaseStatus] = useState<'connected' | 'quota_exceeded' | 'local_resilience' | 'checking' | 'error'>('checking');
+  const [dbEngine, setDbEngine] = useState<string>('checking');
+  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
 
   const probeSupabase = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/check-supabase');
+      const res = await fetch(`/api/admin/check-supabase?_t=${Date.now()}`, { cache: 'no-store' });
       const data = await res.json();
+      if (data.engine) setDbEngine(data.engine);
       if (data.isQuotaExceeded) {
         setIsQuotaExceeded(true);
         setSupabaseStatus('quota_exceeded');
       } else if (data.status === 'connected') {
         setIsQuotaExceeded(false);
         setSupabaseStatus('connected');
+      } else if (data.status === 'local_resilience') {
+        setIsQuotaExceeded(false);
+        setSupabaseStatus('local_resilience');
+        setDbEngine(prev => (prev === 'checking' ? 'local-only' : prev));
       } else {
         setSupabaseStatus('error');
       }
@@ -704,64 +713,78 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Track if initial sync has occurred
   const isHydratedRef = useRef(false);
   const isSyncingRef = useRef(false);
+  const activeSyncPromiseRef = useRef<Promise<any> | null>(null);
   const currentUserIdRef = useRef<string | null>(currentUser?.id || null);
   currentUserIdRef.current = currentUser?.id || null;
   const currentUserRef = useRef<User | null>(currentUser);
   currentUserRef.current = currentUser;
 
   // Master Central Sync Function
-  const fetchAndSyncAllFromSupabase = useCallback(async (force: boolean = false) => {
-    // Prevent overlapping concurrent sync calls
-    if (isSyncingRef.current) return;
+  const fetchAndSyncAllFromSupabase = useCallback(async (force: boolean = false): Promise<any> => {
+    // If a sync is already running: wait for it if forced, otherwise skip duplicate poll
+    if (isSyncingRef.current) {
+      if (!force) return null;
+      if (activeSyncPromiseRef.current) {
+        try { await activeSyncPromiseRef.current; } catch (_) {}
+      }
+    }
     isSyncingRef.current = true;
 
-    try {
-      // 1. Fetch main native tables - Try unified master endpoint first (100% authoritative via Service Role)
-      let dbUsers: User[] | null = null;
-      let dbProducts: InvestmentProduct[] | null = null;
-      let dbInvestments: UserInvestment[] | null = null;
-      let dbDeposits: DepositRequest[] | null = null;
-      let dbWithdrawals: WithdrawalRequest[] | null = null;
-      let dbProofs: WithdrawalProof[] | null = null;
-      let dbTickets: SupportTicket[] | null = null;
-      let dbCommissions: CommissionHistory[] | null = null;
-      let dbBonusRows: any[] | null = null;
-      let sysAnnouncements: Announcement[] | null = null;
+    const runSync = async (): Promise<any> => {
+      try {
+        // 1. Fetch main native tables - Try unified master endpoint first (100% authoritative)
+        let dbUsers: User[] | null = null;
+        let dbProducts: InvestmentProduct[] | null = null;
+        let dbInvestments: UserInvestment[] | null = null;
+        let dbDeposits: DepositRequest[] | null = null;
+        let dbWithdrawals: WithdrawalRequest[] | null = null;
+        let dbProofs: WithdrawalProof[] | null = null;
+        let dbTickets: SupportTicket[] | null = null;
+        let dbCommissions: CommissionHistory[] | null = null;
+        let dbBonusRows: any[] | null = null;
+        let dbRechargeChannels: RechargeChannel[] | null = null;
+        let sysAnnouncements: Announcement[] | null = null;
 
-      const master = await fetchAllTablesMaster(force);
-      if (master) {
-        if (master._isQuotaExceeded) {
-          setIsQuotaExceeded(true);
-          setSupabaseStatus('quota_exceeded');
-        } else if (master._supabaseStatus === 'connected') {
-          setIsQuotaExceeded(false);
-          setSupabaseStatus('connected');
-        }
+        const master = await fetchAllTablesMaster(force);
+        if (master) {
+          if (master._engine) setDbEngine(master._engine);
+          if (master._lastSyncAt) setLastSyncAt(master._lastSyncAt);
+          if (master._isQuotaExceeded) {
+            setIsQuotaExceeded(true);
+            setSupabaseStatus('quota_exceeded');
+          } else if (master._supabaseStatus === 'connected') {
+            setIsQuotaExceeded(false);
+            setSupabaseStatus('connected');
+          } else if (master._supabaseStatus === 'local_resilience') {
+            setIsQuotaExceeded(false);
+            setSupabaseStatus('local_resilience');
+          }
 
-        dbUsers = master.users || [];
-        dbProducts = master.products || [];
-        dbInvestments = master.investments || [];
-        dbDeposits = master.deposits || [];
-        dbWithdrawals = master.withdrawals || [];
-        dbProofs = master.withdrawal_proofs || [];
-        dbTickets = master.tickets || [];
-        dbCommissions = master.commissions || [];
-        dbBonusRows = master.bonus_codes || [];
-        if (master.announcements && Array.isArray(master.announcements)) {
-          sysAnnouncements = master.announcements;
-        }
-        if (master.tasks && Array.isArray(master.tasks) && master.tasks.length > 0) {
-          const normalizedTasks = normalizeTaskList(master.tasks);
-          setTasks(normalizedTasks);
-          safeSetLocalStorage('fintech_tasks', normalizedTasks);
+          dbUsers = master.users || [];
+          dbProducts = master.products || [];
+          dbInvestments = master.investments || [];
+          dbDeposits = master.deposits || [];
+          dbWithdrawals = master.withdrawals || [];
+          dbProofs = master.withdrawal_proofs || [];
+          dbTickets = master.tickets || [];
+          dbCommissions = master.commissions || [];
+          dbBonusRows = master.bonus_codes || [];
+          dbRechargeChannels = Array.isArray(master.recharge_channels) ? master.recharge_channels : null;
+          if (master.announcements && Array.isArray(master.announcements)) {
+            sysAnnouncements = master.announcements;
+          }
+          if (master.tasks && Array.isArray(master.tasks) && master.tasks.length > 0) {
+            const normalizedTasks = normalizeTaskList(master.tasks);
+            setTasks(normalizedTasks);
+            safeSetLocalStorage('fintech_tasks', normalizedTasks);
+          } else {
+            setTasks(prev => (prev && prev.length > 0 ? normalizeTaskList(prev) : OFFICIAL_TASKS));
+          }
+          if (master.task_claims && Array.isArray(master.task_claims)) {
+            setUserTaskClaims(master.task_claims);
+            safeSetLocalStorage('fintech_task_claims', master.task_claims);
+          }
         } else {
-          setTasks(prev => (prev && prev.length > 0 ? normalizeTaskList(prev) : OFFICIAL_TASKS));
-        }
-        if (master.task_claims && Array.isArray(master.task_claims)) {
-          setUserTaskClaims(master.task_claims);
-          safeSetLocalStorage('fintech_task_claims', master.task_claims);
-        }
-      } else {
         const [
           u, p, i, d, w, pr, t, c, b
         ] = await Promise.all([
@@ -781,12 +804,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         dbDeposits = d;
         dbWithdrawals = w;
         dbProofs = pr;
-        dbTickets = t;
-        dbCommissions = c;
-        dbBonusRows = b;
-      }
+          dbTickets = t;
+          dbCommissions = c;
+          dbBonusRows = b;
+        }
 
-      // Process Users
+        // Process Users
       if (dbUsers && dbUsers.length > 0) {
         const enrichedUsers = dbUsers.map(u => {
           const auth = parseAuthFromPinHash(u.withdrawalPinHash);
@@ -882,14 +905,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         safeSetLocalStorage('fintech_withdrawal_proofs', sortedProofs);
       }
 
-      // Process Support Tickets / Chat (merge and sort newest first to ensure messages never disappear)
+      // Process Support Tickets / Chat (authoritative newest first)
       if (dbTickets) {
-        setTickets(prev => {
-          const merged = [...dbTickets, ...prev];
-          const sortedTickets = deduplicateById(merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-          safeSetLocalStorage('fintech_tickets', sortedTickets);
-          return sortedTickets;
-        });
+        const sortedTickets = deduplicateById(
+          [...dbTickets].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        );
+        setTickets(sortedTickets);
+        safeSetLocalStorage('fintech_tickets', sortedTickets);
       }
 
       // Process Commissions (sort newest first)
@@ -977,13 +999,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setFaqs(sysFaqs);
           safeSetLocalStorage('fintech_faqs', sysFaqs);
         }
-        if (sysRechargeChannels !== null) {
+        if (sysRechargeChannels !== null && sysRechargeChannels.length > 0) {
           const normalizedSysChannels = normalizeRechargeChannels(sysRechargeChannels);
           setRechargeChannels(normalizedSysChannels);
           safeSetLocalStorage('fintech_recharge_channels', normalizedSysChannels);
           if (JSON.stringify(normalizedSysChannels) !== JSON.stringify(sysRechargeChannels)) {
             saveSystemConfig('__SYS_RECHARGE_CHANNELS__', normalizedSysChannels).catch(() => {});
           }
+        } else if (dbRechargeChannels && dbRechargeChannels.length > 0) {
+          const normalizedDbChannels = normalizeRechargeChannels(dbRechargeChannels);
+          setRechargeChannels(normalizedDbChannels);
+          safeSetLocalStorage('fintech_recharge_channels', normalizedDbChannels);
+          saveSystemConfig('__SYS_RECHARGE_CHANNELS__', normalizedDbChannels).catch(() => {});
         } else {
           // Initialize defaults in Supabase if not yet present
           saveSystemConfig('__SYS_RECHARGE_CHANNELS__', rechargeChannels).catch(() => {});
@@ -1045,12 +1072,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .catch(() => {});
       } catch (_) {}
 
-      isHydratedRef.current = true;
-    } catch (err) {
-      console.warn('[Sync] Supabase fetch error:', err);
-    } finally {
-      isSyncingRef.current = false;
-    }
+        isHydratedRef.current = true;
+        return {
+          success: Boolean(master),
+          engine: master?._engine || 'fallback',
+          status: master?._supabaseStatus || 'unknown',
+          lastSyncAt: master?._lastSyncAt || new Date().toISOString(),
+          counts: master?._counts || null
+        };
+      } catch (err) {
+        console.warn('[Sync] Supabase fetch error:', err);
+        return { success: false };
+      } finally {
+        isSyncingRef.current = false;
+        activeSyncPromiseRef.current = null;
+      }
+    };
+
+    const syncPromise = runSync();
+    activeSyncPromiseRef.current = syncPromise;
+    return await syncPromise;
   }, []);
 
   // Initial mount: load immediately, start continuous fast background polling (4s)
@@ -3076,6 +3117,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       toggleRechargeChannel,
       refreshData: (force: boolean = true) => fetchAndSyncAllFromSupabase(force),
       supabaseStatus,
+      dbEngine,
+      lastSyncAt,
       isQuotaExceeded,
       probeSupabase
     }}>

@@ -41,6 +41,7 @@ export const SCHEMA_DEFINITIONS: Record<string, FieldMapping[]> = {
     { jsKey: 'dailyGain', dbKeys: ['daily_gain', 'dailyGain'] },
     { jsKey: 'duration', dbKeys: ['duration'] },
     { jsKey: 'totalGain', dbKeys: ['total_gain', 'totalGain'] },
+    { jsKey: 'dailyRatePercent', dbKeys: ['daily_rate_percent', 'dailyRatePercent'] },
     { jsKey: 'isActive', dbKeys: ['is_active', 'isActive'], defaultValue: true },
     { jsKey: 'image', dbKeys: ['image'] },
     { jsKey: 'description', dbKeys: ['description'] },
@@ -188,7 +189,7 @@ export function normalizeFromDbRow<T = any>(tableName: string, dbRow: any): T {
   // Enforce numbers for numeric fields to prevent string concatenation bugs
   const numericKeys = new Set([
     'balance', 'dailyEarnings', 'totalEarnings', 'vipLevel', 'drawTickets',
-    'price', 'dailyGain', 'duration', 'totalGain', 'daysRemaining',
+    'price', 'dailyGain', 'duration', 'totalGain', 'dailyRatePercent', 'daysRemaining',
     'amount', 'receivedAmount', 'order', 'level', 'maxUses'
   ]);
   for (const k of Object.keys(jsObject)) {
