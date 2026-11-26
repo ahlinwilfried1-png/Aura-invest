@@ -1,4 +1,4 @@
-import app from '../server';
+import app from './_server.mjs';
 
 export default function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -45,5 +45,16 @@ export default function handler(req: any, res: any) {
     return;
   }
 
-  return app(req, res);
+  try {
+    return app(req, res);
+  } catch (err: any) {
+    if (!res.headersSent) {
+      res.setHeader('Content-Type', 'application/json');
+      res.writeHead(500);
+      res.end(JSON.stringify({
+        success: false,
+        error: err?.message || 'Erreur interne du serveur.'
+      }));
+    }
+  }
 }

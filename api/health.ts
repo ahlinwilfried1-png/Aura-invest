@@ -11,6 +11,8 @@ export default async function handler(_req: any, res: any) {
   let dbError: string | null = null;
   let engine = 'none';
 
+  const supabaseUrl = process.env.SUPABASE_URL || DEFAULT_SUPABASE_URL;
+
   const dbUrl = process.env.DATABASE_URL;
   if (dbUrl) {
     engine = 'supabase-postgresql';
@@ -28,10 +30,10 @@ export default async function handler(_req: any, res: any) {
     } finally {
       await pool.end().catch(() => {});
     }
-  } else if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  } else if (supabaseUrl && process.env.SUPABASE_SERVICE_ROLE_KEY) {
     engine = 'supabase-rest';
     try {
-      const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+      const supabase = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY);
       const { error } = await supabase.from('products').select('id').limit(1);
       if (error) {
         dbStatus = 'resilient_fallback';

@@ -37,7 +37,7 @@ async function resilientFetch(url: string, options: RequestInit = {}, timeoutMs:
 export async function fetchAllTablesMaster(force: boolean = false): Promise<any | null> {
   try {
     const url = force ? `/api/admin/fetch-all?force=true&_t=${Date.now()}` : '/api/admin/fetch-all';
-    const res = await resilientFetch(url, {}, 10000);
+    const res = await resilientFetch(url, {}, 15000);
     if (res.ok && res.isJson && res.data && res.data.success && res.data.data) {
       return {
         ...res.data.data,

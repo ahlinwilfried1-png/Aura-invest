@@ -130,6 +130,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     refreshData,
     supabaseStatus,
     dbEngine,
+    lastSyncAt,
     isQuotaExceeded,
     probeSupabase
   } = useApp();
@@ -146,7 +147,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
         } else if (probe && probe.errorCode === 'MISSING_DB_SECRET') {
           showToast('info', "Données actualisées localement. Ajoutez DATABASE_URL dans Settings -> Secrets pour synchroniser directement Supabase.");
         } else if (syncRes && syncRes.success) {
-          showToast('success', "Données du panneau d'administration synchronisées avec Supabase !");
+          const c = syncRes.counts;
+          const summary = c
+            ? ` (${c.users ?? 0} utilisateurs, ${c.deposits ?? 0} dépôts, ${c.withdrawals ?? 0} retraits, ${c.investments ?? 0} produits actifs)`
+            : '';
+          showToast('success', `Données du panneau d'administration synchronisées avec Supabase${summary} !`);
         } else {
           showToast('success', "Données actualisées avec succès !");
         }
@@ -1032,8 +1037,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
             <div>
               <div className="flex items-center space-x-2">
                 <h1 className="text-base font-extrabold text-slate-900 tracking-tight">Panneau d'Administration</h1>
-                <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-mono px-2 py-0.5 rounded-full uppercase font-bold">
-                  EN DIRECT
+                <span className={`border text-[10px] font-mono px-2 py-0.5 rounded-full uppercase font-bold ${
+                  supabaseStatus === 'connected'
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                    : supabaseStatus === 'checking'
+                    ? 'bg-blue-100 text-blue-800 border-blue-200'
+                    : 'bg-amber-100 text-amber-800 border-amber-200'
+                }`}>
+                  {supabaseStatus === 'connected' ? 'SUPABASE CONNECTÉ' : supabaseStatus === 'checking' ? 'SYNCHRONISATION...' : 'MODE LOCAL'}
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 font-medium">Gestion globale de la plateforme, transactions et utilisateurs</p>
@@ -1114,7 +1125,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
             <div className="flex items-center space-x-2">
               <AlertCircle className="w-4 h-4 text-blue-600 shrink-0" />
               <span>
-                <strong className="font-bold">Base distante en attente :</strong> Ajoutez <code className="font-mono bg-blue-100 px-1 rounded">DATABASE_URL</code> dans <strong>Settings → Secrets</strong> pour synchroniser directement avec Supabase PostgreSQL.
+                <strong className="font-bold">Base distante en attente :</strong> Ajoutez <code className="font-mono bg-blue-100 px-1 rounded">DATABASE_URL</code> ou <code className="font-mono bg-blue-100 px-1 rounded">SUPABASE_SERVICE_ROLE_KEY</code> dans <strong>Settings → Secrets</strong> (ou <strong>Vercel → Environment Variables</strong>) pour synchroniser directement avec Supabase.
               </span>
             </div>
             <button
@@ -1326,6 +1337,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
         {/* 1. TABLEAU DE BORD (OVERVIEW PAGE) */}
         {activeAdminTab === 'dashboard' && (
           <div className="space-y-6 animate-fadeIn">
+
+            {/* Live Supabase Sync Bar */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+              <div className="flex items-center space-x-3">
+                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                  supabaseStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+                }`} />
+                <div className="text-xs text-slate-700">
+                  <div className="font-extrabold text-slate-900">
+                    Synchronisation Supabase : {supabaseStatus === 'connected' ? (dbEngine === 'supabase-rest' ? 'Connecté (Supabase REST)' : 'Connecté (PostgreSQL Supabase)') : 'Mode local'}
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-medium">
+                    {users.length} utilisateurs • {deposits.length} dépôts • {withdrawals.length} retraits • {userInvestments.length} investissements • {tickets.length} tickets
+                    {lastSyncAt ? ` • MàJ ${new Date(lastSyncAt).toLocaleTimeString('fr-FR')}` : ''}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => handleRefreshUsers(false)}
+                disabled={isRefreshingUsers}
+                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center justify-center space-x-1.5 cursor-pointer shrink-0 shadow-xs"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingUsers ? 'animate-spin' : ''}`} />
+                <span>{isRefreshingUsers ? 'Synchronisation...' : 'Synchroniser Supabase'}</span>
+              </button>
+            </div>
             
             {/* Alert banner if pending items exist */}
             {(pendingDepositsCount > 0 || pendingWithdrawalsCount > 0 || openTicketsCount > 0) && (

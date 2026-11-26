@@ -2032,13 +2032,19 @@ export async function syncFromSupabaseInitial() {
     console.warn('[Initial Sync Notice]:', err?.message);
   }
 }
-if (process.env.SKIP_LISTEN !== '1') {
+if (!IS_VERCEL && process.env.SKIP_LISTEN !== '1') {
   setTimeout(syncFromSupabaseInitial, 500);
 }
 
 // Global Express Application instance exported for local server, Cloud Run, and Vercel Serverless
 export const app = express();
 
+app.use((req: any, _res, next) => {
+  if (req.readableEnded && req.body !== undefined && req._body === undefined) {
+    req._body = true;
+  }
+  next();
+});
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
@@ -3356,8 +3362,11 @@ app.get(['/api/health', '/health'], async (_req, res) => {
               const normalized = data.map(item => normalizeDbRow(table, item));
 
               if (fallbackStore) {
-                // When remote DB succeeds cleanly, treat DB as authoritative (unless products table is empty and seed exists)
-                if (!(table === 'products' && normalized.length === 0 && fallbackStore.size > 0)) {
+                // When remote DB succeeds cleanly, treat DB as authoritative (unless products/users table is empty and seed exists)
+                if (
+                  !(table === 'products' && normalized.length === 0 && fallbackStore.size > 0) &&
+                  !(table === 'users' && normalized.length === 0 && fallbackStore.size > 0)
+                ) {
                   fallbackStore.clear();
                 }
                 normalized.forEach(item => {
@@ -3367,7 +3376,18 @@ app.get(['/api/health', '/health'], async (_req, res) => {
                     fallbackStore.set(key, item);
                   }
                 });
-                return Array.from(fallbackStore.values());
+                if (table === 'users') {
+                  defaultSeedUsers.forEach(seed => {
+                    if (!fallbackStore.has(seed.id)) {
+                      fallbackStore.set(seed.id, seed);
+                    }
+                  });
+                }
+                const list = Array.from(fallbackStore.values());
+                if (table === 'products') {
+                  return list.sort((a, b) => (Number(a.order) || 99) - (Number(b.order) || 99));
+                }
+                return list;
               }
 
               return normalized;
@@ -3375,7 +3395,7 @@ app.get(['/api/health', '/health'], async (_req, res) => {
             return getFallback();
           })();
 
-          return await withDbTimeout(queryPromise, 6000, getFallback());
+          return await withDbTimeout(queryPromise, 8000, getFallback());
         } catch (_) {
           return getFallback();
         }
@@ -3415,9 +3435,12 @@ app.get(['/api/health', '/health'], async (_req, res) => {
         });
       }
 
+      const sortedProductsList = (Array.isArray(products) ? products : Array.from(serverProductsStore.values()))
+        .sort((a: any, b: any) => (Number(a.order) || 99) - (Number(b.order) || 99));
+
       const resultData = {
         users: Array.isArray(users) ? users : Array.from(serverUsersStore.values()),
-        products: Array.isArray(products) ? products : Array.from(serverProductsStore.values()),
+        products: sortedProductsList,
         investments: Array.isArray(investments) ? investments : Array.from(serverInvestmentsStore.values()),
         deposits: Array.isArray(deposits) ? deposits : Array.from(serverDepositsStore.values()),
         withdrawals: Array.isArray(withdrawals) ? withdrawals : Array.from(serverWithdrawalsStore.values()),

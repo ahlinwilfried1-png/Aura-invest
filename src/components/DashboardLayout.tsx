@@ -638,7 +638,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <ServiceClientView
                 onBack={() => setActiveTab(lastNonFormTab)}
                 whatsappUrl="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
-                whatsappGroupUrl="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
+                whatsappGroupUrl="https://chat.whatsapp.com/E89l9hebMKnKlRJdR0EBkr?s=cl&p=a&iam=2"
               />
             )}
           </div>

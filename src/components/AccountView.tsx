@@ -703,15 +703,27 @@ export const AccountView: React.FC<AccountViewProps> = ({
               </div>
             </div>
 
-            <a
-              href="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full bg-[#25D366] hover:bg-[#1ebe5d] active:scale-[0.99] text-white font-extrabold text-xs py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md border border-emerald-300/40"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span>Rejoindre la chaîne officielle WhatsApp</span>
-            </a>
+            <div className="space-y-2">
+              <a
+                href="https://whatsapp.com/channel/0029VbE6h2OKAwEdLgywe13M"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-[#25D366] hover:bg-[#1ebe5d] active:scale-[0.99] text-white font-extrabold text-xs py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md border border-emerald-300/40"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Rejoindre la chaîne officielle WhatsApp</span>
+              </a>
+
+              <a
+                href="https://chat.whatsapp.com/E89l9hebMKnKlRJdR0EBkr?s=cl&p=a&iam=2"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-emerald-950/70 hover:bg-emerald-900/80 active:scale-[0.99] text-emerald-200 font-extrabold text-xs py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md border border-emerald-400/40"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Rejoindre le groupe de discussion WhatsApp</span>
+              </a>
+            </div>
           </div>
         </div>
       )}
