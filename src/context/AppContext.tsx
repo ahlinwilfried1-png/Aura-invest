@@ -27,7 +27,8 @@ import {
   adminProcessWithdrawal,
   adminUpdateUserBalance,
   adminUpdateUserRole,
-  adminUpdateUserBlock
+  adminUpdateUserBlock,
+  adminUpdateUserCredentials
 } from '../lib/supabaseService';
 import { 
   safeSetLocalStorage, 
@@ -841,7 +842,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return next;
         });
 
-        // Dynamic sync of currentUser balance/info if currently logged in
+        // Dynamic sync of currentUser balance/info/blocked status if currently logged in
         if (currentUserRef.current) {
           const currentId = currentUserRef.current.id;
           const currentPhoneClean = (currentUserRef.current.phone || '').replace(/\s+/g, '').replace(/[^\d+]/g, '');
@@ -850,14 +851,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             (currentPhoneClean && u.phone && u.phone.replace(/\s+/g, '').replace(/[^\d+]/g, '') === currentPhoneClean)
           );
           if (freshUser) {
-            setCurrentUser(prev => {
-              if (!prev || JSON.stringify(prev) !== JSON.stringify(freshUser)) {
-                safeSetSessionStorage('fintech_current_user', freshUser);
-                safeSetLocalStorage('fintech_current_user', freshUser);
-                return freshUser;
-              }
-              return prev;
-            });
+            if (freshUser.isBlocked) {
+              setCurrentUser(null);
+              safeRemoveSessionStorage('fintech_current_user');
+              safeRemoveLocalStorage('fintech_current_user');
+            } else {
+              setCurrentUser(prev => {
+                if (!prev || JSON.stringify(prev) !== JSON.stringify(freshUser)) {
+                  safeSetSessionStorage('fintech_current_user', freshUser);
+                  safeSetLocalStorage('fintech_current_user', freshUser);
+                  return freshUser;
+                }
+                return prev;
+              });
+            }
           }
         }
       }
@@ -1033,43 +1040,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
-      // Dedicated robust endpoint sync: Announcements, Tasks and Claims (Independent of Supabase bonus rows)
+      // Fallback endpoint sync only if master endpoint did not already provide them
       try {
-        fetch('/api/announcements')
-          .then(res => res.json())
-          .then(data => {
-            if (data && data.success && Array.isArray(data.announcements)) {
-              const normalizedAnn = normalizeAnnouncementList(data.announcements);
-              setAnnouncements(normalizedAnn);
-              safeSetLocalStorage('fintech_announcements', normalizedAnn);
-            }
-          })
-          .catch(() => {});
+        if (!sysAnnouncements || sysAnnouncements.length === 0) {
+          fetch('/api/announcements')
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.success && Array.isArray(data.announcements) && data.announcements.length > 0) {
+                const normalizedAnn = normalizeAnnouncementList(data.announcements);
+                setAnnouncements(normalizedAnn);
+                safeSetLocalStorage('fintech_announcements', normalizedAnn);
+              }
+            })
+            .catch(() => {});
+        }
 
-        fetch('/api/tasks')
-          .then(res => res.json())
-          .then(data => {
-            if (data && data.success && Array.isArray(data.tasks) && data.tasks.length > 0) {
-              const normalizedTasks = normalizeTaskList(data.tasks);
-              setTasks(normalizedTasks);
-              safeSetLocalStorage('fintech_tasks', normalizedTasks);
-            } else {
-              setTasks(prev => (prev && prev.length > 0 ? normalizeTaskList(prev) : OFFICIAL_TASKS));
-            }
-          })
-          .catch(() => {
-            setTasks(prev => (prev && prev.length > 0 ? prev : OFFICIAL_TASKS));
-          });
+        if (!master?.tasks || !Array.isArray(master.tasks) || master.tasks.length === 0) {
+          fetch('/api/tasks')
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.success && Array.isArray(data.tasks) && data.tasks.length > 0) {
+                const normalizedTasks = normalizeTaskList(data.tasks);
+                setTasks(normalizedTasks);
+                safeSetLocalStorage('fintech_tasks', normalizedTasks);
+              } else {
+                setTasks(prev => (prev && prev.length > 0 ? normalizeTaskList(prev) : OFFICIAL_TASKS));
+              }
+            })
+            .catch(() => {
+              setTasks(prev => (prev && prev.length > 0 ? prev : OFFICIAL_TASKS));
+            });
+        }
 
-        fetch('/api/tasks/claims')
-          .then(res => res.json())
-          .then(data => {
-            if (data && data.success && Array.isArray(data.claims)) {
-              setUserTaskClaims(data.claims);
-              safeSetLocalStorage('fintech_task_claims', data.claims);
-            }
-          })
-          .catch(() => {});
+        if (!master?.task_claims || !Array.isArray(master.task_claims)) {
+          fetch('/api/tasks/claims')
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.success && Array.isArray(data.claims)) {
+                setUserTaskClaims(data.claims);
+                safeSetLocalStorage('fintech_task_claims', data.claims);
+              }
+            })
+            .catch(() => {});
+        }
       } catch (_) {}
 
         isHydratedRef.current = true;
@@ -1289,9 +1302,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return next;
         });
 
-        // Trigger lightweight non-blocking background sync
+        // Trigger authoritative background sync
         setTimeout(() => {
-          fetchAndSyncAllFromSupabase();
+          fetchAndSyncAllFromSupabase(true);
         }, 100);
 
         return { success: true };
@@ -1438,7 +1451,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Non-blocking background sync
     setTimeout(() => {
-      fetchAndSyncAllFromSupabase();
+      fetchAndSyncAllFromSupabase(true);
     }, 150);
     
     return { success: true };
@@ -1519,7 +1532,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
 
         // Resync
-        setTimeout(() => fetchAndSyncAllFromSupabase(), 300);
+        setTimeout(() => fetchAndSyncAllFromSupabase(true), 250);
         return { success: true };
       }
     } catch (err) {
@@ -1917,15 +1930,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: "Vous avez déjà effectué 2 demandes de retrait aujourd'hui. Limité à 2 retraits par jour." };
     }
     
-    // Deduct balance
+    // Optimistic UI deduction (server route performs the single authoritative DB deduction)
     const newBalance = dbUser.balance - amount;
     const updatedUser = { ...currentUser, balance: newBalance };
     setCurrentUser(updatedUser);
     safeSetSessionStorage('fintech_current_user', updatedUser);
     safeSetLocalStorage('fintech_current_user', updatedUser);
-
     setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
-    updateItem('users', { balance: newBalance }, currentUser.id);
     
     const now = new Date();
     const yy = String(now.getFullYear()).slice(-2);
@@ -1952,7 +1963,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     setWithdrawals(prev => [newWithdrawal, ...prev]);
     safeSetLocalStorage('fintech_withdrawals', [newWithdrawal, ...withdrawals]);
-    submitWithdrawalRequest(newWithdrawal);
+    submitWithdrawalRequest(newWithdrawal).then(res => {
+      if (res && typeof res.newBalance === 'number') {
+        const synced = { ...updatedUser, balance: res.newBalance };
+        setCurrentUser(prev => (prev && prev.id === currentUser.id ? { ...prev, balance: res.newBalance! } : prev));
+        safeSetSessionStorage('fintech_current_user', synced);
+        safeSetLocalStorage('fintech_current_user', synced);
+        setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, balance: res.newBalance! } : u));
+      }
+      setTimeout(() => fetchAndSyncAllFromSupabase(true), 250);
+    }).catch(() => {});
     return { success: true };
   };
 
@@ -2170,20 +2190,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ==========================================
   // ADMINISTRATION OPERATIONS
   // ==========================================
-  const toggleBlockUser = (userId: string) => {
+  const toggleBlockUser = async (userId: string) => {
     const target = users.find(u => u.id === userId);
     if (!target) return;
     const nextBlock = !target.isBlocked;
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, isBlocked: nextBlock } : u));
-    adminUpdateUserBlock(userId, nextBlock);
+    setUsers(prev => {
+      const updated = prev.map(u => u.id === userId ? { ...u, isBlocked: nextBlock } : u);
+      safeSetLocalStorage('fintech_users', updated);
+      return updated;
+    });
+    await adminUpdateUserBlock(userId, nextBlock);
+    setTimeout(() => {
+      fetchAndSyncAllFromSupabase(true);
+    }, 250);
   };
 
-  const updateUserRole = (userId: string, role: 'admin' | 'user') => {
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role } : u));
+  const updateUserRole = async (userId: string, role: 'admin' | 'user') => {
+    setUsers(prev => {
+      const updated = prev.map(u => u.id === userId ? { ...u, role } : u);
+      safeSetLocalStorage('fintech_users', updated);
+      return updated;
+    });
     if (currentUser?.id === userId) {
-      setCurrentUser(prev => prev ? { ...prev, role } : null);
+      const updatedCurr = { ...currentUser, role };
+      setCurrentUser(updatedCurr);
+      safeSetSessionStorage('fintech_current_user', updatedCurr);
+      safeSetLocalStorage('fintech_current_user', updatedCurr);
     }
-    adminUpdateUserRole(userId, role);
+    await adminUpdateUserRole(userId, role);
+    setTimeout(() => {
+      fetchAndSyncAllFromSupabase(true);
+    }, 250);
   };
 
   const updateUserBalance = async (userId: string, amount: number, isDirectSet: boolean = false) => {
@@ -2205,14 +2242,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       safeSetLocalStorage('fintech_current_user', updatedCurr);
     }
 
-    // 2. Authoritative backend update with service role
-    await adminUpdateUserBalance(userId, isDirectSet ? cleanBalance : amount, isDirectSet);
-    await updateItem('users', { balance: cleanBalance }, userId);
+    // 2. Authoritative backend update with service role / PostgreSQL
+    const res = await adminUpdateUserBalance(userId, isDirectSet ? cleanBalance : amount, isDirectSet);
+    if (res && res.success && typeof res.newBalance === 'number') {
+      const authoritativeBal = res.newBalance;
+      setUsers(prev => {
+        const updated = prev.map(u => u.id === userId ? { ...u, balance: authoritativeBal } : u);
+        safeSetLocalStorage('fintech_users', updated);
+        return updated;
+      });
+      if (currentUser?.id === userId) {
+        const updatedCurr = { ...currentUser, balance: authoritativeBal };
+        setCurrentUser(updatedCurr);
+        safeSetSessionStorage('fintech_current_user', updatedCurr);
+        safeSetLocalStorage('fintech_current_user', updatedCurr);
+      }
+    } else if (!res || !res.success) {
+      await updateItem('users', { balance: cleanBalance }, userId);
+    }
 
-    // 3. Trigger fresh sync
+    // 3. Trigger fresh authoritative sync
     setTimeout(() => {
       fetchAndSyncAllFromSupabase(true);
-    }, 400);
+    }, 300);
   };
 
   const adminUpdateUserPassword = (userId: string, newWord: string): { success: boolean; error?: string } => {
@@ -2232,11 +2284,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
 
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, withdrawalPinHash: newPinHash } : u));
-    updateItem('users', { withdrawalPinHash: newPinHash }, userId);
-    fetch('/api/admin/users/credentials', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, withdrawalPinHash: newPinHash })
+    adminUpdateUserCredentials(userId, newPinHash).then(() => {
+      setTimeout(() => fetchAndSyncAllFromSupabase(true), 250);
     }).catch(() => {});
 
     return { success: true };
@@ -2254,9 +2303,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, withdrawalPinHash: newPinHash } : u));
     if (currentUser?.id === userId) {
-      setCurrentUser(prev => prev ? { ...prev, withdrawalPinHash: newPinHash } : null);
+      const updatedCurr = { ...currentUser, withdrawalPinHash: newPinHash };
+      setCurrentUser(updatedCurr);
+      safeSetSessionStorage('fintech_current_user', updatedCurr);
+      safeSetLocalStorage('fintech_current_user', updatedCurr);
     }
-    updateItem('users', { withdrawalPinHash: newPinHash }, userId);
+    adminUpdateUserCredentials(userId, newPinHash).then(() => {
+      setTimeout(() => fetchAndSyncAllFromSupabase(true), 250);
+    }).catch(() => {});
 
     return { success: true };
   };
@@ -2337,15 +2391,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // 2. Authoritative Server-side call (Service Role + Database Idempotency Lock)
     const serverResult = await adminProcessDeposit(depositId, status, dep);
 
-    // 3. Fallback database backup update
+    // 3. Synchronize authoritative result or fallback if server unreachable
     if (serverResult && serverResult.success) {
-      if (status === 'approved' && targetUser && nextBalance !== null) {
-        updateItem('users', { balance: serverResult.newBalance ?? nextBalance }, targetUser.id);
+      if (status === 'approved' && targetUser && typeof serverResult.newBalance === 'number') {
+        const authBal = serverResult.newBalance;
+        setUsers(prev => {
+          const updated = prev.map(u => (u.id === targetUser.id || (dep.userPhone && u.phone === dep.userPhone)) ? { ...u, balance: authBal } : u);
+          safeSetLocalStorage('fintech_users', updated);
+          return updated;
+        });
+        if (currentUser?.id === targetUser.id || (dep.userPhone && currentUser?.phone === dep.userPhone)) {
+          const updatedCurr = { ...currentUser, balance: authBal };
+          setCurrentUser(updatedCurr);
+          safeSetSessionStorage('fintech_current_user', updatedCurr);
+          safeSetLocalStorage('fintech_current_user', updatedCurr);
+        }
       }
-      // Trigger background sync with DB
+      // Force fresh DB sync
       setTimeout(() => {
-        fetchAndSyncAllFromSupabase();
-      }, 300);
+        fetchAndSyncAllFromSupabase(true);
+      }, 250);
 
       return {
         success: true,
@@ -2361,18 +2426,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         await updateItem('deposits', { status }, depositId);
       }
       setTimeout(() => {
-        fetchAndSyncAllFromSupabase();
-      }, 300);
+        fetchAndSyncAllFromSupabase(true);
+      }, 250);
       return { success: true };
     }
   };
 
-  const processWithdrawal = (withdrawalId: string, status: 'approved' | 'rejected') => {
+  const processWithdrawal = async (withdrawalId: string, status: 'approved' | 'rejected') => {
     const wth = withdrawals.find(w => w.id === withdrawalId);
     if (!wth || wth.status !== 'pending') return;
     
-    setWithdrawals(prev => prev.map(w => w.id === withdrawalId ? { ...w, status } : w));
-    adminProcessWithdrawal(withdrawalId, status);
+    setWithdrawals(prev => {
+      const updated = prev.map(w => w.id === withdrawalId ? { ...w, status } : w);
+      safeSetLocalStorage('fintech_withdrawals', updated);
+      return updated;
+    });
+    const serverRes = await adminProcessWithdrawal(withdrawalId, status);
 
     if (status === 'approved') {
       const userObj = users.find(u => u.id === wth.userId);
@@ -2401,15 +2470,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
 
       setWithdrawalProofs(prev => [autoProof, ...prev]);
-      upsertItem('withdrawal_proofs', autoProof);
+      await upsertItem('withdrawal_proofs', autoProof);
     }
     
-    // If rejected, refund the user
+    // If rejected, refund the user cleanly using authoritative balance when available
     if (status === 'rejected') {
       const targetUser = users.find(u => u.id === wth.userId);
       if (targetUser) {
-        const nextBalance = targetUser.balance + wth.amount;
-        setUsers(prev => prev.map(u => u.id === wth.userId ? { ...u, balance: nextBalance } : u));
+        const nextBalance = typeof serverRes?.newBalance === 'number'
+          ? serverRes.newBalance
+          : (targetUser.balance + wth.amount);
+        setUsers(prev => {
+          const updated = prev.map(u => u.id === wth.userId ? { ...u, balance: nextBalance } : u);
+          safeSetLocalStorage('fintech_users', updated);
+          return updated;
+        });
         if (currentUser?.id === wth.userId) {
           const updatedCurr = { ...currentUser, balance: nextBalance };
           setCurrentUser(updatedCurr);
@@ -2418,6 +2493,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
     }
+
+    setTimeout(() => {
+      fetchAndSyncAllFromSupabase(true);
+    }, 250);
   };
 
   const addOrUpdateProduct = (prodData: Omit<InvestmentProduct, 'isActive'> & { isActive?: boolean; image?: string; description?: string; order?: number; badge?: string; color?: string }) => {
@@ -2517,13 +2596,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         await fetch(`/api/products/${encodeURIComponent(productId)}`, { method: 'DELETE' });
       } catch (_) {}
       await deleteRecord('products', productId);
+      await fetchAndSyncAllFromSupabase(true);
       window.dispatchEvent(new CustomEvent('fintech_products_updated'));
     })();
   };
 
   const deleteUserInvestment = (investmentId: string) => {
-    setUserInvestments(prev => prev.filter(inv => inv.id !== investmentId));
-    deleteRecord('investments', investmentId);
+    setUserInvestments(prev => {
+      const next = prev.filter(inv => inv.id !== investmentId);
+      safeSetLocalStorage('fintech_investments', next);
+      return next;
+    });
+    deleteRecord('investments', investmentId).then(() => {
+      setTimeout(() => fetchAndSyncAllFromSupabase(true), 250);
+    }).catch(() => {});
   };
 
   const generateBonusCode = (code: string, amount: number, maxUses: number) => {

@@ -381,35 +381,45 @@ export async function submitDepositRequest(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(depositData)
-    }, 8000);
+    }, 12000);
     if (res.ok && res.isJson && res.data && res.data.success) {
       return res.data;
     }
+    if (res.isJson && res.data && res.data.error && res.status >= 400 && res.status < 500) {
+      return { success: false, error: res.data.error };
+    }
   } catch (_) {}
 
-  // Fallback to direct client upsert
-  const upRes = await upsertItem('deposits', depositData);
-  return { success: upRes.success, error: upRes.error, deposit: depositData };
+  if (hasSupabaseAnonKey) {
+    const upRes = await upsertItem('deposits', depositData);
+    return { success: upRes.success, error: upRes.error, deposit: depositData };
+  }
+  return { success: false, error: 'Impossible de joindre le serveur de dépôt.' };
 }
 
 // Submit Withdrawal Request
 export async function submitWithdrawalRequest(
   withdrawalData: any
-): Promise<{ success: boolean; error?: string; withdrawal?: any }> {
+): Promise<{ success: boolean; error?: string; withdrawal?: any; newBalance?: number }> {
   try {
     const res = await resilientFetch('/api/withdrawals/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(withdrawalData)
-    }, 8000);
+    }, 12000);
     if (res.ok && res.isJson && res.data && res.data.success) {
       return res.data;
     }
+    if (res.isJson && res.data && res.data.error && res.status >= 400 && res.status < 500) {
+      return { success: false, error: res.data.error };
+    }
   } catch (_) {}
 
-  // Fallback to direct client upsert
-  const upRes = await upsertItem('withdrawals', withdrawalData);
-  return { success: upRes.success, error: upRes.error, withdrawal: withdrawalData };
+  if (hasSupabaseAnonKey) {
+    const upRes = await upsertItem('withdrawals', withdrawalData);
+    return { success: upRes.success, error: upRes.error, withdrawal: withdrawalData };
+  }
+  return { success: false, error: 'Impossible de joindre le serveur de retrait.' };
 }
 
 // Submit Chat Support Ticket
@@ -421,7 +431,7 @@ export async function submitSupportTicket(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(ticketData)
-    }, 8000);
+    }, 10000);
     if (res.ok && res.isJson && res.data && res.data.success) {
       return res.data;
     }
@@ -442,7 +452,7 @@ export async function replySupportTicket(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ticketId, reply })
-    }, 8000);
+    }, 10000);
     if (res.ok && res.isJson && res.data && res.data.success) {
       return res.data;
     }
@@ -468,7 +478,7 @@ export async function sendAdminDirectSupportTicket(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, message, subject })
-    }, 8000);
+    }, 10000);
     if (res.ok && res.isJson && res.data && res.data.success) {
       return res.data;
     }
@@ -488,7 +498,7 @@ export async function adminProcessDeposit(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ depositId, status, fallbackDepositData })
-    }, 8000);
+    }, 12000);
     if (res.isJson && res.data) {
       return res.data;
     }
@@ -502,13 +512,13 @@ export async function adminProcessDeposit(
 export async function adminProcessWithdrawal(
   withdrawalId: string,
   status: 'approved' | 'rejected'
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; newBalance?: number }> {
   try {
     const res = await resilientFetch('/api/admin/withdrawals/process', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ withdrawalId, status })
-    }, 8000);
+    }, 12000);
     if (res.isJson && res.data) {
       return res.data;
     }
@@ -529,13 +539,17 @@ export async function adminUpdateUserBalance(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, amount, isDirectSet })
-    }, 8000);
+    }, 12000);
     if (res.isJson && res.data) {
       return res.data;
     }
   } catch (_) {}
 
-  return { success: true };
+  if (isDirectSet && hasSupabaseAnonKey) {
+    const fallback = await updateItem('users', { balance: Math.max(0, amount) }, userId);
+    return { ...fallback, newBalance: Math.max(0, amount), userId };
+  }
+  return { success: false, error: 'Impossible de synchroniser le solde avec le serveur.' };
 }
 
 // Update User Role (Admin)
@@ -548,7 +562,7 @@ export async function adminUpdateUserRole(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, role })
-    }, 8000);
+    }, 12000);
     if (res.isJson && res.data) {
       return res.data;
     }
@@ -567,11 +581,30 @@ export async function adminUpdateUserBlock(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, isBlocked })
-    }, 8000);
+    }, 12000);
     if (res.isJson && res.data) {
       return res.data;
     }
   } catch (_) {}
 
   return updateItem('users', { isBlocked }, userId);
+}
+
+// Update User Credentials (Password / PIN hash)
+export async function adminUpdateUserCredentials(
+  userId: string,
+  withdrawalPinHash: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await resilientFetch('/api/admin/users/credentials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, withdrawalPinHash })
+    }, 12000);
+    if (res.isJson && res.data) {
+      return res.data;
+    }
+  } catch (_) {}
+
+  return updateItem('users', { withdrawalPinHash }, userId);
 }

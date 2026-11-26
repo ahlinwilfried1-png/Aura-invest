@@ -2191,6 +2191,49 @@ app.get(['/api/health', '/health'], async (_req, res) => {
   }
 
   // =========================================================================
+  // AUTHORITATIVE DB-FIRST HELPERS (CRITICAL FOR VERCEL STATELESS LAMBDAS)
+  // =========================================================================
+  function hasLiveRemoteDb(): boolean {
+    return Boolean((pgPool || supabaseAdmin) && Date.now() >= supabaseUnreachableUntil);
+  }
+
+  async function getAuthoritativeRecord(
+    table: string,
+    col: string,
+    val: string,
+    fallbackStore?: Map<string, any>
+  ): Promise<any | null> {
+    if (!val) return null;
+    if (hasLiveRemoteDb()) {
+      try {
+        const dbRow = await dbFindOne(table, col, val);
+        if (dbRow) {
+          if (fallbackStore) {
+            const key = dbRow.id || dbRow.code;
+            if (key) fallbackStore.set(key, dbRow);
+          }
+          return dbRow;
+        }
+      } catch (_) {}
+    }
+    if (!fallbackStore) return null;
+    if (col === 'id' || col === 'code') {
+      return fallbackStore.get(val) || null;
+    }
+    const targetLower = String(val).trim().toLowerCase();
+    for (const item of fallbackStore.values()) {
+      if (item && String(item[col] || '').trim().toLowerCase() === targetLower) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  async function getAuthoritativeUserById(userId: string): Promise<any | null> {
+    return getAuthoritativeRecord('users', 'id', userId, serverUsersStore);
+  }
+
+  // =========================================================================
   // 1. AUTHENTICATION ROUTES (LOGIN & REGISTER)
   // =========================================================================
 
@@ -2205,51 +2248,54 @@ app.get(['/api/health', '/health'], async (_req, res) => {
       const phoneInfo = extractPhoneDetails(phone, country);
       let user: any = null;
 
-      // 1. First check in-memory central store
-      for (const u of serverUsersStore.values()) {
-        const uInfo = extractPhoneDetails(u.phone, u.country);
-        if (phoneInfo.candidates.includes(u.phone) || phoneInfo.candidates.includes(uInfo.cleanPhone)) {
-          user = u;
-          break;
-        }
-        if (phoneInfo.nationalDigits && uInfo.nationalDigits === phoneInfo.nationalDigits) {
-          user = u;
-          break;
-        }
-        if (u.withdrawalAccountNumber && u.withdrawalAccountNumber === phoneInfo.nationalDigits) {
-          user = u;
-          break;
-        }
-      }
-
-      // 2. Direct lookup in Supabase PostgreSQL / REST
-      if (!user && phoneInfo.candidates.length > 0) {
-        try {
-          const candidatesMatch = await dbFindIn('users', 'phone', phoneInfo.candidates);
-          if (candidatesMatch.length > 0) {
-            user = candidatesMatch[0];
-            serverUsersStore.set(user.id, user);
-          }
-        } catch (_) {}
-      }
-
-      // 3. Fallback search
-      if (!user && phoneInfo.nationalDigits) {
-        try {
-          const likeMatches = await dbFindIlike('users', 'phone', `%${phoneInfo.nationalDigits}%`);
-          if (likeMatches.length > 0) {
-            const matchedRow = likeMatches.find(u => {
-              const uInfo = extractPhoneDetails(u.phone, u.country);
-              if (phoneInfo.candidates.includes(u.phone) || phoneInfo.candidates.includes(uInfo.cleanPhone)) return true;
-              if (phoneInfo.nationalDigits && uInfo.nationalDigits === phoneInfo.nationalDigits) return true;
-              return uInfo.cleanPhone === phoneInfo.cleanPhone || u.phone === phoneInfo.cleanPhone;
-            });
-            if (matchedRow) {
-              user = matchedRow;
+      // 1. Authoritative lookup in Supabase PostgreSQL / REST first (prevents stale Vercel lambda memory)
+      if (hasLiveRemoteDb()) {
+        if (phoneInfo.candidates.length > 0) {
+          try {
+            const candidatesMatch = await dbFindIn('users', 'phone', phoneInfo.candidates);
+            if (candidatesMatch.length > 0) {
+              user = candidatesMatch[0];
               serverUsersStore.set(user.id, user);
             }
+          } catch (_) {}
+        }
+
+        if (!user && phoneInfo.nationalDigits) {
+          try {
+            const likeMatches = await dbFindIlike('users', 'phone', `%${phoneInfo.nationalDigits}%`);
+            if (likeMatches.length > 0) {
+              const matchedRow = likeMatches.find(u => {
+                const uInfo = extractPhoneDetails(u.phone, u.country);
+                if (phoneInfo.candidates.includes(u.phone) || phoneInfo.candidates.includes(uInfo.cleanPhone)) return true;
+                if (phoneInfo.nationalDigits && uInfo.nationalDigits === phoneInfo.nationalDigits) return true;
+                return uInfo.cleanPhone === phoneInfo.cleanPhone || u.phone === phoneInfo.cleanPhone;
+              });
+              if (matchedRow) {
+                user = matchedRow;
+                serverUsersStore.set(user.id, user);
+              }
+            }
+          } catch (_) {}
+        }
+      }
+
+      // 2. Fallback to in-memory central store if offline or seeded locally
+      if (!user) {
+        for (const u of serverUsersStore.values()) {
+          const uInfo = extractPhoneDetails(u.phone, u.country);
+          if (phoneInfo.candidates.includes(u.phone) || phoneInfo.candidates.includes(uInfo.cleanPhone)) {
+            user = u;
+            break;
           }
-        } catch (_) {}
+          if (phoneInfo.nationalDigits && uInfo.nationalDigits === phoneInfo.nationalDigits) {
+            user = u;
+            break;
+          }
+          if (u.withdrawalAccountNumber && u.withdrawalAccountNumber === phoneInfo.nationalDigits) {
+            user = u;
+            break;
+          }
+        }
       }
 
       if (!user) {
@@ -2592,11 +2638,15 @@ app.get(['/api/health', '/health'], async (_req, res) => {
         return res.status(400).json({ success: false, error: 'Identifiant et modifications requis.' });
       }
 
-      if (serverUsersStore.has(userId)) {
-        serverUsersStore.set(userId, { ...serverUsersStore.get(userId), ...updates });
+      const existing = await getAuthoritativeUserById(userId);
+      if (existing) {
+        serverUsersStore.set(userId, { ...existing, ...updates });
       }
 
+      savePlatformDataToDisk(true);
       await safeSupabaseUpdate('users', updates, 'id', userId);
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
       return res.json({ success: true });
     } catch (err: any) {
       return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
@@ -2611,11 +2661,7 @@ app.get(['/api/health', '/health'], async (_req, res) => {
         return res.status(400).json({ success: false, error: 'Identifiant utilisateur requis.' });
       }
 
-      let user = serverUsersStore.get(userId);
-      if (!user) {
-        user = await dbFindOne('users', 'id', userId);
-      }
-
+      const user = await getAuthoritativeUserById(userId);
       if (!user) {
         return res.status(404).json({ success: false, error: 'Utilisateur introuvable.' });
       }
@@ -2634,7 +2680,10 @@ app.get(['/api/health', '/health'], async (_req, res) => {
 
       const updatedUser = { ...user, referredByCode: newSponsorCode };
       serverUsersStore.set(userId, updatedUser);
+      savePlatformDataToDisk(true);
       await safeSupabaseUpdate('users', { referredByCode: newSponsorCode }, 'id', userId);
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
 
       return res.json({ success: true, user: updatedUser, sponsorCode: newSponsorCode });
     } catch (err: any) {
@@ -2653,8 +2702,10 @@ app.get(['/api/health', '/health'], async (_req, res) => {
         return res.status(400).json({ success: false, error: 'Paramètres d\'achat manquants.' });
       }
 
-      // 1. Fetch product (prioritize updated price from serverProductsStore / database)
-      const product = serverProductsStore.get(productId) || defaultSeedProducts.find(p => p.id === productId);
+      // 1. Fetch product (prioritize DB authoritative product, then memory/seed)
+      const product =
+        (await getAuthoritativeRecord('products', 'id', productId, serverProductsStore)) ||
+        defaultSeedProducts.find(p => p.id === productId);
       if (!product) {
         return res.status(404).json({ success: false, error: 'Produit introuvable.' });
       }
@@ -2662,12 +2713,8 @@ app.get(['/api/health', '/health'], async (_req, res) => {
       const qty = Math.max(1, Number(quantity) || 1);
       const totalPrice = product.price * qty;
 
-      // 2. Fetch User
-      let user = serverUsersStore.get(userId);
-      if (!user) {
-        user = await dbFindOne('users', 'id', userId);
-      }
-
+      // 2. Fetch authoritative User from DB first
+      const user = await getAuthoritativeUserById(userId);
       if (!user) {
         return res.status(404).json({ success: false, error: 'Utilisateur non trouvé.' });
       }
@@ -2721,16 +2768,13 @@ app.get(['/api/health', '/health'], async (_req, res) => {
       // 5. Calculate & Distribute Multi-level Referral Commissions (15% • 1% • 1%)
       if (user.referredByCode) {
         // Level 1 (15%)
-        let l1User = Array.from(serverUsersStore.values()).find(u => u.referralCode === user.referredByCode);
-        if (!l1User) {
-          l1User = await dbFindOne('users', 'referral_code', user.referredByCode);
-        }
+        const l1User = await getAuthoritativeRecord('users', 'referral_code', user.referredByCode, serverUsersStore);
 
         if (l1User) {
           const commL1 = Math.round(totalPrice * 0.15);
-          const l1Bal = (l1User.balance || 0) + commL1;
-          const l1Tot = (l1User.totalEarnings || 0) + commL1;
-          const l1Tickets = (l1User.drawTickets || 0) + qty;
+          const l1Bal = Number(l1User.balance || 0) + commL1;
+          const l1Tot = Number(l1User.totalEarnings || 0) + commL1;
+          const l1Tickets = Number(l1User.drawTickets || 0) + qty;
 
           const updatedL1 = { ...l1User, balance: l1Bal, totalEarnings: l1Tot, drawTickets: l1Tickets };
           serverUsersStore.set(l1User.id, updatedL1);
@@ -2750,15 +2794,12 @@ app.get(['/api/health', '/health'], async (_req, res) => {
 
           // Level 2 (1%)
           if (l1User.referredByCode) {
-            let l2User = Array.from(serverUsersStore.values()).find(u => u.referralCode === l1User.referredByCode);
-            if (!l2User) {
-              l2User = await dbFindOne('users', 'referral_code', l1User.referredByCode);
-            }
+            const l2User = await getAuthoritativeRecord('users', 'referral_code', l1User.referredByCode, serverUsersStore);
 
             if (l2User) {
               const commL2 = Math.round(totalPrice * 0.01);
-              const l2Bal = (l2User.balance || 0) + commL2;
-              const l2Tot = (l2User.totalEarnings || 0) + commL2;
+              const l2Bal = Number(l2User.balance || 0) + commL2;
+              const l2Tot = Number(l2User.totalEarnings || 0) + commL2;
 
               const updatedL2 = { ...l2User, balance: l2Bal, totalEarnings: l2Tot };
               serverUsersStore.set(l2User.id, updatedL2);
@@ -2778,15 +2819,12 @@ app.get(['/api/health', '/health'], async (_req, res) => {
 
               // Level 3 (1%)
               if (l2User.referredByCode) {
-                let l3User = Array.from(serverUsersStore.values()).find(u => u.referralCode === l2User.referredByCode);
-                if (!l3User) {
-                  l3User = await dbFindOne('users', 'referral_code', l2User.referredByCode);
-                }
+                const l3User = await getAuthoritativeRecord('users', 'referral_code', l2User.referredByCode, serverUsersStore);
 
                 if (l3User) {
                   const commL3 = Math.round(totalPrice * 0.01);
-                  const l3Bal = (l3User.balance || 0) + commL3;
-                  const l3Tot = (l3User.totalEarnings || 0) + commL3;
+                  const l3Bal = Number(l3User.balance || 0) + commL3;
+                  const l3Tot = Number(l3User.totalEarnings || 0) + commL3;
 
                   const updatedL3 = { ...l3User, balance: l3Bal, totalEarnings: l3Tot };
                   serverUsersStore.set(l3User.id, updatedL3);
@@ -2878,14 +2916,20 @@ app.get(['/api/health', '/health'], async (_req, res) => {
         return res.status(400).json({ success: false, error: 'Données de retrait incomplètes.' });
       }
 
-      if (Number(withdrawalData.amount || 0) < 1500) {
+      const amountNum = Number(withdrawalData.amount || 0);
+      if (amountNum < 1500) {
         return res.status(400).json({ success: false, error: 'Le montant minimum de retrait est de 1 500 XOF.' });
       }
 
-      // Check user balance and deduct
-      const user = serverUsersStore.get(withdrawalData.userId);
+      // Check authoritative user balance from DB and deduct once
+      const user = await getAuthoritativeUserById(withdrawalData.userId);
+      let newBal: number | undefined;
       if (user) {
-        const newBal = Math.max(0, (user.balance || 0) - Number(withdrawalData.amount || 0));
+        const currentBal = Number(user.balance || 0);
+        if (currentBal < amountNum) {
+          return res.status(400).json({ success: false, error: 'Solde insuffisant pour ce montant de retrait.' });
+        }
+        newBal = Math.max(0, currentBal - amountNum);
         serverUsersStore.set(user.id, { ...user, balance: newBal });
         await safeSupabaseUpdate('users', { balance: newBal }, 'id', user.id);
       }
@@ -2905,7 +2949,7 @@ app.get(['/api/health', '/health'], async (_req, res) => {
 
       console.log(`[Withdrawal Submitted]: ID ${normWth.id}, User ${normWth.userName} (${normWth.userPhone}), Amount: ${normWth.amount} FCFA`);
 
-      return res.json({ success: true, withdrawal: normWth });
+      return res.json({ success: true, withdrawal: normWth, newBalance: newBal });
     } catch (err: any) {
       console.error('[Server Withdrawal Submit Exception]:', err);
       return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
@@ -3044,10 +3088,7 @@ app.get(['/api/health', '/health'], async (_req, res) => {
         return res.status(400).json({ success: false, error: 'Paramètres de dépôt invalides.' });
       }
 
-      let dep = serverDepositsStore.get(depositId);
-      if (!dep) {
-        dep = await dbFindOne('deposits', 'id', depositId);
-      }
+      let dep = await getAuthoritativeRecord('deposits', 'id', depositId, serverDepositsStore);
 
       if (!dep && fallbackDepositData) {
         dep = normalizeDbRow('deposits', fallbackDepositData);
@@ -3061,7 +3102,7 @@ app.get(['/api/health', '/health'], async (_req, res) => {
 
       // IDEMPOTENCY CHECK: If already approved, DO NOT credit again!
       if (dep.status === 'approved') {
-        const u = serverUsersStore.get(dep.userId);
+        const u = await getAuthoritativeUserById(dep.userId);
         return res.json({
           success: true,
           message: 'Ce dépôt a déjà été validé et crédité précédemment.',
@@ -3082,14 +3123,10 @@ app.get(['/api/health', '/health'], async (_req, res) => {
 
       // If approved, credit user balance in Supabase and memory
       if (status === 'approved') {
-        let targetUser: any = serverUsersStore.get(dep.userId);
-
-        if (!targetUser) {
-          targetUser = await dbFindOne('users', 'id', dep.userId);
-        }
+        let targetUser: any = await getAuthoritativeUserById(dep.userId);
 
         if (!targetUser && dep.userPhone) {
-          targetUser = await dbFindOne('users', 'phone', dep.userPhone);
+          targetUser = await getAuthoritativeRecord('users', 'phone', dep.userPhone, serverUsersStore);
         }
 
         if (targetUser) {
@@ -3104,12 +3141,13 @@ app.get(['/api/health', '/health'], async (_req, res) => {
           await safeSupabaseUpdate('users', { balance: calculatedBalance }, 'id', targetUser.id);
 
           updatedBalance = calculatedBalance;
-          lastFetchAllData = null;
-          lastFetchAllTime = 0;
 
           console.log(`[Deposit Approved & Credited]: User ${targetUser.id} (${targetUser.phone}) +${depositAmt} FCFA -> New balance: ${calculatedBalance} FCFA`);
         }
       }
+
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
 
       return res.json({
         success: true,
@@ -3132,25 +3170,28 @@ app.get(['/api/health', '/health'], async (_req, res) => {
         return res.status(400).json({ success: false, error: 'Paramètres de retrait invalides.' });
       }
 
-      let wth = serverWithdrawalsStore.get(withdrawalId);
-      if (!wth) {
-        wth = await dbFindOne('withdrawals', 'id', withdrawalId);
-      }
-
+      const wth = await getAuthoritativeRecord('withdrawals', 'id', withdrawalId, serverWithdrawalsStore);
       if (!wth) {
         return res.status(404).json({ success: false, error: 'Demande de retrait non trouvée.' });
       }
+
+      if (wth.status === status) {
+        return res.json({ success: true, alreadyProcessed: true, message: `Retrait déjà ${status === 'approved' ? 'validé' : 'rejeté'}.` });
+      }
+
+      const wasRejected = wth.status === 'rejected';
 
       // Update withdrawal status
       serverWithdrawalsStore.set(withdrawalId, { ...wth, status });
       savePlatformDataToDisk(true);
       await safeSupabaseUpdate('withdrawals', { status }, 'id', withdrawalId);
 
-      // If rejected, refund user balance
-      if (status === 'rejected') {
-        const targetUser = serverUsersStore.get(wth.userId);
+      // If rejected (and wasn't already rejected), refund authoritative user balance
+      let refundedBalance: number | undefined;
+      if (status === 'rejected' && !wasRejected) {
+        const targetUser = await getAuthoritativeUserById(wth.userId);
         if (targetUser) {
-          const refundedBalance = Number(targetUser.balance || 0) + Number(wth.amount || 0);
+          refundedBalance = Number(targetUser.balance || 0) + Number(wth.amount || 0);
           serverUsersStore.set(targetUser.id, { ...targetUser, balance: refundedBalance });
           savePlatformDataToDisk(true);
           await safeSupabaseUpdate('users', { balance: refundedBalance }, 'id', targetUser.id);
@@ -3160,7 +3201,11 @@ app.get(['/api/health', '/health'], async (_req, res) => {
       lastFetchAllData = null;
       lastFetchAllTime = 0;
 
-      return res.json({ success: true, message: `Retrait ${status === 'approved' ? 'validé' : 'rejeté'} avec succès.` });
+      return res.json({
+        success: true,
+        newBalance: refundedBalance,
+        message: `Retrait ${status === 'approved' ? 'validé' : 'rejeté'} avec succès.`
+      });
     } catch (err: any) {
       console.error('[Server Admin Withdrawal Error]:', err);
       return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
@@ -3175,11 +3220,7 @@ app.get(['/api/health', '/health'], async (_req, res) => {
         return res.status(400).json({ success: false, error: 'ID utilisateur ou montant manquant.' });
       }
 
-      let user = serverUsersStore.get(userId);
-      if (!user) {
-        user = await dbFindOne('users', 'id', userId);
-      }
-
+      const user = await getAuthoritativeUserById(userId);
       if (!user) {
         return res.status(404).json({ success: false, error: 'Utilisateur non trouvé dans la base centrale.' });
       }
@@ -3210,12 +3251,15 @@ app.get(['/api/health', '/health'], async (_req, res) => {
         return res.status(400).json({ success: false, error: 'Rôle ou ID invalide.' });
       }
 
-      if (serverUsersStore.has(userId)) {
-        serverUsersStore.set(userId, { ...serverUsersStore.get(userId), role });
+      const user = await getAuthoritativeUserById(userId);
+      if (user) {
+        serverUsersStore.set(userId, { ...user, role });
       }
 
       savePlatformDataToDisk(true);
       await safeSupabaseUpdate('users', { role }, 'id', userId);
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
       return res.json({ success: true });
     } catch (err: any) {
       return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
@@ -3230,13 +3274,15 @@ app.get(['/api/health', '/health'], async (_req, res) => {
         return res.status(400).json({ success: false, error: 'Paramètres de blocage invalides.' });
       }
 
-      if (serverUsersStore.has(userId)) {
-        serverUsersStore.set(userId, { ...serverUsersStore.get(userId), isBlocked });
+      const user = await getAuthoritativeUserById(userId);
+      if (user) {
+        serverUsersStore.set(userId, { ...user, isBlocked });
       }
 
       savePlatformDataToDisk(true);
-
       await safeSupabaseUpdate('users', { isBlocked }, 'id', userId);
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
       return res.json({ success: true });
     } catch (err: any) {
       return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
@@ -3299,11 +3345,10 @@ app.get(['/api/health', '/health'], async (_req, res) => {
     }
   });
 
-  // Master Cache
+  // Master Cache (short 2s window so 4s client polling & multi-lambda Vercel stay synchronized)
   let lastFetchAllData: any = null;
   let lastFetchAllTime = 0;
-  // Increase Cache TTL to 15 seconds to drastically reduce egress bandwidth while staying responsive
-  const CACHE_TTL_MS = 15000;
+  const CACHE_TTL_MS = 2000;
 
   async function withDbTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
     let timer: NodeJS.Timeout;
@@ -3425,7 +3470,7 @@ app.get(['/api/health', '/health'], async (_req, res) => {
         fetchTableSafe('recharge_channels')
       ]);
 
-      // Extract & hydrate system configs stored in bonus_codes if present in DB
+      // Extract & hydrate system configs & task claims stored in bonus_codes if present in DB
       const bonusArr = Array.isArray(bonusCodes) ? bonusCodes : Array.from(serverBonusCodesStore.values());
       const sysAnnRow = bonusArr.find((b: any) => b.code === '__SYS_ANNOUNCEMENTS__');
       if (sysAnnRow && Array.isArray(sysAnnRow.usedBy) && sysAnnRow.usedBy.length > 0) {
@@ -3434,6 +3479,13 @@ app.get(['/api/health', '/health'], async (_req, res) => {
           if (a?.id) serverAnnouncementsStore.set(a.id, a);
         });
       }
+      bonusArr.forEach((b: any) => {
+        if (b && typeof b.code === 'string' && b.code.startsWith('__CLAIM_') && Array.isArray(b.usedBy)) {
+          b.usedBy.forEach((cl: any) => {
+            if (cl?.id) serverUserTaskClaimsStore.set(cl.id, cl);
+          });
+        }
+      });
 
       const sortedProductsList = (Array.isArray(products) ? products : Array.from(serverProductsStore.values()))
         .sort((a: any, b: any) => (Number(a.order) || 99) - (Number(b.order) || 99));
@@ -3723,12 +3775,15 @@ app.get(['/api/health', '/health'], async (_req, res) => {
         return res.status(400).json({ success: false, error: 'Paramètres manquants.' });
       }
 
-      if (serverUsersStore.has(userId)) {
-        serverUsersStore.set(userId, { ...serverUsersStore.get(userId), withdrawalPinHash });
+      const user = await getAuthoritativeUserById(userId);
+      if (user) {
+        serverUsersStore.set(userId, { ...user, withdrawalPinHash });
       }
 
       savePlatformDataToDisk(true);
       await safeSupabaseUpdate('users', { withdrawalPinHash }, 'id', userId);
+      lastFetchAllData = null;
+      lastFetchAllTime = 0;
       return res.json({ success: true });
     } catch (err: any) {
       return res.status(500).json({ success: false, error: err?.message || 'Erreur serveur.' });
@@ -3738,7 +3793,18 @@ app.get(['/api/health', '/health'], async (_req, res) => {
   // =========================================================================
   // ANNOUNCEMENTS ROUTES (CENTRAL AUTHORITATIVE SYNCHRONIZATION)
   // =========================================================================
-  app.get('/api/announcements', (req, res) => {
+  app.get('/api/announcements', async (_req, res) => {
+    if (hasLiveRemoteDb()) {
+      try {
+        const sysAnnRow = await dbFindOne('bonus_codes', 'code', '__SYS_ANNOUNCEMENTS__');
+        if (sysAnnRow && Array.isArray(sysAnnRow.usedBy) && sysAnnRow.usedBy.length > 0) {
+          serverAnnouncementsStore.clear();
+          sysAnnRow.usedBy.forEach((a: any) => {
+            if (a?.id) serverAnnouncementsStore.set(a.id, a);
+          });
+        }
+      } catch (_) {}
+    }
     const announcementsList = Array.from(serverAnnouncementsStore.values()).sort(
       (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
     );
@@ -3953,7 +4019,19 @@ app.get(['/api/health', '/health'], async (_req, res) => {
   });
 
   // GET /api/tasks/claims - Retrieve claims for a user or all claims
-  app.get('/api/tasks/claims', (req, res) => {
+  app.get('/api/tasks/claims', async (req, res) => {
+    if (hasLiveRemoteDb()) {
+      try {
+        const rows = await dbFindIlike('bonus_codes', 'code', '__CLAIM_%', 500);
+        rows.forEach((b: any) => {
+          if (b && Array.isArray(b.usedBy)) {
+            b.usedBy.forEach((cl: any) => {
+              if (cl?.id) serverUserTaskClaimsStore.set(cl.id, cl);
+            });
+          }
+        });
+      } catch (_) {}
+    }
     const { userId } = req.query;
     let claims = Array.from(serverUserTaskClaimsStore.values());
     if (userId) {
@@ -3971,8 +4049,8 @@ app.get(['/api/health', '/health'], async (_req, res) => {
         return res.status(400).json({ success: false, error: 'Identifiants utilisateur et tâche requis.' });
       }
 
-      // 1. Verify User
-      const user = serverUsersStore.get(userId);
+      // 1. Verify User (authoritative DB first)
+      const user = await getAuthoritativeUserById(userId);
       if (!user) {
         return res.status(404).json({ success: false, error: 'Utilisateur non trouvé.' });
       }
@@ -4183,8 +4261,22 @@ app.get(['/api/health', '/health'], async (_req, res) => {
   });
 
   // Dedicated Products API (Authoritative DB sync for product prices & catalogue)
-  app.get('/api/products', (_req, res) => {
+  app.get('/api/products', async (_req, res) => {
     try {
+      if (hasLiveRemoteDb()) {
+        try {
+          const { data, error } = await dbSelectAll('products', 1000);
+          if (!error && Array.isArray(data) && data.length > 0) {
+            const normalized = data
+              .map((row: any) => normalizeDbRow('products', row))
+              .filter((p: any) => p?.id && !LEGACY_OBSOLETE_PRODUCT_IDS.has(p.id));
+            if (normalized.length > 0) {
+              serverProductsStore.clear();
+              normalized.forEach((p: any) => serverProductsStore.set(p.id, p));
+            }
+          }
+        } catch (_) {}
+      }
       const list = Array.from(serverProductsStore.values())
         .sort((a: any, b: any) => (Number(a.order) || 99) - (Number(b.order) || 99));
       return res.json({ success: true, products: list });
@@ -4338,11 +4430,23 @@ app.get(['/api/health', '/health'], async (_req, res) => {
       }
 
       if (action === 'update' && idValue) {
-        if (tableName === 'users' && serverUsersStore.has(idValue)) {
-          serverUsersStore.set(idValue, { ...serverUsersStore.get(idValue), ...updates });
-        }
-        if (tableName === 'products' && serverProductsStore.has(idValue)) {
-          serverProductsStore.set(idValue, { ...serverProductsStore.get(idValue), ...updates });
+        const storeMap: Record<string, Map<string, any>> = {
+          users: serverUsersStore,
+          products: serverProductsStore,
+          investments: serverInvestmentsStore,
+          deposits: serverDepositsStore,
+          withdrawals: serverWithdrawalsStore,
+          withdrawal_proofs: serverProofsStore,
+          tickets: serverTicketsStore,
+          commissions: serverCommissionsStore,
+          bonus_codes: serverBonusCodesStore
+        };
+        const targetStore = storeMap[tableName];
+        if (targetStore) {
+          const existing = await getAuthoritativeRecord(tableName, idCol, idValue, targetStore);
+          if (existing) {
+            targetStore.set(idValue, { ...existing, ...updates });
+          }
         }
         savePlatformDataToDisk(true);
         await safeSupabaseUpdate(tableName, updates, idCol, idValue);

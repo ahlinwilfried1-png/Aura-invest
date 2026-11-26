@@ -853,19 +853,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
   // Filtered Lists
   const filteredDeposits = deposits.filter(d => {
     const matchesFilter = depositFilter === 'all' || d.status === depositFilter;
-    const matchesSearch = 
-      d.userName.toLowerCase().includes(depositSearch.toLowerCase()) ||
-      d.userPhone.includes(depositSearch) ||
-      d.transactionId.toLowerCase().includes(depositSearch.toLowerCase());
+    const q = depositSearch.toLowerCase();
+    const matchesSearch =
+      !q ||
+      (d.userName || '').toLowerCase().includes(q) ||
+      (d.userPhone || '').includes(depositSearch) ||
+      (d.transactionId || '').toLowerCase().includes(q);
     return matchesFilter && matchesSearch;
   });
 
   const filteredWithdrawals = withdrawals.filter(w => {
     const matchesFilter = withdrawalFilter === 'all' || w.status === withdrawalFilter;
-    const matchesSearch = 
-      w.userName.toLowerCase().includes(withdrawalSearch.toLowerCase()) ||
-      w.userPhone.includes(withdrawalSearch) ||
-      w.accountNumber.includes(withdrawalSearch);
+    const q = withdrawalSearch.toLowerCase();
+    const matchesSearch =
+      !q ||
+      (w.userName || '').toLowerCase().includes(q) ||
+      (w.userPhone || '').includes(withdrawalSearch) ||
+      (w.accountNumber || '').includes(withdrawalSearch);
     return matchesFilter && matchesSearch;
   });
 
@@ -879,20 +883,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
     const sponsorObj = u.referredByCode ? users.find(s => s.referralCode?.toLowerCase() === u.referredByCode?.toLowerCase() || s.phone === u.referredByCode || s.id === u.referredByCode) : null;
     const matchesSearch = 
       !query ||
-      u.name.toLowerCase().includes(query) ||
-      u.phone.includes(query) ||
+      (u.name || '').toLowerCase().includes(query) ||
+      (u.phone || '').includes(query) ||
       countryLabel.includes(query) ||
       (u.country && u.country.toLowerCase().includes(query)) ||
       (u.referralCode && u.referralCode.toLowerCase().includes(query)) ||
       (u.referredByCode && u.referredByCode.toLowerCase().includes(query)) ||
-      (sponsorObj && (sponsorObj.name.toLowerCase().includes(query) || sponsorObj.phone.includes(query)));
+      (sponsorObj && ((sponsorObj.name || '').toLowerCase().includes(query) || (sponsorObj.phone || '').includes(query)));
     return matchesStatus && matchesSearch;
   });
 
   const filteredPaidProducts = userInvestments.filter(inv => {
     const user = users.find(u => u.id === inv.userId);
-    const userName = user ? user.name : 'Utilisateur Inconnu';
-    const userPhone = user ? user.phone : '';
+    const userName = user?.name || 'Utilisateur Inconnu';
+    const userPhone = user?.phone || '';
 
     const matchesStatus = 
       paidFilter === 'all' || 
@@ -900,11 +904,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitAdmin }) =
       (paidFilter === 'completed' && inv.daysRemaining <= 0);
 
     const query = paidSearch.toLowerCase();
-    const matchesSearch = 
-      inv.productName.toLowerCase().includes(query) ||
+    const matchesSearch =
+      !query ||
+      (inv.productName || '').toLowerCase().includes(query) ||
       userName.toLowerCase().includes(query) ||
       userPhone.includes(query) ||
-      inv.id.toLowerCase().includes(query);
+      (inv.id || '').toLowerCase().includes(query);
 
     return matchesStatus && matchesSearch;
   });
